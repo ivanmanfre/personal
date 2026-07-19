@@ -143,6 +143,16 @@ interface OutreachSpec {
     gift?: { name?: string; url?: string };
     samples?: { label?: string; text: string }[];
   };
+  /** Per-channel message sequences (live boards): the actual notes/DMs each lane sends,
+   *  cold (connect + DM + InMail) vs warm (engagers, network). Templates carry
+   *  {placeholders} filled per prospect; approve-first, nothing sends unapproved. */
+  sequences?: {
+    title?: string; note?: string;
+    channels: {
+      key?: string; name: string; badge?: string; note?: string;
+      steps: { label: string; when?: string; text: string }[];
+    }[];
+  };
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
@@ -4011,6 +4021,39 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
+            {o.sequences && (o.sequences.channels || []).length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.sequences.title || 'The sequences, message by message'}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>approve-first</span>
+                </div>
+                {o.sequences.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  {o.sequences.channels.map((ch) => (
+                    <div key={ch.key || ch.name} className="rounded-lg p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                        <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
+                        {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
+                      </div>
+                      {ch.note && <p className="mt-1 text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
+                      <div className="mt-3 space-y-3">
+                        {ch.steps.map((st, i) => (
+                          <div key={i} className="rounded-lg bg-white p-3.5" style={{ border: `1px solid ${LINE}` }}>
+                            <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <span className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{st.label}</span>
+                              {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
+                            </div>
+                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{st.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
