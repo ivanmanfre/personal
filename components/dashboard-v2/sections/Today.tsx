@@ -152,7 +152,7 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
 
       {/* Above-the-fold triage strip — stat lockups over real feeds */}
       <div className="ec-strip">
-        <Lockup value={feeds.postsReview} label={<>Posts in<br />review</>} sub={firstTitle(feeds.postsReview)} onClick={go('posts')} />
+        <Lockup value={feeds.postsReview} label={<>Posts in<br />review</>} sub={feeds.postsReviewClient.count > 0 ? `+${feeds.postsReviewClient.count} client in review` : firstTitle(feeds.postsReview)} onClick={go('posts')} />
         <Lockup value={feeds.commentDrafts} label={<>Comment<br />drafts</>} sub={feeds.commentDrafts.items[0] || undefined} onClick={go('warm')} />
         <Lockup value={feeds.warmFollowups} label={<>Warm<br />follow-ups</>} sub={feeds.warmFollowups.items[0] || undefined} onClick={go('warm')} />
         <Lockup value={feeds.workflowsRed} label={<>Workflows<br />red / stuck</>} sub={firstTitle(feeds.workflowsRed)} onClick={go('health')} />

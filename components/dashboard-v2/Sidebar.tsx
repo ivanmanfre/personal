@@ -85,13 +85,15 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
       )}
       <div className="dv-brand">
         <span className="dv-brand-logo" aria-hidden="true">
+          {/* BB ON-mark: paper stamp, ink rule, red ON — the sanctioned mark for
+              where the full wordmark can't fit (collapsed rail, favicons). */}
           <svg viewBox="0 0 32 32" width="28" height="28">
-            <rect width="32" height="32" rx="7" fill="var(--d-good)" />
-            <path d="M7 22 V10 H10.5 L16 18 L21.5 10 H25 V22 H22 V14.5 L17 21.5 H15 L10 14.5 V22 Z" fill="#fff" />
+            <rect x="1" y="1" width="30" height="30" fill="#FAF9F7" stroke="#131210" strokeWidth="1.5" />
+            <text x="16" y="22" textAnchor="middle" fontFamily="'Schibsted Grotesk', system-ui, sans-serif" fontSize="14" fontWeight="900" fill="#C8361B">ON</text>
           </svg>
         </span>
         <div className="dv-brand-text">
-          <div className="dv-brand-mark">Ivan <em>System</em></div>
+          <div className="dv-brand-mark">INBOUND<em>ON</em>STEROIDS</div>
         </div>
         {onClose && (
           <button type="button" className="dv-sidebar-close" aria-label="Close navigation" onClick={onClose}>×</button>

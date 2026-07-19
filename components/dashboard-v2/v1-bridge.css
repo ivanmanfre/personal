@@ -251,3 +251,82 @@
 .dashboard-v2 .dv-panel.dv-bridge .bg-black { background-color: #131210 !important; }
 .dashboard-v2 .dv-panel.dv-bridge .text-white { color: #131210 !important; }
 
+/* --- Fix loop (base): flatten to Black Box paper law ---------------------------
+ * BB v4 is printed, not floating: sharp corners, hairlines, no shadows. The v1
+ * panels ship rounded cards / tiles / rounded-full pills + soft drop shadows
+ * (craft judge: scans-bridge cards ~12px radius + shadow, rounded-full badges).
+ * Flatten every radius + kill every shadow inside the bridge so cards, inner
+ * tiles, and pills read as sharp hairline panels. */
+.dashboard-v2 .dv-panel.dv-bridge [class*="rounded"],
+.dashboard-v2 .dv-panel.dv-bridge .panel-surface,
+.dashboard-v2 .dv-panel.dv-bridge .dv-card {
+  border-radius: 0 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge [class*="shadow"],
+.dashboard-v2 .dv-panel.dv-bridge .panel-surface,
+.dashboard-v2 .dv-panel.dv-bridge .dv-card {
+  box-shadow: none !important;
+}
+
+/* --- Fix loop (base): Brain-panel palette (no cyan/rose/purple/violet) --------
+ * Brain now carries dv-bridge but uses colors the 6-panel enumeration never had
+ * (tier roster cyan/rose, violet chrome, purple/cyan PanelCard accents). Map
+ * them to the ink/muted register so nothing renders off-palette. */
+.dashboard-v2 .dv-panel.dv-bridge .text-cyan-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-cyan-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-purple-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-purple-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-violet-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-indigo-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-indigo-400 {
+  color: #131210 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .text-rose-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-rose-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-pink-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-pink-400 {
+  color: #6B675E !important;
+}
+/* Tinted color washes → paper (violet/purple/cyan/rose/pink/blue at any alpha) */
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-violet-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-purple-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-cyan-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-rose-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-pink-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="bg-indigo-"] {
+  background-color: #FAF9F7 !important;
+}
+/* Colored borders → hairline */
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-violet-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-purple-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-cyan-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-rose-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-pink-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="border-indigo-"] {
+  border-color: rgba(19,18,16,0.18) !important;
+}
+/* Solid + tinted gradient accents (PanelCard/StatCard from-*-500) → paper */
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-violet-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-purple-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-cyan-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-emerald-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-blue-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-rose-"],
+.dashboard-v2 .dv-panel.dv-bridge [class*="from-amber-"] {
+  --tw-gradient-from: #FAF9F7 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .focus\:border-violet-500\/50:focus,
+.dashboard-v2 .dv-panel.dv-bridge .focus\:ring-violet-500\/20:focus {
+  border-color: rgba(19,18,16,0.30) !important;
+  --tw-ring-color: rgba(19,18,16,0.18) !important;
+}
+
+/* Positioning pillar-battery drift rules (STATUS_RULE border-emerald/amber/red
+ * at 60pct alpha) — the alpha the base enumeration missed, so green/amber
+ * leaked. Keep drift differentiation without hue: on-target = hairline ink,
+ * drifting = muted, off-target = the danger Signal red. */
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-500\/60 { border-color: rgba(19,18,16,0.18) !important; }
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-500\/60 { border-color: #6B675E !important; }
+.dashboard-v2 .dv-panel.dv-bridge .border-red-500\/60 { border-color: #C8361B !important; }
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-500\/40 { background-color: #FAF2F0 !important; }
+

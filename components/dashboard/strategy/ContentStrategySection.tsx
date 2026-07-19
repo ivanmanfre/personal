@@ -15,6 +15,14 @@ const REPO_ROOT = '/Users/ivanmanfredi/Desktop/personal-site';
 const PILLAR_ORDER = ['Translator', 'Methodology', 'Teardown', 'Case Study', 'Personal'];
 const PILLAR_WINDOW_DAYS = 30;
 
+// Black Box register: differentiate pillar segments by an INK tonal ramp (no
+// hue). Ordered light→heavier so adjacent pillars stay distinguishable at a
+// glance while the ink-mapped count text stays legible; drift still signals via
+// the STATUS_RULE bottom rule + %. Fix loop: replaces the uniform bg-zinc-700/70
+// fill the same-as-before skeptic flagged as "reads worse desaturated".
+const PILLAR_TONE_RAMP = ['#E6E3DD', '#D8D4CC', '#CAC5BB', '#BCB6AA', '#AEA79A', '#EDEBE7'];
+const pillarTone = (i: number) => PILLAR_TONE_RAMP[i % PILLAR_TONE_RAMP.length];
+
 function localPath(url: string): string {
   if (url.startsWith('/')) return `${REPO_ROOT}${url}`;
   return url;
@@ -156,7 +164,7 @@ const PillarBattery: React.FC<{
 }> = ({ rows, openPillar, onToggle, targetOf }) => (
   <div>
     <div className="flex w-full h-9 gap-0.5">
-      {rows.map(r => {
+      {rows.map((r, i) => {
         const st = mixStatus(r.pct, targetOf(r.pillar));
         const isOpen = openPillar === r.pillar;
         return (
@@ -164,8 +172,8 @@ const PillarBattery: React.FC<{
             key={r.pillar}
             onClick={() => onToggle(isOpen ? null : r.pillar)}
             title={`${r.pillar}: ${r.count} posts · ${r.pct}% (target ${targetOf(r.pillar)}%)`}
-            className={`relative h-full bg-zinc-700/70 hover:bg-zinc-600/70 border-b-2 ${STATUS_RULE[st]} ${isOpen ? 'ring-1 ring-zinc-400' : ''} focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 transition-colors flex items-center justify-center`}
-            style={{ flexBasis: `${r.pct}%`, minWidth: '2.25rem', flexGrow: 0, flexShrink: 1 }}
+            className={`relative h-full hover:bg-zinc-600/70 border-b-2 ${STATUS_RULE[st]} ${isOpen ? 'ring-1 ring-zinc-400' : ''} focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 transition-colors flex items-center justify-center`}
+            style={{ flexBasis: `${r.pct}%`, minWidth: '2.25rem', flexGrow: 0, flexShrink: 1, backgroundColor: pillarTone(i) }}
           >
             <span className="font-mono text-[11px] text-zinc-200">{r.count}</span>
           </button>

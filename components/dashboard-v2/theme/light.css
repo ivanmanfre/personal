@@ -2,8 +2,8 @@
 body.dashboard-v2-light {
   --ds-bg:#f6f7f9; --ds-card:#ffffff; --ds-line:#e9e9ee;
   --ds-ink:#0f172a; --ds-dim:#475569; --ds-faint:#64748b; --ds-faintest:#94a3b8;
-  --ds-accent:#4f46e5; --ds-accent-hover:#6366f1;
-  --ds-ok:#047857; --ds-warn:#b45309; --ds-info:#2563eb; --ds-violet:#7c3aed;
+  --ds-accent:#131210; --ds-accent-hover:#2A2724;
+  --ds-ok:#131210; --ds-warn:#6B675E; --ds-info:#6B675E; --ds-violet:#6B675E;
   --ds-shadow-sm:0 1px 2px rgba(15,23,42,.04);
   --ds-shadow-card:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18);
   --ds-radius:14px;
@@ -44,23 +44,24 @@ body.dashboard-v2-light .dashboard-v2 {
   --d-rule:        #e9e9ee;               /* internal dividers */
   --d-rule-strong: #d8d8df;              /* card / container borders */
 
-  /* Semantic colours — adjusted for light contrast (AA+ on white) */
-  --d-good:        #047857;  /* emerald-700, ~5.5:1 on white */
-  --d-good-hi:     #065f46;  /* emerald-800, ~7.7:1 on white */
-  --d-warn:        #b45309;  /* amber-700, ~5.0:1 on white */
-  --d-bad:         #dc2626;
-  --d-bad-txt:     #dc2626;
-  --d-accent:      #4f46e5;
-  --d-agent:       #7c3aed;
+  /* Semantic colours — Black Box v4 register (no green/indigo/violet).
+   * good/fresh → ink; warn/agent → muted; accent (interactive/info) → ink;
+   * bad/danger keeps the ONE Signal red. Neutral paper washes for tint bgs. */
+  --d-good:        #131210;  /* ink (was emerald) */
+  --d-good-hi:     #131210;  /* ink */
+  --d-warn:        #6B675E;  /* muted (was amber) */
+  --d-bad:         #C8361B;  /* Signal red */
+  --d-bad-txt:     #C8361B;  /* Signal red */
+  --d-accent:      #131210;  /* ink — interactive/info affordance (was indigo) */
+  --d-agent:       #6B675E;  /* muted (was violet) */
 
-  /* Semantic tinted bgs — raised opacity so semantic text (AA+) contrasts on bg
-   * #047857 (--d-good) needs bg lighter than ~rgba(5,150,105,0.27) to stay ≥4.5:1
-   * Using very light neutral washes instead to guarantee contrast on white card surface */
-  --d-good-bg:    rgba(236, 253, 245, 1);   /* emerald-50 solid; #047857 on #ecfdf5 ≈ 5.1:1 */
-  --d-warn-bg:    rgba(255, 251, 235, 1);   /* amber-50 solid; #b45309 on #fffbeb ≈ 4.6:1 */
-  --d-bad-bg:     rgba(254, 242, 242, 1);   /* red-50 solid */
-  --d-accent-bg:  rgba(238, 240, 254, 1);   /* indigo-50 solid */
-  --d-agent-bg:   rgba(245, 243, 255, 1);   /* violet-50 solid */
+  /* Semantic tinted bgs — neutral paper washes so remapped ink/muted text reads;
+   * bad keeps a faint red wash so a frozen/failure chip still signals. */
+  --d-good-bg:    #F2F0EC;   /* neutral paper wash (was emerald-50) */
+  --d-warn-bg:    #F2F0EC;   /* neutral paper wash (was amber-50) */
+  --d-bad-bg:     #FAF2F0;   /* faint red wash (danger only) */
+  --d-accent-bg:  #F2F0EC;   /* neutral paper wash (was indigo-50) */
+  --d-agent-bg:   #F2F0EC;   /* neutral paper wash (was violet-50) */
 
   /* Depth — lighter shadows for light theme */
   --d-shadow-1: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -2px rgba(15,23,42,0.08);
@@ -98,8 +99,28 @@ body.dashboard-v2-light .dv-sidebar {
 body.dashboard-v2-light .dv-brand {
   border-bottom-color: var(--ds-line) !important;
 }
+/* Wordmark law — INBOUND+STEROIDS ink weight 500, ON weight 900 Signal red.
+ * BB ON-mark logo: no shadow, sharp corners. */
 body.dashboard-v2-light .dv-brand-mark {
   color: var(--ds-ink) !important;
+  font-weight: 500 !important;
+  font-size: 15px !important;      /* fit "INBOUNDONSTEROIDS" in the 240px rail even before the webfont loads */
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+}
+body.dashboard-v2-light .dv-brand-mark em {
+  color: #C8361B !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+}
+body.dashboard-v2-light .dv-brand-logo svg {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+body.dashboard-v2-light .dv-topbar-brand em {
+  color: #C8361B !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
 }
 body.dashboard-v2-light .dv-nav-item {
   color: #475569 !important;
@@ -109,26 +130,29 @@ body.dashboard-v2-light .dv-nav-item:hover {
   background: #f1f1f5 !important;
   color: var(--ds-ink) !important;
 }
+/* Active nav — BB register: ink flush-fill, paper text, sharp corners (no
+ * indigo pill). Left ::before rail hidden; the solid fill carries the state. */
 body.dashboard-v2-light .dv-nav-item[aria-current="page"] {
-  background: #eef0fe !important;
-  color: var(--ds-accent) !important;
+  background: #131210 !important;
+  color: #FFFFFF !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 body.dashboard-v2-light .dv-nav-item[aria-current="page"]::before {
-  background: var(--ds-accent) !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"] {
-  background: #eef0fe !important;
+  background: #131210 !important;
 }
 body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"]::before {
-  background: var(--ds-accent) !important;
+  background: transparent !important;
 }
 body.dashboard-v2-light .dv-nav-name {
   color: inherit !important;
 }
 body.dashboard-v2-light .dv-nav-item[aria-current="page"] .dv-nav-name {
-  color: var(--ds-accent) !important;
+  color: #FFFFFF !important;
 }
 body.dashboard-v2-light .dv-nav-num {
   color: var(--ds-dim) !important;
@@ -212,7 +236,7 @@ body.dashboard-v2-light .dv-card {
   box-shadow: var(--ds-shadow-card) !important;
 }
 body.dashboard-v2-light .dv-card:hover {
-  border-color: #c7d2fe !important;
+  border-color: rgba(19,18,16,0.28) !important;
 }
 body.dashboard-v2-light .dv-card-lbl {
   color: var(--ds-dim) !important;
@@ -231,7 +255,7 @@ body.dashboard-v2-light .dv-kpi {
   box-shadow: var(--ds-shadow-card) !important;
 }
 body.dashboard-v2-light .dv-kpi:hover {
-  border-color: #c7d2fe !important;
+  border-color: rgba(19,18,16,0.28) !important;
   box-shadow: 0 2px 4px rgba(15,23,42,.05), 0 16px 32px -16px rgba(15,23,42,.18) !important;
 }
 body.dashboard-v2-light .dv-kpi-lbl {
@@ -292,18 +316,18 @@ body.dashboard-v2-light .dv-subtab[aria-selected="true"]::after {
 /* StatusChip */
 body.dashboard-v2-light .dv-chip--good {
   color: var(--ds-ok) !important;
-  background: #ecfdf5 !important;
-  border-color: #a7f3d0 !important;
+  background: #F2F0EC !important;
+  border-color: rgba(19,18,16,0.18) !important;
 }
 body.dashboard-v2-light .dv-chip--warn {
   color: var(--ds-warn) !important;
-  background: #fffbeb !important;
-  border-color: #fcd34d !important;
+  background: #F2F0EC !important;
+  border-color: rgba(19,18,16,0.18) !important;
 }
 body.dashboard-v2-light .dv-chip--bad {
-  color: #dc2626 !important;
-  background: #fef2f2 !important;
-  border-color: #fca5a5 !important;
+  color: #C8361B !important;
+  background: #FAF2F0 !important;
+  border-color: rgba(200,54,27,0.30) !important;
 }
 
 /* Pulse cells */
@@ -314,7 +338,7 @@ body.dashboard-v2-light .dv-pulse-cell {
   color: var(--ds-ink) !important;
 }
 body.dashboard-v2-light .dv-pulse-cell:hover {
-  border-color: #c7d2fe !important;
+  border-color: rgba(19,18,16,0.28) !important;
 }
 body.dashboard-v2-light .dv-pulse-cell-name {
   color: var(--ds-ink) !important;
@@ -381,7 +405,7 @@ body.dashboard-v2-light .dv-switch::after {
   background: var(--ds-faint) !important;
 }
 body.dashboard-v2-light .dv-switch--on {
-  background: #ecfdf5 !important;
+  background: #F2F0EC !important;
   border-color: var(--ds-ok) !important;
 }
 body.dashboard-v2-light .dv-switch--on::after {
@@ -541,16 +565,16 @@ body.dashboard-v2-light .dv-chip:not(.dv-chip--good):not(.dv-chip--warn):not(.dv
    #047857 on #ecfdf5 = 5.1:1 (AA). Uses !important to override inline style bg. */
 body.dashboard-v2-light .crm-icp {
   color: var(--ds-ok) !important;
-  background: #ecfdf5 !important;
+  background: #F2F0EC !important;
 }
 
 /* dv-funnel-seg colors: semantic text on tinted bg → solid light bg */
 body.dashboard-v2-light .dv-funnel-seg--win {
-  background: #ecfdf5 !important;
+  background: #F2F0EC !important;
   color: var(--ds-ok) !important;
 }
 body.dashboard-v2-light .dv-funnel-seg--warm {
-  background: #fffbeb !important;
+  background: #F2F0EC !important;
   color: var(--ds-warn) !important;
 }
 
@@ -563,9 +587,17 @@ body.dashboard-v2-light .dv-aios-seg {
   background: transparent !important;
 }
 
-/* nb-badge--good: white on #5b8c6e (ratio 3.87) — darken badge bg for AA */
-body.dashboard-v2-light .nb-badge--good {
-  background: #2d6a4f !important;
+/* Notification bell badge — BB register: ink disc + paper numeral for EVERY
+ * severity. Red is reserved for the ONE composition figure (REPLIES WAITING /
+ * drift WARNING); the always-present bell count must never spend it
+ * (craft-judge A-D1/B-D1: demote the bell badge to ink). */
+body.dashboard-v2-light .nb-badge,
+body.dashboard-v2-light .nb-badge--good,
+body.dashboard-v2-light .nb-badge--warn,
+body.dashboard-v2-light .nb-badge--bad {
+  background: #131210 !important;
+  color: #FFFFFF !important;
+  border-radius: 0 !important;
 }
 
 /* text-zinc-500 on rgba(241,241,245,0.85) bg → ratio 4.22, below 4.5
