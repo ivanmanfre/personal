@@ -232,7 +232,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} dots={dottedIds} />
           <main className="dv-main">
             {/* dv-bridge scopes the v1 light-paper bridge stylesheet to live v1 panels only (archive panels keep dark chrome) */}
-            <div className={`dv-panel${['scans', 'calls', 'health', 'positioning', 'agent', 'usage', 'brain'].includes(active) ? ' dv-bridge' : ''}`} key={`${active}:${navNonce}`}>
+            <div className={`dv-panel${['health'].includes(active) ? ' dv-bridge' : ''}`} key={`${active}:${navNonce}`}>
               {renderer ? renderer() : (
                 <div style={{ padding: '4rem', color: 'var(--ds-dim)' }}>
                   Section <code>{active}</code> not yet implemented.

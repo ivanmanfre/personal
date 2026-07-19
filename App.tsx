@@ -47,6 +47,7 @@ function useTrackPageviews(pathname: string) {
 
 import { useDashboardV2Flag } from './hooks/useDashboardV2Flag';
 import { isAuthenticated } from './lib/dashboardAuth';
+import { supabase } from './lib/supabase';
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const DashboardV2Demo = lazy(() => import('./components/dashboard-v2/DemoShell'));
 const DashboardAuthGate = lazy(() => import('./components/dashboard/DashboardAuth'));
@@ -54,8 +55,18 @@ const DashboardAuthGate = lazy(() => import('./components/dashboard/DashboardAut
 // v2 shares v1's password gate (VITE_DASHBOARD_HASH + localStorage session).
 // Without this the v2 branch served the full operator dashboard ungated.
 function AuthedDashboardV2() {
-  const [authed, setAuthed] = React.useState(isAuthenticated());
-  if (!authed) return <DashboardAuthGate onSuccess={() => setAuthed(true)} />;
+  // 'checking' avoids a gate flash while the async session read resolves.
+  // Both factors required: remembered password AND a live Supabase session.
+  const [state, setState] = React.useState<'checking' | 'gate' | 'ok'>('checking');
+  React.useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) setState(isAuthenticated() && data.session ? 'ok' : 'gate');
+    });
+    return () => { alive = false; };
+  }, []);
+  if (state === 'checking') return <div className="min-h-screen bg-zinc-950" />;
+  if (state === 'gate') return <DashboardAuthGate onSuccess={() => setState('ok')} />;
   return <DashboardV2Demo />;
 }
 const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEditor'));

@@ -1,6 +1,7 @@
 import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { isAuthenticated } from '../../lib/dashboardAuth';
+import { supabase } from '../../lib/supabase';
 import { DashboardProvider, useDashboard } from '../../contexts/DashboardContext';
 import DashboardAuth from './DashboardAuth';
 import DashboardLayout from './DashboardLayout';
@@ -151,7 +152,16 @@ function usePrefetchPanels() {
 }
 
 const Dashboard: React.FC = () => {
-  const [authed, setAuthed] = useState(isAuthenticated());
+  // Both factors required: remembered password AND a live Supabase session
+  // (the session carries the authenticated JWT the RLS policies require).
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) setAuthed(isAuthenticated() && !!data.session);
+    });
+    return () => { alive = false; };
+  }, []);
   const initialTab = getInitialTab();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set([initialTab]));

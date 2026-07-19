@@ -38,6 +38,7 @@ export function useNavBadges(): NavBadges {
           .select('id,stage,reply_count,last_reply_at,last_dm_sent_at,needs_manual_reply')
           .neq('stage', 'archived')
           .gt('reply_count', 0)
+          .order('last_reply_at', { ascending: false })
           .limit(200),
         supabase
           .from('dashboard_workflow_stats')
