@@ -201,8 +201,12 @@ body.dashboard-v2-light * {
 .dv-nav-num { font-size: 11px; font-weight: 600; color: var(--d-paper-dimmer); width: 16px; font-variant-numeric: tabular-nums; }
 .dv-nav-icon { display: none; }   /* expanded uses labels; icons appear only in the rail */
 .dv-nav-short { display: none; }  /* compact label, rail only */
-.dv-nav-divider { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--d-paper-dimmer); padding: 0.85rem 1.4rem 0.35rem; font-weight: 700; }
-.dv-nav-divider:first-child { padding-top: 0.2rem; }
+/* Grouped nav hierarchy: each group is a chunk with a hairline rule above it so
+   the eye reads six numbered sections, not one flat 23-item list. The section
+   number + label come from the shell's own divider counter (styled per theme). */
+.dv-nav-group { padding-top: 0.55rem; margin-top: 0.4rem; border-top: 1px solid var(--d-rule); }
+.dv-nav-group--first { padding-top: 0; margin-top: 0; border-top: 0; }
+.dv-nav-divider { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--d-paper-dimmer); padding: 0.35rem 1.4rem 0.35rem; font-weight: 700; }
 .dv-nav-badge {
   font-size: 10px; font-weight: 700; padding: 0.1rem 0.4rem;
   background: var(--d-bad); color: var(--d-ink); letter-spacing: 0.04em;
@@ -265,7 +269,11 @@ body.dashboard-v2-light * {
   .dashboard-v2-shell--rail .dv-nav-short { display: block; flex: none; font-size: 9.5px; line-height: 1.15; font-weight: 600; text-align: center; letter-spacing: 0.01em; color: var(--d-paper-dim); transition: color 0.15s ease; }
   .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-short { color: var(--d-paper); }
   .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-short { color: var(--d-paper); }
-  .dashboard-v2-shell--rail .dv-nav-divider { font-size: 0; padding: 0; margin: 0.5rem 0.7rem; height: 0; overflow: hidden; border-top: 1px solid var(--d-rule); }
+  /* Rail: the group wrapper's top rule is the section separator; collapse the
+     divider header to nothing so we never double the rule. */
+  .dashboard-v2-shell--rail .dv-nav-group { padding-top: 0.4rem; margin-top: 0.4rem; }
+  .dashboard-v2-shell--rail .dv-nav-group--first { padding-top: 0; margin-top: 0; }
+  .dashboard-v2-shell--rail .dv-nav-divider { font-size: 0; padding: 0; margin: 0; height: 0; overflow: hidden; border-top: 0; }
   .dashboard-v2-shell--rail .dv-nav-badge { position: absolute; top: 4px; right: 12px; width: 7px; height: 7px; min-width: 0; padding: 0; font-size: 0; line-height: 0; border-radius: 50%; }
   .dashboard-v2-shell--rail .dv-nav-dot { position: absolute; top: 5px; right: 13px; margin: 0; }
   .dashboard-v2-shell--rail .dv-sidebar-foot { display: none; }
@@ -1221,6 +1229,13 @@ body.dashboard-v2-light .dv-nav-divider::before {
   color: var(--bx-ink); font-weight: 700; letter-spacing: 0.02em;
 }
 body.dashboard-v2-light .dv-nav-divider:first-child { padding-top: 0.3rem !important; }
+/* The Index reading: a warm hairline chunks each numbered section so the eye
+   groups 23 entries into six. First group (Today) carries no rule. The label
+   sits a step darker than the item rows so headers never blur into entries. */
+body.dashboard-v2-light .dv-nav-group { padding-top: 0.5rem; margin-top: 0.35rem; border-top: 1px solid var(--bx-rule, rgba(19,18,16,0.12)); }
+body.dashboard-v2-light .dv-nav-group--first { padding-top: 0; margin-top: 0; border-top: 0; }
+body.dashboard-v2-light .dv-nav-divider { color: var(--bx-body) !important; }
+body.dashboard-v2-light .dv-nav-divider::before { color: var(--bx-ink); }
 
 /* ── Rows ── */
 body.dashboard-v2-light .dv-nav-item {

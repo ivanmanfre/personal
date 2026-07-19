@@ -3,15 +3,18 @@ import type { NavItem, SectionId } from './types';
 
 // Round 2 (A-seed): the nav is grouped so every legacy category + its
 // subsections has a visible home (Ivan feedback #1). Groups render in this
-// order; a `label: null` group prints no divider heading (Today, Personal).
-const GROUP_ORDER: { key: string; label: string | null }[] = [
+// order. The Index reading: labeled groups carry a two-digit index number so
+// the eye can chunk 23 entries into six numbered sections; `label: null` is the
+// unnumbered home row (Today). Personal is its own numbered group, not a
+// tail floating under System.
+const GROUP_ORDER: { key: string; label: string | null; num?: string }[] = [
   { key: 'today', label: null },
-  { key: 'content', label: 'Content' },
-  { key: 'pipeline', label: 'Pipeline' },
-  { key: 'clients', label: 'Clients' },
-  { key: 'system', label: 'System' },
+  { key: 'content', label: 'Content', num: '01' },
+  { key: 'pipeline', label: 'Pipeline', num: '02' },
+  { key: 'clients', label: 'Clients', num: '03' },
+  { key: 'system', label: 'System', num: '04' },
   { key: 'personal', label: null },
-  { key: 'archive', label: 'Archive' },
+  { key: 'archive', label: 'Archive', num: '05' },
 ];
 
 // Collapsed rail shows an icon + a short label. Keyed by group so a 25-entry
@@ -101,14 +104,17 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
       </div>
 
       <nav className="dv-nav">
-        {GROUP_ORDER.map(({ key, label }) => {
+        {GROUP_ORDER.map(({ key, label }, gi) => {
           const groupItems = items.filter(i => (i.group ?? 'today') === key);
           if (groupItems.length === 0) return null;
+          // Each group is its own chunk (hairline rule above it) so 23 entries
+          // read as six sections. The section number comes from the shell's CSS
+          // counter on .dv-nav-divider; the label is a plain text node it styles.
           return (
-            <React.Fragment key={key}>
+            <div key={key} className={`dv-nav-group${gi === 0 ? ' dv-nav-group--first' : ''}`}>
               {label && <div className="dv-nav-divider">{label}</div>}
               {groupItems.map(it => renderItem(it, key))}
-            </React.Fragment>
+            </div>
           );
         })}
       </nav>

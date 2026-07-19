@@ -10,6 +10,7 @@ import { SystemPulse } from './sections/SystemPulse';
 import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
+import { ClientOps } from './sections/ClientOps';
 import { LiveProvider } from './live/LiveProvider';
 import { useNavBadges } from './useNavBadges';
 import type { NavItem, SectionId } from './types';
@@ -89,6 +90,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     group: 'clients',
     items: [
       { id: 'risedtc', name: 'Rise DTC', render: () => <ClientsRoadmap /> },
+      { id: 'clientops', name: 'Client Ops', render: () => <ClientOps /> },
     ],
   },
   {
