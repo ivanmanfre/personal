@@ -5,7 +5,6 @@ import { Shell } from './Shell';
 import { PwaInstall } from './PwaInstall';
 import { registerServiceWorker } from './registerSW';
 import { Today } from './sections/Today';
-import { WarmPipeline } from './sections/WarmPipeline';
 import { ClientsRoadmap } from './sections/ClientsRoadmap';
 import { SystemPulse } from './sections/SystemPulse';
 import { StylesLive } from './sections/StylesLive';
@@ -33,7 +32,6 @@ const PromptLibraryPanel = lazy(() => import('../dashboard/PromptLibraryPanel'))
 const OutreachPanel = lazy(() => import('../dashboard/OutreachPanel'));
 const AudienceAuditsPanel = lazy(() => import('../dashboard/AudienceAuditsPanel'));
 const MeetingsPanel = lazy(() => import('../dashboard/MeetingsPanel'));
-const ClientsPanel = lazy(() => import('../dashboard/ClientsPanel'));
 const OverviewPanel = lazy(() => import('../dashboard/OverviewPanel'));
 const WorkflowsPanel = lazy(() => import('../dashboard/WorkflowsPanel'));
 const ScheduledOpsPanel = lazy(() => import('../dashboard/ScheduledOpsPanel'));
@@ -46,7 +44,6 @@ const CompetitorIntelPanel = lazy(() => import('../dashboard/CompetitorIntelPane
 const SignalClustersPanel = lazy(() => import('../dashboard/SignalClustersPanel'));
 const VideoIdeasPanel = lazy(() => import('../dashboard/VideoIdeasPanel'));
 const RecordingsPanel = lazy(() => import('../dashboard/RecordingsPanel'));
-const HealthPanel = lazy(() => import('../dashboard/HealthPanel'));
 const UpworkPanel = lazy(() => import('../dashboard/UpworkPanel'));
 
 const PanelLoading = () => (
@@ -85,7 +82,6 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
   {
     group: 'pipeline',
     items: [
-      { id: 'warm', name: 'Warm', render: () => <WarmPipeline /> },
       { id: 'outreach', name: 'Outreach', render: host(<OutreachPanel />) },
       { id: 'scans', name: 'Scans', render: host(<AudienceAuditsPanel />) },
       { id: 'calls', name: 'Calls', render: host(<MeetingsPanel />) },
@@ -95,7 +91,6 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     group: 'clients',
     items: [
       { id: 'risedtc', name: 'Rise DTC', render: () => <ClientsRoadmap /> },
-      { id: 'boards', name: 'Boards', render: host(<ClientsPanel />) },
     ],
   },
   {
@@ -137,7 +132,6 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
       { id: 'signalclusters', name: 'Signal Clusters', render: host(<SignalClustersPanel />) },
       { id: 'video', name: 'Video', render: host(<VideoIdeasPanel />) },
       { id: 'recordings', name: 'Recordings', render: host(<RecordingsPanel />) },
-      { id: 'healthp', name: 'Health (personal)', render: host(<HealthPanel />) },
       { id: 'upwork', name: 'Upwork', render: host(<UpworkPanel />) },
     ],
   },

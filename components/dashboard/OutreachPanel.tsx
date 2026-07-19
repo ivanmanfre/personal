@@ -21,7 +21,6 @@ import PanelErrorBoundary from './shared/PanelErrorBoundary';
 import { ActivityFeed } from './outreach/ActivityFeed';
 import { PendingInviteGauge } from './outreach/PendingInviteGauge';
 import { AuditClicks } from './outreach/AuditClicks';
-import HypertargetQueue from './outreach/HypertargetQueue';
 import { OverviewTab } from './outreach/tabs/OverviewTab';
 import { EmailTab } from './outreach/tabs/EmailTab';
 import { feedOf, FEED_ORDER, FEED_LABELS, FEED_BADGE } from './outreach/feedHelpers';
@@ -32,9 +31,9 @@ import type { OutreachProspect, OutreachFeed } from '../../types/dashboard';
 // Feeds-centric revamp: Overview (all feeds at a glance) is the new default;
 // Sources is the per-source prune/add control center. Health stays folded into
 // Pipeline. Review/Inbox unchanged.
-type OutreachTab = 'overview' | 'hypertarget' | 'pipeline' | 'review' | 'email';
-const TAB_ORDER: OutreachTab[] = ['overview', 'hypertarget', 'pipeline', 'review', 'email'];
-const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', hypertarget: 'Hypertarget', pipeline: 'Pipeline', review: 'Review', email: 'Email' };
+type OutreachTab = 'overview' | 'pipeline' | 'review' | 'email';
+const TAB_ORDER: OutreachTab[] = ['overview', 'pipeline', 'review', 'email'];
+const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', pipeline: 'Pipeline', review: 'Review', email: 'Email' };
 function readTab(): OutreachTab {
   if (typeof window === 'undefined') return 'overview';
   // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
@@ -1356,7 +1355,6 @@ const OutreachPanel: React.FC = () => {
   const emailTab = <EmailTab prospects={prospects} />;
 
   const activeTab = tab === 'overview' ? overviewTab
-    : tab === 'hypertarget' ? <HypertargetQueue />
     : tab === 'review' ? reviewTab
     : tab === 'email' ? emailTab
     : (

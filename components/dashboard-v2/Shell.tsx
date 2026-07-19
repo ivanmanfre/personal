@@ -3,8 +3,6 @@ import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { NotificationBell } from './NotificationBell';
 import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
-import { TourProvider, useTour } from './tour/TourProvider';
-import { TourNarratorCard } from './tour/TourNarratorCard';
 import { onNav } from './lib/navBus';
 import { LiveStatus } from './live/LiveStatus';
 import { useNavDots } from '../../lib/useChangelog';
@@ -17,13 +15,16 @@ import './dashboard-v2.css';
 const LEGACY_SECTION_REMAP: Record<string, SectionId> = {
   briefing: 'today',
   content: 'posts',    // Content group opens on the Posts board
-  reach: 'warm',       // Pipeline group opens on Warm
+  reach: 'outreach',   // Pipeline group opens on the Outreach work surface
   ops: 'health',       // System health absorbs Overview + Workflows + Scheduled Ops
   clients: 'risedtc',  // Clients group opens on the Rise DTC desk
   knowledge: 'brain',  // Brain is the knowledge home (Prompts lives under Content)
   system: 'health',    // legacy "system" = System health
   ideas: 'posts',      // content ideas are the Idea STAGE on the Posts board
   steal: 'opsideas',
+  warm: 'outreach',    // Warm nav retired → folded into Outreach work surface
+  boards: 'risedtc',   // Boards nav retired → Rise DTC is the live client home
+  healthp: 'personal', // personal Health nav retired → Personal keeps the sub-tab
 };
 
 function resolveSection(raw: string | null, valid: Set<string>): SectionId | null {
@@ -36,15 +37,6 @@ interface ShellProps {
   navItems: NavItem[];                                              // dynamic, with badge counts from live data
   sectionRenderers: Partial<Record<SectionId, () => React.ReactNode>>; // each section is a function returning React
   paletteItems?: PaletteItem[];
-}
-
-function TourTrigger() {
-  const { start } = useTour();
-  return (
-    <button type="button" className="dv-tour-trigger" onClick={start} aria-label="Start guided tour">
-      ▶ Tour
-    </button>
-  );
 }
 
 /**
@@ -61,7 +53,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     return resolveSection(params.get('section'), new Set(Object.keys(sectionRenderers))) ?? 'today';
   });
 
-  // Nav bus — lets TourProvider (and any other caller) drive section changes
+  // Nav bus — lets any caller drive section changes
   // without needing a direct reference to setActive.
   useEffect(() => {
     return onNav(({ section }) => setActive(section));
@@ -195,8 +187,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   const dottedIds = new Set(navItems.filter((it) => navDots.has(it.id)).map((it) => it.id));
 
   return (
-    <TourProvider>
-      <div className="dashboard-v2">
+    <div className="dashboard-v2">
         <div className={`dashboard-v2-shell ${collapsed ? 'dashboard-v2-shell--rail' : ''}`}>
           {/* Top bar — hosts the mobile hamburger + brand, and the notification
               bell on the right (slim sticky bar on desktop, see dashboard-v2.css). */}
@@ -236,10 +227,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           </main>
         </div>
         <CommandPalette {...palette} />
-        <TourTrigger />
         <LiveStatus />
-        <TourNarratorCard />
       </div>
-    </TourProvider>
   );
 }
