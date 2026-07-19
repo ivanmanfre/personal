@@ -336,6 +336,11 @@ const useMediaQuery = (query: string): boolean => {
   return matches;
 };
 
+// The build-time prerenderer (scripts/prerender.mjs) is a real browser, so pre-paint
+// rewinds WOULD run at snapshot time and freeze mid-count values into static HTML.
+// Its custom UA is the gate: under prerender, never rewind and never animate.
+const IS_PRERENDER = typeof navigator !== 'undefined' && navigator.userAgent.includes('IvanPrerender');
+
 // Animated counter — counts from 0 to value when in view
 const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
   // Prerender-safe: initial render carries the final value; the browser rewinds to 0 before
@@ -344,13 +349,13 @@ const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ val
   const ref = useRef<HTMLSpanElement>(null);
   const reduceMotion = useReducedMotion();
   const done = useRef(false);
-  useIsoLayout(() => { if (!reduceMotion && !done.current) setDisplayed(0); }, [reduceMotion]);
+  useIsoLayout(() => { if (!reduceMotion && !IS_PRERENDER && !done.current) setDisplayed(0); }, [reduceMotion]);
 
   // Plain rect-based trigger. framer-motion's useInView margin proved flaky on narrow
   // viewports here (counters stuck at 0 on mobile) — a direct getBoundingClientRect + scroll
   // check fires reliably on every device and never leaves the number stranded at 0.
   useEffect(() => {
-    if (reduceMotion) { setDisplayed(value); return; }
+    if (reduceMotion || IS_PRERENDER) { setDisplayed(value); return; }
     const el = ref.current;
     if (!el) return;
     let controls: ReturnType<typeof animate> | undefined;
@@ -393,9 +398,9 @@ const Tally: React.FC<{ value: number; prefix?: string; suffix?: string; decimal
   const fmt = (n: number) => prefix + n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
   // Rewind to 0 before first browser paint — only when motion will play. Reduced-motion and
   // prerender skip this, so the final value stays on the page.
-  useIsoLayout(() => { if (!reduceMotion && !done.current) setDisplayed(0); }, [reduceMotion]);
+  useIsoLayout(() => { if (!reduceMotion && !IS_PRERENDER && !done.current) setDisplayed(0); }, [reduceMotion]);
   useEffect(() => {
-    if (reduceMotion) { setDisplayed(value); return; }
+    if (reduceMotion || IS_PRERENDER) { setDisplayed(value); return; }
     const el = ref.current;
     if (!el) return;
     let controls: ReturnType<typeof animate> | undefined;
@@ -2853,9 +2858,9 @@ const RoomWaffle: React.FC<{ density: number; typicalPct: number; buyersCounted:
   const done = useRef(false);
   const [phase, setPhase] = useState<'static' | 'armed' | 'playing'>('static');
   // Rewind to the invisible pre-roll state before first browser paint — only when motion plays.
-  useIsoLayout(() => { if (!reduce && !done.current) setPhase('armed'); }, [reduce]);
+  useIsoLayout(() => { if (!reduce && !IS_PRERENDER && !done.current) setPhase('armed'); }, [reduce]);
   useEffect(() => {
-    if (reduce) { setPhase('static'); return; }
+    if (reduce || IS_PRERENDER) { setPhase('static'); return; }
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver((entries) => {
@@ -2899,9 +2904,9 @@ const LedgerBeforeAfter: React.FC<{ metrics: LedgerMetric[]; who: string }> = ({
   const ref = useRef<HTMLDivElement>(null);
   const done = useRef(false);
   const [phase, setPhase] = useState<'static' | 'armed' | 'playing'>('static');
-  useIsoLayout(() => { if (!reduce && !done.current) setPhase('armed'); }, [reduce]);
+  useIsoLayout(() => { if (!reduce && !IS_PRERENDER && !done.current) setPhase('armed'); }, [reduce]);
   useEffect(() => {
-    if (reduce) { setPhase('static'); return; }
+    if (reduce || IS_PRERENDER) { setPhase('static'); return; }
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver((entries) => {
