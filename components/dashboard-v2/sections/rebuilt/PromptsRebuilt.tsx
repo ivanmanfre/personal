@@ -56,6 +56,19 @@ function categorize(slug: string): string {
   return 'Other';
 }
 
+/** Display-level-only normalization so DB category dupes (OUTREACH vs Outreach,
+ * LEAD MAGNETS vs LEAD_MAGNETS) merge into one chip/bucket. Never written back —
+ * the underlying content_prompts.category value is untouched. */
+function normalizeCategoryLabel(raw: string): string {
+  const key = raw.trim().toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+/** The merged category bucket a row displays under. */
+function effectiveCategory(p: ContentPrompt): string {
+  return normalizeCategoryLabel(p.category ?? categorize(p.slug));
+}
+
 // ── Discard-confirm dialog (BB paper card; replaces the v1 ConfirmDialog so
 //    the whole surface stays radius-0 / no-shadow). ──────────────────────────
 function DiscardConfirm({ open, onConfirm, onCancel }: { open: boolean; onConfirm: () => void; onCancel: () => void }) {
@@ -220,7 +233,7 @@ const PromptsRebuilt: React.FC = () => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return prompts.filter((p) => {
-      if (category !== 'all' && (p.category ?? categorize(p.slug)) !== category) return false;
+      if (category !== 'all' && effectiveCategory(p) !== category) return false;
       if (!q) return true;
       return p.slug.toLowerCase().includes(q) || p.title.toLowerCase().includes(q) || p.body.toLowerCase().includes(q);
     });
@@ -229,7 +242,7 @@ const PromptsRebuilt: React.FC = () => {
   const grouped = useMemo(() => {
     const m = new Map<string, ContentPrompt[]>();
     for (const p of filtered) {
-      const cat = p.category ?? categorize(p.slug);
+      const cat = effectiveCategory(p);
       if (!m.has(cat)) m.set(cat, []);
       m.get(cat)!.push(p);
     }
@@ -242,7 +255,7 @@ const PromptsRebuilt: React.FC = () => {
 
   const categories = useMemo(() => {
     const s = new Set<string>(['all']);
-    for (const p of prompts) s.add(p.category ?? categorize(p.slug));
+    for (const p of prompts) s.add(effectiveCategory(p));
     return Array.from(s);
   }, [prompts]);
 
@@ -305,6 +318,25 @@ const PromptsRebuilt: React.FC = () => {
     window.addEventListener('beforeunload', h);
     return () => window.removeEventListener('beforeunload', h);
   }, [dirty]);
+
+  // Title is a wrapping auto-grow textarea (not a single-line input) so a long
+  // title wraps to full words under a squeezed doc column instead of clipping.
+  // Enter is blocked below — titles stay single logical line, they just wrap visually.
+  // Re-measured on text/selection change AND on anything that can resize the doc
+  // column without changing the text itself: opening/closing history (the grid
+  // gains/loses a track) and plain window resize.
+  const titleRef = React.useRef<HTMLTextAreaElement>(null);
+  const autosizeTitle = React.useCallback(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+  React.useEffect(() => { autosizeTitle(); }, [draftTitle, selectedId, historyOpen, autosizeTitle]);
+  React.useEffect(() => {
+    window.addEventListener('resize', autosizeTitle);
+    return () => window.removeEventListener('resize', autosizeTitle);
+  }, [autosizeTitle]);
 
   const now = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
 
@@ -377,7 +409,7 @@ const PromptsRebuilt: React.FC = () => {
             <button key={c} className={`pr-pill ${category === c ? 'pr-pill--on' : ''}`} onClick={() => setCategory(c)}>
               {c === 'all' ? 'All' : c}
               {c !== 'all' && (
-                <span className="pr-pill-count">{prompts.filter((p) => (p.category ?? categorize(p.slug)) === c).length}</span>
+                <span className="pr-pill-count">{prompts.filter((p) => effectiveCategory(p) === c).length}</span>
               )}
             </button>
           ))}
@@ -424,22 +456,31 @@ const PromptsRebuilt: React.FC = () => {
             <>
               <div className="pr-doc-head">
                 <div className="pr-doc-headmain">
-                  <input
+                  <textarea
+                    ref={titleRef}
                     className="pr-doc-title"
                     value={draftTitle}
+                    rows={1}
                     onChange={(e) => { setDraftTitle(e.target.value); setDirty(true); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                     aria-label="Prompt title"
                   />
                   <div className="pr-doc-meta">
-                    <span className="pr-slug">{selected.slug}</span>
-                    <span className="pr-sep">·</span>
-                    <span className="pr-ver-badge">v{selected.version}</span>
-                    <span className="pr-sep">·</span>
-                    <span>{(draftBody.length / 1000).toFixed(1)}k chars</span>
-                    <span className="pr-sep">·</span>
-                    <span title={selected.updatedAt}>{relTime(selected.updatedAt)} by {selected.updatedBy ?? 'unknown'}</span>
-                    {selected.sourcePage && (<><span className="pr-sep">·</span><span title="Legacy ClickUp origin (no longer queried at runtime)">{selected.sourcePage}</span></>)}
-                    {dirty && <span className="pr-dirty">Unsaved</span>}
+                    <span className="pr-meta-tok"><span className="pr-slug">{selected.slug}</span></span>
+                    <span className="pr-meta-tok"><span className="pr-sep">·</span><span className="pr-ver-badge">v{selected.version}</span></span>
+                    <span className="pr-meta-tok pr-meta-optional"><span className="pr-sep">·</span><span>{(draftBody.length / 1000).toFixed(1)}k chars</span></span>
+                    <span className="pr-meta-tok" title={selected.updatedAt}>
+                      <span className="pr-sep">·</span>
+                      <span>{relTime(selected.updatedAt)}</span>
+                      <span className="pr-meta-by"> by {selected.updatedBy ?? 'unknown'}</span>
+                    </span>
+                    {selected.sourcePage && (
+                      <span className="pr-meta-tok pr-meta-optional" title="Legacy ClickUp origin (no longer queried at runtime)">
+                        <span className="pr-sep">·</span>
+                        <span>{selected.sourcePage}</span>
+                      </span>
+                    )}
+                    {dirty && <span className="pr-meta-tok pr-dirty">Unsaved</span>}
                   </div>
                 </div>
                 <div className="pr-doc-tools">

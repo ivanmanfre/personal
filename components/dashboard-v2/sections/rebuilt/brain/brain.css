@@ -196,16 +196,21 @@
 .ec .br-graph-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--ec-sans); font-size: 12.5px; color: var(--ec-mutedc); background: rgba(255,255,255,0.7); z-index: 5; }
 .ec .br-graph-hint { font-family: var(--ec-sans); font-size: 12.5px; color: var(--ec-mutedc); line-height: 1.5; }
 
-/* react-flow node — ink typographic label; kind by shape/outline, never color */
+/* react-flow node — ink typographic label; kind by shape/outline, never color.
+   Box fills the width/height set on the Node object itself (sized to the
+   label text in BrainGraphInk's estimateNodeWidth) rather than a fixed
+   min/max range, so 19 nodes read as varied chips, not a uniform wall. */
 .ec .br-node {
+  width: 100%; height: 100%; box-sizing: border-box;
   background: var(--ec-paper); color: var(--ec-ink);
-  min-width: 132px; max-width: 210px; text-align: left; cursor: pointer;
+  text-align: left; cursor: pointer;
   padding: 0.4rem 0.55rem; font-family: var(--ec-sans);
+  display: flex; flex-direction: column; justify-content: center;
 }
-.ec .br-node-kind { display: flex; align-items: center; gap: 0.35rem; font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ec-mutedc); margin-bottom: 0.15rem; }
+.ec .br-node-kind { display: flex; align-items: center; gap: 0.35rem; font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ec-mutedc); margin-bottom: 0.15rem; }
 .ec .br-node-mark { color: var(--ec-ink); font-size: 10px; }
-.ec .br-node-label { font-size: 12px; font-weight: 700; line-height: 1.2; color: var(--ec-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
-.ec .br-node-sub { font-size: 10px; color: var(--ec-mutedc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 0.1rem; }
+.ec .br-node-label { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 700; line-height: 1.25; color: var(--ec-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
+.ec .br-node-sub { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 10px; color: var(--ec-mutedc); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 0.15rem; }
 .ec .br-node--sel { background: var(--ec-ink); }
 .ec .br-node--sel .br-node-kind, .ec .br-node--sel .br-node-mark, .ec .br-node--sel .br-node-label { color: var(--ec-paper); }
 .ec .br-node--sel .br-node-sub { color: rgba(255,255,255,0.7); }

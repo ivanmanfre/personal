@@ -26,6 +26,16 @@ interface Props {
   onSection: (id: string) => void;
 }
 
+// Word-boundary truncation with a real ellipsis — never a hard substring
+// chop, which cuts mid-word ("is clos…", "just m…") with no visual cue.
+function truncateWords(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  const safe = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${safe.trimEnd()}…`;
+}
+
 const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) => {
   const { userTimezone } = useDashboard();
   const { posts, refresh: refreshPosts } = useOwnPosts(60);
@@ -92,7 +102,7 @@ const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) 
   }, [alerts]);
 
   const activity = useMemo(() => [
-    ...posts.slice(0, 5).map((p) => ({ type: 'post' as const, text: p.text.slice(0, 80), time: p.postedAt, meta: `${formatNum(p.impressions)} views` })),
+    ...posts.slice(0, 5).map((p) => ({ type: 'post' as const, text: truncateWords(p.text, 80), time: p.postedAt, meta: `${formatNum(p.impressions)} views` })),
     ...alerts.slice(0, 5).map((a) => ({ type: 'alert' as const, text: a.title, time: a.createdAt, meta: a.alertType.replace(/_/g, ' ') })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8), [posts, alerts]);
 

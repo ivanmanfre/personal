@@ -333,9 +333,12 @@ const AgentRebuilt: React.FC = () => {
         </div>
       </div>
 
-      {/* ── THE BOX: unacknowledged alerts. The count is this screen's one red. ── */}
+      {/* ── THE BOX: unacknowledged alerts. The count is this screen's one red.
+           Kept straight (no tilt) — .ec-box's heavy rule + offset hairline are
+           border + outline on the same element, and rotating that combination
+           sub-pixel-skews the hairline off the rule at any fractional angle. ── */}
       {unacked.length > 0 && (
-        <div className="ec-box ec-box--tilt" style={{ marginLeft: 0, marginRight: 0 }}>
+        <div className="ec-box" style={{ marginLeft: 0, marginRight: 0 }}>
           <div className="ec-box-head">
             Warning: <span className="ec-red">{unacked.length}</span> unacknowledged alert{unacked.length === 1 ? '' : 's'}
           </div>

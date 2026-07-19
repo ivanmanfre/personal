@@ -42,7 +42,7 @@
 .ec .scn-lhead,
 .ec .scn-row-head {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 104px 92px 190px 22px;
+  grid-template-columns: 30px minmax(0, 1fr) 152px 92px 190px 22px;
   align-items: center;
   gap: 0.8rem;
   padding: 0 0.4rem;
@@ -119,15 +119,20 @@
   font-family: var(--ec-sans);
   font-weight: 700;
   font-size: 9.5px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ec-mutedc);
   border: 1px solid var(--ec-rule-strong);
-  padding: 0.16rem 0.42rem;
-  white-space: nowrap;
+  padding: 0.2rem 0.42rem;
+  /* Never truncate the ranking column: wrap up to 2 tight lines instead of
+     ellipsis-clipping. Column width + the presentational shortVerdictLabel()
+     vocabulary keep this to 1-2 lines in practice; if a verdict is still
+     longer, the chip simply grows rather than losing text. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.28;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .ec .scn-verdict--strong { color: var(--ec-paper); background: var(--ec-ink); border-color: var(--ec-ink); }
 .ec .scn-verdict--weak { color: var(--ec-mutedc); border-color: var(--ec-rule); }

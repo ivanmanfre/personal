@@ -79,20 +79,92 @@ function EntityNode({ data }: NodeProps) {
 
 const nodeTypes = { entity: EntityNode };
 const NODE_W = 200;
-const NODE_H = 64;
+const NODE_H = 60;
 const INK = '#131210';
 const HAIRLINE = 'rgba(19,18,16,0.28)';
 
-function layoutDagre(nodes: Node[], edges: Edge[], rankdir: 'LR' | 'TB' = 'LR'): Node[] {
+// Size the node box to its label instead of stamping every entity into the
+// same generic 200px chip — short ids get a compact box, long ones grow up
+// to a cap. Also gives ReactFlow/MiniMap a known width up front (set on the
+// Node object below) so they don't wait on ResizeObserver measurement before
+// fitView/minimap can compute correct bounds.
+function estimateNodeWidth(label: string, kind: string): number {
+  const charW = 6.6; // ~footprint per mono character at 11px
+  const len = Math.max(label.length, kind.length + 2);
+  const px = Math.ceil(len * charW) + 26;
+  return Math.min(224, Math.max(104, px));
+}
+
+const WRAP_THRESHOLD = 6; // ranks with more nodes than this get reflowed into a grid
+const WRAP_GAP = 22;
+
+function layoutDagre(nodes: Node[], edges: Edge[], rankdir: 'LR' | 'TB' = 'TB'): Node[] {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir, nodesep: 40, ranksep: 90, marginx: 24, marginy: 24, ranker: 'tight-tree' });
+  g.setGraph({ rankdir, nodesep: 28, ranksep: 70, marginx: 20, marginy: 20, ranker: 'tight-tree' });
   g.setDefaultEdgeLabel(() => ({}));
-  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const widthOf = (n: Node) => (typeof n.width === 'number' ? n.width : NODE_W);
+  nodes.forEach((n) => g.setNode(n.id, { width: widthOf(n), height: NODE_H }));
   edges.forEach((e) => g.setEdge(e.source, e.target));
   dagre.layout(g);
+
+  const isTB = rankdir !== 'LR';
+
+  // Group node ids by their dagre rank (preserving within-rank order so
+  // adjacency-adjacent nodes stay near each other when wrapped).
+  const byRank = new Map<number, string[]>();
+  nodes.forEach((n) => {
+    const gn = g.node(n.id) as { rank?: number; order?: number };
+    const rank = gn?.rank ?? 0;
+    if (!byRank.has(rank)) byRank.set(rank, []);
+    byRank.get(rank)!.push(n.id);
+  });
+  byRank.forEach((ids) => {
+    ids.sort((a, b) => ((g.node(a) as { order?: number }).order ?? 0) - ((g.node(b) as { order?: number }).order ?? 0));
+  });
+
+  const positions = new Map<string, { x: number; y: number }>();
+
+  byRank.forEach((ids) => {
+    if (ids.length <= WRAP_THRESHOLD) {
+      ids.forEach((id) => {
+        const p = g.node(id);
+        positions.set(id, { x: p.x, y: p.y });
+      });
+      return;
+    }
+    // Overcrowded rank — the "one flat band" failure mode on hub/spoke data
+    // (a client hub with a dozen+ direct relations). Reflow into a compact
+    // grid centered on the rank's original position instead of one long,
+    // illegible line of micro-chips.
+    const cols = Math.max(2, Math.ceil(Math.sqrt(ids.length)));
+    const crossCenter = isTB
+      ? ids.reduce((s, id) => s + g.node(id).x, 0) / ids.length
+      : ids.reduce((s, id) => s + g.node(id).y, 0) / ids.length;
+    const depthCenter = isTB
+      ? ids.reduce((s, id) => s + g.node(id).y, 0) / ids.length
+      : ids.reduce((s, id) => s + g.node(id).x, 0) / ids.length;
+    const depthStep = isTB ? NODE_H + WRAP_GAP : Math.max(...ids.map((id) => widthOf(byId.get(id)!))) + WRAP_GAP;
+
+    for (let row = 0; row * cols < ids.length; row++) {
+      const rowIds = ids.slice(row * cols, row * cols + cols);
+      const crossSizes = rowIds.map((id) => (isTB ? widthOf(byId.get(id)!) : NODE_H));
+      const rowSpan = crossSizes.reduce((s, sz, i) => s + sz + (i > 0 ? WRAP_GAP : 0), 0);
+      let cursor = crossCenter - rowSpan / 2;
+      const depthPos = depthCenter + row * depthStep;
+      rowIds.forEach((id, i) => {
+        const sz = crossSizes[i];
+        const crossPos = cursor + sz / 2;
+        positions.set(id, isTB ? { x: crossPos, y: depthPos } : { x: depthPos, y: crossPos });
+        cursor += sz + WRAP_GAP;
+      });
+    }
+  });
+
   return nodes.map((n) => {
-    const pos = g.node(n.id);
-    return { ...n, position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 } };
+    const pos = positions.get(n.id) || { x: 0, y: 0 };
+    const w = widthOf(n);
+    return { ...n, position: { x: pos.x - w / 2, y: pos.y - NODE_H / 2 } };
   });
 }
 
@@ -141,16 +213,22 @@ const BrainGraphInkInner: React.FC<{ height: number }> = ({ height }) => {
     return adj;
   }, [relations]);
 
-  const { nodes, edges } = useMemo(() => {
+  // Base layout — relations + dagre only. Kept separate from hover/selection
+  // styling below so that hovering a node never re-triggers a relayout/refit.
+  const baseGraph = useMemo(() => {
     const nodeMap = new Map<string, Node>();
     const edgeList: Edge[] = [];
     const ensure = (kind: string, id: string, sub?: string) => {
       const key = `${kind}::${id}`;
       if (!nodeMap.has(key)) {
+        const w = estimateNodeWidth(id, kind);
         nodeMap.set(key, {
           id: key,
           type: 'entity',
           position: { x: 0, y: 0 },
+          width: w,
+          height: NODE_H,
+          style: { width: w, height: NODE_H },
           data: { kind, label: id, sub, onClick: () => setSelected({ kind, id, label: id }) },
         });
       } else if (sub) {
@@ -181,7 +259,11 @@ const BrainGraphInkInner: React.FC<{ height: number }> = ({ height }) => {
       });
     }
     const laid = layoutDagre(Array.from(nodeMap.values()), edgeList, rankdir);
+    return { nodes: laid, edges: edgeList };
+  }, [relations, rankdir]);
 
+  const { nodes, edges } = useMemo(() => {
+    const { nodes: laid, edges: edgeList } = baseGraph;
     const selKey = selected ? `${selected.kind}::${selected.id}` : null;
     const focusKey = hovered || selKey;
     const focusNeighbors: Set<string> | null = focusKey ? (adjacency.get(focusKey) || new Set([focusKey])) : null;
@@ -202,15 +284,32 @@ const BrainGraphInkInner: React.FC<{ height: number }> = ({ height }) => {
       };
     });
     return { nodes: styledNodes, edges: styledEdges };
-  }, [relations, rankdir, selected, hovered, adjacency]);
+  }, [baseGraph, selected, hovered, adjacency]);
 
   const onNodeMouseEnter = useCallback((_: unknown, node: Node) => setHovered(node.id), []);
   const onNodeMouseLeave = useCallback(() => setHovered(null), []);
 
+  // Fit the view whenever the BASE layout changes — on open (data first
+  // loads), on refresh, and on LR/TB toggle — never on hover/selection so an
+  // interaction never yanks the user's zoom/pan. Double rAF so it runs after
+  // dagre's positions AND the initial paint/measurement pass, not just on
+  // React mount (the earlier single setTimeout(150) could fire before the
+  // ReactFlow node existed at all, since it's only rendered once loading
+  // finishes — leaving the canvas at its default, mostly-empty zoom).
   useEffect(() => {
-    const t = setTimeout(() => fitView({ padding: 0.08, duration: 400, maxZoom: 1.3 }), 150);
-    return () => clearTimeout(t);
-  }, [rankdir, refreshKey, fitView]);
+    if (baseGraph.nodes.length === 0) return;
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        fitView({ padding: 0.15, duration: 300, maxZoom: 1.4, minZoom: 0.2 });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [baseGraph, fitView]);
 
   return (
     <div>
@@ -236,8 +335,6 @@ const BrainGraphInkInner: React.FC<{ height: number }> = ({ height }) => {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.08, duration: 400, maxZoom: 1.3, minZoom: 0.3 }}
             proOptions={{ hideAttribution: true }}
             minZoom={0.15}
             maxZoom={2}
@@ -255,8 +352,10 @@ const BrainGraphInkInner: React.FC<{ height: number }> = ({ height }) => {
             <Controls className="br-graph-controls" showInteractive={false} />
             <MiniMap
               className="br-graph-minimap"
+              style={{ width: 130, height: 90 }}
               nodeColor={() => '#131210'}
               nodeStrokeWidth={0}
+              nodeBorderRadius={0}
               maskColor="rgba(255,255,255,0.72)"
               pannable
               zoomable

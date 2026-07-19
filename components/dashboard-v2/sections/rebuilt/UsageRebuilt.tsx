@@ -100,22 +100,30 @@ export default function UsageRebuilt() {
   const { sessions, daily, projects, loading, error } = useClaudeUsage();
   const [openSession, setOpenSession] = useState<string | null>(null);
 
-  const last30dCost = useMemo(
+  // Daily series is the ONE source of truth for the 30D/7D headline $ figures —
+  // §2's chart renders this exact same series, so hero === chart sum always.
+  const dailySeries = useMemo(() => buildDailySeries(daily), [daily]);
+  const daily30dCost = useMemo(() => dailySeries.reduce((a, p) => a + p.total, 0), [dailySeries]);
+  const daily7dCost = useMemo(() => dailySeries.slice(-7).reduce((a, p) => a + p.total, 0), [dailySeries]);
+
+  // Session-derived figures (top model, top kind, session counts) are honestly
+  // scoped to the recent-sessions poll window (capped at SESSION_LIMIT rows in
+  // the hook), NOT the full 30d ledger. Keep them internally self-consistent
+  // (they still sum to ~100% of sessionsCost across §3/§4/§6) but never let
+  // sessionsCost stand in for the 30d/7d headline — that was the bug.
+  const sessionsCost = useMemo(
     () => sessions.reduce((a, b) => a + Number(b.estimated_cost), 0),
     [sessions],
   );
-  const last7dCost = useMemo(() => {
-    const cutoff = Date.now() - 7 * 86400_000;
-    return sessions
-      .filter((s) => new Date(s.started_at).getTime() >= cutoff)
-      .reduce((a, b) => a + Number(b.estimated_cost), 0);
-  }, [sessions]);
   const last7dSessions = useMemo(
     () => sessions.filter((s) => new Date(s.started_at).getTime() >= Date.now() - 7 * 86400_000).length,
     [sessions],
   );
-  const leverage = last30dCost / MAX_PLAN_USD;
-  const denom = last30dCost || 1;
+  const leverage = daily30dCost / MAX_PLAN_USD;
+  const denom = sessionsCost || 1;
+  // Flag when the session sample materially undercounts the real 30d ledger,
+  // so top-model/top-kind labels don't imply they're "of 30d spend".
+  const sessionsSampleGap = daily30dCost > 0 && Math.abs(daily30dCost - sessionsCost) / daily30dCost > 0.1;
 
   const byModel = useMemo(() => {
     const m = new Map<string, { cost: number; tokens: number; sessions: number }>();
@@ -210,19 +218,19 @@ export default function UsageRebuilt() {
       <div className="u-mast">
         <div className="u-mast-cell">
           <div className="u-mast-lbl">30d API equivalent</div>
-          <div className="u-mast-fig" title={fmtCost(last30dCost)}>{fmtCost(last30dCost)}</div>
+          <div className="u-mast-fig" title={`$${daily30dCost.toFixed(2)} — sum of the §2 daily chart`}>{fmtCost(daily30dCost)}</div>
           <div className="u-mast-sub">{leverage >= 10 ? leverage.toFixed(0) : leverage.toFixed(1)}× your ${MAX_PLAN_USD} plan</div>
         </div>
         <div className="u-mast-cell">
           <div className="u-mast-lbl">7d API equivalent</div>
-          <div className="u-mast-fig" title={fmtCost(last7dCost)}>{fmtCost(last7dCost)}</div>
+          <div className="u-mast-fig" title={`$${daily7dCost.toFixed(2)} — last 7 days of the §2 daily chart`}>{fmtCost(daily7dCost)}</div>
           <div className="u-mast-sub">{last7dSessions} sessions</div>
         </div>
         <div className="u-mast-cell">
           <div className="u-mast-lbl">Top model</div>
           <div className="u-mast-fig" title={topModel?.[0] ?? '-'}>{topModel?.[0]?.replace('claude-', '') ?? '-'}</div>
           <div className="u-mast-sub">
-            {topModel ? `${fmtCost(topModel[1].cost)} · ${((topModel[1].cost / denom) * 100).toFixed(0)}% of spend` : ''}
+            {topModel ? `${fmtCost(topModel[1].cost)} · ${((topModel[1].cost / denom) * 100).toFixed(0)}% of ${sessionsSampleGap ? `${sessions.length}-session sample` : 'spend'}` : ''}
           </div>
         </div>
         <div className="u-mast-cell">
@@ -230,13 +238,15 @@ export default function UsageRebuilt() {
           <div className="u-mast-fig" style={{ fontSize: 'clamp(19px, 1.7vw, 24px)', whiteSpace: 'normal', lineHeight: 1.05 }} title={topKind ? kindMeta(topKind[0]).label : '-'}>
             {topKind ? kindMeta(topKind[0]).label : '-'}
           </div>
-          <div className="u-mast-sub">{topKind ? `${fmtCost(topKind[1].cost)} · ${topKind[1].sessions} sessions` : ''}</div>
+          <div className="u-mast-sub">
+            {topKind ? `${fmtCost(topKind[1].cost)} · ${topKind[1].sessions} of ${sessionsSampleGap ? `${sessions.length} sampled sessions` : 'sessions'}` : ''}
+          </div>
         </div>
       </div>
 
       {/* §2 Daily spend */}
       <SecHead no="§2" title="Daily spend, 30 days" sub="API-rate equivalent per day, stacked local + railway. Hover a column for the day total." />
-      <DailyBars daily={daily} />
+      <DailyBars series={dailySeries} />
 
       {/* §3–§6 breakdowns */}
       <div className="u-grid2">
@@ -426,7 +436,7 @@ export default function UsageRebuilt() {
                             </div>
                             <div className="u-d-block">
                               <div className="u-d-lbl">Why {meta.label.toLowerCase()}{isOutlier ? ` · ${z.toFixed(1)}σ outlier` : ''}</div>
-                              <div className="u-d-why">{meta.tip}{isOutlier ? ` This session's cost sits ${z.toFixed(1)} standard deviations above the 30-day mean.` : ''}</div>
+                              <div className="u-d-why">{meta.tip}.{isOutlier ? ` This session's cost sits ${z.toFixed(1)} standard deviations above the 30-day mean.` : ''}</div>
                             </div>
                           </div>
                         </div>
@@ -461,7 +471,15 @@ function SourceBadge({ source }: { source: string }) {
   );
 }
 
-function DailyBars({ daily }: { daily: { day: string; source: string; total_tokens: number; estimated_cost: number }[] }) {
+type DailyPoint = { day: string; local: number; railway: number; total: number };
+
+// Single source of truth for the trailing-30-day series: the masthead's 30D/7D
+// hero figures and §2's chart both read from this SAME array, so they can
+// never diverge (unlike the old bug, which summed the capped sessions array
+// for the hero while the chart summed the daily-totals RPC).
+function buildDailySeries(
+  daily: { day: string; source: string; total_tokens: number; estimated_cost: number }[],
+): DailyPoint[] {
   const byDay = new Map<string, { local: number; railway: number }>();
   for (const d of daily) {
     const k = new Date(d.day).toISOString().slice(0, 10);
@@ -476,24 +494,29 @@ function DailyBars({ daily }: { daily: { day: string; source: string; total_toke
     d.setDate(d.getDate() - i);
     keys.push(d.toISOString().slice(0, 10));
   }
-  const rows = keys.map((k) => [k, byDay.get(k) ?? { local: 0, railway: 0 }] as const);
-  const max = Math.max(1, ...rows.map(([, v]) => v.local + v.railway));
+  return keys.map((day) => {
+    const v = byDay.get(day) ?? { local: 0, railway: 0 };
+    return { day, local: v.local, railway: v.railway, total: v.local + v.railway };
+  });
+}
+
+function DailyBars({ series }: { series: DailyPoint[] }) {
+  const max = Math.max(1, ...series.map((p) => p.total));
 
   return (
     <div className="u-daily">
       <div className="u-daily-plot">
-        {rows.map(([day, v]) => {
-          const total = v.local + v.railway;
-          const totalH = (total / max) * 100;
-          const localH = total > 0 ? (v.local / total) * totalH : 0;
+        {series.map((p) => {
+          const totalH = (p.total / max) * 100;
+          const localH = p.total > 0 ? (p.local / p.total) * totalH : 0;
           const railwayH = totalH - localH;
           return (
             <div
-              key={day}
+              key={p.day}
               className="u-daily-col"
-              title={`${day}: ${fmtCost(total)} (local ${fmtCost(v.local)}, railway ${fmtCost(v.railway)})`}
+              title={`${p.day}: ${fmtCost(p.total)} (local ${fmtCost(p.local)}, railway ${fmtCost(p.railway)})`}
             >
-              <span className="u-daily-tip">{fmtCost(total)}</span>
+              <span className="u-daily-tip">{fmtCost(p.total)}</span>
               <span className="u-daily-seg u-daily-seg--railway" style={{ height: `${railwayH}%` }} />
               <span className="u-daily-seg u-daily-seg--local" style={{ height: `${localH}%` }} />
             </div>
@@ -501,12 +524,12 @@ function DailyBars({ daily }: { daily: { day: string; source: string; total_toke
         })}
       </div>
       <div className="u-daily-foot">
-        <span>{rows[0][0]}</span>
+        <span>{series[0]?.day}</span>
         <div className="u-legend">
           <span className="u-legend-i"><span className="u-sw u-pat--solid" /> local</span>
           <span className="u-legend-i"><span className="u-sw u-pat--hatch" /> railway</span>
         </div>
-        <span>{rows[rows.length - 1][0]}</span>
+        <span>{series[series.length - 1]?.day}</span>
       </div>
     </div>
   );

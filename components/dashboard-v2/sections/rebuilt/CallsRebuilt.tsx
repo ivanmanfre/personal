@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshCw, BookOpen, ChevronDown, ChevronUp, Tag, Check, ExternalLink, Users, Search } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp, Tag, Check, ExternalLink, Search } from 'lucide-react';
 import { useMeetings } from '../../../../hooks/useMeetings';
 import { useUpcomingEvents } from '../../../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../../../hooks/useAutoRefresh';
@@ -37,7 +37,7 @@ const Playbook: React.FC = () => {
   return (
     <div className="cl-disc">
       <button className="cl-disc-head" onClick={() => setOpen(!open)}>
-        <span className="cl-disc-title"><BookOpen className="w-3.5 h-3.5" style={{ marginRight: '-0.15rem' }} /> Pre-call playbook</span>
+        <span className="cl-disc-title">Pre-call playbook</span>
         <span className="cl-disc-chev">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
       </button>
       {open && (
@@ -193,12 +193,12 @@ const CallsRebuilt: React.FC = () => {
             <div className="cl-hero-when">
               <div className={`cl-hero-day ${nextWhen.today ? 'cl-hero-day--today' : ''}`}>{nextWhen.day}</div>
               <div className="cl-hero-time">{nextWhen.time}</div>
-              <div className="cl-hero-span">{nextWhen.time}–{nextWhen.end}</div>
+              <div className="cl-hero-span">{nextWhen.time} to {nextWhen.end}</div>
             </div>
             <div className="cl-hero-body">
               <div className="cl-hero-title">{nextCall.title}</div>
               {nextCall.attendees.length > 0 && (
-                <div className="cl-hero-attend"><Users className="w-3.5 h-3.5" /> {nextCall.attendees.join(', ')}</div>
+                <div className="cl-hero-attend"><span className="cl-hero-attend-lbl">Attendees</span> {nextCall.attendees.join(', ')}</div>
               )}
             </div>
             <div className="cl-hero-acts">

@@ -79,8 +79,8 @@ export const PositioningOfferDoc: React.FC = () => (
           </tbody>
         </table>
       </div>
-      {/* THE BOX: the DIY-total claim, boxed because it is the load-bearing figure. */}
-      <div className="ec-box" style={{ marginTop: '1rem' }}>
+      {/* Plain hairline-ruled figure, not THE BOX (that grammar is warnings-only). */}
+      <div className="pos-cost-figure">
         <div className="pos-cost-total">
           <span className="pos-cost-total-lbl">Tools only, and you still run them yourself</span>
           <span className="pos-cost-total-n">{clean(toolStackTotalLabel)}</span>

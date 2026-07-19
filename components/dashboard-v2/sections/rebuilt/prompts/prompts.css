@@ -120,7 +120,10 @@
   align-items: start;
 }
 .ec .pr-reader--hist {
-  grid-template-columns: minmax(224px, 250px) minmax(0, 1fr) minmax(348px, 408px);
+  /* Doc column carries a hard floor (340px) so the history rail can never crush
+   * the title/meta — if the three tracks don't fit their minimums, the
+   * 1360px media query below drops history to a full-width band instead. */
+  grid-template-columns: minmax(200px, 230px) minmax(340px, 1fr) minmax(300px, 360px);
 }
 
 /* ── Left: numbered category index (table of contents) ────────────────────── */
@@ -219,35 +222,53 @@
   padding: 0.9rem 0 0.85rem;
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
 }
-.ec .pr-doc-headmain { min-width: 0; flex: 1 1 auto; }
+/* Headmain (title+meta) always claims a 220px floor, so when the row can't fit
+ * both headmain and the tools cluster, the TOOLS wrap to their own line below
+ * — the title is never the thing that gets crushed. */
+.ec .pr-doc-headmain {
+  min-width: 220px;
+  flex: 1 1 260px;
+  container-type: inline-size;
+  container-name: prdocmeta;
+}
 .ec .pr-doc-title {
+  display: block;
   width: 100%;
   font-family: var(--ec-sans);
   font-weight: 700;
   letter-spacing: -0.02em;
   font-size: 25px;
-  line-height: 1.1;
+  line-height: 1.15;
   color: var(--ec-ink);
   background: transparent;
   border: 0;
   border-bottom: 1px solid transparent;
   padding: 0 0 0.2rem;
   border-radius: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .ec .pr-doc-title:hover { border-bottom-color: var(--ec-rule); }
 .ec .pr-doc-title:focus { outline: 0; border-bottom-color: var(--ec-ink); }
 .ec .pr-doc-meta {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-wrap: wrap;
-  gap: 0.5rem 0.8rem;
+  gap: 0.5rem 0.7rem;
   margin-top: 0.55rem;
   font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
   font-size: 11px;
   color: var(--ec-mutedc);
 }
+/* Each meta fact (its leading separator + label) is one atomic nowrap unit —
+ * a "·" can never land alone on its own line, it always travels with the
+ * token it introduces. Whole tokens wrap as a unit at narrow widths instead. */
+.ec .pr-doc-meta .pr-meta-tok { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }
 .ec .pr-doc-meta .pr-slug { color: var(--ec-ink); }
 .ec .pr-doc-meta .pr-ver-badge { color: var(--ec-ink); font-weight: 700; }
 .ec .pr-doc-meta .pr-sep { color: var(--ec-dim); }
@@ -260,6 +281,15 @@
   color: var(--ec-ink);
   border: 1px solid var(--ec-ink);
   padding: 0.05rem 0.3rem;
+}
+/* Least-important meta facts drop first as the doc column narrows (history
+ * rail open, sidebar/viewport constrained) — queried against the headmain
+ * container itself, not the viewport, so it responds to the ACTUAL space. */
+@container prdocmeta (max-width: 640px) {
+  .ec .pr-doc-meta .pr-meta-optional { display: none; }
+}
+@container prdocmeta (max-width: 460px) {
+  .ec .pr-doc-meta .pr-meta-by { display: none; }
 }
 
 /* document tools: history toggle + edit/preview segmented control */
@@ -517,8 +547,8 @@
 .pr-confirm-acts { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  .ec .pr-reader--hist { grid-template-columns: minmax(224px, 250px) minmax(0, 1fr); }
+@media (max-width: 1360px) {
+  .ec .pr-reader--hist { grid-template-columns: minmax(200px, 230px) minmax(0, 1fr); }
   .ec .pr-reader--hist .pr-hist {
     grid-column: 1 / -1;
     border-left: 0;

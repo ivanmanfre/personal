@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, ListChecks, MessageSquare, Mail, Monitor, Video, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, ListChecks, MessageSquare, Video, Users } from 'lucide-react';
 import { supabase } from '../../../../../lib/supabase';
 import { toastSuccess, toastError } from '../../../../../lib/dashboardActions';
 import type { MeetingTranscript, MeetingBrief } from '../../../../../types/dashboard';
@@ -211,7 +211,7 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
         <div className="cl-card-chips">
           {actionCount > 0 && <span className="cl-chip">{actionCount} action{actionCount > 1 ? 's' : ''}</span>}
           {topicCount > 0 && <span className="cl-chip">{topicCount} topic{topicCount > 1 ? 's' : ''}</span>}
-          {hasScreenContext && <span className="cl-chip"><Monitor className="w-3 h-3" /> Screen</span>}
+          {hasScreenContext && <span className="cl-chip">Screen</span>}
           {meeting.brief?.fit_score != null && <span className={fitClass(meeting.brief.fit_score)}>Fit {meeting.brief.fit_score}/5</span>}
           <span className="cl-card-chev">{expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
         </div>
@@ -276,14 +276,14 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
 
           {meeting.followUpDraft && (
             <div className="cl-sec">
-              <div className="cl-sec-h"><Mail className="w-3.5 h-3.5" /> Follow-up draft</div>
+              <div className="cl-sec-h">Follow-up draft</div>
               <div className="cl-followup">{meeting.followUpDraft}</div>
             </div>
           )}
 
           {screenContext && (
             <div className="cl-sec">
-              <div className="cl-sec-h"><Monitor className="w-3.5 h-3.5" /> Screen context</div>
+              <div className="cl-sec-h">Screen context</div>
               <div className="cl-screen">{screenContext}</div>
             </div>
           )}

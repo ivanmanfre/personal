@@ -93,6 +93,17 @@ function fmtDate(iso: string | null): string {
   } catch { return iso; }
 }
 
+// Presentational-only shortening for known long verdict strings so the ranked
+// column never truncates. The FULL verdict always still rides in title= on
+// the chip — this only trims the on-chip label vocabulary.
+const VERDICT_SHORT: Record<string, string> = {
+  'peer/noise-heavy': 'PEER-NOISE',
+  'no engagement data': 'NO DATA',
+};
+function shortVerdictLabel(verdict: string): string {
+  return VERDICT_SHORT[verdict.trim().toLowerCase()] || verdict;
+}
+
 function median(nums: number[]): number | null {
   if (nums.length === 0) return null;
   const s = [...nums].sort((a, b) => a - b);
@@ -100,7 +111,9 @@ function median(nums: number[]): number | null {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
-function BucketBar({ buckets }: { buckets: Record<string, number> | null }) {
+function BucketBar({ buckets, emptyLabel = 'No engager breakdown captured.' }: {
+  buckets: Record<string, number> | null; emptyLabel?: string;
+}) {
   const segments = useMemo(() => {
     if (!buckets) return [];
     return BUCKET_META
@@ -109,7 +122,7 @@ function BucketBar({ buckets }: { buckets: Record<string, number> | null }) {
   }, [buckets]);
 
   const total = segments.reduce((sum, s) => sum + s.value, 0);
-  if (total === 0) return <p className="scn-buckets-none">No engager breakdown captured.</p>;
+  if (total === 0) return <p className="scn-buckets-none">{emptyLabel}</p>;
 
   return (
     <>
@@ -174,7 +187,7 @@ function AuditRow({ audit, rank, scaleMax }: { audit: AudienceAudit; rank: numbe
           </span>
         </span>
         {audit.verdict
-          ? <span className={`scn-verdict scn-verdict--${tier}`} title={audit.verdict}>{audit.verdict}</span>
+          ? <span className={`scn-verdict scn-verdict--${tier}`} title={audit.verdict}>{shortVerdictLabel(audit.verdict)}</span>
           : <span className="scn-verdict scn-verdict--weak">no verdict</span>}
         <span className={`scn-brel ${audit.buyerRelevantPct == null ? 'scn-brel--na' : ''}`}>
           {fmtPct(audit.buyerRelevantPct)}
@@ -201,7 +214,10 @@ function AuditRow({ audit, rank, scaleMax }: { audit: AudienceAudit; rank: numbe
               Network reach
               <small>{audit.networkTotal != null ? `${audit.networkTotal.toLocaleString()} in network` : 'network size n/a'}</small>
             </div>
-            <BucketBar buckets={null /* network has no bucket split; honest empty */} />
+            <BucketBar
+              buckets={null /* network has no bucket split; honest empty */}
+              emptyLabel="No network sample captured."
+            />
           </div>
 
           <div>

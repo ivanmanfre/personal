@@ -14,6 +14,22 @@ import { STATUS_META, statusToMark, StatusMark, StatusTag } from './shared';
 
 const CHIPS: (ScheduledStatus | 'ALL')[] = ['ALL', 'OVERDUE', 'ERRORING', 'UNKNOWN', 'OK', 'DISABLED'];
 
+// scheduleHuman comes straight off scheduled_ops_status.schedule_human — some
+// rows carry a stale/broken interpolation (literally "Every undefined") from
+// an upstream formatter. Never surface that; fall back to a value we can
+// compute truthfully from the interval, or an honest "cadence unknown".
+function cadenceLabel(job: ScheduledJob): string {
+  const h = job.scheduleHuman;
+  if (h && !/undefined|null|nan/i.test(h)) return h;
+  const mins = job.expectedIntervalMinutes;
+  if (mins) {
+    if (mins % 1440 === 0) return `Every ${mins / 1440}d`;
+    if (mins % 60 === 0) return `Every ${mins / 60}h`;
+    return `Every ${mins}m`;
+  }
+  return 'cadence unknown';
+}
+
 const JobRow: React.FC<{ job: ScheduledJob }> = ({ job }) => {
   const [open, setOpen] = useState(false);
   const meta = STATUS_META[job.status];
@@ -33,7 +49,7 @@ const JobRow: React.FC<{ job: ScheduledJob }> = ({ job }) => {
           </span>
           {job.description && <div className="hx-job-desc">{job.description}</div>}
         </div>
-        <div className="hx-job-sched hx-job-sched-cell">{job.scheduleHuman || 'no schedule'}</div>
+        <div className="hx-job-sched hx-job-sched-cell">{cadenceLabel(job)}</div>
         <div className="hx-job-when">{job.lastRunAt ? timeAgo(job.lastRunAt) : 'never'}</div>
         <span className="hx-job-status-cell"><StatusTag kind={statusToMark(job.status)} label={meta.label} /></span>
         <span className="hx-job-chev">{hasError ? (open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />) : ''}</span>
