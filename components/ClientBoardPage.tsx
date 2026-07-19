@@ -198,7 +198,7 @@ interface Board {
   lead_pipeline?: PipelineLead[];
   outreach?: OutreachSpec;
   lm_ideas?: LmIdea[];
-  strategy?: { total: number; period?: string; pillars: Pillar[] };
+  strategy?: { total: number; period?: string; pillars: Pillar[]; cadence?: { headline: string; detail?: string; note?: string } };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
   performance?: PerformanceSpec;
@@ -3345,6 +3345,16 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         })()}
 
       </div>
+
+      {/* Posting cadence: the rhythm commitment, data-driven per client (strategy.cadence). */}
+      {strat.cadence && (
+        <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+          <CardHead>Posting cadence</CardHead>
+          <div className="mt-2" style={{ fontFamily: SERIF, fontSize: 'clamp(18px, 2vw, 22px)', lineHeight: 1.25, color: INK }}>{strat.cadence.headline}</div>
+          {strat.cadence.detail && <p className="mt-2 text-[14px] leading-relaxed" style={{ color: DIM }}>{strat.cadence.detail}</p>}
+          {strat.cadence.note && <p className="mt-2.5 text-[13px]" style={{ color: FAINT }}>{strat.cadence.note}</p>}
+        </div>
+      )}
 
       {/* Per-pillar breakdown: what each slice of the bar is doing, with a real example. */}
       <div className="mt-6 overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}` }}>
