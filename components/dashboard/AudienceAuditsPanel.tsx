@@ -48,12 +48,15 @@ function mapAudit(r: any): AudienceAudit {
   };
 }
 
-// Human-friendly labels + accent colors for the engager bucket breakdown.
+// Engager bucket breakdown — Black Box register: an INK tonal ramp (darkest =
+// most buyer-relevant → lightest = irrelevant), differentiation by tone not hue.
+// Replaces the off-palette green/blue/rust fills the craft judge flagged on the
+// Scans bridge. These are inline fills, so the bridge CSS can't reach them.
 const BUCKET_META: { key: string; label: string; color: string }[] = [
-  { key: 'icp_dtc_brand', label: 'ICP · DTC brand', color: '#22c55e' },
-  { key: 'ecom_adjacent', label: 'Ecom-adjacent', color: '#3b82f6' },
-  { key: 'agency_peer', label: 'Agency peer', color: '#b45309' },
-  { key: 'irrelevant_other', label: 'Irrelevant / other', color: '#71717a' },
+  { key: 'icp_dtc_brand', label: 'ICP · DTC brand', color: '#131210' },
+  { key: 'ecom_adjacent', label: 'Ecom-adjacent', color: '#4A463E' },
+  { key: 'agency_peer', label: 'Agency peer', color: '#6B675E' },
+  { key: 'irrelevant_other', label: 'Irrelevant / other', color: '#B4B0A8' },
 ];
 
 function fmtPct(v: number | null): string {

@@ -21,6 +21,10 @@ export interface TriageFeed {
 
 export interface TodayFeeds {
   postsReview: TriageFeed;
+  /** Client-owned drafts in review (Rise DTC etc.) — kept OUT of postsReview so
+   * the Ivan-queue count matches the Posts board (!clientId). Surfaced as a
+   * muted note, never folded into Ivan's actionable count. */
+  postsReviewClient: TriageFeed;
   commentDrafts: TriageFeed;
   warmFollowups: TriageFeed;
   workflowsRed: TriageFeed;
@@ -55,6 +59,7 @@ async function countWithItems(
 export function useTodayFeeds(): TodayFeeds {
   const [feeds, setFeeds] = useState<TodayFeeds>({
     postsReview: empty(),
+    postsReviewClient: empty(),
     commentDrafts: empty(),
     warmFollowups: empty(),
     workflowsRed: empty(),
@@ -74,9 +79,14 @@ export function useTodayFeeds(): TodayFeeds {
     const localDayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
 
     (async () => {
-      const [postsReview, commentDrafts, warmFollowups, workflowsRed, scheduledToday, client] =
+      const [postsReview, postsReviewClient, commentDrafts, warmFollowups, workflowsRed, scheduledToday, client] =
         await Promise.all([
-          countWithItems('carousel_drafts', (q) => q.eq('status', 'review').order('updated_at', { ascending: false }), 'title'),
+          // Ivan's actionable queue ONLY (client_id IS NULL) — this equals the
+          // Posts board REVIEW lane (PostWorkSurface filters !clientId). Client
+          // drafts are counted separately below so they surface as a muted note
+          // instead of inflating Ivan's number (data-truth LIE #1 fix).
+          countWithItems('carousel_drafts', (q) => q.eq('status', 'review').is('client_id', null).order('updated_at', { ascending: false }), 'title'),
+          countWithItems('carousel_drafts', (q) => q.eq('status', 'review').not('client_id', 'is', null).order('updated_at', { ascending: false }), 'title'),
           countWithItems('comment_feed', (q) => q.eq('status', 'pending').order('created_at', { ascending: false }), 'target_name'),
           countWithItems('followup_drafts', (q) => q.eq('status', 'pending_approval').order('created_at', { ascending: false }), 'prospect_name'),
           countWithItems('dashboard_workflow_stats', (q) => q.eq('last_execution_status', 'error').order('updated_at', { ascending: false }), 'workflow_name', 6),
@@ -101,6 +111,7 @@ export function useTodayFeeds(): TodayFeeds {
       if (!alive) return;
       setFeeds({
         postsReview,
+        postsReviewClient,
         commentDrafts,
         warmFollowups,
         workflowsRed,

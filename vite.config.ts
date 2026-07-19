@@ -23,9 +23,9 @@ export default defineConfig({
       injectRegister: false, // we register manually inside the app
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ivan System',
-        short_name: 'Ivan System',
-        description: 'Control board for the Ivan content + automation system',
+        name: 'InboundOnSteroids',
+        short_name: 'InboundOnSteroids',
+        description: 'Control board for the InboundOnSteroids content + automation system',
         theme_color: '#111114',
         background_color: '#111114',
         display: 'standalone',

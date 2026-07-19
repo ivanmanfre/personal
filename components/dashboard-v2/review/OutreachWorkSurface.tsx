@@ -272,7 +272,7 @@ const OutreachWorkSurface: React.FC = () => {
             </div>
             <div className="ws-tally-tile">
               <span className="ws-tally-no">04</span>
-              <span className={`ws-tally-count ws-tally-count--zero`}>{data.email7d ?? '–'}</span>
+              <span className={`ws-tally-count ${data.email7d ? '' : 'ws-tally-count--zero'}`}>{data.email7d ?? '–'}</span>
               <span className="ws-tally-label">Email 7d</span>
               <span className="ws-tally-sub">inbound, cold-email lane</span>
             </div>

@@ -47,7 +47,13 @@ const DashboardAuth: React.FC<Props> = ({ onSuccess }) => {
 
           {/* Title */}
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Ivan System</h1>
+            {/* Wordmark law: INBOUND+STEROIDS weight 500, ON weight 900 in Signal
+                red. Paper (white) on the dark login gate. */}
+            <h1 className="text-xl tracking-tight text-white">
+              <span className="font-medium">INBOUND</span>
+              <span className="font-black text-[#C8361B]">ON</span>
+              <span className="font-medium">STEROIDS</span>
+            </h1>
             <p className="text-zinc-500 text-sm mt-1.5">Enter password to access dashboard</p>
           </div>
 
