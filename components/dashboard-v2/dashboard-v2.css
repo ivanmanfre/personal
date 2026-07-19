@@ -1429,7 +1429,7 @@ body.dashboard-v2-light .dv-btn--bx-ink:hover { background: #000 !important; }
   flex: 0 0 auto; min-width: 22px; text-align: right; margin-left: auto;
   font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums; font-size: 11px; font-weight: 600;
-  color: var(--ds-dim, #6B675E); letter-spacing: 0.02em;
+  color: #6B675E; letter-spacing: 0.02em;
 }
 .dv-nav-item--urgent .dv-nav-count { color: var(--d-bad-txt); font-weight: 700; }
 .dashboard-v2-shell--rail .dv-nav-count { display: none; }
@@ -1437,8 +1437,8 @@ body.dashboard-v2-light .dv-btn--bx-ink:hover { background: #000 !important; }
 .dv-opline-lite {
   margin-left: auto; display: none; align-items: baseline; gap: 0.45rem;
   font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.08em; color: var(--ds-dim, #6B675E);
+  font-size: 10px; letter-spacing: 0.08em; color: #6B675E;
 }
-.dv-opline-lite .dv-opline-val { color: var(--ds-ink, #131210); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dv-opline-lite .dv-opline-val { color: #131210; font-weight: 600; font-variant-numeric: tabular-nums; }
 .dv-opline-lite .dv-opline-sep { opacity: 0.6; }
 @media (min-width: 900px) { .dv-opline-lite { display: flex; } }
