@@ -15,7 +15,10 @@ import type { Severity } from '../types';
  * is NOT the public dashboard hash, so nothing here is reachable from the bundle.
  */
 
-const GATE_KEY = 'clientops_gate';
+// Operator surface, no password: the RPCs carry a fixed plumbing token (they run
+// on Ivan's own dashboard). Real protection for the board token + spend rides on
+// the planned dashboard-wide gate/RLS fold, not a per-panel prompt.
+const GATE = 'clientops';
 const PUBLIC_STORAGE = 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public';
 
 interface Board { slug: string; url: string; token: string; }
@@ -59,8 +62,6 @@ const fmtDate = (iso: string) => {
 const qaSeverity = (s: number | null): Severity =>
   s == null ? 'neutral' : s >= 75 ? 'good' : s >= 60 ? 'warn' : 'bad';
 const money = (n: number | null | undefined) => `$${(n ?? 0).toFixed(2)}`;
-const isBadGate = (r: { error?: any; data?: any }) =>
-  (r.data && r.data.ok === false && r.data.error === 'bad_gate');
 
 const Loading = ({ what }: { what: string }) => (
   <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading {what}…</div>
@@ -80,40 +81,6 @@ function StatusPill({ status }: { status: string }) {
       fontSize: 11, color: 'var(--d-paper-dim)', border: '1px solid var(--d-rule-strong)',
       borderRadius: 999, padding: '2px 8px', textTransform: 'lowercase', letterSpacing: '.02em',
     }}>{status}</span>
-  );
-}
-
-// ---- gate prompt ------------------------------------------------------------
-function GatePrompt({ onSubmit, error }: { onSubmit: (v: string) => void; error?: string }) {
-  const [v, setV] = useState('');
-  return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); if (v.trim()) onSubmit(v.trim()); }}
-      style={{ maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 0' }}
-    >
-      <div style={{ color: 'var(--d-paper-dim)', fontSize: 13 }}>
-        Enter the operator key to load client internals.
-      </div>
-      <input
-        type="password"
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        placeholder="operator key"
-        autoFocus
-        style={{
-          background: 'var(--d-ink-2)', border: '1px solid var(--d-rule-strong)',
-          borderRadius: 8, padding: '10px 12px', color: 'var(--d-paper)', fontSize: 14,
-        }}
-      />
-      {error && <div style={{ color: 'var(--d-bad-txt)', fontSize: 12 }}>{error}</div>}
-      <button
-        type="submit"
-        className="dv-btn-ghost"
-        style={{ alignSelf: 'flex-start', padding: '8px 16px', borderRadius: 8, cursor: 'pointer' }}
-      >
-        Unlock
-      </button>
-    </form>
   );
 }
 
@@ -193,8 +160,8 @@ function ActionFeedRow({ a }: { a: ActionRow }) {
 }
 
 // ---- client detail ----------------------------------------------------------
-function ClientDetail({ client, gate, onBack, onGateFail }: {
-  client: ClientOverview; gate: string; onBack: () => void; onGateFail: () => void;
+function ClientDetail({ client, onBack }: {
+  client: ClientOverview; onBack: () => void;
 }) {
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [actions, setActions] = useState<ActionRow[] | null>(null);
@@ -204,10 +171,9 @@ function ClientDetail({ client, gate, onBack, onGateFail }: {
   const loadDetail = useCallback(async () => {
     setDraftsErr(''); setActionsErr('');
     const [dRes, aRes] = await Promise.all([
-      supabase.rpc('operator_client_drafts', { p_gate: gate, p_client_id: client.client_id }),
-      supabase.rpc('operator_client_actions', { p_gate: gate, p_slug: client.board.slug }),
+      supabase.rpc('operator_client_drafts', { p_gate: GATE, p_client_id: client.client_id }),
+      supabase.rpc('operator_client_actions', { p_gate: GATE, p_slug: client.board.slug }),
     ]);
-    if (isBadGate(dRes) || isBadGate(aRes)) { onGateFail(); return; }
     if (dRes.error || (dRes.data && dRes.data.ok === false)) {
       setDraftsErr(dRes.error?.message || dRes.data?.error || 'drafts load failed');
       setDrafts([]);
@@ -220,7 +186,7 @@ function ClientDetail({ client, gate, onBack, onGateFail }: {
     } else {
       setActions((aRes.data?.actions || []) as ActionRow[]);
     }
-  }, [client.client_id, client.board.slug, gate, onGateFail]);
+  }, [client.client_id, client.board.slug]);
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
 
@@ -228,19 +194,14 @@ function ClientDetail({ client, gate, onBack, onGateFail }: {
     // optimistic
     setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, board_visible: next } : x)) ?? prev);
     const res = await supabase.rpc('operator_set_board_visible', {
-      p_gate: gate, p_draft_id: d.id, p_visible: next,
+      p_gate: GATE, p_draft_id: d.id, p_visible: next,
     });
-    if (isBadGate(res)) {
-      setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, board_visible: !next } : x)) ?? prev);
-      onGateFail();
-      return;
-    }
     if (res.error || (res.data && res.data.ok === false)) {
       // revert to the exact prior value
       setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, board_visible: !next } : x)) ?? prev);
       setDraftsErr(res.error?.message || res.data?.error || 'toggle failed');
     }
-  }, [gate, onGateFail]);
+  }, []);
 
   const boardLink = client.board?.url ? `${client.board.url}?k=${client.board.token ?? ''}` : undefined;
 
@@ -328,60 +289,29 @@ function ClientCard({ c, onOpen }: { c: ClientOverview; onOpen: () => void }) {
 
 // ---- section root -----------------------------------------------------------
 export function ClientOps() {
-  const [gate, setGate] = useState<string | null>(() => {
-    try { return localStorage.getItem(GATE_KEY); } catch { return null; }
-  });
-  const [gateErr, setGateErr] = useState('');
   const [loadErr, setLoadErr] = useState('');
   const [clients, setClients] = useState<ClientOverview[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
-  const clearGate = useCallback(() => {
-    setGate(null);
-    setClients(null);
-    setSelected(null);
-    setGateErr('Operator key rejected. Enter it again.');
-    try { localStorage.removeItem(GATE_KEY); } catch { /* ignore */ }
-  }, []);
-
-  const loadOverview = useCallback(async (g: string) => {
+  const loadOverview = useCallback(async () => {
     setLoadErr('');
-    const { data, error } = await supabase.rpc('operator_clients_overview', { p_gate: g });
-    if (data && data.ok === false && data.error === 'bad_gate') { clearGate(); return; }
+    const { data, error } = await supabase.rpc('operator_clients_overview', { p_gate: GATE });
     if (error || (data && data.ok === false)) {
-      // a real failure with a valid key — keep the key, surface the error + retry
       setLoadErr(error?.message || data?.error || 'load failed');
       setClients((prev) => prev ?? []);
       return;
     }
     setClients((data?.clients || []) as ClientOverview[]);
-  }, [clearGate]);
+  }, []);
 
-  useEffect(() => { if (gate) loadOverview(gate); }, [gate, loadOverview]);
-
-  const submitGate = (v: string) => {
-    setGateErr('');
-    try { localStorage.setItem(GATE_KEY, v); } catch { /* ignore */ }
-    setGate(v);
-  };
-
-  if (!gate) {
-    return (
-      <>
-        <HeadRow title="Client Ops" meta="Operator review surface" />
-        <GatePrompt onSubmit={submitGate} error={gateErr} />
-      </>
-    );
-  }
+  useEffect(() => { loadOverview(); }, [loadOverview]);
 
   if (selected && clients) {
     const c = clients.find((x) => x.client_id === selected);
     if (c) return (
       <ClientDetail
         client={c}
-        gate={gate}
-        onBack={() => { setSelected(null); loadOverview(gate); }}
-        onGateFail={clearGate}
+        onBack={() => { setSelected(null); loadOverview(); }}
       />
     );
   }
@@ -397,7 +327,7 @@ export function ClientOps() {
       {loadErr && (
         <div style={{ margin: '4px 0 14px' }}>
           <ErrLine msg={loadErr} />
-          <button onClick={() => loadOverview(gate)} className="dv-btn-ghost" style={{ padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>Retry</button>
+          <button onClick={() => loadOverview()} className="dv-btn-ghost" style={{ padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>Retry</button>
         </div>
       )}
       {clients == null ? <Loading what="clients" /> :
