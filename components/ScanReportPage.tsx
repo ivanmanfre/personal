@@ -399,23 +399,25 @@ const Tally: React.FC<{ value: number; prefix?: string; suffix?: string; decimal
     const el = ref.current;
     if (!el) return;
     let controls: ReturnType<typeof animate> | undefined;
-    const run = () => {
-      if (done.current) return;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight || 800;
-      if (r.top < vh * 0.92 && r.bottom > 0) {
-        done.current = true;
-        window.removeEventListener('scroll', run);
-        controls = animate(0, value, {
-          duration: 1.1,
-          ease: EASE as unknown as [number, number, number, number],
-          onUpdate: (v) => setDisplayed(v),
-        });
-      }
-    };
-    run();
-    window.addEventListener('scroll', run, { passive: true });
-    return () => { window.removeEventListener('scroll', run); controls?.stop(); };
+    // One-shot IntersectionObserver (fires on initial intersection too, unlike a bare
+    // scroll listener, so above-the-fold tallies still count) then disconnects.
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (done.current) return;
+        if (entries.some((e) => e.isIntersecting)) {
+          done.current = true;
+          io.disconnect();
+          controls = animate(0, value, {
+            duration: 1.1,
+            ease: EASE as unknown as [number, number, number, number],
+            onUpdate: (v) => setDisplayed(v),
+          });
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px' },
+    );
+    io.observe(el);
+    return () => { io.disconnect(); controls?.stop(); };
   }, [value, reduceMotion]);
   return <span ref={ref} className={className} style={style}>{fmt(displayed)}</span>;
 };
@@ -3245,7 +3247,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="lbl">{room ? (roomMode === 'network' ? <>Warning&nbsp;·&nbsp;a room of buyers, no mechanism</> : <>Warning&nbsp;·&nbsp;buyers in your comments, no follow-up</>) : <>What runs today, and what we&rsquo;d run.</>}</span>
             </div>
             {room && (
-              <div className="box-body">{roomMode === 'network' ? <>They are already connected to you. Today, nothing you run reaches them.</> : <>They already show up in your comments. Today, nothing you run follows up.</>}</div>
+              <div className="box-body">{roomMode === 'network' && audNetDensity !== null ? <>{room.figure} buyers sit in your network. That is <Tally className="n" value={audNetDensity} suffix="%" decimals={1} /> of it. Today, nothing you run reaches them.</> : roomMode === 'network' ? <>They are already connected to you. Today, nothing you run reaches them.</> : <>They already show up in your comments. Today, nothing you run follows up.</>}</div>
             )}
             <div className="ptab">
               <div className="ptab-h">
