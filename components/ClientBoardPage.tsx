@@ -819,7 +819,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
                   >
                     edit this idea…
                   </button>
-                  {editSaved && <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>}
+                  {editSaved && <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>Saved.</span>}
                 </div>
               )}
             </>
@@ -853,7 +853,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
             )}
             <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
               {live
-                ? 'Ask for it next, or pass. Your operator drafts it through the pipeline and it lands in your review.'
+                ? 'It drafts through the month\'s mix and lands in your review. Pass if you don\'t want it written.'
                 : <>{idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.</>}
             </p>
           </div>
@@ -864,21 +864,13 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
             <div className="mt-4">
               {sent ? (
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>
+                  <span className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent.</span>
                   <span className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                    {sent === 'draft' ? 'This one goes to the front of the drafting line.' : 'Noted. It stays out of the drafting line.'}
+                    Noted. It stays out of the drafting line.
                   </span>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    onClick={() => send('draft')}
-                    disabled={!!busy}
-                    className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
-                    style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'draft' ? 0.55 : 1 }}
-                  >
-                    {busy === 'draft' ? 'Sending…' : 'Request this next'}
-                  </button>
                   <button
                     onClick={() => send('pass')}
                     disabled={!!busy}
@@ -1019,7 +1011,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
         <div className="px-5 pb-6 sm:px-6">
           {phase === 'sent' ? (
             <div>
-              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Sent to your operator.</h3>
+              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Got it.</h3>
               <p className="mt-2.5 max-w-[42ch]" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
                 A rough idea in, a drafted post or lead magnet back.
               </p>
@@ -1035,7 +1027,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
             <div>
               <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Talk it out.</h3>
               <p className="mt-2 max-w-[44ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
-                Hit record and say the rough idea. Your operator turns it into a drafted post or a lead magnet.
+                Hit record and say the rough idea. It comes back as a drafted post or a lead magnet.
               </p>
 
               {phase === 'idle' && (
@@ -1081,7 +1073,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
                       className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
                       style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: accent, color: inkOn(accent), border: 'none', cursor: phase === 'sending' ? 'default' : 'pointer', opacity: phase === 'sending' ? 0.6 : 1 }}
                     >
-                      {phase === 'sending' ? 'Sending…' : 'Send to your operator'}
+                      {phase === 'sending' ? 'Sending…' : 'Send it'}
                     </button>
                     <button
                       onClick={() => { void startRecording(); }}
@@ -1658,7 +1650,7 @@ function WeekCard({ q, accent, focused, approving, flashOn, autoDays, panel, onF
               {panel.none ? (
                 <div className="mt-3 rounded-lg p-3.5" style={{ background: 'rgba(2,49,47,0.03)', border: `1px dashed ${LINE}` }}>
                   <p className="text-[13px] leading-relaxed" style={{ color: DIM }}>
-                    No alternate angle is queued for this slot. Request a change instead and your operator adjusts it.
+                    No alternate angle is queued for this slot. Request a change and it gets adjusted.
                   </p>
                   <div className="mt-2.5 flex gap-2">
                     <button onClick={() => { onClosePanel(); onOpen({ changing: true }); }} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
@@ -2030,7 +2022,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           >
                             {curPanel.none ? (
                               <div className="mt-4 rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE}` }}>
-                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>No alternate angle is queued for this slot. Request a change instead and your operator adjusts it.</p>
+                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>No alternate angle is queued for this slot. Request a change and it gets adjusted.</p>
                                 <div className="mt-2.5 flex gap-2">
                                   <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
                                   <button onClick={() => setAngle(null)} className="px-3 py-2 text-[12.5px]" style={{ color: INK_MUTE }}>Close</button>
@@ -2162,8 +2154,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
     : stage === 'scheduled' ? 'Approved'
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? 'Example' : 'Planned';
-  const nextLine = stage === 'review' ? 'Approve it, edit it directly, or request a change. What you approve goes to your operator to publish.'
-    : stage === 'scheduled' ? 'Approved. Your operator publishes it on its date.'
+  const nextLine = stage === 'review' ? 'Approve it, edit it, or request a change. Approved posts publish on their dates.'
+    : stage === 'scheduled' ? 'Approved. It publishes on its date.'
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
     : stage === 'published' ? 'An example of how published posts will report here once the engine is live.'
     : 'The engine drafts this a few days before its date, then it lands in your review.';
@@ -2287,7 +2279,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                   >
                     {busy ? 'Saving…' : 'Save edit'}
                   </button>
-                  <span className="text-[12px]" style={{ color: FAINT }}>Your operator gets your edit before it goes out.</span>
+                  <span className="text-[12px]" style={{ color: FAINT }}>Every edit is saved to the draft.</span>
                   <span className="ml-auto text-[12px] tabular-nums" style={{ color: body.length > 210 ? '#b45309' : FAINT }}>
                     {body.length} chars{body.length > 210 ? ' · past the LinkedIn fold' : ''}
                   </span>
@@ -2328,7 +2320,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                     >
                       Edit copy
                     </button>
-                    {editSaved && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Saved. Your edit is live on the draft and logged for your operator.</span>}
+                    {editSaved && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Saved. Your edit is live on the draft.</span>}
                   </div>
                 )}
               </div>
@@ -2378,7 +2370,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
               >
                 Request changes
               </button>
-              {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>}
+              {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent.</span>}
             </div>
             {changing && !sent && (
               <div className="mt-3">
@@ -2397,7 +2389,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                     className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
                     style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: busy || !note.trim() ? 0.55 : 1 }}
                   >
-                    {busy ? 'Sending…' : 'Send to your operator'}
+                    {busy ? 'Sending…' : 'Send it'}
                   </button>
                   {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
                 </div>
@@ -2672,29 +2664,14 @@ function LmIdeaRow({ idea, accent, live, act }: {
       <div className="mt-2.5 pl-[18px]">
         {sent ? (
           <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
-            Sent to your operator.{' '}
+            Sent.{' '}
             <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
-              {sent === 'build' ? 'Requested. Your operator schedules the build.' : 'Noted. It stays on the bench.'}
+              {sent === 'build' ? 'Requested. It goes on the build list.' : 'Noted. It stays on the bench.'}
             </span>
           </span>
         ) : (
           <span className="inline-flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => send('build')}
-              disabled={!!busy}
-              className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
-              style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'build' ? 0.55 : 1 }}
-            >
-              {busy === 'build' ? 'Sending…' : 'Request this build'}
-            </button>
-            <button
-              onClick={() => send('pass')}
-              disabled={!!busy}
-              className="inline-flex min-h-[34px] items-center rounded-[6px] px-3 text-[12.5px] font-medium"
-              style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'pass' ? 0.55 : 1 }}
-            >
-              {busy === 'pass' ? 'Sending…' : 'Pass'}
-            </button>
+            <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>on the bench</span>
             {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
           </span>
         )}
@@ -2732,7 +2709,7 @@ function LmSuggestRow({ accent, act }: {
         <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
           Sent.{' '}
           <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
-            Your operator sizes it up and it shows up here if it makes the cut.
+            It shows up here if it makes the cut.
           </span>
           {' '}
           <button
@@ -3183,7 +3160,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
         <section className="mt-8 max-w-[880px]">
           {lmIdeas.length > 0 && (
             <>
-              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts ready to build. Request one, or drop your own idea below." accent={accent} />
+              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="On the bench for the next build. Got your own idea? Drop it below." accent={accent} />
               {lmIdeas.map((li) => (
                 <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
               ))}
@@ -3275,7 +3252,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
 
   return (
     <div>
-      <SectionHead eyebrow="This month's mix" title={<>One plan, <Accent>divided on purpose.</Accent></>} sub="Your operator holds the mix; you can request a shift anytime." />
+      <SectionHead eyebrow="This month's mix" title={<>One plan, <Accent>divided on purpose.</Accent></>} sub="Reviewed monthly. Request a shift anytime." />
 
       <div className="rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
@@ -3422,9 +3399,9 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3"><CardHead>Recent shifts</CardHead></div>
         {shiftSent ? (
-          <p className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator. They review every request and reply before the next batch drafts.</p>
+          <p className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent. It gets an answer before the next batch drafts.</p>
         ) : (
-          <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>No shifts requested yet. The mix is reviewed monthly with your operator.</p>
+          <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>No shifts requested yet. The mix is reviewed monthly.</p>
         )}
         {!shiftSent && (
           <div className="mt-4">
@@ -3467,7 +3444,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3 flex items-center gap-2.5">
           <span className="cb-operator-on flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>ON</span>
-          <CardHead>Why this mix, from your operator</CardHead>
+          <CardHead>Why this mix</CardHead>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in. We review the weights together every month.
