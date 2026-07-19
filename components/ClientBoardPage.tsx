@@ -829,9 +829,31 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
               <PulseDot color={accent} size={6} />
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>In the idea bank</span>
             </div>
+            {(idea.source_label || idea.pillar || idea.kind) && (
+              <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5">
+                {idea.source_label && (
+                  <span className="flex flex-col">
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: FAINT }}>source</span>
+                    <span className="text-[12.5px] font-medium" style={{ color: INK }}>{idea.source_label}</span>
+                  </span>
+                )}
+                {idea.pillar && (
+                  <span className="flex flex-col">
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: FAINT }}>pillar</span>
+                    <span className="text-[12.5px] font-medium capitalize" style={{ color: INK }}>{idea.pillar}</span>
+                  </span>
+                )}
+                {idea.kind && (
+                  <span className="flex flex-col">
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: FAINT }}>format</span>
+                    <span className="text-[12.5px] font-medium capitalize" style={{ color: INK }}>{idea.kind}</span>
+                  </span>
+                )}
+              </div>
+            )}
             <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
               {live
-                ? <>{idea.pillar ? `One ${idea.pillar} idea in your bank. ` : 'An idea in your bank. '}Tell your operator to draft it next, or pass on it.</>
+                ? 'Ask for it next, or pass. Your operator drafts it through the pipeline and it lands in your review.'
                 : <>{idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.</>}
             </p>
           </div>
@@ -855,7 +877,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
                     className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
                     style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'draft' ? 0.55 : 1 }}
                   >
-                    {busy === 'draft' ? 'Sending…' : 'Draft this next'}
+                    {busy === 'draft' ? 'Sending…' : 'Request this next'}
                   </button>
                   <button
                     onClick={() => send('pass')}
@@ -1084,7 +1106,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
 function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos, live = false }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
-  onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
+  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
   /** Live board: published rows are real (no "example" framing) and idea copy names the operator. */
   live?: boolean;
@@ -1104,7 +1126,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   const listSections = live
     ? LIST_STAGE_SECTIONS.map((s) => (s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' } : s))
     : LIST_STAGE_SECTIONS;
-  const ideasBlurb = live ? 'Ideas waiting in your bank. Greenlight the ones you want drafted next.' : IDEAS_BLURB;
+  const ideasBlurb = live ? 'Ideas waiting in your bank. Ask for the ones you want drafted next, or pass.' : IDEAS_BLURB;
   const reduce = useReducedMotion();
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
@@ -1233,6 +1255,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                           onMouseEnter={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
                           onMouseLeave={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = INK; }}
                         >Approve ✓</button>
+                        <button onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>edit the post…</button>
                         <button onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>request a change…</button>
                       </div>
                       <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>Nothing publishes until you approve it.</div>
@@ -1701,7 +1724,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   angleSwaps: Record<string, AltAngle>;
   skips: Record<string, true>;
   benchFor: (id: string) => AltAngle[];
-  onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
+  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
   onOpenCal: (it: CalendarItem) => void;
   onApprove: (id: string) => void;
   onPickAngle: (id: string, alt: AltAngle) => void;
@@ -2114,14 +2137,15 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false, isLive, act }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false, initialEditing = false, isLive, act, editDraft }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
-  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean;
+  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+  editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const reduce = useReducedMotion();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
   const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
@@ -2138,7 +2162,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
     : stage === 'scheduled' ? 'Approved'
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? 'Example' : 'Planned';
-  const nextLine = stage === 'review' ? 'Approve it, or request a change. What you approve goes to your operator to publish.'
+  const nextLine = stage === 'review' ? 'Approve it, edit it directly, or request a change. What you approve goes to your operator to publish.'
     : stage === 'scheduled' ? 'Approved. Your operator publishes it on its date.'
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
     : stage === 'published' ? 'An example of how published posts will report here once the engine is live.'
@@ -2148,9 +2172,12 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
   const saveEdit = async () => {
     if (isLive) {
       setBusy(true); setErr('');
-      const r = await act('edit_copy', item.id, { body });
+      // Prefer the applying RPC: the edit lands on the draft + board immediately, with a
+      // before/after row in the operator's edit log. Fallback keeps the log-only path.
+      const r = editDraft ? await editDraft(item.id, body) : await act('edit_copy', item.id, { body });
       setBusy(false);
       if (!r.ok) { setErr(r.error || 'Could not save that. Try again.'); return; }
+      item.body = body;
     }
     setEditSaved(true);
     setEditing(false);
@@ -2301,7 +2328,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                     >
                       Edit copy
                     </button>
-                    {editSaved && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Edit sent to your operator.</span>}
+                    {editSaved && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Saved. Your edit is live on the draft and logged for your operator.</span>}
                   </div>
                 )}
               </div>
@@ -2647,7 +2674,7 @@ function LmIdeaRow({ idea, accent, live, act }: {
           <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
             Sent to your operator.{' '}
             <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
-              {sent === 'build' ? 'This one goes to the front of the build line.' : 'Noted. It stays on the bench.'}
+              {sent === 'build' ? 'Requested. Your operator schedules the build.' : 'Noted. It stays on the bench.'}
             </span>
           </span>
         ) : (
@@ -2658,7 +2685,7 @@ function LmIdeaRow({ idea, accent, live, act }: {
               className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
               style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'build' ? 0.55 : 1 }}
             >
-              {busy === 'build' ? 'Sending…' : 'Build this next'}
+              {busy === 'build' ? 'Sending…' : 'Request this build'}
             </button>
             <button
               onClick={() => send('pass')}
@@ -3156,7 +3183,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
         <section className="mt-8 max-w-[880px]">
           {lmIdeas.length > 0 && (
             <>
-              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
+              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts ready to build. Request one, or drop your own idea below." accent={accent} />
               {lmIdeas.map((li) => (
                 <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
               ))}
@@ -4052,14 +4079,16 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>approve-first</span>
                 </div>
                 {o.sequences.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="mt-4 space-y-2.5">
                   {o.sequences.channels.map((ch) => (
-                    <div key={ch.key || ch.name} className="rounded-lg p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                    <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                      <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                         <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
                         {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
-                      </div>
-                      {ch.note && <p className="mt-1 text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
+                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} messages <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                      </summary>
+                      <div className="px-4 pb-4">
+                      {ch.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
                       <div className="mt-3 space-y-3">
                         {ch.steps.map((st, i) => (
                           <div key={i} className="rounded-lg bg-white p-3.5" style={{ border: `1px solid ${LINE}` }}>
@@ -4071,7 +4100,8 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                           </div>
                         ))}
                       </div>
-                    </div>
+                      </div>
+                    </details>
                   ))}
                 </div>
               </div>
@@ -4085,17 +4115,19 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your bless</span>
                 </div>
                 {o.candidates.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
-                <div className="mt-4 space-y-5">
-                  {o.candidates.groups.map((g) => (
-                    <div key={g.key || g.name}>
-                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b pb-1.5" style={{ borderColor: LINE_BOLD }}>
+                <div className="mt-4 space-y-2.5">
+                  {o.candidates.groups.map((g, gi) => (
+                    <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
+                      <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                         <span className="text-[13px] font-semibold" style={{ color: INK }}>{g.name}</span>
                         {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{g.badge}</span>}
-                      </div>
-                      {g.note && <p className="mt-1.5 text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
+                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{g.items.length} names <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                      </summary>
+                      <div className="px-3.5 pb-3.5">
+                      {g.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
                       <div className="mt-1">
                         {g.items.map((it) => (
-                          <div key={it.name + (it.company || '')} className="flex flex-col gap-x-3 gap-y-0.5 border-t py-2 sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
+                          <div key={it.name + (it.company || '')} className="-mx-2 flex flex-col gap-x-3 gap-y-0.5 rounded-md border-t px-2 py-2 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
                             <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
                             <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
                               {[it.role, it.company].filter(Boolean).join(' · ')}
@@ -4105,7 +4137,8 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                           </div>
                         ))}
                       </div>
-                    </div>
+                      </div>
+                    </details>
                   ))}
                 </div>
               </div>
@@ -5160,6 +5193,7 @@ export default function ClientBoardPage() {
   const [tab, setTab] = useState<TabId>('week');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
+  const [detailEditing, setDetailEditing] = useState(false);
   // Ideas are not approvable yet — they open a lightweight preview, kept separate from the
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
@@ -5255,6 +5289,31 @@ export default function ClientBoardPage() {
       });
       if (error) return { ok: false, error: error.message };
       return (data as any) ?? { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
+  // Direct draft editing (live): applies the new copy server-side (draft + board queue in
+  // one RPC) and logs a before/after action row for the operator. Local queue state
+  // updates so the edit survives navigation without a refetch.
+  const editDraft = async (draftId: string, newBody: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_edit_draft', { p_slug: slug, p_token: token, p_draft_id: draftId, p_body: newBody });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_edit_draft_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_body: newBody });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+      if (out.ok) {
+        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, body: newBody } : q) } : b);
+      }
+      return out;
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -5741,7 +5800,7 @@ export default function ClientBoardPage() {
   }
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
-  const openDetail = (q: QueueItem, opts?: { changing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); };
+  const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); };
   const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
   const approvedIds = new Set(Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
   const surfaces: Record<TabId, React.ReactNode> = {
@@ -6047,10 +6106,12 @@ export default function ClientBoardPage() {
           accent={accent}
           stage={stageOf(detail)}
           initialChanging={detailChanging}
-          onClose={() => { setDetail(null); setDetailChanging(false); }}
+          initialEditing={detailEditing}
+          onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); }}
           onApprove={approve}
           isLive={isLive}
           act={act}
+          editDraft={editDraft}
         />
       )}
       {ideaPreview && (
