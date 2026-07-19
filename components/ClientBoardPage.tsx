@@ -153,6 +153,26 @@ interface OutreachSpec {
       steps: { label: string; when?: string; text: string }[];
     }[];
   };
+  /** Named candidate list awaiting the client's bless (live boards). Every item is a REAL
+   *  sourced person — no samples here, ever. Groups map to lanes. */
+  candidates?: {
+    title?: string; note?: string;
+    groups: {
+      key?: string; name: string; badge?: string; note?: string;
+      items: { name: string; role?: string; company?: string; domain?: string; note?: string }[];
+    }[];
+  };
+  /** Conversation inbox (live boards): warm/cold threads with latest messages. While
+   *  chats.mock is true the block renders a clearly-labeled example preview; the live
+   *  UniPile sync REPLACES this object once the client's seat connects, which removes
+   *  the mock automatically. */
+  chats?: {
+    mock?: boolean; note?: string;
+    threads: {
+      lane: string; name: string; company?: string; last_when?: string;
+      messages: { from: 'lead' | 'you'; when?: string; text: string }[];
+    }[];
+  };
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
@@ -4048,6 +4068,80 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                               {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
                             </div>
                             <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{st.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Named candidate list: real sourced people awaiting the client's bless. */}
+            {o.candidates && (o.candidates.groups || []).length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.candidates.title || 'The first list, name by name'}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your bless</span>
+                </div>
+                {o.candidates.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
+                <div className="mt-4 space-y-5">
+                  {o.candidates.groups.map((g) => (
+                    <div key={g.key || g.name}>
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b pb-1.5" style={{ borderColor: LINE_BOLD }}>
+                        <span className="text-[13px] font-semibold" style={{ color: INK }}>{g.name}</span>
+                        {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{g.badge}</span>}
+                      </div>
+                      {g.note && <p className="mt-1.5 text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
+                      <div className="mt-1">
+                        {g.items.map((it) => (
+                          <div key={it.name + (it.company || '')} className="flex flex-col gap-x-3 gap-y-0.5 border-t py-2 sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
+                            <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
+                            <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
+                              {[it.role, it.company].filter(Boolean).join(' · ')}
+                              {it.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{it.domain}</span></>}
+                            </span>
+                            {it.note && <span className="shrink-0 text-[11px]" style={{ fontFamily: MONO, color: FAINT }}>{it.note}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Conversation inbox: real threads once the seat connects; labeled example until then. */}
+            {o.chats && (o.chats.threads || []).length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>The inbox</span>
+                  {o.chats.mock ? (
+                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6' }}>example preview · replaced by your live inbox</span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>live</span>
+                  )}
+                </div>
+                {o.chats.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.chats.note}</p>}
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {o.chats.threads.map((th, i) => (
+                    <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}`, opacity: o.chats!.mock ? 0.85 : 1 }}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                        <span className="text-[13px] font-semibold" style={{ color: INK }}>
+                          {th.name}{th.company ? <span style={{ color: DIM, fontWeight: 400 }}> · {th.company}</span> : null}
+                        </span>
+                        <span className="flex items-baseline gap-2">
+                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{th.lane}</span>
+                          {th.last_when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{th.last_when}</span>}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 space-y-2">
+                        {th.messages.map((m, j) => (
+                          <div key={j} className={m.from === 'you' ? 'flex justify-end' : 'flex'}>
+                            <div className="max-w-[85%] rounded-lg px-3 py-2" style={{ background: m.from === 'you' ? caWash(accent, 8) : '#fff', border: `1px solid ${LINE}` }}>
+                              <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>
+                              {m.when && <div className="mt-1 text-right" style={{ fontFamily: MONO, fontSize: 8.5, color: FAINT }}>{m.when}</div>}
+                            </div>
                           </div>
                         ))}
                       </div>
