@@ -553,11 +553,11 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
 
 // ---------- Content surface: staged list ----------
 const STAGE_META: Record<Stage, { label: string; hint: string }> = {
-  planned: { label: 'Planned', hint: 'On the calendar. The engine drafts each one a few days ahead.' },
-  drafted: { label: 'Drafted', hint: 'The engine is writing these. They move to your review when ready.' },
+  planned: { label: 'Planned', hint: 'On the calendar. Each one drafts a few days ahead.' },
+  drafted: { label: 'Drafted', hint: 'Being written now. They move to your review when ready.' },
   review: { label: 'Your review', hint: 'Approve it, or say what to change.' },
   scheduled: { label: 'Scheduled', hint: 'Approved and queued to publish.' },
-  published: { label: 'Published · example', hint: 'How live posts will report here once the engine is running.' },
+  published: { label: 'Published · example', hint: 'How live posts will report here once posting starts.' },
 };
 const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
 
@@ -566,9 +566,9 @@ const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
  *  Drafting → Scheduled → Published. Ideas is sourced separately (board.ideas). */
 const LIST_STAGE_SECTIONS: { stage: Stage; label: string; blurb: string }[] = [
   { stage: 'review', label: 'Your review', blurb: STAGE_META_review_blurb() },
-  { stage: 'drafted', label: 'Drafting', blurb: 'The engine is writing these. They move to your review when ready.' },
+  { stage: 'drafted', label: 'Drafting', blurb: 'Being written now. They move to your review when ready.' },
   { stage: 'scheduled', label: 'Scheduled', blurb: 'Approved and queued to publish on their dates.' },
-  { stage: 'published', label: 'Published', blurb: 'How live posts will report here once the engine is running.' },
+  { stage: 'published', label: 'Published', blurb: 'How live posts will report here once posting starts.' },
 ];
 function STAGE_META_review_blurb() { return 'Approve, or say what to change in plain words.'; }
 const IDEAS_BLURB = "The engine's upcoming idea bank. Each one drafts when it reaches its slot.";
@@ -854,7 +854,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
             <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
               {live
                 ? 'It drafts through the month\'s mix and lands in your review. Pass if you don\'t want it written.'
-                : <>{idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.</>}
+                : <>{idea.pillar ? `One ${idea.pillar} idea in your bank. ` : 'An idea in your bank. '}It drafts when it reaches its slot, then lands in your review.</>}
             </p>
           </div>
 
@@ -1205,7 +1205,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
           style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
         >
-          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'live'}</span>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'date at sign-off'}</span>
           <span className="min-w-0">
             <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{q.hook || q.title}</span>
             {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
@@ -1264,7 +1264,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{skipped ? 'Skipped this week. Nothing publishes in this slot.' : 'In production. It lands in your review the moment it is ready.'}</div>
                   )}
                   <button onClick={(e) => { e.stopPropagation(); onOpen(q); }} className="mt-1 inline-flex w-fit items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    see how it was made →
+                    open the post →
                   </button>
                 </div>
               </div>
@@ -1308,9 +1308,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
       <div className="flex max-w-[880px] flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-[240px] flex-1">
           <SectionHead
-            eyebrow="The pipeline"
-            title={<>The pipeline, <Accent>in your voice.</Accent></>}
-            sub={`Everything the engine produces moves through these stages. Open a row to see it exactly as the feed will. Nothing goes out until you approve it.`}
+            eyebrow="All content"
+            title={<>Every piece, <Accent>in your voice.</Accent></>}
+            sub={`Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
           />
         </div>
         <div className="inline-flex shrink-0 overflow-hidden rounded-[8px]" style={{ border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
@@ -1456,7 +1456,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           <div className="min-w-0">
             <CardHead>Your stories</CardHead>
             <p className="mt-1 max-w-[58ch] text-[13.5px] leading-relaxed" style={{ color: DIM }}>
-              Once a week, send a voice note about a real client situation. The engine turns true stories into posts; nothing gets invented.
+              Once a week, send a voice note about a real client situation. True stories become posts; nothing gets invented.
             </p>
             <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ background: 'rgba(2,49,47,0.04)', color: DIM }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -1493,7 +1493,7 @@ function VoiceChip({ accent }: { accent: string }) {
     <span
       className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium"
       style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
-      title="Checked against your voice model. Open the card for the full trail."
+      title="Checked against your voice profile. Open the card for the full trail."
     >
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
@@ -1867,7 +1867,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
 
   const rightRail = (
     <div className="flex flex-col gap-4 pt-1.5">
-      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Up next in the stack</div>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Up next</div>
       {upNext.length === 0 && (
         <div className="text-[13px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>Nothing else waiting on you this week.</div>
       )}
@@ -1880,8 +1880,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       <div className="pt-2" style={{ borderTop: `1px solid ${LINE}` }}>
         <button onClick={() => onOpenBehind()} className="w-full rounded-[10px] px-4 py-4 text-left transition-colors hover:brightness-[0.98]" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>Behind this week</div>
-          <div style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: INK }}>{pipelineCount} pieces in the pipeline: planned, drafting, queued.</div>
-          <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent), letterSpacing: '0.04em' }}>open the pipeline →</div>
+          <div style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: INK }}>{pipelineCount} more pieces on the way this month.</div>
+          <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent), letterSpacing: '0.04em' }}>see what's coming →</div>
         </button>
       </div>
     </div>
@@ -1933,8 +1933,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 {total === 0 && waitingElsewhere > 0
                   ? `${waitingElsewhere} draft${waitingElsewhere === 1 ? ' is' : 's are'} waiting for your look in All content. Approve them and they take their slots on this calendar.`
                   : total === 0
-                  ? 'Nothing needs you this week. The engine keeps drafting behind the scenes, and new pieces land here for your review.'
-                  : 'Approved in your voice and queued to their slots. The engine keeps drafting next week behind the scenes, and nothing goes out until you approve it.'}
+                  ? 'Nothing needs you this week. We keep drafting behind the scenes, and new pieces land here for your review.'
+                  : 'Approved in your voice and queued to their slots. Next week is drafting behind the scenes, and nothing goes out until you approve it.'}
               </p>
               {total === 0 && waitingElsewhere > 0 && (
                 <button onClick={() => onGoContent()} className="mt-4 uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
@@ -2157,8 +2157,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
   const nextLine = stage === 'review' ? 'Approve it, edit it, or request a change. Approved posts publish on their dates.'
     : stage === 'scheduled' ? 'Approved. It publishes on its date.'
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
-    : stage === 'published' ? 'An example of how published posts will report here once the engine is live.'
-    : 'The engine drafts this a few days before its date, then it lands in your review.';
+    : stage === 'published' ? 'An example of how published posts will report here once posting starts.'
+    : 'It drafts a few days before its date, then lands in your review.';
 
   // Edit + request-changes: live boards record the real action and only confirm after ok:true.
   const saveEdit = async () => {
@@ -2304,7 +2304,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                     <div className="text-[15px] font-semibold not-italic" style={{ color: INK }}>{item.hook}</div>
                     <p className="mt-2 leading-relaxed">
                       {stage === 'planned'
-                        ? 'Planned topic. The engine drafts it two days before the publish date, then it lands in your review.'
+                        ? 'Planned topic. It drafts two days before the publish date, then lands in your review.'
                         : item.generating
                         ? 'The draft is being written right now. It lands here in a few minutes.'
                         : 'Draft in production.'}
@@ -2482,7 +2482,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
 
   return (
     <div>
-      <SectionHead eyebrow="The month ahead" title={<>A month, <Accent>topic by topic.</Accent></>} sub="Every piece the engine has planned, on the day it publishes. Click any item to see it, or what the engine has planned for it." />
+      <SectionHead eyebrow="The month ahead" title={<>A month, <Accent>topic by topic.</Accent></>} sub="Committed dates only. Every item here is real and sits on the day it publishes." />
       <div className="mb-5 flex flex-wrap gap-3">
         {[
           [totals.post + totals.carousel, totals.post + totals.carousel === 1 ? 'post' : 'posts'],
@@ -2495,13 +2495,16 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
           </div>
         ))}
       </div>
+      {totals.post + totals.carousel + totals.lm + totals.newsletter === 0 && (
+        <p className="-mt-1 mb-5 text-[13px]" style={{ color: DIM }}>Approved drafts take their dates here right after your sign-off.</p>
+      )}
 
       {/* Mobile: agenda list grouped by day (the grid clips at Mon-Wed under 640px). */}
       <div className="rounded-xl bg-white p-3 sm:hidden" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
           <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
           <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
-            Engine starts {fmtDay(cal.start)}
+            Posting starts {fmtDay(cal.start)}
           </span>
         </div>
         {agendaDays.map(([iso, dayItems]) => (
@@ -2510,7 +2513,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
             <div className="flex flex-col gap-1">
               {dayItems.map((it, i) => {
                 const time = KIND_TIME[it.kind];
-                if (it.kind === 'newsjack') {
+                if (it.kind === 'newsjack' || it.kind === 'call' || it.kind === 'review') {
                   return <div key={i} className="rounded-[6px] px-2.5 py-2 text-[12px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                 }
                 return (
@@ -2536,7 +2539,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
             <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
             <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
-              Engine starts {fmtDay(cal.start)}
+              Posting starts {fmtDay(cal.start)}
             </span>
             {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
             {(() => {
@@ -2549,6 +2552,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
               {swatch(chipStyle('carousel'), 'Carousel')}
               {swatch(chipStyle('lm'), 'Lead magnet')}
               {swatch(chipStyle('newsletter'), 'Newsletter')}
+              {swatch(chipStyle('call'), 'Key date')}
             </span>
           </div>
           <div className="grid grid-cols-7 border-b pb-1.5" style={{ borderColor: DIVIDE }}>
@@ -2574,7 +2578,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                       {visible.map((it, i) => {
                         const time = KIND_TIME[it.kind];
                         const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} · ${labelOf(it)}`;
-                        if (it.kind === 'newsjack') {
+                        if (it.kind === 'newsjack' || it.kind === 'call' || it.kind === 'review') {
                           return <div key={i} title={tip} className="truncate rounded-[4px] px-1.5 py-1 text-[10.5px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                         }
                         return (
@@ -2602,7 +2606,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
           ))}
         </div>
       </div>
-      <p className="mt-3 text-[13px]" style={{ color: FAINT }}>Dashed slots stay open on purpose: when news breaks in your niche, a reactive post takes the slot same-day.</p>
+      <p className="mt-3 text-[13px]" style={{ color: FAINT }}>Open slots stay open on purpose: when news breaks in your niche, a reactive post takes the slot same-day.</p>
     </div>
   );
 }
@@ -3263,16 +3267,15 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
           </div>
         </div>
 
-        <div className="flex w-full overflow-hidden rounded-lg" style={{ border: `1px solid ${LINE}` }}>
+        <div className="flex w-full flex-wrap overflow-hidden rounded-lg sm:flex-nowrap" style={{ border: `1px solid ${LINE}` }}>
           {strat.pillars.map((p, i) => (
             <button
               key={p.key}
               onClick={() => setOpen(open === p.key ? null : p.key)}
-              className="relative flex min-h-[86px] flex-col items-start justify-center gap-0.5 px-2 py-3 text-left transition-opacity"
+              className="relative flex min-h-[86px] min-w-[96px] flex-col items-start justify-center gap-0.5 px-2 py-3 text-left transition-opacity sm:min-w-[58px]"
               style={{
                 flexGrow: p.pct,
                 flexBasis: 0,
-                minWidth: 58,
                 background: `color-mix(in srgb, ${accent} ${TINT_STEPS[i % TINT_STEPS.length]}%, white)`,
                 borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.9)' : 'none',
                 opacity: open && open !== p.key ? 0.55 : 1,
@@ -3449,7 +3452,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in. We review the weights together every month.
         </p>
-        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids · Operator</p>
+        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids</p>
       </div>
 
       {/* Your plan: the preview-only deliverables card (a live production tool never shows
@@ -3538,8 +3541,8 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
         eyebrow="Weekly to your list"
         title={<>Your newsletter, <Accent>in your voice.</Accent></>}
         sub={live
-          ? 'One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture will get it.'
-          : 'One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture gets it.'}
+          ? 'One issue a week, written in your voice. Every lead your assessments capture will get it.'
+          : 'One issue a week, written in your voice. Every lead your assessments capture gets it.'}
       />
 
       {/* Hero: memo identity next to an inbox preview of the next issue. */}
@@ -3549,7 +3552,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
         const first = issues[0];
         const linked = first?.ref ? board.queue.find((q) => q.id === first.ref) : null;
         const fullBody = first?.body || '';
-        const snippet = fullBody || linked?.body || 'The draft lands here the Sunday before it sends, written from the same voice model as your posts.';
+        const snippet = fullBody || linked?.body || 'Your first draft lands here the Sunday before it sends, ready for your review.';
         return (
           <div className="grid gap-5 rounded-xl bg-white p-5 sm:p-6 lg:grid-cols-[minmax(220px,1fr)_1.25fr] lg:items-center" style={{ border: `1px solid ${LINE}` }}>
             <div>
@@ -3705,10 +3708,10 @@ const PLACEHOLDER_SPARKS = [
 function expectationFor(ind: PerfIndicator): string {
   const l = `${ind.key} ${ind.label}`.toLowerCase();
   if (l.includes('view')) return 'Profile views usually move within the first week of posting.';
-  if (l.includes('dm')) return 'First inbound DMs typically show in weeks 2 to 3.';
+  if (l.includes('dm')) return 'First inbound DMs typically follow once posting is consistent.';
   if (l.includes('opt') || l.includes('magnet')) return 'Opt-ins start as soon as your first lead magnet goes live.';
-  if (l.includes('call')) return 'Booked calls follow opt-ins, typically from week 3 on.';
-  return 'Tracking starts the day the engine goes live.';
+  if (l.includes('call')) return 'Booked calls follow opt-ins as outreach ramps.';
+  return 'Tracking starts the day delivery goes live.';
 }
 
 // ---------- Leads (engager DM pipeline) ----------
@@ -3842,7 +3845,7 @@ const SAMPLE_LEAD_PIPELINE: PipelineLead[] = [
     steps: mkSteps(RE_STEPS, 0) },
 ];
 
-const stepFilled = (s: PipelineStep) => s.done || !!s.current;
+const stepFilled = (s: PipelineStep) => s.done;
 const isReplied = (s: PipelineStep) => /replied/i.test(s.label) && stepFilled(s);
 
 /** One person's journey as an ordered trail of sharp-square markers + mono labels.
@@ -4041,7 +4044,7 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                     )}
                     {ln.detail && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{ln.detail}</p>}
                     {ln.arms && (
-                      <div className="mt-2.5 border-t pt-2 uppercase" style={{ borderColor: DIVIDE, fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>arms: {ln.arms}</div>
+                      <div className="mt-2.5 border-t pt-2 uppercase" style={{ borderColor: DIVIDE, fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>status: {ln.arms}</div>
                     )}
                   </div>
                 ))}
@@ -4261,7 +4264,7 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
                 <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>{live ? 'High-fit engagers' : 'ICP reactors'}</span>
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
-                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post, we reached out</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>{live ? 'engaged your post, first touch queued' : 'engaged your post, we reached out'}</span>
               </div>
               {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} live={live} />)}
             </section>
@@ -4335,7 +4338,7 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
           {/* Why the engine flagged them: the grounded ICP findings, sharp-square accent ticks. */}
           {whyFit.length > 0 && (
             <div className="mt-6">
-              <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>why the engine flagged them</div>
+              <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>why they're here</div>
               <ul className="flex flex-col gap-2">
                 {whyFit.map((w, i) => (
                   <li key={i} className="flex gap-2.5">
@@ -4387,7 +4390,7 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
             ) : (
               <div className="rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                 <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
-                  {first} just entered the pipeline. The conversation shows up here as the engine reaches out.
+                  {first} just entered the queue. The conversation shows up here once outreach starts.
                 </p>
               </div>
             )}
@@ -4452,7 +4455,6 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
         />
         <line x1="0" y1="43" x2="200" y2="43" stroke="rgba(2,49,47,0.06)" strokeWidth="1.5" />
       </svg>
-      <div className="mt-2 text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: MONO, color: FAINT }}>No data yet</div>
       {expectation && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{expectation}</p>}
     </div>
   );
@@ -4535,8 +4537,8 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
 
       {updates.length > 0 && (
         <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-          <div className="mb-1"><CardHead>Engine updates</CardHead></div>
-          <p className="mb-3 text-[13px]" style={{ color: DIM }}>The engine keeps improving; every upgrade ships to your account automatically.</p>
+          <div className="mb-1"><CardHead>Delivery updates</CardHead></div>
+          <p className="mb-3 text-[13px]" style={{ color: DIM }}>Improvements ship to your account automatically as we build.</p>
           <div className="flex flex-col">
             {updates.map((u, i) => (
               <div key={i} className="flex items-baseline gap-3 py-2.5" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
@@ -4620,7 +4622,7 @@ function PhotosSurface({ board: _board, accent, slug, compact = false }: { board
       {compact ? (
         <div className="mb-4">
           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Your photo pool</div>
-          <div className="mt-2" style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.4vw, 26px)', lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>Photos the engine pulls from</div>
+          <div className="mt-2" style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.4vw, 26px)', lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>Photos we pull from</div>
           <p className="mt-2 max-w-[58ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
             Candid shots of you doing real things. Real faces pull harder than stock, so these feed your post images.
           </p>
@@ -4690,7 +4692,7 @@ function PhotosSurface({ board: _board, accent, slug, compact = false }: { board
         >
           <div style={{ fontFamily: BODY, fontSize: 14, color: INK_SOFT }}>No photos yet.</div>
           <div className="mt-1.5 max-w-[42ch] text-[12.5px]" style={{ color: FAINT }}>
-            Drop in 20 to 30 real shots and the engine starts pulling your face into the feed.
+            Drop in 20 to 30 real shots and your face starts showing up in the feed.
           </div>
         </div>
       ) : (
@@ -5056,7 +5058,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
       <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Settings</div>
       <h2 className="mt-2" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, color: INK }}>Team access</h2>
       <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
-        Everyone on this list can sign in to the board with their own email. No passwords, no shared links.
+        Every teammate signs in to the board with their own email. No passwords, no shared links.
       </p>
 
       {teamState === 'noauth' && (
@@ -5963,7 +5965,7 @@ export default function ClientBoardPage() {
             <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
-            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in review · engine live` : 'engine live') : 'engine running'}
+            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in review` : 'live') : 'engine running'}
           </div>
           {isPreview && (
             <div className="flex items-center gap-2 text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>
@@ -5975,7 +5977,7 @@ export default function ClientBoardPage() {
             <span className="mt-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(founderName)}</span>
             <span className="mt-2.5 min-w-0">
               <span className="block truncate text-[12.5px] font-semibold" style={{ color: INK }}>{founderName}</span>
-              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>Run by InboundOnSteroids</span>
+              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>{isLive ? (board.domain || 'InboundOnSteroids') : 'Run by InboundOnSteroids'}</span>
             </span>
           </div>
         </div>
