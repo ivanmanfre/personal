@@ -91,6 +91,15 @@ const PostWorkSurface: React.FC = () => {
   const [drawer, setDrawer] = useState<null | 'error' | 'stuck'>(null);
   const [confirmStuck, setConfirmStuck] = useState(false);
 
+  // Lane anchors — the glance tiles scroll/focus the matching lane.
+  const ideasLaneRef = useRef<HTMLElement>(null);
+  const reviewLaneRef = useRef<HTMLElement>(null);
+  const focusLane = useCallback((l: Lane) => {
+    setLane(l);
+    const el = l === 'ideas' ? ideasLaneRef.current : reviewLaneRef.current;
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   // ── Review queue: Ivan's own pending drafts. Client rows EXCLUDED. ────────
   const reviewQueue = useMemo(
     () =>
@@ -119,6 +128,11 @@ const PostWorkSurface: React.FC = () => {
   const rClamped = Math.min(reviewCursor, Math.max(0, reviewQueue.length - 1));
   const current: CarouselDraft | null = reviewQueue[rClamped] || null;
   const iClamped = Math.min(ideaCursor, Math.max(0, ideaRows.length - 1));
+
+  // Glance tiles read the EXACT arrays the lanes render — no drift.
+  const attentionCount = errorRows.length + stuckRows.length;
+  const firstIdea = ideaRows[0];
+  const firstReview = reviewQueue[0];
 
   useEffect(() => {
     setEditing(false);
@@ -305,9 +319,7 @@ const PostWorkSurface: React.FC = () => {
       {/* Document header */}
       <div className="ec-topline">
         <span className="ec-topline-brand">Posts</span>
-        <span className="ec-topline-meta">
-          {now} · {ideaRows.length} IDEAS · {reviewQueue.length} IN REVIEW
-        </span>
+        <span className="ec-topline-meta">{now}</span>
       </div>
 
       <div className="ws-head">
@@ -327,21 +339,32 @@ const PostWorkSurface: React.FC = () => {
         </Suspense>
       ) : (
         <>
-          {/* Native triage signals: error + stuck-scheduled counts */}
-          <div className="ws-signals">
-            <button className="ws-signal" onClick={() => setDrawer((d) => (d === 'error' ? null : 'error'))}>
-              <span className={`ws-signal-num ${errorRows.length ? '' : 'ws-signal-num--zero'}`}>{errorRows.length}</span>
-              <span className="ws-signal-lbl">errors</span>
+          {/* Glance tiles — big counted header grafted from dir-C's stepper
+              grammar. Counts read the same memoized arrays the lanes render.
+              Red is spent ONCE, on ATTENTION, when it has work. */}
+          <div className="ws-tally">
+            <button className="ws-tally-tile" onClick={() => focusLane('ideas')} title="Jump to the ideas lane">
+              <span className="ws-tally-no">01</span>
+              <span className={`ws-tally-count ${ideaRows.length ? '' : 'ws-tally-count--zero'}`} data-tally="ideas">{ideaRows.length}</span>
+              <span className="ws-tally-label">Ideas</span>
+              <span className="ws-tally-sub">{firstIdea ? (firstIdea.title || firstIdea.topic || 'top of queue') : 'nothing scored'}</span>
             </button>
-            <button className="ws-signal" onClick={() => setDrawer((d) => (d === 'stuck' ? null : 'stuck'))}>
-              <span className={`ws-signal-num ${stuckRows.length ? '' : 'ws-signal-num--zero'}`}>{stuckRows.length}</span>
-              <span className="ws-signal-lbl">stuck scheduled</span>
+            <button className="ws-tally-tile" onClick={() => focusLane('review')} title="Jump to the review lane">
+              <span className="ws-tally-no">02</span>
+              <span className={`ws-tally-count ${reviewQueue.length ? '' : 'ws-tally-count--zero'}`} data-tally="review">{reviewQueue.length}</span>
+              <span className="ws-tally-label">Review</span>
+              <span className="ws-tally-sub">{firstReview ? (firstReview.title || firstReview.topic || 'awaiting judgment') : 'queue clear'}</span>
             </button>
-            {clientReviewCount > 0 && (
-              <span className="ws-clientnote">{clientReviewCount} client draft{clientReviewCount === 1 ? '' : 's'} in review · client boards own these</span>
-            )}
-            <span className="ws-signal-note">Click a count to triage. Detail opens the full agent log.</span>
+            <button className="ws-tally-tile" onClick={() => setDrawer((d) => (d ? null : (errorRows.length ? 'error' : 'stuck')))} title="Open the triage drawer">
+              <span className="ws-tally-no">03</span>
+              <span className={`ws-tally-count ${attentionCount ? 'ws-tally-count--red' : 'ws-tally-count--zero'}`} data-tally="attention">{attentionCount}</span>
+              <span className="ws-tally-label">Attention</span>
+              <span className="ws-tally-sub">{attentionCount ? `${errorRows.length} error${errorRows.length === 1 ? '' : 's'} · ${stuckRows.length} stuck` : 'all clear'}</span>
+            </button>
           </div>
+          {clientReviewCount > 0 && (
+            <div className="ws-tally-note">{clientReviewCount} client draft{clientReviewCount === 1 ? '' : 's'} in review · client boards own these</div>
+          )}
 
           {/* Triage drawer (error / stuck lists) */}
           {drawer && (
@@ -363,18 +386,19 @@ const PostWorkSurface: React.FC = () => {
             </div>
           )}
 
-          {/* Lane control — visible focus switch, each lane its live count */}
+          {/* Lane control — visible focus switch. Counts live in the glance
+              tiles above, so the pills stay pure focus tabs (no number twice). */}
           <div className="ws-lanebar" role="tablist" aria-label="Work lanes">
             <button role="tab" className="ws-lane-pill" aria-selected={lane === 'ideas'} onClick={() => setLane('ideas')}>
-              Ideas <span className="ws-lane-count">{ideaRows.length}</span>
+              Ideas
             </button>
             <button role="tab" className="ws-lane-pill" aria-selected={lane === 'review'} onClick={() => setLane('review')}>
-              Review <span className={`ws-lane-count ${reviewQueue.length ? 'ws-lane-count--live' : ''}`}>{reviewQueue.length}</span>
+              Review
             </button>
           </div>
 
           {/* ── TOP LANE: ideas table ─────────────────────────────────────── */}
-          <section className={`ws-lane ${lane === 'ideas' ? '' : 'ws-lane--idle'}`}>
+          <section ref={ideasLaneRef} className={`ws-lane ${lane === 'ideas' ? '' : 'ws-lane--idle'}`}>
             <div className="ws-lane-cap">
               <span className="ws-lane-cap-h">Ideas · scan and triage</span>
               <span className="ws-lane-cap-hint"><kbd>x</kbd> select · <kbd>p</kbd> promote · <kbd>d</kbd> defer · <kbd>Tab</kbd> switch lane</span>
@@ -443,7 +467,7 @@ const PostWorkSurface: React.FC = () => {
           </section>
 
           {/* ── BOTTOM LANE: review reader ────────────────────────────────── */}
-          <section className={`ws-lane ${lane === 'review' ? '' : 'ws-lane--idle'}`} style={{ marginTop: '1.8rem' }}>
+          <section ref={reviewLaneRef} className={`ws-lane ${lane === 'review' ? '' : 'ws-lane--idle'}`} style={{ marginTop: '1.8rem' }}>
             <div className="ws-lane-cap">
               <span className="ws-lane-cap-h">In review · read and judge</span>
               <span className="ws-lane-cap-hint"><kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit · <kbd>s</kbd> skip · <kbd>o</kbd> detail</span>

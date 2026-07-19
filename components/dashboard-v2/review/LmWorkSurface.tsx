@@ -62,6 +62,13 @@ const LmWorkSurface: React.FC = () => {
   // Native inspect rail (QA verdict + agent log) — desktop.
   const [inspectOpen, setInspectOpen] = useState(true);
 
+  // Anchors — the glance tiles scroll to the matching region.
+  const readerRef = useRef<HTMLDivElement>(null);
+  const errorStripRef = useRef<HTMLDivElement>(null);
+  const scrollTo = useCallback((ref: React.RefObject<HTMLElement>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   const queue = useMemo(
     () =>
       drafts
@@ -233,7 +240,7 @@ const LmWorkSurface: React.FC = () => {
 
       <div className="ec-topline">
         <span className="ec-topline-brand">LM Studio</span>
-        <span className="ec-topline-meta">{now} · {queue.length} IN REVIEW{offRosterCount ? ` · ${offRosterCount} OFF-ROSTER` : ''}</span>
+        <span className="ec-topline-meta">{now}{offRosterCount ? ` · ${offRosterCount} OFF-ROSTER` : ''}</span>
       </div>
 
       <div className="ws-head">
@@ -253,9 +260,27 @@ const LmWorkSurface: React.FC = () => {
         </Suspense>
       ) : (
         <>
+          {/* Glance tiles — big counted header grafted from dir-C's stepper
+              grammar. Counts read the same memoized arrays the lanes render.
+              Red is spent ONCE, on ATTENTION, when it has errors. */}
+          <div className="ws-tally" style={{ ['--ws-tally-cols' as any]: 2 }}>
+            <button className="ws-tally-tile" onClick={() => scrollTo(readerRef)} title="Jump to the approve queue">
+              <span className="ws-tally-no">01</span>
+              <span className={`ws-tally-count ${queue.length ? '' : 'ws-tally-count--zero'}`} data-tally="approve">{queue.length}</span>
+              <span className="ws-tally-label">Approve</span>
+              <span className="ws-tally-sub">{queue[0] ? lmTitle(queue[0]) : 'queue clear'}</span>
+            </button>
+            <button className="ws-tally-tile" onClick={() => errorRows.length && scrollTo(errorStripRef)} title="Jump to errored lead magnets">
+              <span className="ws-tally-no">02</span>
+              <span className={`ws-tally-count ${errorRows.length ? 'ws-tally-count--red' : 'ws-tally-count--zero'}`} data-tally="attention">{errorRows.length}</span>
+              <span className="ws-tally-label">Attention</span>
+              <span className="ws-tally-sub">{errorRows.length ? `${errorRows.length} errored — retry` : 'all clear'}</span>
+            </button>
+          </div>
+
           <div className="ws-lanebar" style={{ marginBottom: '1.4rem' }}>
             <span className="ws-lane-pill" aria-selected="true">
-              Approve queue <span className={`ws-lane-count ${queue.length ? 'ws-lane-count--live' : ''}`}>{queue.length}</span>
+              Approve queue
             </span>
             {offRosterCount > 0 && (
               <span className="ws-lane-pill" style={{ cursor: 'default' }}>
@@ -271,7 +296,7 @@ const LmWorkSurface: React.FC = () => {
 
           {/* Attention strip: errored LMs with one-click retry (client-excluded). */}
           {errorRows.length > 0 && (
-            <div className="ws-drawer">
+            <div className="ws-drawer" ref={errorStripRef}>
               <div className="ws-drawer-row" style={{ cursor: 'default', borderTop: 0 }}>
                 <span className="ws-drawer-title" style={{ fontWeight: 700 }}>
                   {errorRows.length} lead magnet{errorRows.length === 1 ? '' : 's'} errored — retry generation
@@ -298,7 +323,7 @@ const LmWorkSurface: React.FC = () => {
               <div className="ws-empty-tally">{tally.approved} approved · {tally.rejected} rejected · {tally.skipped} skipped this session</div>
             </div>
           ) : (
-            <div className="ws-reader" style={{ gridTemplateColumns: inspectOpen ? '218px minmax(0,1fr) minmax(300px,340px)' : '218px minmax(0,1fr)' }}>
+            <div ref={readerRef} className="ws-reader" style={{ gridTemplateColumns: inspectOpen ? '218px minmax(0,1fr) minmax(300px,340px)' : '218px minmax(0,1fr)' }}>
               {/* Queue rail */}
               <aside className="ws-rail">
                 {queue.map((d, i) => (

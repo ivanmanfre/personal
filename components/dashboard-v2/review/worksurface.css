@@ -64,6 +64,52 @@
 .ec .ws-signal:hover .ws-signal-lbl { color: var(--ec-ink); }
 .ec .ws-signal-note { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); margin-left: auto; }
 
+/* ── Tally strip: glance header of big counted tiles. Grafted from dir-C's
+   stepper VISUAL grammar (big Schibsted display numeral + functional label +
+   first-item receipt) — but NOT its stage-navigation model: these tiles jump
+   to B's existing lanes / drawer, they do not sequence stages. Signal red is
+   spent ONCE per composition, on the ATTENTION tile, only when its count > 0. */
+.ec .ws-tally {
+  display: grid;
+  grid-template-columns: repeat(var(--ws-tally-cols, 3), 1fr);
+  border-top: 3px solid var(--ec-ink);
+  border-bottom: 1px solid var(--ec-rule-strong);
+  margin-bottom: 1.6rem;
+}
+.ec .ws-tally-tile {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 1rem 1.05rem 1.05rem;
+  border-left: 1px solid var(--ec-rule);
+  background: transparent; text-align: left; cursor: pointer;
+  font: inherit; color: inherit; position: relative;
+  min-width: 0; /* let the nowrap sub-line ellipsis instead of blowing out the grid */
+  transition: background 0.15s ease;
+}
+.ec .ws-tally-tile:first-child { border-left: 0; }
+.ec .ws-tally-tile:hover { background: rgba(19, 18, 16, 0.03); }
+.ec .ws-tally-tile:focus-visible { outline: 2px solid var(--ec-ink); outline-offset: -2px; }
+.ec .ws-tally-no {
+  font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ec-mutedc);
+}
+.ec .ws-tally-count {
+  font-family: var(--ec-sans); font-weight: 800; letter-spacing: -0.035em;
+  font-size: clamp(40px, 3.8vw, 54px); line-height: 0.9; color: var(--ec-ink);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec .ws-tally-count--zero { color: var(--ec-dim); }
+.ec .ws-tally-count--red { color: var(--ec-red); }
+.ec .ws-tally-label {
+  font-family: var(--ec-sans); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink);
+}
+.ec .ws-tally-sub {
+  font-family: var(--ec-sans); font-size: 11px; color: var(--ec-mutedc);
+  letter-spacing: 0.01em; min-height: 1em; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.ec .ws-tally-note { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); margin: -0.9rem 0 1.4rem; }
+
 /* ── Lane bar: the visible focus control, one pill per lane ────────────────── */
 .ec .ws-lanebar {
   display: flex;
