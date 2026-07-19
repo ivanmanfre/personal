@@ -688,7 +688,8 @@ body.dashboard-v2-light * {
   .dv-nav-name {
     font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--d-paper-dim); text-align: center; line-height: 1.2;
-    overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1;
+    /* two-word labels ("Ops Ideas") wrap to a second line instead of clipping */
+    overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   }
   .dv-nav-name em { color: var(--d-good); }
   .dv-nav-badge { font-size: 8px; padding: 0.05rem 0.25rem; margin-top: 0.1rem; }
@@ -1364,13 +1365,16 @@ body.dashboard-v2-light .nb-button {
 }
 body.dashboard-v2-light .nb-button:hover { background: var(--bx-wash) !important; color: var(--bx-ink) !important; }
 body.dashboard-v2-light .nb-button:active { transform: none; }
-/* The badge is THE one functional red, and only when genuinely urgent (bad). */
+/* The always-present bell count must NOT spend the sheet's one composition red
+ * (craft-judge A-D1): that single red belongs to the WARNING figure. Every
+ * severity renders as an INK disc + paper numeral; severity is carried by the
+ * dropdown, not by tinting the badge. */
 body.dashboard-v2-light .nb-badge {
   font-family: var(--ec-sans); font-variant-numeric: tabular-nums; font-weight: 700; border-radius: 0;
 }
-body.dashboard-v2-light .nb-badge--bad  { background: var(--bx-red) !important; color: var(--bx-paper); }
+body.dashboard-v2-light .nb-badge--bad  { background: var(--bx-ink) !important; color: var(--bx-paper); }
 body.dashboard-v2-light .nb-badge--warn { background: var(--bx-ink) !important; color: var(--bx-paper); }
-body.dashboard-v2-light .nb-badge--good { background: var(--bx-muted) !important; color: var(--bx-paper); }
+body.dashboard-v2-light .nb-badge--good { background: var(--bx-ink) !important; color: var(--bx-paper); }
 
 /* ── Notification bell — dropdown (its own printed panel) ── */
 body.dashboard-v2-light .nb-dropdown {
