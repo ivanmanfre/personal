@@ -2,6 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import {
+  loadBoardSession,
+  saveBoardSession,
+  clearBoardSession,
+  readMagicLinkFragment,
+  stripMagicLinkFragment,
+  type BoardSession,
+} from '../lib/boardSession';
 import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -126,9 +134,28 @@ interface OutreachSpec {
   icp?: { label?: string; bar?: string[]; note?: string };
   funnel?: { step: string; detail?: string }[];
   lanes?: OutreachLane[];
+  /** Client-orbit playbook (live boards): seed clients, the three touches, and the
+   *  approve-first sample DMs the client blesses on the call before anything sends. */
+  orbit_plan?: {
+    title?: string; note?: string;
+    seeds?: { name: string; status?: string }[];
+    touches?: { label: string; text: string }[];
+    gift?: { name?: string; url?: string };
+    samples?: { label?: string; text: string }[];
+  };
+  /** Per-channel message sequences (live boards): the actual notes/DMs each lane sends,
+   *  cold (connect + DM + InMail) vs warm (engagers, network). Templates carry
+   *  {placeholders} filled per prospect; approve-first, nothing sends unapproved. */
+  sequences?: {
+    title?: string; note?: string;
+    channels: {
+      key?: string; name: string; badge?: string; note?: string;
+      steps: { label: string; when?: string; text: string }[];
+    }[];
+  };
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
-interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string }
+interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
 interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
@@ -829,6 +856,211 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
   );
 }
 
+/** Voice-note recorder behind the sidebar "record a voice note" button. Mic-only
+ *  MediaRecorder; the clip uploads to the public `client-photos` bucket under
+ *  <slug>/voicenotes/ (same anon trust posture as the photo pool), then a note action
+ *  tells the operator where it landed. Preview boards keep the whole flow as local
+ *  theater: same states, no upload, no RPC (mirrors the other preview actions). */
+function VoiceNoteModal({ accent, slug, live, act, onClose }: {
+  accent: string; slug: string; live: boolean;
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+  onClose: () => void;
+}) {
+  const [phase, setPhase] = useState<'idle' | 'recording' | 'preview' | 'sending' | 'sent'>('idle');
+  const [err, setErr] = useState('');
+  const [elapsed, setElapsed] = useState(0);
+  const [clip, setClip] = useState<{ blob: Blob; url: string; duration: number; mime: string } | null>(null);
+  const recRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number>(0);
+  const startedAtRef = useRef(0);
+  const clipUrlRef = useRef('');
+
+  const stopTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+  useEffect(() => () => {
+    window.clearInterval(timerRef.current);
+    try { if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop(); } catch { /* already stopped */ }
+    stopTracks();
+    if (clipUrlRef.current) URL.revokeObjectURL(clipUrlRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  const startRecording = async () => {
+    setErr('');
+    if (clip) { URL.revokeObjectURL(clip.url); clipUrlRef.current = ''; setClip(null); }
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      const name = e instanceof DOMException ? e.name : '';
+      setErr(name === 'NotAllowedError' || name === 'PermissionDeniedError'
+        ? 'Mic access is blocked. Allow the microphone in your browser and hit record again.'
+        : 'Could not reach a microphone on this device.');
+      return;
+    }
+    streamRef.current = stream;
+    // Preferred container; older Safari needs the browser default instead.
+    const preferred = 'audio/webm;codecs=opus';
+    const mime = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(preferred) ? preferred : '';
+    let rec: MediaRecorder;
+    try {
+      rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    } catch {
+      stopTracks();
+      setErr('Recording is not supported in this browser.');
+      return;
+    }
+    chunksRef.current = [];
+    rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    rec.onstop = () => {
+      const type = rec.mimeType || mime || 'audio/webm';
+      const blob = new Blob(chunksRef.current, { type });
+      const url = URL.createObjectURL(blob);
+      clipUrlRef.current = url;
+      const duration = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
+      setClip({ blob, url, duration, mime: type });
+      stopTracks();
+      window.clearInterval(timerRef.current);
+      setPhase('preview');
+    };
+    recRef.current = rec;
+    startedAtRef.current = Date.now();
+    setElapsed(0);
+    rec.start();
+    setPhase('recording');
+    timerRef.current = window.setInterval(() => setElapsed(Math.round((Date.now() - startedAtRef.current) / 1000)), 500);
+  };
+
+  const stopRecording = () => {
+    try { recRef.current?.stop(); } catch { /* already stopped */ }
+  };
+
+  const sendClip = async () => {
+    if (!clip || phase === 'sending') return;
+    // Preview board: confirm locally, demo theater (no upload, no RPC).
+    if (!live || !act) { setPhase('sent'); return; }
+    setPhase('sending'); setErr('');
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `${slug}/voicenotes/vn-${Date.now()}-${rand}.webm`;
+    const { error } = await supabase.storage
+      .from('client-photos')
+      .upload(path, clip.blob, { upsert: false, contentType: clip.mime || 'audio/webm' });
+    if (error) { setPhase('preview'); setErr(error.message || 'Upload failed. Try again.'); return; }
+    const r = await act('note', null, { event: 'voice_note', path, duration_s: clip.duration });
+    if (!r.ok) { setPhase('preview'); setErr(r.error || 'Could not send that. Try again.'); return; }
+    setPhase('sent');
+  };
+
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-md flex-col bg-white sm:my-24 sm:min-h-0 sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+        <div className="flex items-center gap-2.5 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Voice note</span>
+          <button onClick={onClose} aria-label="Close" className="ml-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 pb-6 sm:px-6">
+          {phase === 'sent' ? (
+            <div>
+              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Sent to your operator.</h3>
+              <p className="mt-2.5 max-w-[42ch]" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+                A rough idea in, a drafted post or lead magnet back.
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-5 inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
+                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <div>
+              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Talk it out.</h3>
+              <p className="mt-2 max-w-[44ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+                Hit record and say the rough idea. Your operator turns it into a drafted post or a lead magnet.
+              </p>
+
+              {phase === 'idle' && (
+                <button
+                  onClick={() => { void startRecording(); }}
+                  className="mt-5 inline-flex min-h-[42px] items-center gap-2 rounded-[7px] px-5 uppercase transition-colors duration-150"
+                  style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                >
+                  ◉ Record
+                </button>
+              )}
+
+              {phase === 'recording' && (
+                <div className="mt-5 flex flex-wrap items-center gap-4 rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                  <span className="flex items-center gap-2.5">
+                    <PulseDot color="#c0392b" size={8} />
+                    <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 16, color: INK }}>{mmss(elapsed)}</span>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Recording</span>
+                  </span>
+                  <button
+                    onClick={stopRecording}
+                    className="ml-auto inline-flex min-h-[38px] items-center rounded-[6px] px-4 uppercase"
+                    style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                  >
+                    Stop
+                  </button>
+                </div>
+              )}
+
+              {(phase === 'preview' || phase === 'sending') && clip && (
+                <div className="mt-5">
+                  <div className="rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                    <div className="mb-2.5 flex items-baseline gap-2.5">
+                      <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Your note</span>
+                      <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: FAINT }}>{mmss(clip.duration)}</span>
+                    </div>
+                    <audio controls src={clip.url} className="w-full" style={{ height: 40 }} />
+                  </div>
+                  <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => { void sendClip(); }}
+                      disabled={phase === 'sending'}
+                      className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
+                      style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: accent, color: inkOn(accent), border: 'none', cursor: phase === 'sending' ? 'default' : 'pointer', opacity: phase === 'sending' ? 0.6 : 1 }}
+                    >
+                      {phase === 'sending' ? 'Sending…' : 'Send to your operator'}
+                    </button>
+                    <button
+                      onClick={() => { void startRecording(); }}
+                      disabled={phase === 'sending'}
+                      style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: phase === 'sending' ? 'default' : 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      re-record
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {err && <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: '#c0392b' }}>{err}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos, live = false }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
@@ -1062,28 +1294,34 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         </div>
       </div>
 
-      {view === 'list' && (
-        <div className="max-w-[980px]">
-          {/* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */}
-          {ideas.length > 0 && (
-            <section>
-              <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
-              {ideas.map(renderIdeaRow)}
+      {view === 'list' && (() => {
+        /* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */
+        const ideasSection = ideas.length > 0 ? (
+          <section>
+            <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
+            {ideas.map(renderIdeaRow)}
+          </section>
+        ) : null;
+        /* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */
+        const stageSections = listSections.map(({ stage, label, blurb }) => {
+          const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
+          if (rows.length === 0) return null;
+          return (
+            <section key={stage}>
+              <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
+              {rows.map(renderLedgerRow)}
             </section>
-          )}
-          {/* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */}
-          {listSections.map(({ stage, label, blurb }) => {
-            const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
-            if (rows.length === 0) return null;
-            return (
-              <section key={stage}>
-                <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
-                {rows.map(renderLedgerRow)}
-              </section>
-            );
-          })}
-        </div>
-      )}
+          );
+        });
+        /* Live boards lead with the work that needs the client (Your review first); a wall
+           of ideas above the review stack made the drafts look missing. Preview boards keep
+           ideas first, since the sales-funnel boards are built around that order. */
+        return (
+          <div className="max-w-[980px]">
+            {live ? <>{stageSections}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
+          </div>
+        );
+      })()}
 
       {view === 'board' && (
         <LayoutGroup id="cb-board">
@@ -2264,6 +2502,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
             {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
             {(() => {
               const n = cal.items.filter((it) => ['post', 'carousel', 'lm', 'newsletter'].includes(it.kind)).length;
+              if (n === 0) return null;
               return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>{n} content piece{n === 1 ? '' : 's'} scheduled</span>;
             })()}
             <span className="ml-auto hidden items-center gap-4 md:inline-flex">
@@ -2359,6 +2598,17 @@ function LmIdeaRow({ idea, accent, live, act }: {
   };
   return (
     <div className="px-3.5 py-[15px]" style={{ borderBottom: `1px solid ${LINE}`, margin: '0 -14px' }}>
+      <div className="flex gap-3.5">
+      {idea.cover_url && (
+        <img
+          src={idea.cover_url}
+          alt=""
+          loading="lazy"
+          className="h-[84px] w-[84px] shrink-0 rounded-[8px] object-cover"
+          style={{ border: `1px solid ${LINE}` }}
+        />
+      )}
+      <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
         <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{idea.title}</span>
@@ -2402,6 +2652,71 @@ function LmIdeaRow({ idea, accent, live, act }: {
           </span>
         )}
       </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+/** Client-proposed LM concept, live boards only: one line in, a note action out. Sits
+ *  under the idea bank so the bank reads as two-way, the engine's concepts plus theirs. */
+function LmSuggestRow({ accent, act }: {
+  accent: string;
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+  const send = async () => {
+    const t = text.trim();
+    if (!t || busy) return;
+    setBusy(true); setErr('');
+    if (act) {
+      const r = await act('note', null, { event: 'lm_idea_propose', text: t });
+      if (!r.ok) { setBusy(false); setErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setBusy(false); setSent(true); setText('');
+  };
+  return (
+    <div className="px-3.5 py-[15px]" style={{ margin: '0 -14px' }}>
+      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Suggest a lead magnet</div>
+      {sent ? (
+        <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
+          Sent.{' '}
+          <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
+            Your operator sizes it up and it shows up here if it makes the cut.
+          </span>
+          {' '}
+          <button
+            onClick={() => setSent(false)}
+            style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, fontSize: 12.5, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+          >
+            suggest another
+          </button>
+        </span>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void send(); } }}
+            placeholder="An idea of yours: a tool, a checklist, a report…"
+            aria-label="Suggest a lead magnet"
+            className="min-w-0 flex-1 rounded-[6px] px-3 py-2 text-[13.5px] outline-none"
+            style={{ fontFamily: BODY, border: `1px solid ${LINE}`, background: '#fff', color: INK }}
+          />
+          <button
+            onClick={() => { void send(); }}
+            disabled={busy || !text.trim()}
+            className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
+            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy || !text.trim() ? 'default' : 'pointer', opacity: busy || !text.trim() ? 0.55 : 1 }}
+          >
+            {busy ? 'Sending…' : 'Send'}
+          </button>
+          {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -2816,15 +3131,19 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
           </div>
         )}
 
-        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas. */}
-        {lmIdeas.length > 0 && (
-          <section className="mt-8 max-w-[880px]">
-            <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
-            {lmIdeas.map((li) => (
-              <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
-            ))}
-          </section>
-        )}
+        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas.
+            The suggest row keeps the bank two-way: the client can pitch a concept of their own. */}
+        <section className="mt-8 max-w-[880px]">
+          {lmIdeas.length > 0 && (
+            <>
+              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
+              {lmIdeas.map((li) => (
+                <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
+              ))}
+            </>
+          )}
+          <LmSuggestRow accent={accent} act={act} />
+        </section>
 
         {/* 3. The live tool itself, real URL chrome. */}
         <div className="mt-8">
@@ -3705,6 +4024,96 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               </div>
             )}
 
+            {/* Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
+            {o.sequences && (o.sequences.channels || []).length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.sequences.title || 'The sequences, message by message'}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>approve-first</span>
+                </div>
+                {o.sequences.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  {o.sequences.channels.map((ch) => (
+                    <div key={ch.key || ch.name} className="rounded-lg p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                        <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
+                        {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
+                      </div>
+                      {ch.note && <p className="mt-1 text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
+                      <div className="mt-3 space-y-3">
+                        {ch.steps.map((st, i) => (
+                          <div key={i} className="rounded-lg bg-white p-3.5" style={{ border: `1px solid ${LINE}` }}>
+                            <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                              <span className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{st.label}</span>
+                              {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
+                            </div>
+                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{st.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Client-orbit playbook: seeds, touches, gift, and the sample DMs awaiting sign-off. */}
+            {o.orbit_plan && (() => {
+              const op = o.orbit_plan!;
+              return (
+                <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{op.title || 'Client orbit: the playbook'}</span>
+                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your sign-off</span>
+                  </div>
+                  {op.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
+                  {(op.seeds || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>seed clients</div>
+                      {(op.seeds || []).map((s) => (
+                        <div key={s.name} className="flex flex-col gap-0.5 border-t py-2 sm:flex-row sm:gap-3" style={{ borderColor: DIVIDE }}>
+                          <span className="shrink-0 text-[13px] font-semibold" style={{ color: INK }}>{s.name}</span>
+                          {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {(op.touches || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the three touches</div>
+                      {(op.touches || []).map((t) => (
+                        <div key={t.label} className="flex gap-3 border-t py-2" style={{ borderColor: DIVIDE }}>
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
+                            <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{t.label}</span>
+                          </span>
+                          <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{t.text}</span>
+                        </div>
+                      ))}
+                      {op.gift?.url && (
+                        <div className="mt-2 text-[12.5px]" style={{ color: DIM }}>
+                          The gift is live now:{' '}
+                          <a href={op.gift.url} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2" style={{ color: caText(accent) }}>{op.gift.name || 'open it'}</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(op.samples || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>sample messages, in your voice</div>
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {(op.samples || []).map((sm, i) => (
+                          <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                            {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{sm.label}</div>}
+                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Delineate the pipeline section that follows. */}
             <div className="mt-10 border-b pb-2 uppercase" style={{ borderColor: LINE_BOLD, fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>pipeline</div>
           </section>
@@ -4220,9 +4629,10 @@ const TABS = [
   { id: 'leads', label: 'Leads', group: 'Reports' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
+  { id: 'team', label: 'Team', group: 'Settings' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
-const NAV_GROUPS = ['Content', 'Reports'] as const;
+const NAV_GROUPS = ['Content', 'Reports', 'Settings'] as const;
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
@@ -4265,6 +4675,13 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9.5" />
       <path d="m15.8 8.2-2 5.6-5.6 2 2-5.6 5.6-2z" />
+    </>
+  ),
+  team: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M3.5 20v-1.5a5.5 5.5 0 0 1 11 0V20" />
+      <path d="M16 5.2a3.5 3.5 0 0 1 0 5.7M17.5 13.5a5.5 5.5 0 0 1 3 5V20" />
     </>
   ),
 };
@@ -4335,6 +4752,295 @@ function BoardSkeleton() {
   );
 }
 
+/** Magic-link sign-in screen (shown only when there is NO ?k= token and no valid
+ *  stored session). Matches the blackbox board grammar: Schibsted Grotesk, ink on
+ *  paper, hairline rules, uppercase mono-weight labels, one ink-filled action.
+ *  No client accent is known pre-board, so the screen is operator-branded
+ *  (InboundOnSteroids). Tokens travel only in RPC / edge-fn bodies. */
+function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSession) => void }) {
+  const [phase, setPhase] = useState<'email' | 'code'>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
+  const codeValid = code.replace(/\D/g, '').length === 6;
+
+  // Load Schibsted Grotesk for the pre-board screen (the skin's font map only
+  // spreads once the board renders).
+  useEffect(() => {
+    const id = 'client-board-blackbox-font';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id; link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800;900&display=swap';
+    document.head.appendChild(link);
+  }, []);
+
+  const GK = '"Schibsted Grotesk", system-ui, sans-serif';
+  const INKC = '#131210', PAPERC = '#ffffff', MUTE = '#6b675e', SOFT = '#3a3833', HAIR = 'rgba(19,18,16,0.16)', RED = '#C8361B';
+
+  const requestLink = async () => {
+    if (!emailValid || busy) return;
+    setBusy(true); setErr('');
+    try {
+      // Fire the mint+send. The edge fn ALWAYS returns ok (no enumeration oracle),
+      // so we advance to the code screen regardless of allow-list outcome.
+      await supabase.functions.invoke('board-magic-link', { body: { slug, email: email.trim().toLowerCase() } });
+    } catch { /* uniform outcome — still advance */ }
+    setBusy(false);
+    setPhase('code');
+  };
+
+  const submitCode = async () => {
+    const c = code.replace(/\D/g, '');
+    if (c.length !== 6 || busy) return;
+    setBusy(true); setErr('');
+    try {
+      const { data, error } = await supabase.rpc('redeem_board_login', { p_slug: slug, p_secret: c, p_kind: 'code' });
+      const res = (data as any) || null;
+      if (!error && res?.ok && res.session_token) {
+        onAuthed({ token: res.session_token, email: res.email, expires_at: res.expires_at });
+        return;
+      }
+      setErr('That code did not match. Check the latest email, or request a new link.');
+    } catch {
+      setErr('Something went wrong. Try again.');
+    }
+    setBusy(false);
+  };
+
+  const inputStyle: React.CSSProperties = { fontFamily: GK, color: INKC, background: PAPERC, border: `1px solid ${HAIR}`, outline: 'none' };
+  const btnStyle = (enabled: boolean): React.CSSProperties => ({
+    fontFamily: GK, fontWeight: 700, fontSize: 12, letterSpacing: '0.14em',
+    background: INKC, color: PAPERC, border: 'none', padding: '13px 20px',
+    cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.5,
+  });
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6" style={{ background: PAPERC, color: INKC, fontFamily: GK }}>
+      <div className="w-full max-w-[380px]">
+        <div className="uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 10, letterSpacing: '0.22em', color: MUTE }}>Content board</div>
+        <h1 className="mt-4" style={{ fontFamily: GK, fontWeight: 800, fontSize: 27, lineHeight: 1.12, letterSpacing: '-0.03em', color: INKC }}>
+          {phase === 'email' ? 'Sign in to your board' : 'Check your email'}
+        </h1>
+
+        {phase === 'email' ? (
+          <>
+            <p className="mt-3" style={{ fontFamily: GK, fontSize: 14.5, lineHeight: 1.6, color: SOFT }}>
+              Enter the email your operator has on file. We'll send a one-tap link and a backup code.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); void requestLink(); }} className="mt-6">
+              <input
+                type="email" inputMode="email" autoComplete="email" autoFocus
+                value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
+                className="w-full px-3.5 py-3" style={{ ...inputStyle, fontSize: 15 }}
+              />
+              <button type="submit" disabled={!emailValid || busy} className="mt-3 w-full uppercase" style={btnStyle(emailValid && !busy)}>
+                {busy ? 'Sending…' : 'Send my link'}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="mt-3" style={{ fontFamily: GK, fontSize: 14.5, lineHeight: 1.6, color: SOFT }}>
+              We sent a sign-in link and a 6-digit code to <span style={{ color: INKC, fontWeight: 600 }}>{email.trim().toLowerCase()}</span>. Tap the link, or enter the code below. Both expire in 15 minutes.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); void submitCode(); }} className="mt-6">
+              <input
+                type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6}
+                value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000"
+                className="w-full px-3.5 py-3 tabular-nums" style={{ ...inputStyle, fontSize: 22, letterSpacing: '0.4em' }}
+              />
+              <button type="submit" disabled={!codeValid || busy} className="mt-3 w-full uppercase" style={btnStyle(codeValid && !busy)}>
+                {busy ? 'Checking…' : 'Open my board'}
+              </button>
+            </form>
+            <button
+              onClick={() => { setPhase('email'); setCode(''); setErr(''); }}
+              className="mt-3.5" style={{ fontFamily: GK, fontSize: 12.5, color: MUTE, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+            >
+              Use a different email
+            </button>
+          </>
+        )}
+
+        {err && <p className="mt-3" style={{ fontFamily: GK, fontSize: 12.5, lineHeight: 1.5, color: RED }}>{err}</p>}
+        <div className="mt-9 uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 9.5, letterSpacing: '0.2em', color: '#a5a29a' }}>InboundOnSteroids</div>
+      </div>
+    </div>
+  );
+}
+
+/** Team tab (live boards only) — self-serve invites. An invite APPENDS an email to
+ *  the board's allow-list (invite_board_member RPC, session-authed) and fires the
+ *  normal sign-in email at the invitee. There is never a shareable join-link:
+ *  forwarding an invite email grants nothing to anyone but the named address.
+ *  Members can invite; removals are operator-only (a teammate can't eject the
+ *  founder). Token-only (?k=) visitors see a sign-in nudge instead — the invite
+ *  RPC needs an email session to know WHO invited. */
+function TeamSurface({ slug, accent, session }: { slug: string; accent: string; session: BoardSession | null }) {
+  const [team, setTeam] = useState<string[] | null>(null);
+  const [me, setMe] = useState('');
+  const [teamState, setTeamState] = useState<'loading' | 'ready' | 'noauth' | 'unavailable'>(session ? 'loading' : 'noauth');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  // Token-only visitors: a compact "email me a sign-in link" form (same edge fn,
+  // same no-oracle posture — the response never reveals allow-list membership).
+  const [selfEmail, setSelfEmail] = useState('');
+  const [selfSent, setSelfSent] = useState(false);
+  const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
+
+  useEffect(() => {
+    if (!session) { setTeamState('noauth'); return; }
+    let dead = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_board_team', { p_slug: slug, p_session: session.token });
+      if (dead) return;
+      const res = (data as any) || null;
+      if (!error && res?.ok && Array.isArray(res.allowed_emails)) {
+        setTeam(res.allowed_emails); setMe(String(res.me || '')); setTeamState('ready');
+      } else if (res?.error === 'not_authenticated') {
+        setTeamState('noauth');
+      } else {
+        setTeamState('unavailable');
+      }
+    })();
+    return () => { dead = true; };
+  }, [slug, session]);
+
+  const invite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!emailOk(email) || busy || !session) return;
+    setBusy(true); setNotice(null);
+    try {
+      const { data, error } = await supabase.rpc('invite_board_member', { p_slug: slug, p_session: session.token, p_email: email });
+      const res = (data as any) || null;
+      if (!error && res?.ok) {
+        if (Array.isArray(res.allowed_emails)) setTeam(res.allowed_emails);
+        if (res.already_member) {
+          setNotice({ kind: 'ok', text: `${email} is already on the team.` });
+        } else {
+          // The allow-list write is the security; the email is the courtesy.
+          try { await supabase.functions.invoke('board-magic-link', { body: { slug, email } }); } catch { /* best-effort */ }
+          setNotice({ kind: 'ok', text: `${email} is in. They just got a sign-in email — no passwords, no setup.` });
+          setInviteEmail('');
+        }
+      } else if (res?.error === 'list_full') {
+        setNotice({ kind: 'err', text: 'The team list is full (10 seats). Ask your operator to make room.' });
+      } else if (res?.error === 'not_authenticated') {
+        setTeamState('noauth');
+      } else {
+        setNotice({ kind: 'err', text: 'That invite did not go through. Try again in a moment.' });
+      }
+    } catch {
+      setNotice({ kind: 'err', text: 'That invite did not go through. Try again in a moment.' });
+    }
+    setBusy(false);
+  };
+
+  const sendSelfLink = async () => {
+    if (!emailOk(selfEmail) || busy) return;
+    setBusy(true);
+    try { await supabase.functions.invoke('board-magic-link', { body: { slug, email: selfEmail.trim().toLowerCase() } }); } catch { /* uniform */ }
+    setBusy(false); setSelfSent(true);
+  };
+
+  return (
+    <div>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Settings</div>
+      <h2 className="mt-2" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, color: INK }}>Team access</h2>
+      <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+        Everyone on this list can sign in to the board with their own email. No passwords, no shared links.
+      </p>
+
+      {teamState === 'noauth' && (
+        <div className="mt-7 max-w-[520px] bg-white p-6" style={{ border: `1px solid ${LINE}` }}>
+          <div className="text-[15px] font-semibold" style={{ fontFamily: BODY, color: INK }}>Sign in to manage your team</div>
+          {selfSent ? (
+            <p className="mt-2 text-[13.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+              If <span style={{ color: INK, fontWeight: 600 }}>{selfEmail.trim().toLowerCase()}</span> is on the team list, a sign-in link is on its way. Open it and come back to this tab.
+            </p>
+          ) : (
+            <>
+              <p className="mt-2 text-[13.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+                Inviting teammates needs an email sign-in, so every invite is on the record. Enter your email and we'll send you a one-tap link.
+              </p>
+              <form onSubmit={(e) => { e.preventDefault(); void sendSelfLink(); }} className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+                <input
+                  type="email" inputMode="email" autoComplete="email"
+                  value={selfEmail} onChange={(e) => setSelfEmail(e.target.value)} placeholder="you@company.com"
+                  className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
+                  style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
+                />
+                <button type="submit" disabled={!emailOk(selfEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase"
+                  style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: emailOk(selfEmail) && !busy ? 'pointer' : 'default', opacity: emailOk(selfEmail) && !busy ? 1 : 0.5 }}>
+                  {busy ? 'Sending…' : 'Email me a link'}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      )}
+
+      {teamState === 'loading' && (
+        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: FAINT }}>Loading your team…</div>
+      )}
+
+      {teamState === 'unavailable' && (
+        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: DIM }}>
+          Team management isn't switched on for this board yet. Ask your operator.
+        </div>
+      )}
+
+      {teamState === 'ready' && (
+        <>
+          <div className="mt-7 max-w-[520px] overflow-hidden bg-white" style={{ border: `1px solid ${LINE}` }}>
+            <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Who has access</span>
+              <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{team?.length ?? 0}/10</span>
+            </div>
+            {(team || []).map((email, i) => (
+              <div key={email} className="flex min-h-[46px] items-center gap-3 px-5" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: caWash(accent, 16), color: caText(accent) }} aria-hidden>
+                  {email.slice(0, 2).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px]" style={{ fontFamily: BODY, color: INK }}>{email}</span>
+                {email === me && (
+                  <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>you</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 max-w-[520px] bg-white p-5" style={{ border: `1px solid ${LINE}` }}>
+            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Invite a teammate</div>
+            <form onSubmit={(e) => { e.preventDefault(); void invite(); }} className="mt-3 flex flex-col gap-2.5 sm:flex-row">
+              <input
+                type="email" inputMode="email"
+                value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setNotice(null); }} placeholder="teammate@company.com"
+                className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
+                style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
+              />
+              <button type="submit" disabled={!emailOk(inviteEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase"
+                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: emailOk(inviteEmail) && !busy ? 'pointer' : 'default', opacity: emailOk(inviteEmail) && !busy ? 1 : 0.5 }}>
+                {busy ? 'Inviting…' : 'Invite'}
+              </button>
+            </form>
+            {notice && (
+              <p className="mt-2.5 text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: notice.kind === 'ok' ? caText(accent) : '#C8361B' }}>{notice.text}</p>
+            )}
+            <p className="mt-3 text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
+              They'll get a sign-in email right away and can always sign in later with their own address. Need to remove someone? Ask your operator — removals are operator-only.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
   const [params] = useSearchParams();
@@ -4345,7 +5051,15 @@ export default function ClientBoardPage() {
   const approvalsKey = `cb-approvals-${slug || ''}`;
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
-  const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed' | 'signin'>('loading');
+  // Magic-link session (additive path). The ?k= token flow above is unchanged and
+  // takes precedence whenever a ?k= is present. Session auth only engages when
+  // there is NO ?k= token: a #ml= link fragment redeems into a session, or a
+  // previously-stored session loads the board. Read synchronously so act() and the
+  // fetch effect see it on the very first render.
+  const [session, setSession] = useState<BoardSession | null>(() => loadBoardSession(slug));
+  const sessionRef = useRef<BoardSession | null>(session);
+  sessionRef.current = session;
   // Company name for the pre-render states (generating / failed): the placeholder row
   // carries it before the full board jsonb exists, so the building screen can name it.
   const [pendingCompany, setPendingCompany] = useState<string>('');
@@ -4356,6 +5070,8 @@ export default function ClientBoardPage() {
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
   const [leadDetail, setLeadDetail] = useState<PipelineLead | null>(null);
+  // Sidebar voice-note recorder. Live boards record + upload for real; preview theater.
+  const [voiceOpen, setVoiceOpen] = useState(false);
   // Demo interaction state survives a reload: approvals persist per-slug.
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>(() => {
     try {
@@ -4420,15 +5136,28 @@ export default function ClientBoardPage() {
   };
   // Real, token-gated board action. Same anon-key RPC posture as get_client_board.
   // Returns {ok:true} or {ok:false,error}. Never throws to the caller.
+  // Routing: a ?k= token uses client_board_action (v1, byte-identical); a
+  // magic-link session uses client_board_action_v2 (session-authenticated, with
+  // the expires_at guard v1 misses). The session token only travels in the RPC
+  // body — never a query param, log, or title.
   const act = async (
     action: 'approve' | 'edit_copy' | 'request_changes' | 'shift_request' | 'note',
     ref?: string | null,
     payload?: Record<string, unknown> | null,
   ): Promise<{ ok: boolean; error?: string }> => {
-    if (!slug || !token) return { ok: false, error: 'missing token' };
+    if (!slug) return { ok: false, error: 'missing slug' };
     try {
-      const { data, error } = await supabase.rpc('client_board_action', {
-        p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
+      if (token) {
+        const { data, error } = await supabase.rpc('client_board_action', {
+          p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
+        });
+        if (error) return { ok: false, error: error.message };
+        return (data as any) ?? { ok: true };
+      }
+      const sess = sessionRef.current;
+      if (!sess?.token) return { ok: false, error: 'missing session' };
+      const { data, error } = await supabase.rpc('client_board_action_v2', {
+        p_slug: slug, p_session: sess.token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
       });
       if (error) return { ok: false, error: error.message };
       return (data as any) ?? { ok: true };
@@ -4531,30 +5260,23 @@ export default function ClientBoardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      if (!slug || !token) { setState('invalid'); return; }
-      if (forceIntro) {
-        // Replay support: drop the played flag (and any stale approval/angle/skip of the
-        // intro card) BEFORE the board mounts, so the choreography runs again from the top.
-        try { localStorage.removeItem(introKey); } catch { /* private mode */ }
-        setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
-        setAngleSwaps((s) => { const { d1: _drop, ...rest } = s; return rest; });
-        setWeekSkips((s) => { const { d1: _drop, ...rest } = s; return rest; });
-      }
-      const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
-      if (cancelled) return;
-      if (error || !data) { setState('invalid'); return; }
-      const rowMode = (data as any).mode || 'demo';
+
+    // Shared: turn a get_client_board / get_client_board_by_session response into
+    // board state. Returns true if it produced a renderable / pre-render state,
+    // false if the payload was empty (caller decides the fallback).
+    const applyBoardData = (data: any): boolean => {
+      if (!data) return false;
+      const rowMode = data.mode || 'demo';
       // The board-generator service reserves the row in 'generating' before the full
       // jsonb exists, then flips it to 'preview' (done) or 'failed'. In those pre-render
       // states the board is a minimal placeholder — show a dedicated screen instead of
       // trying to render an empty board (which would read as the invalid-link error).
       if (rowMode === 'generating' || rowMode === 'failed') {
-        setPendingCompany(((data as any).board?.company_name as string) || '');
+        setPendingCompany((data.board?.company_name as string) || '');
         setState(rowMode);
-        return;
+        return true;
       }
-      let b = (data as any).board as Board;
+      let b = data.board as Board;
       // Once the intro has played (or motion is reduced and it never will), the choreography
       // card must land as a normal completed review card — never a stuck "Generating…" row.
       const introPlayed = (() => {
@@ -4571,8 +5293,64 @@ export default function ClientBoardPage() {
       }
       if (b.logo_url) { const img = new Image(); img.src = b.logo_url; }
       setBoard(b);
-      setMode((data as any).mode || 'demo');
+      setMode(data.mode || 'demo');
       setState('ready');
+      return true;
+    };
+
+    // Load a board using a magic-link session token. On failure clears the stored
+    // session and returns false so the caller can drop to the sign-in screen.
+    const loadBySession = async (sessSlug: string, sessionToken: string): Promise<boolean> => {
+      const { data, error } = await supabase.rpc('get_client_board_by_session', { p_slug: sessSlug, p_session: sessionToken });
+      if (cancelled) return true; // unmounted — treat as handled
+      if (error || !data) { clearBoardSession(sessSlug); setSession(null); return false; }
+      return applyBoardData(data);
+    };
+
+    (async () => {
+      if (!slug) { setState('invalid'); return; }
+      if (forceIntro) {
+        // Replay support: drop the played flag (and any stale approval/angle/skip of the
+        // intro card) BEFORE the board mounts, so the choreography runs again from the top.
+        try { localStorage.removeItem(introKey); } catch { /* private mode */ }
+        setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setAngleSwaps((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setWeekSkips((s) => { const { d1: _drop, ...rest } = s; return rest; });
+      }
+
+      // (a) ?k= token present → existing RPC path, BYTE-IDENTICAL. Session code
+      // never runs while a ?k= is in the URL.
+      if (token) {
+        const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
+        if (cancelled) return;
+        if (error || !data || !applyBoardData(data)) { setState('invalid'); return; }
+        return;
+      }
+
+      // (b) #ml=<token> fragment → redeem into a session, strip the fragment, load.
+      const ml = readMagicLinkFragment();
+      if (ml) {
+        const { data, error } = await supabase.rpc('redeem_board_login', { p_slug: slug, p_secret: ml, p_kind: 'link' });
+        stripMagicLinkFragment();
+        if (cancelled) return;
+        const res = (data as any) || null;
+        if (!error && res?.ok && res.session_token) {
+          const sess: BoardSession = { token: res.session_token, email: res.email, expires_at: res.expires_at };
+          saveBoardSession(slug, sess);
+          setSession(sess);
+          if (await loadBySession(slug, sess.token)) return;
+        }
+        // redeem failed (expired / already used) → fall through to stored session / sign-in.
+      }
+
+      // (c) stored session → load by session; on failure fall to sign-in.
+      const stored = sessionRef.current ?? loadBoardSession(slug);
+      if (stored?.token) {
+        if (await loadBySession(slug, stored.token)) return;
+      }
+
+      // (d) no ?k=, no valid session → the sign-in screen.
+      if (!cancelled) setState('signin');
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4843,6 +5621,20 @@ export default function ClientBoardPage() {
       </div>
     );
   }
+  if (state === 'signin') {
+    return (
+      <BoardSignIn
+        slug={slug || ''}
+        onAuthed={(sess) => {
+          if (slug) saveBoardSession(slug, sess);
+          setSession(sess);
+          // Reload so the stored-session load path (c) renders the board cleanly
+          // (full remount, same as the generating→ready reload).
+          window.location.reload();
+        }}
+      />
+    );
+  }
   if (state === 'invalid' || !board || !viewBoard) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6" style={{ background: FRAME_BG }}>
@@ -4889,6 +5681,7 @@ export default function ClientBoardPage() {
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
+    team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };
 
   const logo = (h: number) => (
@@ -4902,9 +5695,14 @@ export default function ClientBoardPage() {
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
-  // fold into the content surface). Preview keeps the full demo nav unchanged.
-  const visibleTabs = isLive ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos') : TABS;
-  const activeTab: TabId = isLive && (tab === 'voice' || tab === 'photos') ? 'week' : tab;
+  // fold into the content surface). Team (self-serve invites) is live-only — preview
+  // boards are demo funnels with no allow-list to manage.
+  const visibleTabs = isLive
+    ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
+    : TABS.filter((t) => t.id !== 'team');
+  const activeTab: TabId = isLive
+    ? (tab === 'voice' || tab === 'photos' ? 'week' : tab)
+    : (tab === 'team' ? 'week' : tab);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -4991,7 +5789,7 @@ export default function ClientBoardPage() {
           <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: INK_MUTE }}>content desk</div>
         </div>
         <nav className="flex flex-col gap-5 px-0 py-5" aria-label="Board sections">
-          {NAV_GROUPS.map((g) => (
+          {NAV_GROUPS.filter((g) => visibleTabs.some((t) => t.group === g)).map((g) => (
             <div key={g}>
               <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE, opacity: 0.75 }}>{g}</div>
               <div className="flex flex-col">
@@ -5026,7 +5824,7 @@ export default function ClientBoardPage() {
           <div>
             <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>Drop an idea</div>
             <button
-              onClick={() => goTab('week')}
+              onClick={() => setVoiceOpen(true)}
               className="w-full rounded-md py-2.5 uppercase transition-colors duration-150 hover:opacity-90"
               style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none' }}
             >
@@ -5166,6 +5964,9 @@ export default function ClientBoardPage() {
       )}
       {leadDetail && (
         <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
+      )}
+      {voiceOpen && (
+        <VoiceNoteModal accent={accent} slug={slug || ''} live={isLive} act={act} onClose={() => setVoiceOpen(false)} />
       )}
     </div>
     </MotionConfig>
