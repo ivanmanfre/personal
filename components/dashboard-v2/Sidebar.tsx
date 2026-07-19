@@ -43,10 +43,16 @@ interface SidebarProps {
 }
 
 export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onToggleCollapse, dots }: SidebarProps) {
-  const renderItem = (it: NavItem, groupKey: string) => (
+  const renderItem = (it: NavItem, groupKey: string) => {
+    // Count-column graft (from The Facility): a first-class tabular count slot
+    // on every row. Empty rows keep the honest empty ledger; a live count reads
+    // muted ink; the single most-urgent (bad) entry wears the one red.
+    const count = it.badge && it.badge.count > 0 ? it.badge.count : null;
+    const urgent = count != null && it.badge!.severity === 'bad';
+    return (
     <button
       key={it.id}
-      className="dv-nav-item"
+      className={`dv-nav-item${urgent ? ' dv-nav-item--urgent' : ''}`}
       aria-current={it.id === active ? 'page' : undefined}
       title={collapsed ? it.name : undefined}
       onClick={() => onSelect(it.id)}
@@ -57,13 +63,10 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
       {dots?.has(it.id) && (
         <span className="dv-nav-dot" aria-label="changed since last visit" title="changed since last visit" />
       )}
-      {it.badge && it.badge.count > 0 && (
-        <span className={`dv-nav-badge ${it.badge.severity === 'warn' ? 'dv-nav-badge--amber' : ''}`}>
-          {it.badge.count}
-        </span>
-      )}
+      <span className="dv-nav-count" aria-hidden={count ? undefined : 'true'}>{count ?? ''}</span>
     </button>
-  );
+    );
+  };
 
   return (
     <aside className={`dv-sidebar ${open ? 'dv-sidebar--open' : ''}`}>

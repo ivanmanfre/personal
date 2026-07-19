@@ -1,0 +1,524 @@
+/*
+ * AGENT section (n8nClaw) — Black Box v4 register, scoped under `.ec`.
+ * Reuses editorial-cockpit.css tokens (--ec-*) so Agent reads as the same
+ * document as Today / Outreach. The chat is re-cast from a messenger bubble
+ * feed into a PRINTED TRANSMISSION LOG: paper surface, hairline-separated
+ * entries, sender as a small functional label (IVAN / AGENT), timestamps in
+ * the muted machine register, machine (AGENT) replies set in monospace-adjacent
+ * type so the human/machine seam is legible the way a printed log shows it.
+ *
+ * Red budget: spent ONCE, on the unacknowledged-alerts WARNING count inside
+ * THE BOX (the drift-box pattern from Today.tsx). Nothing else is red. No
+ * gradients, no shadows, radius 0 everywhere.
+ */
+
+/* ── Head: page label + tools (refresh) ─────────────────────────────────────── */
+.ec .ag-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+.ec .ag-tools { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+.ec .ag-tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--ec-rule-strong);
+  background: var(--ec-paper);
+  color: var(--ec-ink);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ec .ag-tool-icon:hover { background: rgba(19, 18, 16, 0.05); border-color: var(--ec-ink); }
+.ec .ag-tool-meta {
+  font-family: var(--ec-sans);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+}
+
+/* ── Stat strip: 4 lockups (reuses .ec-lockup) ──────────────────────────────── */
+.ec .ag-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 3px solid var(--ec-ink);
+  border-bottom: 1px solid var(--ec-rule-strong);
+  margin-bottom: 1.8rem;
+}
+@media (max-width: 640px) {
+  .ec .ag-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── The transmission log ───────────────────────────────────────────────────── */
+.ec .ag-log {
+  position: relative;
+  border: 1px solid var(--ec-rule-strong);
+  background: var(--ec-paper);
+  margin-bottom: 1.8rem;
+}
+.ec .ag-log-cap {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--ec-rule-strong);
+}
+.ec .ag-log-cap-h {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec .ag-log-cap-h::before {
+  content: '';
+  width: 9px; height: 9px;
+  background: var(--ec-ink);
+  display: inline-block;
+}
+.ec .ag-log-cap-count {
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ec .ag-log-status {
+  margin-left: auto;
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  animation: ds-pulse 1.4s ease-in-out infinite;
+}
+
+/* scroll area */
+.ec .ag-log-scroll {
+  height: 460px;
+  overflow-y: auto;
+  background: var(--ec-paper);
+}
+@media (min-width: 1024px) { .ec .ag-log-scroll { height: 540px; } }
+@media (max-width: 640px) { .ec .ag-log-scroll { height: 360px; } }
+
+.ec .ag-log-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 2rem;
+}
+.ec .ag-log-empty-h {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec .ag-log-empty-note {
+  font-family: var(--ec-sans);
+  font-size: 12.5px;
+  color: var(--ec-mutedc);
+  margin-top: 0.4rem;
+}
+
+/* load older */
+.ec .ag-older {
+  display: flex;
+  justify-content: center;
+  padding: 0.8rem 0 0.4rem;
+}
+.ec .ag-older-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ec-rule-strong);
+  padding: 0.2rem 0.1rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.ec .ag-older-btn:hover:not(:disabled) { color: var(--ec-ink); border-color: var(--ec-ink); }
+.ec .ag-older-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* date separator — hairline flanks, muted label */
+.ec .ag-datesep {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 1rem;
+}
+.ec .ag-datesep::before,
+.ec .ag-datesep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ec-rule);
+}
+.ec .ag-datesep span {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  white-space: nowrap;
+}
+
+/* log entry — a stamped correspondence line */
+.ec .ag-entry {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--ec-rule);
+}
+.ec .ag-entry--turn { border-top: 1px solid transparent; margin-top: 0.15rem; }
+.ec .ag-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.3rem;
+}
+.ec .ag-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec .ag-who::before {
+  content: '';
+  width: 8px; height: 8px;
+  display: inline-block;
+}
+/* IVAN = solid ink mark (the human) · AGENT = hollow ink mark (the machine) */
+.ec .ag-entry--user .ag-who::before { background: var(--ec-ink); }
+.ec .ag-entry--agent .ag-who::before { border: 1px solid var(--ec-ink); }
+.ec .ag-time {
+  margin-left: auto;
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--ec-mutedc);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ec .ag-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+/* human copy: plain declarative sans body */
+.ec .ag-entry--user .ag-body {
+  font-family: var(--ec-sans);
+  font-weight: 400;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ec-ink);
+}
+/* machine copy: monospace-adjacent — the printed-log seam */
+.ec .ag-entry--agent .ag-body {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ec-body);
+}
+
+/* optimistic pending + transmit state, rendered in ink (never a color) */
+.ec .ag-entry--pending .ag-time { color: var(--ec-ink); animation: ds-pulse 1.4s ease-in-out infinite; }
+
+/* typing indicator — mechanical stepped ink squares */
+.ec .ag-typing {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+}
+.ec .ag-typing-dots { display: inline-flex; align-items: center; gap: 4px; }
+.ec .ag-typing-dots i {
+  width: 6px; height: 6px;
+  background: var(--ec-ink);
+  display: inline-block;
+  opacity: 0.25;
+  animation: ag-march 1.05s steps(1, end) infinite;
+}
+.ec .ag-typing-dots i:nth-child(2) { animation-delay: 0.16s; }
+.ec .ag-typing-dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes ag-march { 0%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+/* scroll-to-bottom — square ink chip, no radius, no shadow */
+.ec .ag-scroll-btn {
+  position: absolute;
+  bottom: 92px;
+  right: 16px;
+  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ec-ink);
+  color: var(--ec-paper);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.15s ease;
+}
+.ec .ag-scroll-btn:hover { background: #000; }
+
+/* input bar */
+.ec .ag-input {
+  border-top: 1px solid var(--ec-rule-strong);
+  background: var(--ec-paper);
+  padding: 0.85rem 1rem 0.9rem;
+}
+.ec .ag-input-row { display: flex; align-items: flex-end; gap: 0.6rem; }
+.ec .ag-textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: none;
+  background: var(--ec-paper);
+  border: 1px solid var(--ec-rule-strong);
+  border-radius: 0;
+  padding: 0.7rem 0.85rem;
+  font-family: var(--ec-sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ec-ink);
+  max-height: 160px;
+  transition: border-color 0.15s ease;
+}
+.ec .ag-textarea::placeholder { color: var(--ec-mutedc); }
+.ec .ag-textarea:focus { outline: none; border-color: var(--ec-ink); }
+.ec .ag-textarea:disabled { opacity: 0.55; }
+.ec .ag-send {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 42px;
+  background: var(--ec-ink);
+  color: var(--ec-paper);
+  border: 1px solid var(--ec-ink);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.ec .ag-send:not(:disabled):hover { background: #000; }
+.ec .ag-send:not(:disabled):active { transform: scale(0.96); }
+.ec .ag-send:disabled { opacity: 0.35; cursor: default; }
+.ec .ag-hint {
+  font-family: var(--ec-sans);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--ec-mutedc);
+  margin-top: 0.5rem;
+}
+
+/* ── THE BOX: unacknowledged alerts warning (reuses .ec-box) ─────────────────── */
+.ec .ag-box-list { margin-top: 0.7rem; }
+.ec .ag-box-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--ec-rule);
+}
+.ec .ag-box-row:first-child { border-top: 0; }
+.ec .ag-box-row-body { flex: 1 1 auto; min-width: 0; }
+.ec .ag-box-title {
+  font-family: var(--ec-sans);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ec-ink);
+}
+.ec .ag-box-meta {
+  font-family: var(--ec-sans);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-top: 0.2rem;
+}
+
+/* ── Accordions (alerts / reminders / summaries) ────────────────────────────── */
+.ec .ag-accs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.2rem, 2.6vw, 2.4rem);
+}
+@media (max-width: 900px) { .ec .ag-accs { grid-template-columns: 1fr; gap: 0; } }
+
+.ec .ag-acc { border-top: 1px solid var(--ec-rule-strong); }
+.ec .ag-acc-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  padding: 0.85rem 0;
+  cursor: pointer;
+  text-align: left;
+}
+.ec .ag-acc-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec .ag-acc-lbl::before {
+  content: '';
+  width: 9px; height: 9px;
+  background: var(--ec-ink);
+  display: inline-block;
+}
+.ec .ag-acc-count {
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ec .ag-acc-chev {
+  margin-left: auto;
+  color: var(--ec-mutedc);
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+.ec .ag-acc-chev--open { transform: rotate(180deg); }
+.ec .ag-acc-body { border-top: 1px solid var(--ec-rule); max-height: 300px; overflow-y: auto; }
+.ec .ag-acc-empty {
+  font-family: var(--ec-sans);
+  font-size: 13px;
+  color: var(--ec-mutedc);
+  padding: 1.2rem 0;
+  text-align: center;
+}
+
+/* generic register row inside an accordion */
+.ec .ag-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--ec-rule);
+}
+.ec .ag-row:last-child { border-bottom: 0; }
+.ec .ag-row-body { flex: 1 1 auto; min-width: 0; }
+.ec .ag-row-title {
+  font-family: var(--ec-sans);
+  font-weight: 500;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ec-ink);
+}
+.ec .ag-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+.ec .ag-row-meta {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ec-mutedc);
+}
+/* functional monochrome label — replaces the v1 4-color alert chip */
+.ec .ag-tag {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.1rem 0.4rem;
+  white-space: nowrap;
+}
+/* leading status marker: unacked = solid ink · acknowledged = hollow */
+.ec .ag-dot { flex: 0 0 auto; width: 8px; height: 8px; margin-top: 0.35rem; }
+.ec .ag-dot--on { background: var(--ec-ink); }
+.ec .ag-dot--off { border: 1px solid var(--ec-rule-strong); }
+
+/* small ink-outline action button (Ack / Complete) */
+.ec .ag-act {
+  flex: 0 0 auto;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  background: transparent;
+  border: 1px solid var(--ec-ink);
+  border-radius: 0;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ec .ag-act:hover { background: var(--ec-ink); color: var(--ec-paper); }
+.ec .ag-act-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  color: var(--ec-mutedc);
+  background: transparent;
+  border: 1px solid var(--ec-rule-strong);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.ec .ag-act-icon:hover { color: var(--ec-paper); background: var(--ec-ink); border-color: var(--ec-ink); }
+
+/* summary row specifics */
+.ec .ag-sum-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.3rem; }
+.ec .ag-sum-date { font-family: var(--ec-sans); font-weight: 700; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ec-ink); }
+.ec .ag-sum-count { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: var(--ec-mutedc); }
+.ec .ag-sum-body { font-family: var(--ec-sans); font-size: 13px; line-height: 1.5; color: var(--ec-body); }
+.ec .ag-sum-topics { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+/* section label above the box/accordion block */
+.ec .ag-section-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin: 0 0 0.8rem;
+}

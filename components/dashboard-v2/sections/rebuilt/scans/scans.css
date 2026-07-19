@@ -1,0 +1,270 @@
+/*
+ * Scans (audience_audits) — Black Box v4 rebuild, scoped under `.ec`.
+ * Reuses editorial-cockpit.css tokens (--ec-ink #131210, --ec-red #C8361B,
+ * --ec-mutedc #6B675E, Schibsted Grotesk) and worksurface.css grammar
+ * (ws-head / ws-tools / ws-tally / ws-empty / ws-loading) so Scans reads as the
+ * same product as Posts, Outreach + Today.
+ *
+ * The flip vs the v1 card grid: a single ranked AUDIT LEDGER sorted by verdict
+ * severity, buyer-relevant % promoted to a primary column, and the engager-vs-
+ * network read carried by two labelled ink-tonal bars (no hue). Signal red is
+ * spent ONCE: the weak/noise verdict tally count, danger only.
+ */
+
+/* dek */
+.ec .scn-dek { max-width: 66ch; margin: 0 0 1.5rem; }
+
+/* search field living in ws-tools */
+.ec .scn-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.34rem 0.6rem;
+  color: var(--ec-mutedc);
+}
+.ec .scn-search:focus-within { border-color: var(--ec-ink); color: var(--ec-ink); }
+.ec .scn-search input {
+  font-family: var(--ec-sans);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  color: var(--ec-ink);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  width: 132px;
+}
+.ec .scn-search input::placeholder { color: var(--ec-mutedc); }
+
+/* ── Ranked audit ledger ──────────────────────────────────────────────────── */
+.ec .scn-ledger { border-top: 3px solid var(--ec-ink); }
+
+.ec .scn-lhead,
+.ec .scn-row-head {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 104px 92px 190px 22px;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0 0.4rem;
+}
+.ec .scn-lhead {
+  border-bottom: 1px solid var(--ec-rule-strong);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+.ec .scn-hcell {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+}
+.ec .scn-hcell--num { text-align: right; }
+
+.ec .scn-row { border-bottom: 1px solid var(--ec-rule); }
+.ec .scn-row-head {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding-top: 0.72rem;
+  padding-bottom: 0.72rem;
+  font: inherit;
+  color: inherit;
+  transition: background 0.12s ease;
+}
+.ec .scn-row-head:hover { background: rgba(19, 18, 16, 0.035); }
+.ec .scn-row-head:focus-visible { outline: 2px solid var(--ec-ink); outline-offset: -2px; }
+/* strong fits ride slightly elevated with an ink lead rule — the "weight"
+   treatment that carries the positive verdict without a hue. */
+.ec .scn-row--strong .scn-row-head { box-shadow: inset 3px 0 0 var(--ec-ink); }
+
+.ec .scn-rank {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ec-mutedc);
+  font-variant-numeric: tabular-nums;
+}
+
+.ec .scn-idcell { min-width: 0; }
+.ec .scn-name {
+  font-family: var(--ec-sans);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ec-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec .scn-row--strong .scn-name { font-weight: 700; }
+.ec .scn-row--weak .scn-name { color: var(--ec-body); }
+.ec .scn-sub {
+  font-family: var(--ec-sans);
+  font-size: 11px;
+  color: var(--ec-mutedc);
+  letter-spacing: 0.01em;
+  margin-top: 0.12rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* verdict badge — monochrome; strong = ink flush-fill (max weight), weak =
+   hairline muted, neutral = outline. NEVER green, NEVER red (red is reserved). */
+.ec .scn-verdict {
+  justify-self: start;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.16rem 0.42rem;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec .scn-verdict--strong { color: var(--ec-paper); background: var(--ec-ink); border-color: var(--ec-ink); }
+.ec .scn-verdict--weak { color: var(--ec-mutedc); border-color: var(--ec-rule); }
+
+/* buyer-relevant % — the promoted primary read */
+.ec .scn-brel {
+  text-align: right;
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ec-ink);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec .scn-brel--na { color: var(--ec-dim); font-weight: 500; font-size: 14px; }
+
+/* engager vs network — two labelled ink-tonal bars, no hue.
+   ENG sits first + heavier (ink); NET second + lighter (muted). */
+.ec .scn-en { display: flex; flex-direction: column; gap: 0.28rem; }
+.ec .scn-en-row {
+  display: grid;
+  grid-template-columns: 30px minmax(40px, 1fr) 44px;
+  align-items: center;
+  gap: 0.45rem;
+}
+.ec .scn-en-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ec .scn-en-lbl--eng { color: var(--ec-ink); }
+.ec .scn-en-lbl--net { color: var(--ec-mutedc); }
+.ec .scn-en-track { height: 7px; background: rgba(19, 18, 16, 0.08); position: relative; }
+.ec .scn-en-fill { display: block; height: 100%; }
+.ec .scn-en-fill--eng { background: var(--ec-ink); }
+.ec .scn-en-fill--net { background: var(--ec-mutedc); }
+.ec .scn-en-num {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ec .scn-en-num--eng { color: var(--ec-ink); font-weight: 700; }
+.ec .scn-en-num--net { color: var(--ec-mutedc); }
+
+/* disclosure chevron */
+.ec .scn-chev {
+  justify-self: end;
+  color: var(--ec-mutedc);
+  transition: transform 0.15s ease, color 0.12s ease;
+  display: inline-flex;
+}
+.ec .scn-row-head:hover .scn-chev { color: var(--ec-ink); }
+.ec .scn-chev--open { transform: rotate(180deg); }
+
+/* ── Expanded detail ──────────────────────────────────────────────────────── */
+.ec .scn-detail {
+  padding: 0.3rem 0.4rem 1.3rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(1.2rem, 3vw, 2.6rem);
+  align-items: start;
+}
+.ec .scn-block-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+}
+.ec .scn-block-lbl::before { content: ''; width: 8px; height: 8px; background: var(--ec-ink); flex: 0 0 auto; }
+.ec .scn-block-lbl small { margin-left: auto; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ec-mutedc); font-size: 11px; }
+
+/* bucket distribution — ink tonal ramp (v1-proven, no hue) */
+.ec .scn-buckets-bar { display: flex; height: 8px; width: 100%; overflow: hidden; background: rgba(19,18,16,0.06); }
+.ec .scn-buckets-seg { height: 100%; }
+.ec .scn-buckets-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; margin-top: 0.7rem; }
+.ec .scn-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--ec-sans); font-size: 11px; }
+.ec .scn-legend-swatch { width: 10px; height: 10px; flex: 0 0 auto; }
+.ec .scn-legend-lbl { color: var(--ec-mutedc); }
+.ec .scn-legend-val { color: var(--ec-ink); font-variant-numeric: tabular-nums; }
+.ec .scn-buckets-none { font-family: var(--ec-clinical); font-style: italic; font-size: 12px; color: var(--ec-mutedc); }
+
+/* named examples */
+.ec .scn-ex-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.ec .scn-ex {
+  border-left: 2px solid var(--ec-rule-strong);
+  padding: 0.1rem 0 0.1rem 0.7rem;
+}
+.ec .scn-ex-name { font-family: var(--ec-sans); font-weight: 700; font-size: 12.5px; color: var(--ec-ink); }
+.ec .scn-ex-head { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-body); line-height: 1.4; }
+.ec .scn-ex-src {
+  font-family: var(--ec-sans); font-weight: 700; font-size: 9px; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--ec-mutedc); margin-top: 0.15rem;
+}
+.ec .scn-ex-none { font-family: var(--ec-clinical); font-style: italic; font-size: 12px; color: var(--ec-mutedc); }
+
+/* one-pager external link */
+.ec .scn-onepager {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  border: 1px solid var(--ec-ink);
+  padding: 0.42rem 0.8rem;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ec .scn-onepager:hover { background: var(--ec-ink); color: var(--ec-paper); }
+
+.ec .scn-error {
+  font-family: var(--ec-sans);
+  font-size: 13px;
+  color: var(--ec-red);
+  border-left: 3px solid var(--ec-red);
+  padding: 0.5rem 0 0.5rem 0.8rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ec .scn-lhead { display: none; }
+  .ec .scn-row-head { grid-template-columns: 26px minmax(0, 1fr) 84px 20px; row-gap: 0.5rem; }
+  .ec .scn-row-head .scn-brel { grid-column: 3 / 4; }
+  .ec .scn-en { grid-column: 2 / 4; }
+  .ec .scn-detail { grid-template-columns: 1fr; }
+}

@@ -206,6 +206,16 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
                 <span className="dv-wm-a">INBOUND</span><span className="dv-wm-on">ON</span><span className="dv-wm-a">STEROIDS</span>
               </span>
             </div>
+            {/* Operating line (graft from The Facility, kept in the Index's quiet
+                register): pending total in muted ink, never red up here — the
+                single red lives on the most-urgent sidebar count. */}
+            <div className="dv-opline-lite" aria-label="Operating status">
+              <span className="dv-opline-key">PENDING</span>
+              <span className="dv-opline-val">{navItems.reduce((n, it) => n + (it.badge?.count ?? 0), 0)}</span>
+              <span className="dv-opline-sep" aria-hidden="true">·</span>
+              <span className="dv-opline-key">INDEX</span>
+              <span className="dv-opline-val">{navItems.length} RECORDS</span>
+            </div>
           </header>
 
           {/* Notification bell — fixed top-right, layout-independent so it shows on

@@ -1,0 +1,387 @@
+/*
+ * Usage — Claude usage analytics, BLACK BOX v4 register.
+ * The founder PRAISED this panel's density, so the brief is a "printed
+ * financial report": dense tabular figures, hairline rules, section numbering,
+ * a Bloomberg-terminal masthead. Scoped under `.ec`; reuses editorial-cockpit
+ * tokens (--ec-*). Every hue in the v1 dark panel (model purple/cyan/emerald,
+ * 6-colour session-kind palette, blue/purple daily stack, amber outlier,
+ * token-mix 4-colour) is re-expressed in INK ONLY — carried by fill pattern
+ * (solid / hatch / cross / outline), weight and functional labels. No red is
+ * spent: a cost outlier is a noteworthy anomaly, not danger, so it wears an
+ * ink box + bold flag, never the Signal red.
+ */
+
+/* ── Mono figure face: the terminal-ledger numeral ─────────────────────────── */
+.ec .u-fig {
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── Intro caveat line ─────────────────────────────────────────────────────── */
+.ec .u-intro {
+  font-family: var(--ec-sans);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ec-body);
+  max-width: 74ch;
+  margin: 0 0 1.8rem;
+}
+.ec .u-intro strong { color: var(--ec-ink); font-weight: 700; }
+
+/* ── Numbered section header ────────────────────────────────────────────────
+   §N flush left, title, then a subtitle + optional legend riding the right. */
+.ec .u-sec {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  border-bottom: 2px solid var(--ec-ink);
+  padding-bottom: 0.4rem;
+  margin: 2.4rem 0 1rem;
+  flex-wrap: wrap;
+}
+.ec .u-sec-no {
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+.ec .u-sec-t {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec .u-sec-sub {
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  letter-spacing: 0.01em;
+  margin-left: auto;
+  text-align: right;
+  max-width: 52ch;
+}
+
+/* ── §1 Summary masthead: 4 headline figures, ledger band ──────────────────── */
+.ec .u-mast {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 3px solid var(--ec-ink);
+  border-bottom: 1px solid var(--ec-rule-strong);
+}
+.ec .u-mast-cell {
+  padding: 1.1rem 1.1rem 1.2rem;
+  border-left: 1px solid var(--ec-rule);
+}
+.ec .u-mast-cell:first-child { border-left: 0; }
+.ec .u-mast-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-bottom: 0.5rem;
+}
+.ec .u-mast-fig {
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-weight: 700;
+  font-size: clamp(28px, 2.7vw, 40px);
+  line-height: 0.94;
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec .u-mast-sub {
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  margin-top: 0.5rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Two-up grid for the middle breakdown blocks ───────────────────────────── */
+.ec .u-grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 clamp(1.6rem, 3vw, 3rem);
+}
+
+/* ── Magnitude bar rows (kind / model / tools) ─────────────────────────────── */
+.ec .u-bars { display: flex; flex-direction: column; }
+.ec .u-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.8rem;
+  align-items: baseline;
+  padding: 0.5rem 0.4rem;
+  margin: 0 -0.4rem;
+  border-bottom: 1px solid var(--ec-rule);
+  transition: background 0.12s ease;
+}
+.ec .u-bar:hover { background: rgba(19, 18, 16, 0.035); }
+.ec .u-bar-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ec-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ec-ink);
+  min-width: 0;
+}
+.ec .u-bar-lbl-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ec .u-bar-val {
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ec-ink);
+  text-align: right;
+  white-space: nowrap;
+}
+.ec .u-bar-val .u-bar-pct { color: var(--ec-mutedc); }
+.ec .u-track {
+  grid-column: 1 / -1;
+  height: 8px;
+  background: rgba(19, 18, 16, 0.06);
+  position: relative;
+  margin-top: 0.15rem;
+}
+.ec .u-fill { display: block; height: 100%; }
+
+/* ── Swatch chip (legend + inline label marker) ────────────────────────────── */
+.ec .u-sw {
+  flex: 0 0 auto;
+  width: 12px; height: 12px;
+  display: inline-block;
+  outline: 1px solid var(--ec-ink);
+  outline-offset: -1px;
+}
+
+/* ── INK PATTERN LANGUAGE — the whole chromatic system, re-expressed ─────────
+   solid = primary/heaviest; hatch = second; cross = third; dots = fourth;
+   vert / horiz = extra categoricals; outline = residual/"other". */
+.ec .u-pat--solid   { background: var(--ec-ink); }
+.ec .u-pat--hatch   { background: repeating-linear-gradient(45deg, var(--ec-ink) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-pat--cross   { background: repeating-linear-gradient(45deg, var(--ec-ink) 0 1.5px, transparent 1.5px 5px), repeating-linear-gradient(-45deg, var(--ec-ink) 0 1.5px, transparent 1.5px 5px); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-pat--dots    { background: radial-gradient(var(--ec-ink) 1.1px, transparent 1.3px) 0 0 / 5px 5px; box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-pat--vert    { background: repeating-linear-gradient(90deg, var(--ec-ink) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-pat--horiz   { background: repeating-linear-gradient(0deg, var(--ec-ink) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-pat--outline { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ec-ink); }
+
+/* ── §2 Daily spend — 30-day stacked bar plot ──────────────────────────────── */
+.ec .u-daily {
+  border-top: 3px solid var(--ec-ink);
+  border-bottom: 1px solid var(--ec-rule-strong);
+  padding: 1rem 0 0.6rem;
+}
+.ec .u-daily-plot { display: flex; align-items: flex-end; gap: 2px; height: 168px; }
+.ec .u-daily-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+  cursor: default;
+  min-width: 0;
+}
+.ec .u-daily-seg { width: 100%; }
+.ec .u-daily-seg--railway { background: repeating-linear-gradient(45deg, var(--ec-ink) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+.ec .u-daily-seg--local { background: var(--ec-ink); }
+.ec .u-daily-col:hover .u-daily-seg--local { background: #000; }
+.ec .u-daily-tip {
+  position: absolute;
+  inset-inline: -14px;
+  top: -1.35rem;
+  text-align: center;
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ec-ink);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.1s ease;
+}
+.ec .u-daily-col:hover .u-daily-tip { opacity: 1; }
+.ec .u-daily-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--ec-mutedc);
+  font-variant-numeric: tabular-nums;
+}
+.ec .u-legend { display: flex; align-items: center; gap: 1rem; }
+.ec .u-legend-i {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ec-sans);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ec-mutedc);
+}
+
+/* ── Token-mix rows: labelled full-width density bars ───────────────────────── */
+.ec .u-tok { display: flex; flex-direction: column; gap: 0.85rem; padding-top: 0.3rem; }
+.ec .u-tok-row {}
+.ec .u-tok-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.3rem; }
+.ec .u-tok-lbl { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--ec-sans); font-size: 12.5px; font-weight: 600; color: var(--ec-ink); }
+.ec .u-tok-val { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; color: var(--ec-mutedc); white-space: nowrap; }
+.ec .u-tok-track { height: 10px; background: rgba(19, 18, 16, 0.06); position: relative; }
+
+/* ── Tables (by project, top sessions) ─────────────────────────────────────── */
+.ec .u-tablewrap { overflow-x: auto; border-top: 3px solid var(--ec-ink); }
+.ec table.u-table { width: 100%; border-collapse: collapse; font-family: var(--ec-sans); }
+.ec .u-table thead th {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--ec-rule-strong);
+  white-space: nowrap;
+}
+.ec .u-table th.u-r, .ec .u-table td.u-r { text-align: right; }
+.ec .u-table tbody td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--ec-rule);
+  font-size: 13px;
+  color: var(--ec-ink);
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.ec .u-table td.u-num {
+  font-family: 'Berkeley Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.ec .u-table td.u-dim { color: var(--ec-mutedc); }
+.ec .u-table td.u-proj { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+.ec .u-table tbody tr.u-clickable { cursor: pointer; transition: background 0.12s ease; }
+.ec .u-table tbody tr.u-clickable:hover { background: rgba(19, 18, 16, 0.04); }
+.ec .u-table tbody tr.u-open { background: rgba(19, 18, 16, 0.05); }
+
+/* source pill: local = ink solid, railway = ink outline (pattern, not colour) */
+.ec .u-src {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  white-space: nowrap;
+}
+.ec .u-src--local { background: var(--ec-ink); color: var(--ec-paper); }
+.ec .u-src--railway { background: transparent; color: var(--ec-ink); box-shadow: inset 0 0 0 1px var(--ec-ink); }
+
+/* kind badge in the session table: ink outline chip, functional label */
+.ec .u-kind {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  padding: 0.1rem 0.4rem;
+  box-shadow: inset 0 0 0 1px var(--ec-rule-strong);
+  white-space: nowrap;
+}
+.ec .u-model {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ec-ink);
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+
+/* σ column: ink by default; an outlier wears an ink box + bold flag (no red) */
+.ec .u-sigma { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; color: var(--ec-dim); }
+.ec .u-sigma--flag {
+  font-weight: 700;
+  color: var(--ec-ink);
+  padding: 0.1rem 0.35rem;
+  box-shadow: inset 0 0 0 1.5px var(--ec-ink);
+}
+
+/* ── Expanded session detail row ───────────────────────────────────────────── */
+.ec .u-detail td { padding: 0 !important; border-bottom: 1px solid var(--ec-rule-strong) !important; }
+.ec .u-detail-in { padding: 1rem 0.7rem 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
+.ec .u-d-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-bottom: 0.4rem;
+}
+.ec .u-d-prompt {
+  font-family: var(--ec-clinical);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ec-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-left: 2px solid var(--ec-ink);
+  padding: 0.15rem 0 0.15rem 0.9rem;
+  max-width: 84ch;
+}
+.ec .u-d-prompt--none { color: var(--ec-mutedc); font-style: normal; }
+.ec .u-d-grid { display: flex; flex-wrap: wrap; gap: 1.4rem 2.4rem; }
+.ec .u-d-block { min-width: 0; }
+.ec .u-d-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.ec .u-d-chip {
+  display: inline-flex; align-items: baseline; gap: 0.35rem;
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ec-ink);
+  padding: 0.12rem 0.4rem;
+  box-shadow: inset 0 0 0 1px var(--ec-rule-strong);
+}
+.ec .u-d-chip .u-d-chip-n { color: var(--ec-mutedc); font-variant-numeric: tabular-nums; }
+.ec .u-d-val {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ec-body);
+  line-height: 1.5;
+}
+.ec .u-d-why { font-family: var(--ec-sans); font-size: 12.5px; line-height: 1.5; color: var(--ec-body); max-width: 46ch; }
+
+/* ── States ────────────────────────────────────────────────────────────────── */
+.ec .u-state { font-family: var(--ec-sans); font-size: 13px; color: var(--ec-mutedc); padding: 2rem 0.5rem; }
+.ec .u-state--err { color: var(--ec-red); }
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .ec .u-mast { grid-template-columns: repeat(2, 1fr); }
+  .ec .u-mast-cell:nth-child(3) { border-left: 0; }
+  .ec .u-grid2 { grid-template-columns: 1fr; }
+  .ec .u-sec-sub { margin-left: 0; flex-basis: 100%; text-align: left; }
+}
+@media (max-width: 640px) {
+  .ec .u-mast { grid-template-columns: 1fr; }
+  .ec .u-mast-cell { border-left: 0; border-top: 1px solid var(--ec-rule); }
+  .ec .u-mast-cell:first-child { border-top: 0; }
+}

@@ -11,6 +11,7 @@ import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
 import { LiveProvider } from './live/LiveProvider';
+import { useNavBadges } from './useNavBadges';
 import type { NavItem, SectionId } from './types';
 
 /**
@@ -125,7 +126,17 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
 let handleNavRef: (sec: SectionId, sub?: string) => void = () => {};
 
 function ShellInner() {
-  const navItems: NavItem[] = NAV.flatMap(g => g.items.map(it => ({ id: it.id, name: it.name, group: g.group })));
+  // Live nav counts (count-column graft from The Facility): counts read muted
+  // ink; only the single most-urgent entry wears red (replies first, then
+  // erroring workflows). Everything else stays a quiet neutral count.
+  const badges = useNavBadges();
+  const badgeFor = (id: SectionId): NavItem['badge'] => {
+    const count = id === 'posts' ? badges.posts : id === 'outreach' ? badges.outreach : id === 'health' ? badges.health : null;
+    if (!count || count <= 0) return undefined;
+    const urgentId = (badges.outreach ?? 0) > 0 ? 'outreach' : (badges.health ?? 0) > 0 ? 'health' : null;
+    return { count, severity: id === urgentId ? 'bad' : 'neutral' };
+  };
+  const navItems: NavItem[] = NAV.flatMap(g => g.items.map(it => ({ id: it.id, name: it.name, group: g.group, badge: badgeFor(it.id) })));
 
   const sectionRenderers: Partial<Record<SectionId, () => React.ReactNode>> = {};
   NAV.forEach(g => g.items.forEach(it => { sectionRenderers[it.id] = it.render; }));
