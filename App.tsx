@@ -46,8 +46,18 @@ function useTrackPageviews(pathname: string) {
 }
 
 import { useDashboardV2Flag } from './hooks/useDashboardV2Flag';
+import { isAuthenticated } from './lib/dashboardAuth';
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const DashboardV2Demo = lazy(() => import('./components/dashboard-v2/DemoShell'));
+const DashboardAuthGate = lazy(() => import('./components/dashboard/DashboardAuth'));
+
+// v2 shares v1's password gate (VITE_DASHBOARD_HASH + localStorage session).
+// Without this the v2 branch served the full operator dashboard ungated.
+function AuthedDashboardV2() {
+  const [authed, setAuthed] = React.useState(isAuthenticated());
+  if (!authed) return <DashboardAuthGate onSuccess={() => setAuthed(true)} />;
+  return <DashboardV2Demo />;
+}
 const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEditor'));
 const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
@@ -190,7 +200,7 @@ function App() {
           Loading dashboard v2…
         </div>
       }>
-        <DashboardV2Demo />
+        <AuthedDashboardV2 />
       </Suspense>
     );
   }
