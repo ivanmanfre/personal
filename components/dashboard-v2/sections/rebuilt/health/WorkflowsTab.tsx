@@ -95,7 +95,7 @@ const WorkflowsTab: React.FC<Props> = ({
         }
       }
     }
-    return pipelineConfig.map((p) => {
+    const stats = pipelineConfig.map((p) => {
       const matched = map.get(p.id) || [];
       return {
         id: p.id, name: p.name, workflows: matched,
@@ -105,6 +105,20 @@ const WorkflowsTab: React.FC<Props> = ({
         totalRuns: matched.reduce((s, w) => s + w.totalExecutions24h, 0),
       };
     });
+    // Catch-all: workflows no pipelineConfig pattern claims. Without this bucket
+    // an erroring workflow outside the config is INVISIBLE in every tile and the
+    // sidebar/hero counts stop matching the rendered rows (count==array law).
+    const unmatched = workflows.filter((wf) => !claimed.has(wf.workflowId));
+    if (unmatched.length > 0) {
+      stats.push({
+        id: 'unmatched', name: 'Unassigned', workflows: unmatched,
+        errors: unmatched.reduce((s, w) => s + w.errorCount24h, 0),
+        hasError: unmatched.some((w) => workflowHealth(w) === 'error'),
+        hasWarn: unmatched.some((w) => workflowHealth(w) === 'warning'),
+        totalRuns: unmatched.reduce((s, w) => s + w.totalExecutions24h, 0),
+      });
+    }
+    return stats;
   }, [workflows]);
 
   const visiblePipelines = useMemo(() => {
