@@ -550,7 +550,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
 }) {
   const founder = board.founder;
   const name = founder?.name || board.company_name;
-  const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0].toLowerCase();
+  const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0];
   const av = size === 'lg' ? 44 : 38;
   const bodyPx = size === 'lg' ? 13.5 : 12.5;
   const titlePx = size === 'lg' ? 24 : 18;

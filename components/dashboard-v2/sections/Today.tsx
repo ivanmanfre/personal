@@ -228,7 +228,7 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
               </>
             ) : (
               <>
-                <div className="ec-card-headline">Rise DTC</div>
+                <div className="ec-card-headline">RISE DTC</div>
                 <span className="ec-offline" style={{ marginTop: '0.5rem' }} title="client_registry returns 0 rows to the dashboard anon key; the rebuild reads it server-side">anon RLS · 0 rows</span>
               </>
             )}

@@ -89,7 +89,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
   {
     group: 'clients',
     items: [
-      { id: 'risedtc', name: 'Rise DTC', render: () => <ClientsRoadmap /> },
+      { id: 'risedtc', name: 'RISE DTC', render: () => <ClientsRoadmap /> },
       { id: 'clientops', name: 'Client Ops', render: () => <ClientOps /> },
     ],
   },

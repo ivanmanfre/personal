@@ -160,7 +160,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const bodyFont = brand.font_body ? `'${brand.font_body}', sans-serif` : "'Manrope', sans-serif";
   const bookingUrl = brand.booking_url;
   const logoUrl = brand.logo_url || undefined;
-  const wordmark = brand.wordmark || 'Rise DTC';
+  const wordmark = brand.wordmark || 'RISE DTC';
 
   // Per-scan share metadata — Rise's own hook, never Ivan/IOS copy.
   useMetadata({
@@ -188,7 +188,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       <header className="border-b" style={{ borderColor: `${ink}1a` }}>
         <div className="max-w-3xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
           {logoUrl ? (
-            <img src={logoUrl} alt="Rise DTC" className="h-6 sm:h-7 w-auto" />
+            <img src={logoUrl} alt="RISE DTC" className="h-6 sm:h-7 w-auto" />
           ) : (
             <span className="font-bold text-lg" style={{ fontFamily: headingFont, color: ink }}>{wordmark}</span>
           )}

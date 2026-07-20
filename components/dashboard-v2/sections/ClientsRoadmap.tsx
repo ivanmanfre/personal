@@ -52,13 +52,13 @@ export function ClientsRoadmap() {
   return (
     <div className="ec">
       <div className="ec-topline">
-        <span className="ec-topline-brand">Rise DTC</span>
+        <span className="ec-topline-brand">RISE DTC</span>
         <span className="ec-topline-meta">
           Client of record · Mattan · Engagement month 1, day {engagementDay()}
         </span>
       </div>
 
-      <h1 className="ec-hed ec-hed--today">Rise DTC</h1>
+      <h1 className="ec-hed ec-hed--today">RISE DTC</h1>
 
       {/* Above-the-fold stat strip — live counts scoped to client_id=risedtc */}
       <div className="ec-strip">
@@ -102,7 +102,7 @@ export function ClientsRoadmap() {
               source offline
             </span>
           ) : home.contentTotal === 0 ? (
-            <p className="ec-note">No content drafts for Rise DTC yet.</p>
+            <p className="ec-note">No content drafts for RISE DTC yet.</p>
           ) : (
             <>
               {/* status breakdown */}
@@ -155,7 +155,7 @@ export function ClientsRoadmap() {
           ) : home.lmBlocked ? (
             <span className="ec-offline">source offline</span>
           ) : home.lmTotal === 0 ? (
-            <p className="ec-note">No lead magnets for Rise DTC yet.</p>
+            <p className="ec-note">No lead magnets for RISE DTC yet.</p>
           ) : (
             <div className="ec-list">
               {home.lmItems.map((lm, i) => (
@@ -225,7 +225,7 @@ export function ClientsRoadmap() {
               target="_blank"
               rel="noreferrer"
             >
-              Open Rise DTC board
+              Open RISE DTC board
             </a>
             <div className="ec-data" style={{ marginTop: '0.5rem' }}>
               /client/{BOARD_SLUG} · get_client_board(p_slug, p_token)
