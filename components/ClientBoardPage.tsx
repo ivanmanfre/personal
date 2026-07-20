@@ -2462,7 +2462,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                   <button
                     key={i}
                     onClick={() => onOpen(it)}
-                    className="flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-[12px] font-medium"
+                    className="cb-cal-chip flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-[12px] font-medium"
                     style={chipStyle(it.kind)}
                   >
                     {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
@@ -2503,14 +2503,14 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
             ))}
           </div>
           {weeks.map((row, wi) => (
-            <div key={wi} className="grid grid-cols-7">
+            <div key={wi} className="cb-cal-row grid grid-cols-7" style={{ animationDelay: `${Math.min(wi * 55, 330)}ms` }}>
               {row.map((d, di) => {
                 const iso = d.toISOString().slice(0, 10);
                 const items = byDate.get(iso) || [];
                 const visible = items.slice(0, 3);
                 const weekend = d.getDay() === 0 || d.getDay() === 6;
                 return (
-                  <div key={iso} className="min-h-[112px] bg-white p-1.5" style={{ borderTop: wi > 0 ? `1px solid ${DIVIDE}` : 'none', borderLeft: di > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                  <div key={iso} className="cb-cal-cell min-h-[112px] bg-white p-1.5" style={{ borderTop: wi > 0 ? `1px solid ${DIVIDE}` : 'none', borderLeft: di > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
                     {/* Month turns are marked in the cell itself: the 1st renders "1 Aug" in
                         quiet mono ink, so the two-month span reads without extra rows. */}
                     <div className="px-0.5 pb-1 text-[12px] font-medium tabular-nums" style={d.getDate() === 1 ? { fontFamily: MONO, fontSize: 11, color: INK } : { color: weekend ? '#c2cccb' : FAINT }}>
@@ -2528,7 +2528,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                             key={i}
                             title={tip}
                             onClick={() => onOpen(it)}
-                            className="flex w-full items-center gap-1 truncate rounded-[4px] px-1.5 py-1 text-left text-[10.5px] font-medium transition-transform duration-150 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02]"
+                            className="cb-cal-chip flex w-full items-center gap-1 truncate rounded-[4px] px-1.5 py-1 text-left text-[10.5px] font-medium"
                             style={chipStyle(it.kind)}
                           >
                             {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
@@ -5788,6 +5788,22 @@ export default function ClientBoardPage() {
 [data-skin="blackbox"] .cb-daytick[data-state="current"]::after {
   content: ""; position: absolute; left: -1px; right: -1px; bottom: -4px;
   height: 3px; background: var(--cb-accent);
+}
+
+/* ============ Polish: calendar (C2) ============ */
+/* Chips nudge right and deepen on hover — travel, not scale (planes, not cards). */
+.cb-cal-chip { transition: transform .16s cubic-bezier(.25,1,.5,1), filter .16s ease; }
+.cb-cal-chip:hover { transform: translateX(2px); filter: brightness(.96); }
+/* Day cells take a whisper of ink on hover so the grid answers the cursor. */
+.cb-cal-cell { transition: background-color .16s ease; }
+.cb-cal-cell:hover { background: rgba(19,18,16,0.025); }
+/* Week rows print top-down on mount. */
+@keyframes cb-cal-row-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+.cb-cal-row { animation: cb-cal-row-in .38s cubic-bezier(.25,1,.5,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .cb-cal-chip, .cb-cal-cell { transition: none }
+  .cb-cal-chip:hover { transform: none }
+  .cb-cal-row { animation: none }
 }
 `}</style>
     <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
