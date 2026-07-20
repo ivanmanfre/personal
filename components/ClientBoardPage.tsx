@@ -2585,7 +2585,7 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
     : { label: 'Planned', bg: 'rgba(2,49,47,0.05)', color: DIM, dot: null };
   return (
     <div
-      className={`overflow-hidden rounded-xl bg-white ${LIFT} ${onOpen ? 'cursor-pointer' : ''}`}
+      className={`cb-lm-card overflow-hidden rounded-xl bg-white ${LIFT} ${onOpen ? 'cursor-pointer' : ''}`}
       style={{ border: `1px solid ${LINE}` }}
       role={onOpen ? 'button' : undefined}
       tabIndex={onOpen ? 0 : undefined}
@@ -5817,6 +5817,12 @@ export default function ClientBoardPage() {
 }
 .cb-ledger-row:hover::before, .cb-ledger-row:focus-visible::before { transform: scaleY(1); }
 @media (prefers-reduced-motion: reduce) { .cb-ledger-row::before { transition: none } }
+
+/* ============ Polish: LM library cards ============ */
+/* Hover sharpens the frame and lifts 2px — a printed plate picked up, not a floating card. */
+.cb-lm-card { transition: transform .18s cubic-bezier(.25,1,.5,1), border-color .16s ease; }
+.cb-lm-card:hover, .cb-lm-card:focus-visible { transform: translateY(-2px); border-color: var(--cb-line-bold, rgba(2,49,47,0.3)) !important; }
+@media (prefers-reduced-motion: reduce) { .cb-lm-card { transition: none } .cb-lm-card:hover { transform: none } }
 `}</style>
     <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
