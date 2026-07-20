@@ -70,8 +70,8 @@ export function ClientOps() {
   );
 
   const {
-    drafts, actions, ideas, lms, boardLms, identity, queue, errors, aggregates,
-    reload, onToggle, onSchedule, onDecideIdea, onSwapCover,
+    drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates,
+    reload, onToggle, onSchedule, onDecideIdea, onSwapCover, onMarkActionsSeen,
   } = useClientDetail(client);
 
   const [stage, setStage] = useState<StageKey>('review');
@@ -328,7 +328,7 @@ export function ClientOps() {
           <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} onSwapCover={onSwapCover} onNote={reload} />
 
           {/* ── Client activity feed ──────────────────────────────────────── */}
-          <ActionsFeed actions={actions} err={errors.actions} />
+          <ActionsFeed actions={actions} unseen={actionsUnseen} onMarkSeen={onMarkActionsSeen} err={errors.actions} />
         </>
       )}
     </div>
@@ -741,10 +741,52 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
 }
 
 // ── Client actions feed ──────────────────────────────────────────────────────
-function ActionsFeed({ actions, err }: { actions: ActionRow[] | null; err?: string }) {
+/** Friendly label for each recorded client action / note event. */
+const ACTION_LABEL: Record<string, string> = {
+  edit_copy: 'edited copy',
+  approve: 'approved',
+  request_changes: 'requested changes',
+  shift_request: 'requested a shift',
+  voice_note: 'left a voice note',
+  angle_swap: 'swapped the angle',
+  angle_swap_undone: 'undid an angle swap',
+  post_removed: 'removed a post',
+  post_restored: 'restored a post',
+  undo_approve: 'walked back an approve',
+};
+const actionLabel = (a: ActionRow): string => {
+  const key = (a.payload?.event as string) || a.action;
+  return ACTION_LABEL[key] || (key || 'acted').replace(/_/g, ' ');
+};
+/** Compact diff summary when a row carries before/after copy. */
+const diffSummary = (p: any): string | null => {
+  const before = typeof p?.before === 'string' ? p.before : null;
+  const after = typeof p?.after === 'string' ? p.after : null;
+  if (before == null && after == null) return null;
+  const delta = (after?.length || 0) - (before?.length || 0);
+  const sign = delta > 0 ? `+${delta}` : `${delta}`;
+  return `copy ${delta === 0 ? 'reworded' : `${sign} chars`}`;
+};
+
+function ActionsFeed({ actions, unseen, onMarkSeen, err }: {
+  actions: ActionRow[] | null;
+  unseen: number;
+  onMarkSeen: () => void;
+  err?: string;
+}) {
   return (
     <section className="co2-laneblock">
-      <div className="ec-kicker">Client activity — last 20 taps, edits, voice notes</div>
+      <div className="co2-feed-head">
+        <div className="ec-kicker" style={{ margin: 0 }}>Client activity — last 20 taps, edits, voice notes</div>
+        <div className="co2-feed-head-right">
+          {unseen > 0 && <span className="co2-unseen" title={`${unseen} new since last seen`}>{unseen} new</span>}
+          {actions != null && actions.length > 0 && (
+            <button type="button" className="co2-markseen" onClick={onMarkSeen} disabled={unseen === 0}>
+              {unseen === 0 ? 'all seen' : 'mark seen'}
+            </button>
+          )}
+        </div>
+      </div>
       {err && <div className="co2-err">{err}</div>}
       {actions == null ? (
         <div className="ws-loading">Loading activity…</div>
@@ -756,13 +798,22 @@ function ActionsFeed({ actions, err }: { actions: ActionRow[] | null; err?: stri
             const p = a.payload || {};
             const isVoice = p.event === 'voice_note' || a.action === 'voice_note';
             const audioUrl = isVoice && p.path ? `${PUBLIC_STORAGE}/${p.path}` : null;
-            const summary = isVoice
+            const who = (a.author && a.author.trim()) || 'Client';
+            const diff = isVoice
               ? `voice note${p.duration_s ? ` · ${Math.round(p.duration_s)}s` : ''}`
-              : (p.event || p.text || a.ref || (Object.keys(p).length ? JSON.stringify(p).slice(0, 80) : '—'));
+              : diffSummary(p);
+            const post = a.title ? stripPrefix(a.title) : (a.ref ? '' : null);
+            const isNew = !a.seen_at;
             return (
-              <div key={a.id} className="co2-feed-row">
-                <span className="co2-feed-act">{a.action}</span>
-                <span className="co2-feed-meta">{summary}</span>
+              <div key={a.id} className={`co2-feed-row${isNew ? ' co2-feed-row--new' : ''}`}>
+                <div className="co2-feed-lead">
+                  <span className="co2-feed-act">
+                    {isNew && <span className="co2-dot" aria-hidden />}
+                    <b>{who}</b> {actionLabel(a)}
+                  </span>
+                  {post && <span className="co2-feed-post" title={post}>{post}</span>}
+                </div>
+                {diff && <span className="co2-feed-meta">{diff}</span>}
                 {audioUrl && <a className="co2-play" href={audioUrl} target="_blank" rel="noreferrer">play ▸</a>}
                 <span className="co2-feed-date">{fmtDate(a.created_at)}</span>
               </div>
@@ -887,10 +938,21 @@ const CSS = `
 .ec .co2-coverpick img { height:96px; display:block; }
 
 /* Actions feed */
+.ec .co2-feed-head { display:flex; align-items:center; justify-content:space-between; gap:0.9rem; margin-bottom:0.7rem; }
+.ec .co2-feed-head-right { display:flex; align-items:center; gap:0.7rem; flex:0 0 auto; }
+.ec .co2-unseen { font-family:var(--ec-sans); font-weight:800; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-paper); background:var(--ec-ink); padding:0.16rem 0.44rem; font-variant-numeric:tabular-nums; }
+.ec .co2-markseen { font-family:var(--ec-sans); font-weight:700; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-ink); background:var(--ec-paper); border:1px solid var(--ec-rule-strong); padding:0.2rem 0.55rem; cursor:pointer; transition:background 0.15s ease; }
+.ec .co2-markseen:hover:not(:disabled) { background:rgba(19,18,16,0.05); }
+.ec .co2-markseen:disabled { opacity:0.4; cursor:default; }
 .ec .co2-feed { border-top:1px solid var(--ec-rule); }
-.ec .co2-feed-row { display:flex; align-items:baseline; gap:0.8rem; padding:0.5rem 0.2rem; border-bottom:1px solid var(--ec-rule); }
-.ec .co2-feed-act { font-family:var(--ec-sans); font-weight:700; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ec-ink); flex:0 0 auto; min-width:130px; }
-.ec .co2-feed-meta { flex:1; min-width:0; font-family:var(--ec-sans); font-size:12px; color:var(--ec-mutedc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ec .co2-feed-row { display:flex; align-items:baseline; gap:0.8rem; padding:0.55rem 0.2rem; border-bottom:1px solid var(--ec-rule); }
+.ec .co2-feed-row--new { background:rgba(19,18,16,0.028); }
+.ec .co2-feed-lead { display:flex; flex-direction:column; gap:0.12rem; flex:0 0 auto; min-width:180px; max-width:46%; }
+.ec .co2-feed-act { font-family:var(--ec-sans); font-size:12px; color:var(--ec-mutedc); display:inline-flex; align-items:baseline; gap:0.35rem; }
+.ec .co2-feed-act b { font-weight:700; color:var(--ec-ink); text-transform:none; letter-spacing:0; }
+.ec .co2-dot { width:6px; height:6px; border-radius:9999px; background:var(--ec-ink); flex:0 0 auto; transform:translateY(-1px); }
+.ec .co2-feed-post { font-family:var(--ec-sans); font-size:11.5px; color:var(--ec-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ec .co2-feed-meta { flex:1; min-width:0; font-family:var(--ec-sans); font-size:11.5px; color:var(--ec-mutedc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ec .co2-play { font-family:var(--ec-sans); font-size:11px; color:var(--ec-ink); text-decoration:underline; text-underline-offset:2px; flex:0 0 auto; }
 .ec .co2-feed-date { font-family:'Berkeley Mono', ui-monospace, Menlo, monospace; font-size:11px; color:var(--ec-mutedc); flex:0 0 auto; }
 

@@ -143,6 +143,16 @@ interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreac
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
 interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number }
+/** Live monthly send-log usage for the Leads panel. Counts + caps both come from the
+ *  server (client_board_outreach_usage RPC); the component never hardcodes a cap. */
+interface OutreachUsage {
+  inmail_used: number;
+  inmail_cap: number;
+  inmail_remaining: number;
+  dm_sent: number;
+  connect_sent: number;
+  connect_cap: number;
+}
 interface OutreachSpec {
   note?: string;
   icp?: { label?: string; bar?: string[]; note?: string };
@@ -3995,7 +4005,7 @@ function LeadsBlockHead({ n, label, sub }: { n: string; label: string; sub?: Rea
   );
 }
 
-function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void; live?: boolean }) {
+function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = null }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void; live?: boolean; usage?: OutreachUsage | null }) {
   const real = board.lead_pipeline && board.lead_pipeline.length > 0 ? board.lead_pipeline : null;
   const usingSample = !real && preview;
   const leads: PipelineLead[] = real ?? (usingSample ? SAMPLE_LEAD_PIPELINE : []);
@@ -4043,6 +4053,30 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>outreach</span>
               {o.note && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{o.note}</span>}
             </div>
+
+            {/* This month's send allowance — real counts from the send log, caps from
+                config. Honest zero until the engine sends; never a fabricated figure. */}
+            {usage && (
+              <div className="mb-8">
+                <LeadsBlockHead n="00" label="this month" sub="your RISE DTC send allowance" />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    { big: `${usage.inmail_remaining}`, unit: 'left', lbl: 'InMails remaining this month', sub: `${usage.inmail_used} sent of ${usage.inmail_cap}`, hot: usage.inmail_remaining <= 5 },
+                    { big: `${usage.connect_sent}`, unit: `of ${usage.connect_cap}`, lbl: 'Connection requests', sub: `${usage.connect_cap - usage.connect_sent} left this month`, hot: false },
+                    { big: `${usage.dm_sent}`, unit: 'sent', lbl: 'DMs sent this month', sub: usage.dm_sent === 0 ? 'none sent yet' : 'follow-ups to accepts', hot: false },
+                  ].map((t) => (
+                    <div key={t.lbl} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: t.hot ? caText(accent) : INK }}>{t.big}</span>
+                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>{t.unit}</span>
+                      </div>
+                      <div className="mt-2 text-[12.5px] font-semibold leading-snug" style={{ color: INK }}>{t.lbl}</div>
+                      <div className="mt-1 text-[11.5px]" style={{ fontFamily: BODY, color: DIM }}>{t.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 01 — The bar: who qualifies. ICP stays; the funnel lecture is gone (D1). */}
             {o.icp && (<>
@@ -5370,6 +5404,35 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token]);
 
+  // Outreach usage (live): the real send-log counts for the month, gated by the same
+  // token/session posture as the schedule read. Caps come from integration_config
+  // server-side (never hardcoded here); counts are computed live from outreach_messages
+  // + outreach_engagement_log. Honest zero until the engine actually sends.
+  const [outreachUsage, setOutreachUsage] = useState<OutreachUsage | null>(null);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_outreach_usage', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_outreach_usage_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; usage?: OutreachUsage | null } | null;
+        if (!out?.ok || !out.usage) return;
+        setOutreachUsage(out.usage);
+      } catch { /* usage strip is progressive enhancement — absent = simply not shown */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
   // History log (live): reads the insert-only client_board_actions audit for one draft.
   const fetchHistory = async (ref: string): Promise<HistoryEntry[]> => {
     if (!slug) return [];
@@ -5939,7 +6002,7 @@ export default function ClientBoardPage() {
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
+    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,

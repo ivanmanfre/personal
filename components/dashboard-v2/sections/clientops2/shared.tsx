@@ -97,6 +97,11 @@ export interface ActionRow {
   ref: string | null;
   payload: any;
   created_at: string;
+  seen_at: string | null;
+  /** Draft title resolved from the ref (carousel_drafts.title); null for non-post events. */
+  title: string | null;
+  /** Who took the action, when the payload carries it; falls back to a generic label. */
+  author: string | null;
 }
 /** Board-JSON lead-magnet entry carrying a cover variation pair. */
 export interface BoardLm { id: string; title: string; cover_url?: string; covers?: string[] }
@@ -233,6 +238,7 @@ export function useClientsOverview() {
 export function useClientDetail(client: ClientOverview | null) {
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [actions, setActions] = useState<ActionRow[] | null>(null);
+  const [actionsUnseen, setActionsUnseen] = useState<number>(0);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [lms, setLms] = useState<Lm[] | null>(null);
   const [boardLms, setBoardLms] = useState<BoardLm[] | null>(null);
@@ -253,8 +259,8 @@ export function useClientDetail(client: ClientOverview | null) {
     const errs: typeof errors = {};
     if (dRes.error || (dRes.data && dRes.data.ok === false)) { errs.drafts = dRes.error?.message || dRes.data?.error || 'drafts load failed'; setDrafts([]); }
     else setDrafts((dRes.data?.drafts || []) as Draft[]);
-    if (aRes.error || (aRes.data && aRes.data.ok === false)) { errs.actions = aRes.error?.message || aRes.data?.error || 'actions load failed'; setActions([]); }
-    else setActions((aRes.data?.actions || []) as ActionRow[]);
+    if (aRes.error || (aRes.data && aRes.data.ok === false)) { errs.actions = aRes.error?.message || aRes.data?.error || 'actions load failed'; setActions([]); setActionsUnseen(0); }
+    else { setActions((aRes.data?.actions || []) as ActionRow[]); setActionsUnseen(Number(aRes.data?.unseen) || 0); }
     if (iRes.error || (iRes.data && iRes.data.ok === false)) { errs.ideas = iRes.error?.message || iRes.data?.error || 'ideas load failed'; setIdeas([]); }
     else setIdeas((iRes.data?.ideas || []) as Idea[]);
     if (lRes.error || (lRes.data && lRes.data.ok === false)) { errs.lms = lRes.error?.message || lRes.data?.error || 'lead magnets load failed'; setLms([]); }
@@ -318,12 +324,28 @@ export function useClientDetail(client: ClientOverview | null) {
     }
   }, [client?.board.slug, load]);
 
+  // Mark every unseen client action for this board as read (per-row seen_at stamp —
+  // reuses the client_board_actions.seen_at column the WhatsApp notifier already keys
+  // off, so there is no second source of truth). Optimistic: zero the badge, then persist.
+  const onMarkActionsSeen = useCallback(async () => {
+    if (!client) return;
+    if (actionsUnseen === 0) return;
+    const stamp = new Date().toISOString();
+    setActionsUnseen(0);
+    setActions((prev) => prev?.map((a) => (a.seen_at ? a : { ...a, seen_at: stamp })) ?? prev);
+    const res = await supabase.rpc('operator_mark_actions_seen', { p_gate: GATE, p_slug: client.board.slug });
+    if (res.error || (res.data && res.data.ok === false)) {
+      setErrors((e) => ({ ...e, actions: res.error?.message || res.data?.error || 'mark seen failed' }));
+      load();
+    }
+  }, [client?.board.slug, actionsUnseen, load]);
+
   const aggregates = useMemo(
     () => computeAggregates(drafts, ideas, lms, queue),
     [drafts, ideas, lms, queue],
   );
 
-  return { drafts, actions, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onDecideIdea, onSwapCover };
+  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onDecideIdea, onSwapCover, onMarkActionsSeen };
 }
 
 // ── Client-faithful LinkedIn preview ─────────────────────────────────────────
