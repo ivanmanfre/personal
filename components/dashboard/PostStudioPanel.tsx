@@ -69,7 +69,10 @@ interface PostStudioPanelProps {
 }
 
 const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts' }) => {
-  const { drafts: realDrafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
+  const { drafts: allDrafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
+  // Client-owned drafts (client_id set) never belong on Ivan's own studio board —
+  // approving one here would schedule it to Ivan's feed. Client Ops owns them.
+  const realDrafts = React.useMemo(() => allDrafts.filter((d) => !d.clientId), [allDrafts]);
   // Curator-scored ideas, projected onto the board's Idea stage. They live as
   // status='idea' rows alongside the real drafts so the pipeline reads
   // Idea → Generating → Review → … → Published in one board. Only the full

@@ -74,7 +74,10 @@ function lmDate(iso: string | null | undefined): string | undefined {
 }
 
 const LeadMagnetStudioPanel: React.FC = () => {
-  const { drafts, loading, refresh } = useLeadMagnets();
+  const { drafts: rawDrafts, loading, refresh } = useLeadMagnets();
+  // Client-owned LMs (client_id set) never belong on Ivan's approve queue —
+  // client boards own their own build/approve path. Client Ops owns them.
+  const drafts = React.useMemo(() => rawDrafts.filter((d) => !d.clientId), [rawDrafts]);
   // Curator-scored lead_magnet ideas, projected onto the board's Idea stage as
   // status='idea' rows alongside the real drafts (mirrors the Posts board).
   // Clicking one opens the review panel; approving there promotes it to a real

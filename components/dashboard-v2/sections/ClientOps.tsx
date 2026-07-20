@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { HeadRow, KpiRow, KpiTile, StatusChip, Card } from '../primitives';
 import type { Severity } from '../types';
+import QAVerdictPanel from '../../dashboard/QAVerdictPanel';
+import AgentLogFeed from '../../dashboard/AgentLogFeed';
+import { strengthBand } from '../../../lib/ideaProjection';
+import type { AgentLogEntry } from '../../../hooks/useContentLibrary';
 
 /**
  * Client Ops — operator-only review surface (Ivan's dashboard).
@@ -13,11 +17,14 @@ import type { Severity } from '../types';
  * All data flows through gated SECURITY DEFINER RPCs (operator_*). The gate is a
  * dedicated operator secret held only in localStorage + hashed server-side — it
  * is NOT the public dashboard hash, so nothing here is reachable from the bundle.
+ *
+ * Parity depth (sources, ICP scores, agent logs, comments, LM lane) lives on
+ * THIS surface only — the public client board deliberately shows none of it.
  */
 
 // Operator surface, no password: the RPCs carry a fixed plumbing token (they run
 // on Ivan's own dashboard). Real protection for the board token + spend rides on
-// the planned dashboard-wide gate/RLS fold, not a per-panel prompt.
+// the authed session (operator_* RPCs are authenticated-only since the RLS fold).
 const GATE = 'clientops';
 const PUBLIC_STORAGE = 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public';
 
@@ -38,12 +45,20 @@ interface Draft {
   title: string;
   status: string;
   qa_score: number | null;
+  qa: { verdict?: string; score?: number | string; feedback?: string } | null;
+  agent_log: AgentLogEntry[];
+  taxonomy: Record<string, any> | null;
+  source_post_id: string | null;
+  idea_source_label: string | null;
+  idea_source_ref: string | null;
+  idea_icp_score: number | null;
   board_visible: boolean;
   created_at: string;
   published_at: string | null;
   post_body: string | null;
   type: 'text' | 'single_image' | 'carousel';
   has_media: boolean;
+  image_urls?: string[];
   scheduled_at: string | null;
 }
 interface ActionRow {
@@ -53,14 +68,43 @@ interface ActionRow {
   payload: any;
   created_at: string;
 }
+interface ScoreBreakdown {
+  icp_fit?: number;
+  buyer_signal?: number;
+  authority_fit?: number;
+  why?: string;
+  rubric_version?: string;
+}
 interface Idea {
   id: string;
   hook: string;
   title?: string;
   source_label?: string;
+  source_ref?: string;
   pillar?: string;
   format?: string;
   created_at?: string;
+  icp_score?: number | null;
+  score_breakdown?: ScoreBreakdown | null;
+  agent_log?: AgentLogEntry[];
+}
+interface LmFunnel { views: number; captures: number; completes: number; cta_clicks: number; }
+interface Lm {
+  id: string;
+  topic: string;
+  format: string | null;
+  status: string;
+  slug: string | null;
+  resource_url: string | null;
+  landing_url: string | null;
+  cover_url: string | null;
+  qa: any;
+  agent_log: AgentLogEntry[];
+  source: string | null;
+  source_ref: string | null;
+  created_at: string;
+  updated_at: string | null;
+  funnel: LmFunnel;
 }
 
 const stripPrefix = (t: string) => (t || '').replace(/^\[[^\]]+\]\s*/, '');
@@ -73,7 +117,14 @@ const fmtDate = (iso: string) => {
 // literal neutral/warn spec on purpose — the operator scans for <60s).
 const qaSeverity = (s: number | null): Severity =>
   s == null ? 'neutral' : s >= 75 ? 'good' : s >= 60 ? 'warn' : 'bad';
+// Client-ICP relevance uses Ivan's own idea band law (strengthBand ≥58 High / ≥48 Mid)
+// so both systems read identically at a glance.
+const icpSeverity = (s: number | null | undefined): Severity => {
+  const band = strengthBand(s ?? null);
+  return band === 'High' ? 'good' : band === 'Mid' ? 'warn' : band === 'Low' ? 'bad' : 'neutral';
+};
 const money = (n: number | null | undefined) => `$${(n ?? 0).toFixed(2)}`;
+const isUrl = (s?: string | null) => !!s && /^https?:\/\//.test(s);
 
 // Next open buffer slot: 4 days out, rolled forward off the weekend (Ivan
 // posts weekdays only). Reads the clock only inside the call, never at
@@ -98,6 +149,19 @@ function MutedPill({ label }: { label: string }) {
   );
 }
 
+// One-line provenance: honest label + outbound link when the ref is a URL.
+function SourceLine({ label, refStr }: { label?: string | null; refStr?: string | null }) {
+  if (!label && !refStr) return null;
+  return (
+    <span style={{ fontSize: 12, color: 'var(--d-paper-dim)' }}>
+      {label || 'Source'}
+      {isUrl(refStr) && (
+        <>{' '}<a href={refStr!} target="_blank" rel="noreferrer" style={{ color: 'var(--d-good)' }}>source ↗</a></>
+      )}
+    </span>
+  );
+}
+
 const Loading = ({ what }: { what: string }) => (
   <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading {what}…</div>
 );
@@ -110,7 +174,7 @@ const ErrLine = ({ msg }: { msg: string }) => (
 // for disqualified (warn) / published (good) so the eye only catches exceptions.
 function StatusPill({ status }: { status: string }) {
   if (status === 'disqualified') return <StatusChip label={status} severity="warn" />;
-  if (status === 'published' || status === 'scheduled') return <StatusChip label={status} severity="good" />;
+  if (status === 'published' || status === 'scheduled' || status === 'live') return <StatusChip label={status} severity="good" />;
   return (
     <span style={{
       fontSize: 11, color: 'var(--d-paper-dim)', border: '1px solid var(--d-rule-strong)',
@@ -120,10 +184,11 @@ function StatusPill({ status }: { status: string }) {
 }
 
 // ---- draft row --------------------------------------------------------------
-function DraftRow({ d, onToggle, onSchedule }: {
+function DraftRow({ d, onToggle, onSchedule, onChanged }: {
   d: Draft;
   onToggle: (d: Draft, next: boolean) => Promise<void>;
   onSchedule: (d: Draft) => Promise<{ ok: boolean; error?: string }>;
+  onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -144,6 +209,11 @@ function DraftRow({ d, onToggle, onSchedule }: {
     }
   };
 
+  const pipelineSource = d.taxonomy?.source as string | undefined;
+  const sourceLabel = d.idea_source_label
+    || (pipelineSource === 'client-risedtc' ? 'Client pipeline' : pipelineSource)
+    || null;
+
   return (
     <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -160,8 +230,10 @@ function DraftRow({ d, onToggle, onSchedule }: {
         <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: 'var(--d-paper)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {stripPrefix(d.title)}
         </span>
+        {d.type !== 'text' && <MutedPill label={d.type.replace('_', ' ')} />}
         <StatusPill status={d.status} />
         {d.qa_score != null && <StatusChip label={`QA ${d.qa_score}`} severity={qaSeverity(d.qa_score)} />}
+        {d.idea_icp_score != null && <StatusChip label={`ICP ${Math.round(d.idea_icp_score)}`} severity={icpSeverity(d.idea_icp_score)} />}
         {d.status === 'scheduled' && d.scheduled_at && (
           <StatusChip label={`Scheduled · ${fmtDate(d.scheduled_at)}`} severity="good" />
         )}
@@ -201,12 +273,37 @@ function DraftRow({ d, onToggle, onSchedule }: {
           />
         </label>
       </div>
+      {/* Always-visible provenance line — every draft says where it came from */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0 0 26px' }}>
+        <SourceLine
+          label={sourceLabel || 'Source unknown (pre-pipeline draft)'}
+          refStr={d.idea_source_ref || (isUrl(d.source_post_id) ? d.source_post_id : null)}
+        />
+      </div>
       {schedNote && (
         <div style={{ fontSize: 11, color: 'var(--d-warn, var(--d-paper-dim))', padding: '4px 0 0 26px' }}>{schedNote}</div>
       )}
       {open && (
-        <div style={{ padding: '10px 0 4px 26px', whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.55, color: 'var(--d-paper-2, var(--d-paper))' }}>
-          {d.post_body || <span style={{ color: 'var(--d-paper-dim)' }}>No body.</span>}
+        <div style={{ padding: '10px 0 4px 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.55, color: 'var(--d-paper-2, var(--d-paper))' }}>
+            {d.post_body || <span style={{ color: 'var(--d-paper-dim)' }}>No body.</span>}
+          </div>
+          {(d.image_urls?.length ?? 0) > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {d.image_urls!.map((u, i) => (
+                <a key={i} href={u} target="_blank" rel="noreferrer">
+                  <img src={u} alt={`asset ${i + 1}`} style={{ height: 72, borderRadius: 6, border: '1px solid var(--d-rule)' }} />
+                </a>
+              ))}
+            </div>
+          )}
+          <QAVerdictPanel entries={d.agent_log || []} />
+          <AgentLogFeed
+            entries={d.agent_log || []}
+            table="carousel_drafts"
+            rowId={d.id}
+            onNoteAdded={onChanged}
+          />
         </div>
       )}
     </div>
@@ -214,11 +311,14 @@ function DraftRow({ d, onToggle, onSchedule }: {
 }
 
 // ---- idea row ----------------------------------------------------------------
-function IdeaRow({ idea, onDecide }: {
+function IdeaRow({ idea, onDecide, onChanged }: {
   idea: Idea;
   onDecide: (idea: Idea, decision: 'approved' | 'rejected') => Promise<void>;
+  onChanged: () => void;
 }) {
   const [busy, setBusy] = useState<'approved' | 'rejected' | null>(null);
+  const [open, setOpen] = useState(false);
+  const b = idea.score_breakdown;
 
   const decide = async (decision: 'approved' | 'rejected') => {
     if (busy) return;
@@ -229,15 +329,26 @@ function IdeaRow({ idea, onDecide }: {
   return (
     <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? 'Collapse idea' : 'Expand idea'}
+          style={{
+            background: 'none', border: 'none', color: 'var(--d-paper-dim)', cursor: 'pointer',
+            fontSize: 12, width: 16, flexShrink: 0, paddingTop: 2,
+          }}
+        >
+          {open ? '▾' : '▸'}
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, color: 'var(--d-paper)' }}>{idea.hook}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            {idea.source_label && (
-              <span style={{ fontSize: 12, color: 'var(--d-paper-dim)' }}>{idea.source_label}</span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+            <SourceLine label={idea.source_label} refStr={idea.source_ref} />
             {idea.pillar && <MutedPill label={idea.pillar} />}
           </div>
         </div>
+        {idea.icp_score != null && (
+          <StatusChip label={`ICP ${Math.round(idea.icp_score)}`} severity={icpSeverity(idea.icp_score)} />
+        )}
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button
             className="dv-btn dv-btn--good"
@@ -257,6 +368,85 @@ function IdeaRow({ idea, onDecide }: {
           </button>
         </div>
       </div>
+      {open && (
+        <div style={{ padding: '10px 0 4px 26px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {idea.title && idea.title !== idea.hook && (
+            <div style={{ fontSize: 13, color: 'var(--d-paper-2, var(--d-paper))' }}>{idea.title}</div>
+          )}
+          {b ? (
+            <div style={{ fontSize: 12, color: 'var(--d-paper-dim)', lineHeight: 1.6 }}>
+              ICP fit {b.icp_fit ?? '—'}/40 · Buyer signal {b.buyer_signal ?? '—'}/30 · Authority {b.authority_fit ?? '—'}/30
+              {b.why && <div style={{ marginTop: 2, color: 'var(--d-paper-2, var(--d-paper))' }}>{b.why}</div>}
+              {b.rubric_version && (
+                <div style={{ marginTop: 2, fontSize: 11 }}>rubric: {b.rubric_version} (provisional — pending Mattan's criteria)</div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--d-paper-dim)' }}>Not scored yet.</div>
+          )}
+          <AgentLogFeed
+            entries={idea.agent_log || []}
+            table="client_ideas"
+            rowId={idea.id}
+            onNoteAdded={onChanged}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- lead magnet row --------------------------------------------------------
+function LmRow({ lm, onChanged }: { lm: Lm; onChanged: () => void }) {
+  const [open, setOpen] = useState(false);
+  const f = lm.funnel || { views: 0, captures: 0, completes: 0, cta_clicks: 0 };
+  return (
+    <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? 'Collapse' : 'Expand'}
+          style={{
+            background: 'none', border: 'none', color: 'var(--d-paper-dim)', cursor: 'pointer',
+            fontSize: 12, width: 16, flexShrink: 0,
+          }}
+        >
+          {open ? '▾' : '▸'}
+        </button>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: 'var(--d-paper)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {stripPrefix(lm.topic)}
+        </span>
+        {lm.format && <MutedPill label={lm.format.replace('_', ' ')} />}
+        <StatusPill status={lm.status} />
+        <span style={{ fontSize: 12, color: 'var(--d-paper-dim)', flexShrink: 0 }}>
+          {f.views} views · {f.captures} captures
+        </span>
+        {lm.resource_url && (
+          <a href={lm.resource_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--d-good)', flexShrink: 0 }}>
+            open ↗
+          </a>
+        )}
+      </div>
+      <div style={{ padding: '4px 0 0 26px' }}>
+        <SourceLine label={lm.source === 'client-risedtc' ? 'Client pipeline' : lm.source} refStr={lm.source_ref} />
+      </div>
+      {open && (
+        <div style={{ padding: '10px 0 4px 26px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--d-paper-dim)', lineHeight: 1.6 }}>
+            Funnel (real traffic): {f.views} views · {f.captures} captures · {f.completes} completes · {f.cta_clicks} CTA clicks
+            {lm.landing_url && (
+              <>{' · '}<a href={lm.landing_url} target="_blank" rel="noreferrer" style={{ color: 'var(--d-good)' }}>landing ↗</a></>
+            )}
+          </div>
+          <QAVerdictPanel entries={lm.agent_log || []} />
+          <AgentLogFeed
+            entries={lm.agent_log || []}
+            table="lm_drafts_v2"
+            rowId={lm.id}
+            onNoteAdded={onChanged}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -289,16 +479,19 @@ function ClientDetail({ client, onBack }: {
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [actions, setActions] = useState<ActionRow[] | null>(null);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
+  const [lms, setLms] = useState<Lm[] | null>(null);
   const [draftsErr, setDraftsErr] = useState('');
   const [actionsErr, setActionsErr] = useState('');
   const [ideasErr, setIdeasErr] = useState('');
+  const [lmsErr, setLmsErr] = useState('');
 
   const loadDetail = useCallback(async () => {
-    setDraftsErr(''); setActionsErr(''); setIdeasErr('');
-    const [dRes, aRes, iRes] = await Promise.all([
+    setDraftsErr(''); setActionsErr(''); setIdeasErr(''); setLmsErr('');
+    const [dRes, aRes, iRes, lRes] = await Promise.all([
       supabase.rpc('operator_client_drafts', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_actions', { p_gate: GATE, p_slug: client.board.slug }),
       supabase.rpc('operator_client_ideas', { p_gate: GATE, p_client_id: client.client_id }),
+      supabase.rpc('operator_client_lms', { p_gate: GATE, p_client_id: client.client_id }),
     ]);
     if (dRes.error || (dRes.data && dRes.data.ok === false)) {
       setDraftsErr(dRes.error?.message || dRes.data?.error || 'drafts load failed');
@@ -317,6 +510,12 @@ function ClientDetail({ client, onBack }: {
       setIdeas([]);
     } else {
       setIdeas((iRes.data?.ideas || []) as Idea[]);
+    }
+    if (lRes.error || (lRes.data && lRes.data.ok === false)) {
+      setLmsErr(lRes.error?.message || lRes.data?.error || 'lead magnets load failed');
+      setLms([]);
+    } else {
+      setLms((lRes.data?.lms || []) as Lm[]);
     }
   }, [client.client_id, client.board.slug]);
 
@@ -365,6 +564,14 @@ function ClientDetail({ client, onBack }: {
 
   const boardLink = client.board?.url ? `${client.board.url}?k=${client.board.token ?? ''}` : undefined;
 
+  const draftKinds = drafts
+    ? {
+        text: drafts.filter((d) => d.type === 'text').length,
+        image: drafts.filter((d) => d.type === 'single_image').length,
+        carousel: drafts.filter((d) => d.type === 'carousel').length,
+      }
+    : null;
+
   return (
     <>
       <button onClick={onBack} className="dv-btn-ghost" style={{ padding: '6px 12px', borderRadius: 8, marginBottom: 12, cursor: 'pointer', fontSize: 13 }}>
@@ -386,20 +593,29 @@ function ClientDetail({ client, onBack }: {
         {boardLink && <>{' · '}<a href={boardLink} target="_blank" rel="noreferrer" style={{ color: 'var(--d-good)' }}>view board as client ↗</a></>}
       </div>
 
-      <Card label="IDEAS — approve to send into generation, or pass">
+      <Card label={`IDEAS — ${ideas?.length ?? '…'} staged, ranked by client-ICP fit — approve to generate, or pass`}>
         {ideasErr && <ErrLine msg={ideasErr} />}
         {ideas == null ? <Loading what="ideas" /> :
           ideas.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No staged ideas.</div> :
-          ideas.map((idea) => <IdeaRow key={idea.id} idea={idea} onDecide={onDecideIdea} />)}
+          ideas.map((idea) => <IdeaRow key={idea.id} idea={idea} onDecide={onDecideIdea} onChanged={loadDetail} />)}
       </Card>
 
       <div style={{ height: 18 }} />
 
-      <Card label="DRAFTS — flip a review draft on to show it on the client board">
+      <Card label={`DRAFTS — ${drafts?.length ?? '…'}${draftKinds ? ` (${draftKinds.text} text · ${draftKinds.image} image · ${draftKinds.carousel} carousel)` : ''} — flip a review draft on to show it on the client board`}>
         {draftsErr && <ErrLine msg={draftsErr} />}
         {drafts == null ? <Loading what="drafts" /> :
           drafts.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No drafts.</div> :
-          drafts.map((d) => <DraftRow key={d.id} d={d} onToggle={onToggle} onSchedule={onSchedule} />)}
+          drafts.map((d) => <DraftRow key={d.id} d={d} onToggle={onToggle} onSchedule={onSchedule} onChanged={loadDetail} />)}
+      </Card>
+
+      <div style={{ height: 18 }} />
+
+      <Card label={`LEAD MAGNETS — ${lms?.length ?? '…'} in the client funnel`}>
+        {lmsErr && <ErrLine msg={lmsErr} />}
+        {lms == null ? <Loading what="lead magnets" /> :
+          lms.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No lead magnets yet.</div> :
+          lms.map((lm) => <LmRow key={lm.id} lm={lm} onChanged={loadDetail} />)}
       </Card>
 
       <div style={{ height: 18 }} />

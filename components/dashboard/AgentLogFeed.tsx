@@ -117,7 +117,7 @@ interface Props {
   /** Default open vs closed. Default: closed if >5 entries, open otherwise. */
   defaultOpen?: boolean;
   /** Supplying both enables the "add note" composer (Ivan types → append via append_agent_log RPC). */
-  table?: 'carousel_drafts' | 'lm_drafts_v2';
+  table?: 'carousel_drafts' | 'lm_drafts_v2' | 'client_ideas';
   rowId?: string;
   /** Called after a successful note write so the parent can refresh. */
   onNoteAdded?: () => void;
