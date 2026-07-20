@@ -141,9 +141,12 @@
 /* the single red: the focused-lane's load-bearing pending count */
 .ec .ws-lane-count--live { color: var(--ec-red); }
 
-/* ── Lane container: dims when not the active scope ───────────────────────── */
-.ec .ws-lane { transition: opacity 0.2s ease; }
-.ec .ws-lane--idle { opacity: 0.62; }
+/* ── Lane container: only the focused lane renders (tab switch). The glance
+   tiles + lanebar carry both counts, so hiding the idle lane loses no state —
+   and Review no longer sits below the full Ideas table, so switching to it
+   needs no scroll. `--idle` is applied ONLY by PostWorkSurface, so this stays
+   scoped to the Posts surface. */
+.ec .ws-lane--idle { display: none; }
 .ec .ws-lane-cap {
   display: flex;
   align-items: baseline;
@@ -210,22 +213,24 @@
 .ec .ws-idt-title {
   font-family: var(--ec-sans);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ec-ink);
-  line-height: 1.25;
-  white-space: nowrap;
+  line-height: 1.32;
+  /* Let a long angle wrap to two lines instead of clipping mid-word at 14px. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .ec .ws-idt-why {
   font-family: var(--ec-sans);
-  font-size: 11.5px;
-  color: var(--ec-mutedc);
-  line-height: 1.3;
+  font-size: 12.5px;
+  color: var(--ec-body);
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 .ec .ws-strength {
   font-family: var(--ec-sans);
@@ -311,7 +316,10 @@
 /* Inspect rail open — reader gains a third column carrying the native backend
  * depth (QA verdict timeline + agent log + source briefing). */
 .ec .ws-reader--insp { grid-template-columns: 232px minmax(0, 1fr) minmax(300px, 340px); }
-.ec .ws-rail { border-right: 1px solid var(--ec-rule); padding-right: 1rem; max-height: 62vh; overflow-y: auto; }
+/* No inner max-height/overflow: the rail flows with the page so the whole
+   reader is ONE scroll context. A capped, independently-scrolling rail here
+   traps the wheel and the page can't reach its bottom (the "gets stuck" bug). */
+.ec .ws-rail { border-right: 1px solid var(--ec-rule); padding-right: 1rem; }
 .ec .ws-rail-row {
   display: block;
   width: 100%;
@@ -335,7 +343,9 @@
 .ec .ws-read-pos { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 /* ── Inspect rail: native QA verdict + agent log + source briefing ────────── */
-.ec .ws-inspect { border-left: 1px solid var(--ec-rule); padding-left: 1.1rem; max-height: 82vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; }
+/* Flows with the page (no inner scroll cap) — same reason as .ws-rail: an
+   82vh capped panel captured the wheel and stranded the page mid-scroll. */
+.ec .ws-inspect { border-left: 1px solid var(--ec-rule); padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.9rem; }
 .ec .ws-inspect-head { display: flex; align-items: baseline; justify-content: space-between; }
 .ec .ws-inspect-h { font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); }
 .ec .ws-inspect-toggle {
@@ -495,7 +505,7 @@
 @media (max-width: 1080px) {
   .ec .ws-lm { grid-template-columns: 1fr; }
   .ec .ws-reader, .ec .ws-reader--insp { grid-template-columns: 1fr; }
-  .ec .ws-rail { border-right: 0; border-bottom: 1px solid var(--ec-rule); padding-right: 0; max-height: 34vh; }
+  .ec .ws-rail { border-right: 0; border-bottom: 1px solid var(--ec-rule); padding-right: 0; }
   /* Below 1024 the inspect rail collapses out of the reader; the toggle stays
    * available and re-opening stacks it under the reader. */
   .ec .ws-inspect { border-left: 0; border-top: 1px solid var(--ec-rule); padding-left: 0; padding-top: 1rem; max-height: none; }

@@ -91,14 +91,10 @@ const PostWorkSurface: React.FC = () => {
   const [drawer, setDrawer] = useState<null | 'error' | 'stuck'>(null);
   const [confirmStuck, setConfirmStuck] = useState(false);
 
-  // Lane anchors — the glance tiles scroll/focus the matching lane.
-  const ideasLaneRef = useRef<HTMLElement>(null);
-  const reviewLaneRef = useRef<HTMLElement>(null);
-  const focusLane = useCallback((l: Lane) => {
-    setLane(l);
-    const el = l === 'ideas' ? ideasLaneRef.current : reviewLaneRef.current;
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  // The glance tiles focus the matching lane. Lanes are a tab switch now (only
+  // the focused one renders), so switching needs no scroll — the active lane
+  // already sits directly under the header/tally/lanebar.
+  const focusLane = useCallback((l: Lane) => setLane(l), []);
 
   // ── Review queue: Ivan's own pending drafts. Client rows EXCLUDED. ────────
   const reviewQueue = useMemo(
@@ -398,7 +394,7 @@ const PostWorkSurface: React.FC = () => {
           </div>
 
           {/* ── TOP LANE: ideas table ─────────────────────────────────────── */}
-          <section ref={ideasLaneRef} className={`ws-lane ${lane === 'ideas' ? '' : 'ws-lane--idle'}`}>
+          <section className={`ws-lane ${lane === 'ideas' ? '' : 'ws-lane--idle'}`}>
             <div className="ws-lane-cap">
               <span className="ws-lane-cap-h">Ideas · scan and triage</span>
               <span className="ws-lane-cap-hint"><kbd>x</kbd> select · <kbd>p</kbd> promote · <kbd>d</kbd> defer · <kbd>Tab</kbd> switch lane</span>
@@ -467,7 +463,7 @@ const PostWorkSurface: React.FC = () => {
           </section>
 
           {/* ── BOTTOM LANE: review reader ────────────────────────────────── */}
-          <section ref={reviewLaneRef} className={`ws-lane ${lane === 'review' ? '' : 'ws-lane--idle'}`} style={{ marginTop: '1.8rem' }}>
+          <section className={`ws-lane ${lane === 'review' ? '' : 'ws-lane--idle'}`} style={{ marginTop: '1.8rem' }}>
             <div className="ws-lane-cap">
               <span className="ws-lane-cap-h">In review · read and judge</span>
               <span className="ws-lane-cap-hint"><kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit · <kbd>s</kbd> skip · <kbd>o</kbd> detail</span>
