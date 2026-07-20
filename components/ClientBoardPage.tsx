@@ -331,6 +331,17 @@ function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url'>): string {
   return KIND_LABEL[q.kind] || q.kind;
 }
 
+/** Live boards: pipeline source labels rendered in client vocabulary. Labels not in the
+ *  map pass through as-is; internal-only labels map to nothing rather than leak. */
+const SOURCE_LABEL_CLIENT: Record<string, string> = {
+  'Hand-picked': 'Picked by Ivan',
+  'Needs your client material': 'Needs a client story from you',
+};
+function srcLabelClient(label?: string): string {
+  if (!label) return '';
+  return SOURCE_LABEL_CLIENT[label] ?? label;
+}
+
 /** Inline count-up (logic mirrored from dashboard-v2 useCountUp — not imported across
  *  the client/ops context boundary). Respects prefers-reduced-motion. */
 function useCountUp(target: number, duration = 1100): string {
@@ -1207,9 +1218,9 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays, live);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || (live && q.source_label ? `Source: ${q.source_label}` : ''))
+    const provenance = stage === 'review' ? (q.promise || (live && q.source_label ? `Source: ${srcLabelClient(q.source_label)}` : ''))
       : q.generating ? 'reactive: drafting began after the news broke'
-      : (q.promise || (live && q.source_label ? `Source: ${q.source_label}` : ''));
+      : (q.promise || (live && q.source_label ? `Source: ${srcLabelClient(q.source_label)}` : ''));
     return (
       <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
         <div
@@ -1221,7 +1232,9 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         >
           <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : live ? 'in the buffer' : 'date at sign-off'}</span>
           <span className="min-w-0">
-            <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{q.hook || q.title}</span>
+            {/* Live: the hook wraps — the reader can tell what the post is about from the row.
+                Preview keeps the single-line ledger look. */}
+            <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, lineHeight: live ? 1.35 : undefined, color: INK }}>{q.hook || q.title}</span>
             {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
           </span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
@@ -1241,7 +1254,15 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
               className="overflow-hidden"
               style={{ margin: '0 -14px', background: rowBg }}
             >
-              <div className="grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]">
+              <div className={live && q.body ? 'grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[minmax(0,1fr)_240px]' : 'grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]'}>
+                {live && q.body ? (
+                  /* Live: the copy is the reading surface — plain editorial text, no mockup
+                     chrome, nothing cut. The feed frame lives one click away in the modal. */
+                  <div onClick={() => onOpen(q)} className="cursor-pointer" style={{ maxWidth: '64ch' }}>
+                    <div style={{ fontFamily: BODY, fontSize: 14.5, lineHeight: 1.62, color: INK, whiteSpace: 'pre-line' }}>{q.body}</div>
+                    {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 220, border: `1px solid ${LINE}` }} />}
+                  </div>
+                ) : (
                 <div style={{ maxWidth: 430 }}>
                   {q.body || stage === 'review' || stage === 'scheduled'
                     ? <FeedPreview item={q.body ? q : { ...q, body: q.body }} board={board} accent={accent} fontStack={fontStack} size="sm" cover={q.generating ? 'render' : 'plate'} live={live} />
@@ -1249,10 +1270,10 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                     ? <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" cover="render" live={live} />
                     : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" live={live} />}
                 </div>
+                )}
                 <div className="flex flex-col gap-3 pt-1.5">
                   {stage === 'review' && !skipped && live ? (
                     <>
-                      <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT, maxWidth: '40ch' }}>Exactly how it lands in the feed. Edit it, or take it out — otherwise it publishes from the buffer as-is.</p>
                       <div className="flex flex-wrap items-center gap-3">
                         <button onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>edit the post…</button>
                         <button onClick={(e) => { e.stopPropagation(); onRemove?.(q.id); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>remove this post…</button>
@@ -1701,6 +1722,28 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   const focused = focusId ? board.queue.find((q) => q.id === focusId) : undefined;
   const dayHasPending = (day: string) => actionable.some((q) => q.publish_date === day && pendingIds.includes(q.id));
   const weekdayName = (iso?: string) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' }) : '');
+
+  // Live: the day ticks are buttons. A day with a post focuses/opens it; an open day
+  // answers honestly instead of doing nothing.
+  const [dayNote, setDayNote] = useState<string | null>(null);
+  const dayNoteTimer = useRef<number | null>(null);
+  const clickDay = (day: string) => {
+    const pendingHere = actionable.find((q) => q.publish_date === day && pendingIds.includes(q.id));
+    if (pendingHere) {
+      setDayNote(null);
+      setFocusId(pendingHere.id);
+      cardRefs.current[pendingHere.id]?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+      return;
+    }
+    const slots = slotsByDay.get(day) || [];
+    const qSlot = slots.find((s) => s.q);
+    if (qSlot?.q) { setDayNote(null); onOpen(qSlot.q); return; }
+    const cSlot = slots.find((s) => s.cal);
+    if (cSlot?.cal) { setDayNote(null); onOpenCal(cSlot.cal); return; }
+    setDayNote(`${weekdayName(day)} is open. The buffer takes it automatically.`);
+    if (dayNoteTimer.current) window.clearTimeout(dayNoteTimer.current);
+    dayNoteTimer.current = window.setTimeout(() => setDayNote(null), 4500);
+  };
   const upNext = (() => {
     const fi = focusId ? pendingIds.indexOf(focusId) : -1;
     return pendingIds.slice(fi + 1, fi + 3).map((id) => board.queue.find((q) => q.id === id)).filter(Boolean) as QueueItem[];
@@ -1714,10 +1757,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     const dayActionable = actionable.filter((q) => q.publish_date === d);
     const handledDay = dayActionable.length > 0 && dayActionable.every(handledOf);
     const isCurrent = !doneState && focused?.publish_date === d;
-    return { letter: TICK_LETTER[i], done: handledDay, current: isCurrent };
+    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || (live && focused.source_label ? `Source: ${focused.source_label}` : '')) : '';
+  const provenance = focused ? (focused.promise || (live && focused.source_label ? `Source: ${srcLabelClient(focused.source_label)}` : '')) : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -1768,8 +1811,19 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                   {live && !focused?.publish_date ? 'Up next' : weekdayName(focused?.publish_date)}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
                 </div>
               </div>
-              <div className="hidden shrink-0 items-center gap-2 sm:flex" aria-hidden>
-                {ticks.map((tk, i) => (
+              <div className="hidden shrink-0 items-center gap-2 sm:flex" aria-hidden={live ? undefined : true}>
+                {ticks.map((tk, i) => live ? (
+                  /* Live: each day is a real target — click focuses that day's post, or says
+                     plainly that the day is open. */
+                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
+                    width: 28, height: 28, padding: 0,
+                    fontFamily: MONO, fontSize: 10,
+                    border: `1.5px solid ${tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
+                    background: tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
+                    color: tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
+                    transition: 'all .3s ease', cursor: 'pointer',
+                  }}>{tk.letter}</button>
+                ) : (
                   <span key={i} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28,
                     fontFamily: MONO, fontSize: 10,
@@ -1819,6 +1873,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                   {live ? 'Swipe left for a different idea · tap to read' : 'Swipe right to approve · left for a different idea · tap to read'}
                 </p>
               )}
+              {/* Day-click answer (live only): an open day says so instead of doing nothing. */}
+              {dayNote && (
+                <p className="mb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, color: INK_SOFT }}>{dayNote}</p>
+              )}
               {/* The card deck: front card over two rotated ghosts; flings on approve. */}
               <div className="relative cb-hero-deck">
                 <div className="pointer-events-none absolute" style={{ inset: '10px -8px -10px 8px', background: PAPER_RAISE, border: `1px solid ${DIVIDE}`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
@@ -1837,8 +1895,48 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       animate={{ opacity: 1, x: 0, rotate: 0, scale: 1, transition: { duration: 0.45, ease: [0.2, 0.8, 0.3, 1] } }}
                       exit={reduce ? { opacity: 0 } : { opacity: 0, x: '130%', rotate: 9, transition: { duration: 0.36, ease: [0.5, 0, 0.9, 0.4] } }}
                       className="relative cb-hero-card"
-                      style={{ background: PAPER_RAISE, border: `1px solid ${caBorder('#1a1a1a', 18)}`, borderRadius: 14, padding: '22px 26px', boxShadow: HERO_SHADOW, touchAction: coarseWeek ? 'pan-y' : undefined }}
+                      style={{ background: PAPER_RAISE, border: `1px solid ${caBorder('#1a1a1a', 18)}`, borderRadius: 14, padding: live ? '18px 22px' : '22px 26px', boxShadow: HERO_SHADOW, touchAction: coarseWeek ? 'pan-y' : undefined }}
                     >
+                      {live ? (
+                        /* Live: the post reads at a glance — compact feed frame left, the
+                           slot facts and client powers on a quiet rail beside it. */
+                        <div className="grid gap-x-7 gap-y-5 lg:grid-cols-[minmax(0,1fr)_218px]">
+                          <div className="min-w-0" style={{ maxWidth: 640 }}>
+                            {swapChip && (
+                              <div className="mb-3 inline-block rounded-full uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent), background: caWash(accent, 9), border: `1px solid ${caBorder(accent, 35)}`, padding: '5px 12px' }}>
+                                ⟲ fresh idea: same slot, still your voice
+                              </div>
+                            )}
+                            <div onClick={() => onOpen(focused)} className="cursor-pointer">
+                              <FeedPreview item={focused} board={board} accent={accent} fontStack={fontStack} size="sm" live={live} />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2.5 pt-1">
+                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
+                            <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
+                              {focused.publish_date ? `Scheduled for ${weekdayName(focused.publish_date)}` : 'In the buffer · takes the next open slot'}
+                            </span>
+                            {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
+                            <div className="mt-1 flex flex-col items-start gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
+                                className="uppercase transition-colors duration-150"
+                                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK, border: `1px solid ${LINE_BOLD}`, borderRadius: 8, padding: '11px 16px', cursor: 'pointer' }}
+                              >⟲ swap the idea</button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onOpen(focused, { editing: true }); }}
+                                style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}
+                              >edit a line…</button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
+                                style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}
+                              >remove this post…</button>
+                            </div>
+                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>yours to change until it publishes</span>
+                          </div>
+                        </div>
+                      ) : (
+                      <>
                       <div className="mb-3.5 flex items-baseline justify-between gap-3">
                         <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>
                           {kickerOf(focused)} · {live
@@ -1883,6 +1981,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                         {!live && <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>nothing publishes until you approve it</span>}
                         {live && <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>yours to change until it publishes</span>}
                       </div>
+                      </>
+                      )}
                       {/* Different-idea panel: a seeded alternate ANGLE, never an instant draft. */}
                       <AnimatePresence initial={false}>
                         {curPanel && (
@@ -2259,7 +2359,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               {isLive && item.source_label && (
                 <div>
                   <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
-                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{item.source_label}</div>
+                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{srcLabelClient(item.source_label)}</div>
                 </div>
               )}
             </div>
