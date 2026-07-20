@@ -93,7 +93,21 @@ function ProvenanceMarker({ signal, status, readFrom, accent, ink }: { signal: s
       </div>
     );
   }
-  // blocked / absent / error — honest "could not read", NEVER a zero.
+  if (status === 'absent') {
+    // key-gated source (Meta Ad Library / PageSpeed field data): not a failure to read the
+    // store, a read that unlocks on the live look. Distinct from blocked, still no number.
+    return (
+      <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
+        <span className="w-2 h-2 rounded-full flex-none" style={{ border: `1.5px solid ${accent}`, background: 'transparent' }} />
+        <span className="flex flex-col">
+          <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.75 }}>{label}</span>
+          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.45 }}>read from {readFrom}</span>
+        </span>
+        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.6 }}>on the live look</span>
+      </div>
+    );
+  }
+  // blocked / error — honest "could not read", NEVER a zero.
   return (
     <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
       <span className="w-2 h-2 rounded-full flex-none" style={{ border: `1px solid ${ink}55`, background: 'transparent' }} />
@@ -169,7 +183,7 @@ function ProfitGapSpread({
               The Profit Gap
             </h2>
             <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: surface, opacity: 0.8 }}>
-              This is the first number Rise looks at. Revenue can hold while contribution profit
+              This is the first number RISE looks at. Revenue can hold while contribution profit
               slips underneath it. Type your real numbers over the public seed and watch the real
               profit per order move.
             </p>
@@ -255,7 +269,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const bodyFont = brand.font_body ? `'${brand.font_body}', sans-serif` : "'Manrope', sans-serif";
   const bookingUrl = brand.booking_url;
   const logoUrl = brand.logo_url || undefined;
-  const wordmark = brand.wordmark || 'Rise DTC';
+  const wordmark = brand.wordmark || 'RISE DTC';
 
   // REAL DEFECT the floor never fixed: the brand fonts were declared but never loaded. Load them.
   useGoogleFonts([brand.font_heading, brand.font_body]);
@@ -327,7 +341,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <div className="flex items-center gap-3 mb-6">
               <span className="h-px w-10" style={{ background: accent }} />
               <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
-                A Rise DTC growth feature
+                A RISE DTC growth feature
               </span>
             </div>
             <p className="text-[1rem] font-semibold uppercase tracking-[0.2em] mb-5" style={{ color: ink, opacity: 0.55 }}>{companyName}</p>
@@ -594,7 +608,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The close</span>
             </div>
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 4.6vw, 3.25rem)', color: ink, lineHeight: 1.03 }}>
-              How Rise runs growth
+              How RISE runs growth
             </h2>
             <p className="mt-6 max-w-xl text-[1.2rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
               Paid media and performance creative that compound, plus a Financial Health view that tracks

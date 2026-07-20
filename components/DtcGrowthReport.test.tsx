@@ -77,8 +77,10 @@ describe('DtcGrowthReport — degradation-first correctness', () => {
     expect(html).toContain('AOV seed is your public median product price');
     // the grafted source-log descriptor renders as a number-free "read from" line.
     expect(html).toContain('read from products.json');
-    // provenance ledger: absent signals (ads.meta, pagespeed) show "not readable", never a number.
-    expect(html).toContain('not readable');
+    // provenance ledger: key-gated absent signals (ads.meta, pagespeed) read as live-look
+    // items (distinct from blocked "not readable"), and never emit a number.
+    expect(html).toMatch(markerRe('Meta ads', 'on the live look'));
+    expect(html).toMatch(markerRe('Page speed', 'on the live look'));
     expect(html).toContain('4 of 6 signals read');
     expect(html).toContain('Partial read');
     // calculator tagging survives, and the editorial score has no "/100" denominator.
