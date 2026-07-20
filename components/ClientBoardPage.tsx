@@ -102,6 +102,8 @@ interface QueueItem {
   promise?: string;
   cover_url?: string;
   publish_date?: string;
+  /** Where the idea came from (ideas pipeline: Hand-picked / call / subreddit / newsjack). */
+  source_label?: string;
   generating?: boolean;
   agent_trail?: AgentStep[];
   /** Transient: the agent step currently running, shown inline on the row (intro choreography). */
@@ -589,7 +591,7 @@ function LedgerSectionHead({ eyebrow, count, blurb, accent }: { eyebrow: string;
         <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.22em', color: INK_MUTE }}>{eyebrow}</span>
         <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{String(count).padStart(2, '0')}</span>
       </div>
-      <span className="max-w-[52ch] sm:text-right" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>{blurb}</span>
+      {blurb && <span className="max-w-[52ch] sm:text-right" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>{blurb}</span>}
     </div>
   );
 }
@@ -1091,8 +1093,8 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
   );
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, foldPhotos, live = false }: {
-  board: Board; accent: string;
+function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, foldPhotos, live = false }: {
+  board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
@@ -1113,12 +1115,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   // Live overrides for the published stage: on a real board published rows are reports,
   // not demo examples. Preview keeps the module constants exactly.
   const stageLabelOf = (s: Stage) => (live && s === 'published' ? 'Published' : live && s === 'review' ? 'Up next' : STAGE_META[s].label);
+  // Live: eyebrow + count only — the rows carry the story, framing prose stays out.
   const listSections = live
-    ? LIST_STAGE_SECTIONS.map((s) =>
-        s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' }
-        : s.stage === 'review' ? { ...s, label: 'Up next', blurb: 'Publishing from the buffer. Edit, swap, or remove anything before it goes out.' }
-        : s.stage === 'scheduled' ? { ...s, blurb: 'Locked to a date. Each publishes on its slot.' }
-        : s)
+    ? LIST_STAGE_SECTIONS.map((s) => ({ ...s, blurb: '', label: s.stage === 'review' ? 'Up next' : s.label }))
     : LIST_STAGE_SECTIONS;
   const ideasBlurb = live ? 'Ideas waiting in your bank. Ask for the ones you want drafted next, or pass.' : IDEAS_BLURB;
   const reduce = useReducedMotion();
@@ -1132,6 +1131,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
   const firstReviewId = groups.find((g) => g.stage === 'review')?.items.filter((q) => !skips[q.id]).sort(byDate)[0]?.id || null;
   const [openRow, setOpenRow] = useState<string | null>(firstReviewId);
+  /** Live pool: a lead-magnet row opens the full asset drawer (cover, live page, promo kit). */
+  const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
   const flashStyle = (id: string): React.CSSProperties => ({
     background: flashId === id ? FLASH_BG : undefined,
     transition: 'background-color 700ms ease',
@@ -1196,9 +1197,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays, live);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || '')
+    const provenance = stage === 'review' ? (q.promise || (live && q.source_label ? `Source: ${q.source_label}` : ''))
       : q.generating ? 'reactive: drafting began after the news broke'
-      : (q.promise || '');
+      : (q.promise || (live && q.source_label ? `Source: ${q.source_label}` : ''));
     return (
       <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
         <div
@@ -1324,9 +1325,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           <SectionHead
             eyebrow="All content"
             title={live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>in your voice.</Accent></>}
-            sub={live
-              ? 'Drafts and scheduled posts, each moving toward its slot. Publishing runs from the buffer — edit, swap, or remove anything before it goes out.'
-              : `Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
+            sub={live ? undefined : `Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
           />
         </div>
         <div className="inline-flex shrink-0 overflow-hidden rounded-[8px]" style={{ border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
@@ -1372,26 +1371,31 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         const lmRowCls = 'cb-ledger-row grid items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]';
         const lmSection = (live && lms.length > 0) ? (
           <section>
-            <LedgerSectionHead eyebrow="Lead magnets" count={lms.length} blurb="Capture assets in the same pool as the posts. Live ones take opt-ins around the clock." accent={accent} />
+            <LedgerSectionHead eyebrow="Lead magnets" count={lms.length} blurb="" accent={accent} />
             {lms.map((lm) => {
               const lmLive = lm.status === 'live';
               const inner = (
                 <>
-                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'live' : 'in build'}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'on domain' : 'in build'}</span>
                   <span className="min-w-0">
                     <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{lm.title}</span>
                     {lm.promise && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{lm.promise}</span>}
                   </span>
                   <span className="hidden capitalize sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{lm.format || 'lead magnet'}</span>
-                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? '● live · taking opt-ins' : 'in build'}</span>
-                  <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>{lmLive && lm.url ? '↗' : ''}</span>
+                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? '● on your domain' : 'in build'}</span>
+                  <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>▸</span>
                 </>
               );
               return (
                 <div key={lm.id} style={{ borderBottom: `1px solid ${LINE}` }}>
-                  {lmLive && lm.url
-                    ? <a href={lm.url} target="_blank" rel="noreferrer" className={lmRowCls} style={{ margin: '0 -14px', textDecoration: 'none' }}>{inner}</a>
-                    : <div className={lmRowCls} style={{ margin: '0 -14px' }}>{inner}</div>}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setLmDetail(lm)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLmDetail(lm); } }}
+                    className={`${lmRowCls} cursor-pointer`}
+                    style={{ margin: '0 -14px' }}
+                  >{inner}</div>
                 </div>
               );
             })}
@@ -1525,6 +1529,10 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         <div className="mt-8 max-w-[880px] rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
           {foldPhotos}
         </div>
+      )}
+
+      {lmDetail && (
+        <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
       )}
     </div>
   );
@@ -1699,7 +1707,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     return { letter: TICK_LETTER[i], done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || '') : '';
+  const provenance = focused ? (focused.promise || (live && focused.source_label ? `Source: ${focused.source_label}` : '')) : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -2238,6 +2246,12 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{fmtDay(item.publish_date)}</div>
                 </div>
               )}
+              {isLive && item.source_label && (
+                <div>
+                  <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
+                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{item.source_label}</div>
+                </div>
+              )}
             </div>
             <p className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}`, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{nextLine}</p>
           </div>
@@ -2579,7 +2593,7 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
     ? { background: 'rgba(255,255,255,0.12)', color: '#ffffff' }
     : { background: 'rgba(19,18,16,0.06)', color: caText(accent) };
   const statusChip = live
-    ? { label: 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
+    ? { label: boardLive ? 'On your domain' : 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
     : entry.status === 'in_production'
     ? { label: 'In production', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
     : { label: 'Planned', bg: 'rgba(2,49,47,0.05)', color: DIM, dot: null };
@@ -2593,6 +2607,9 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
       onClick={onOpen ? () => onOpen(entry) : undefined}
       onKeyDown={onOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(entry); } } : undefined}
     >
+      {entry.cover_url ? (
+        <img src={entry.cover_url} alt="" loading="lazy" className="aspect-[16/10] w-full object-cover" style={{ display: 'block', objectPosition: 'top' }} />
+      ) : (
       <div className="flex aspect-[16/10] flex-col justify-between p-4" style={{ background: heroBg }}>
         <span
           className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
@@ -2604,13 +2621,14 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
           {entry.title}
         </span>
       </div>
+      )}
       <div className="flex items-center gap-2 px-3.5 py-2.5">
         <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: statusChip.bg, color: statusChip.color }}>
           {statusChip.dot && <StatusDot color={statusChip.dot} size={5} />}
           {statusChip.label}
         </span>
         <span className="ml-auto text-[11.5px] tabular-nums" style={{ color: FAINT }}>
-          {live ? (boardLive ? 'Live and capturing leads' : 'On your domain') : entry.date_label || ''}
+          {live ? (boardLive ? 'announces on your feed at its slot' : 'On your domain') : entry.date_label || ''}
         </span>
       </div>
     </div>
@@ -2632,8 +2650,15 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   const liveHeaderHex = cleanHex(board.brand?.header_bg, '#131210');
   const heroBg = isLiveLm ? (board.brand?.header_bg || INK) : `color-mix(in srgb, ${accent} 9%, white)`;
   const onHero = isLiveLm ? inkOn(liveHeaderHex) : `color-mix(in srgb, ${accent} 72%, ${INK})`;
-  const statusLabel = isLiveLm ? 'Live' : 'Concept';
+  // Live board: "Live" is reserved for announced-on-the-feed. Up-on-the-domain is the
+  // honest state until the launch post runs.
+  const statusLabel = isLiveLm ? (live ? 'On your domain' : 'Live') : 'Concept';
   const url = entry.url;
+  // Promo kit (live): only REAL related copy renders. The orbit gift-touch DM belongs to
+  // this asset when the orbit plan's gift points at the same URL.
+  const giftDms = (live && url && board.outreach?.orbit_plan?.gift?.url === url)
+    ? (board.outreach?.orbit_plan?.samples || [])
+    : [];
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <motion.div className="fixed inset-0 bg-black/40" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} aria-hidden />
@@ -2697,10 +2722,46 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
           <p className="mt-6" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE }}>
             {isLiveLm
               ? (live
-                ? 'Live and capturing leads. It scores or grades a real problem your buyers have, then captures their email into your leads.'
+                ? 'Up on your domain with capture on. It announces on your feed when its launch slot comes up.'
                 : 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.')
-              : (live ? 'In build. It goes live and starts capturing leads when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
+              : (live ? 'In build. It goes up on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
           </p>
+
+          {/* The page itself, live in the drawer — the real URL, not a mockup. */}
+          {live && isLiveLm && url && (
+            <div className="mt-6">
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The page, live</div>
+              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex items-center gap-1.5 px-3.5 py-2" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                  {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: 'rgba(2,49,47,0.10)' }} aria-hidden />)}
+                  <span className="ml-2 truncate" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{url.replace(/^https?:\/\//, '')}</span>
+                </div>
+                <iframe src={url} title={entry.title} loading="lazy" style={{ width: '100%', height: 560, border: 'none', display: 'block', background: '#fff' }} />
+              </div>
+            </div>
+          )}
+
+          {/* The promo kit: real copy only, nothing invented. */}
+          {live && isLiveLm && (
+            <div className="mt-6">
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The promo kit</div>
+              {giftDms.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {giftDms.map((sm, i) => (
+                    <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                      {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>DM · {sm.label}</div>}
+                      <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className={giftDms.length > 0 ? 'mt-3 text-[12.5px]' : 'text-[12.5px]'} style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
+                {giftDms.length > 0
+                  ? 'The feed announcement drafts into your buffer when its launch slot is scheduled.'
+                  : 'The feed announcement and outreach touches draft into your buffer when its launch slot is scheduled. They land here as they exist.'}
+              </p>
+            </div>
+          )}
         </div>
 
         {isLiveLm && url && (
@@ -2960,7 +3021,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
               <CardHead>Library</CardHead>
             </div>
             <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
-              {liveN} live, {buildN} in build. Leads land in your pipeline.
+              {liveN} on your domain, {buildN} in build.
             </p>
             {libraryGrid}
           </div>
@@ -5682,7 +5743,7 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
