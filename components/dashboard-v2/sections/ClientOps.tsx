@@ -680,7 +680,7 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
                 {lm.cover_url ? (
                   <img className="co2-cover" src={lm.cover_url} alt="" loading="lazy" />
                 ) : (
-                  <div className="co2-miss" style={{ margin: '0.6rem 0' }}>No cover generated yet.</div>
+                  <div className="co2-miss" style={{ margin: '0.6rem 0' }}>No cover on this draft yet.</div>
                 )}
                 <div className="co2-funnel">
                   <span className="co2-fig"><span className="co2-fig-n">{f.views}</span><span className="co2-fig-l">Views</span></span>
@@ -784,7 +784,7 @@ const CSS = `
 /* HEALTH STRIP (graft 1) — ws-tally grammar, 5 tiles, no built-in stacking */
 .ec .co2-health { margin-bottom:1.6rem; }
 @media (max-width:1080px){ .ec .co2-health{ grid-template-columns:repeat(3,1fr)!important; } .ec .co2-health .ws-tally-tile:nth-child(4){ border-left:0; } .ec .co2-health .ws-tally-tile:nth-child(n+4){ border-top:1px solid var(--ec-rule); } }
-@media (max-width:560px){ .ec .co2-health{ grid-template-columns:repeat(2,1fr)!important; } .ec .co2-health .ws-tally-tile:nth-child(odd){ border-left:0; } .ec .co2-health .ws-tally-tile:nth-child(n+3){ border-top:1px solid var(--ec-rule); } }
+@media (max-width:560px){ .ec .co2-health{ grid-template-columns:repeat(2,1fr)!important; } .ec .co2-health .ws-tally-tile:nth-child(odd){ border-left:0; } .ec .co2-health .ws-tally-tile:nth-child(n+3){ border-top:1px solid var(--ec-rule); } .ec .co2-health .ws-tally-tile:nth-child(5){ grid-column:span 2; } }
 
 /* HERO stage strip (B chassis) */
 .ec .co2-line { display:flex; align-items:stretch; border-top:3px solid var(--ec-ink); border-bottom:1px solid var(--ec-rule-strong); margin-bottom:0.5rem; }
