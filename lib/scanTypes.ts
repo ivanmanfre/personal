@@ -143,13 +143,99 @@ export interface ContentSystem {
   og_image_url?: string;
 }
 
+// ── Rise DTC Growth Scan ─────────────────────────────────────────────────────
+// Emitted only when matched_offer === 'dtc_growth'. Drives the DtcGrowthReport variant:
+// a Rise-DTC-branded teardown of a Shopify brand's PUBLIC data, laddered to Rise's
+// paid-growth / performance-creative / profit-visibility levers.
+//
+// CORRECTNESS SPINE: the renderer reads `status`, NEVER payload-presence. A `blocked`
+// signal (WAF/private/paywall) collapses silently and emits no number; only a real
+// `empty` (reachable, genuine zero) renders a negative finding. empty ≠ blocked.
+export type DtcSignalStatus = 'present' | 'empty' | 'blocked' | 'error' | 'absent';
+
+export interface DtcSignalMeta<T = Record<string, unknown>> {
+  status: DtcSignalStatus;
+  fetched_at?: string;
+  source_url?: string;
+  reason?: string | null;
+  endpoint_used?: string | null;
+  partial?: boolean;         // e.g. sitemap-only Shopify: catalog_size real, prices null
+  data?: T | null;
+}
+
+// White-label brand chrome (Rise's real tokens from the live risedtc.com probe).
+export interface DtcBrand {
+  wordmark: string;          // "Rise DTC"
+  logo_url?: string | null;
+  accent_hex: string;        // Rise gold #ffc71d
+  ink_hex?: string;
+  surface_hex?: string;
+  is_dark?: boolean;
+  font_heading?: string;     // Sora
+  font_body?: string;        // Manrope
+  booking_url: string;       // meetings.hubspot.com/mattan5
+}
+
+// One source-anchored finding. Every number in evidence must trace to the fact table.
+export interface DtcFinding {
+  signal: 'shopify' | 'ads.meta' | 'tech_stack' | 'reviews' | 'pagespeed' | 'signup' | 'profit_gap';
+  kind: 'gap' | 'strength' | 'negative';
+  lever: 'paid_media' | 'performance_creative' | 'profit_visibility' | 'cro';  // Rise-sold levers ONLY
+  title: string;
+  evidence: string;          // grounded prose; every numeral ∈ fact_table
+  source_url?: string | null;
+}
+
+export interface DtcGrowth {
+  brand: DtcBrand;
+  completeness: {
+    signals: Record<string, DtcSignalStatus>;
+    present_count: number;
+    scored_of: number;       // 6
+    present: string[];
+    tier: 'rich' | 'partial' | 'thin';
+  };
+  // Per-signal SignalMeta-wrapped blocks. Renderer gates each on `.status === 'present'`
+  // (or 'empty' for a negative finding). Anything else collapses.
+  shopify?: DtcSignalMeta<{
+    catalog_size: number; price_band: { min: number; max: number; median: number } | null;
+    variant_depth_avg: number | null; oos_pct: number | null; new_products_90d: number | null;
+    has_subscription: boolean | null; discount_depth_pct: number | null; products_on_discount?: number;
+    note?: string;
+  }>;
+  ads?: { meta?: DtcSignalMeta<{
+    active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number;
+    has_video?: boolean; has_static?: boolean;
+  }> };
+  tech_stack?: DtcSignalMeta<{ confirmed: string[]; missing_critical: string[]; is_shopify: boolean; pdp_checked?: boolean }>;
+  reviews?: DtcSignalMeta<{ rating: number | null; review_count: number | null; has_reviews: boolean }>;
+  pagespeed?: DtcSignalMeta<{ perf_score: number | null; mobile_lcp_s: number | null; cls: number | null; field_data: boolean }>;
+  signup?: DtcSignalMeta<{ capture_markers: string[]; has_capture_markers: boolean }>;
+  // Partial score — ONLY over `present` dimensions, denominator disclosed.
+  growth_score?: number | null;
+  score_breakdown?: Record<string, { value: number; max: number; rationale: string }>;
+  // Grounded findings (all ladder to a Rise-sold lever). Ordered worst-first.
+  findings: DtcFinding[];
+  // Profit-Gap self-compute seed (True Profit X-Ray). Prospect types their own real numbers;
+  // these are DEFAULTS from public facts (median price, discount depth), clearly labelled as a
+  // starting point, never asserted as the prospect's actual margin.
+  profit_gap?: {
+    seed_aov: number | null; seed_discount_pct: number | null; source_note: string;
+  } | null;
+  hero_hook: string;         // real-fact hook (every numeral ∈ fact_table)
+  og_image_url?: string | null;
+  // The exact grounding set every rendered number is checked against (Phase 7 grep target).
+  fact_table: string[];
+}
+
 export interface ReportJson {
-  // Offer routing (synced from the audit's matched_offer). call_intel / content_system are
+  // Offer routing (synced from the audit's matched_offer). call_intel / content_system / dtc are
   // present only for their matching offer and drive the corresponding report variant.
-  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
+  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | 'dtc_growth' | null;
   offer_angle?: string | null;
   call_intel?: CallIntel | null;
   content_system?: ContentSystem | null;
+  dtc?: DtcGrowth | null;
   company_snapshot: {
     name: string;
     one_liner: string;
@@ -323,7 +409,7 @@ export interface Scan {
   top_gap_summary: string | null;
   report_url: string | null;
   report_json: ReportJson | null;
-  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
+  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | 'dtc_growth' | null;
 }
 
 export interface ProspectToken {

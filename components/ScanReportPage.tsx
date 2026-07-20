@@ -19,6 +19,7 @@ import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
 import { trackScanOpen } from '../lib/scanOpenTracker';
+import { DtcGrowthReport } from './DtcGrowthReport';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -5191,6 +5192,12 @@ const ScanReportPage: React.FC = () => {
   // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
   if (offer === 'call_intelligence' && report.call_intel) {
     return <CallIntelReport report={report} scan={scan} companyName={companyName} />;
+  }
+
+  // Rise DTC growth-scan prospects get a Rise-branded teardown of their public Shopify data
+  // instead of the generic AI Opportunity Scan report.
+  if (offer === 'dtc_growth' && report.dtc) {
+    return <DtcGrowthReport report={report} scan={scan} companyName={companyName} />;
   }
 
   // Content-system prospects (organic content engine + lead-magnet capture, one bundled offer)

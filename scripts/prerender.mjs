@@ -119,7 +119,7 @@ async function fetchInlineScanSlugs() {
   if (!url || !key) return [];
   try {
     const res = await fetch(
-      `${url}/rest/v1/scans?status=eq.complete&matched_offer=eq.content_system&company_slug=not.is.null&select=company_slug`,
+      `${url}/rest/v1/scans?status=eq.complete&matched_offer=in.(content_system,dtc_growth)&company_slug=not.is.null&select=company_slug`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } },
     );
     if (!res.ok) return [];
@@ -300,7 +300,7 @@ process.on('SIGTERM', () => shutdown(143));
       // carries the right share tags (other routes set metadata synchronously).
       if (route.startsWith('/scan/')) {
         await page
-          .waitForFunction(() => /^(A content system|An inbound engine) for /.test(document.title), { timeout: 15000 })
+          .waitForFunction(() => /^(A content system|An inbound engine|A growth scan) for /.test(document.title), { timeout: 15000 })
           .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
         await page.waitForTimeout(400);
       }
