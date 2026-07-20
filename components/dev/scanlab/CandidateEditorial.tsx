@@ -1,22 +1,18 @@
-// components/DtcGrowthReport.tsx
-// Rendered IN PLACE OF the generic report when matched_offer === 'dtc_growth'.
+// components/dev/scanlab/CandidateEditorial.tsx
+// Tournament candidate "Editorial" — the Rise DTC Growth Scan as a premium magazine
+// long-read. Same correctness spine as the floor (DtcGrowthReport): every data section
+// gates on SignalMeta.status === 'present' (or 'empty' for an honest negative), never on
+// payload-presence; a blocked/absent/error signal collapses silently and emits NO number.
+// Design goal: dramatic Sora display type, asymmetric grid, generous whitespace, pull-quote
+// findings, big editorial numerals (the store's OWN numbers as protagonists), varied section
+// rhythm, and the Profit Gap as the climactic spread. Rise gold (#ffc71d) only as rule lines,
+// chip dots, and CTA buttons — never a large field.
 //
-// Rise-DTC-branded teardown of a Shopify brand's PUBLIC data, staged as a premium editorial
-// long-read: dramatic Sora display heads, an asymmetric magazine grid, generous whitespace,
-// pull-quote findings, and the Profit Gap as the climactic spread. Wears Rise's own brand
-// (gold #ffc71d as rule lines / chip dots / CTA only, Sora/Manrope, Rise logo, Rise booking
-// link) — NEVER Ivan/InboundOnSteroids chrome.
-//
-// Correctness spine (unchanged from the floor): every data section gates on
-// `SignalMeta.status === 'present'` (or `'empty'` for a genuine negative), never on
-// payload-presence. A `blocked`/`error`/`absent` signal collapses silently and emits NO
-// number — a WAF-blocked source must never read as "they have zero". Empty is an honest
-// negative, not a fabricated zero. Every rendered numeral comes verbatim from the data; the
-// only editable/derived numerals live in the Profit Gap calculator and carry data-calc tags.
+// Self-contained: imports only React, the two brand hooks, and shared scan types.
 import React, { useState } from 'react';
-import { useMetadata } from '../hooks/useMetadata';
-import { useGoogleFonts } from '../hooks/useGoogleFonts';
-import type { ReportJson, Scan, DtcSignalStatus } from '../lib/scanTypes';
+import { useMetadata } from '../../../hooks/useMetadata';
+import { useGoogleFonts } from '../../../hooks/useGoogleFonts';
+import type { ReportJson, Scan, DtcSignalStatus } from '../../../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
   paid_media: 'Paid media',
@@ -32,17 +28,6 @@ const SIGNAL_LABEL: Record<string, string> = {
   reviews: 'Reviews',
   pagespeed: 'Page speed',
   signup: 'Email capture',
-};
-
-// Grafted from the Dossier candidate: a short, number-free descriptor of WHAT was read for
-// each source. Never a store-fact, so it can never introduce a fabricated numeral.
-const READ_FROM: Record<string, string> = {
-  shopify: 'products.json',
-  'ads.meta': 'Meta ad library',
-  tech_stack: 'homepage source',
-  reviews: 'product page',
-  pagespeed: 'field data',
-  signup: 'homepage',
 };
 
 // Every rendered data string passes through this. It strips em/en dashes (Rise copy rule:
@@ -64,20 +49,15 @@ function capitalize(s: string): string {
 
 // Provenance marker — one per signal. Three honest states: present (real read), empty
 // (we looked and found genuinely nothing), and not-readable (blocked/absent/error — never
-// implies zero). This is what makes degradation read as honest, not apologetic. The small
-// secondary small-caps line names WHERE the read came from (grafted from the Dossier's
-// source log); it is number-free and never asserts a store-fact.
-function ProvenanceMarker({ signal, status, readFrom, accent, ink }: { signal: string; status: DtcSignalStatus; readFrom: string; accent: string; ink: string }) {
+// implies zero). This is what makes degradation read as honest, not apologetic.
+function ProvenanceMarker({ signal, status, accent, ink }: { signal: string; status: DtcSignalStatus; accent: string; ink: string }) {
   const label = SIGNAL_LABEL[signal] || signal;
   if (status === 'present') {
     return (
       <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
         <span className="w-2 h-2 rounded-full flex-none" style={{ background: accent }} />
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] font-semibold leading-tight" style={{ color: ink }}>{label}</span>
-          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.5 }}>read from {readFrom}</span>
-        </span>
-        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.55 }}>read</span>
+        <span className="text-[0.95rem] font-semibold" style={{ color: ink }}>{label}</span>
+        <span className="ml-auto text-[0.7rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.55 }}>read</span>
       </div>
     );
   }
@@ -85,11 +65,8 @@ function ProvenanceMarker({ signal, status, readFrom, accent, ink }: { signal: s
     return (
       <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
         <span className="w-2 h-2 rounded-full flex-none border" style={{ borderColor: ink }} />
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.85 }}>{label}</span>
-          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.45 }}>read from {readFrom}</span>
-        </span>
-        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.5 }}>none found</span>
+        <span className="text-[0.95rem]" style={{ color: ink, opacity: 0.85 }}>{label}</span>
+        <span className="ml-auto text-[0.7rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.5 }}>none found</span>
       </div>
     );
   }
@@ -97,11 +74,8 @@ function ProvenanceMarker({ signal, status, readFrom, accent, ink }: { signal: s
   return (
     <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
       <span className="w-2 h-2 rounded-full flex-none" style={{ border: `1px solid ${ink}55`, background: 'transparent' }} />
-      <span className="flex flex-col">
-        <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.5 }}>{label}</span>
-        <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.35 }}>read from {readFrom}</span>
-      </span>
-      <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.4 }}>not readable</span>
+      <span className="text-[0.95rem]" style={{ color: ink, opacity: 0.5 }}>{label}</span>
+      <span className="ml-auto text-[0.7rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.4 }}>not readable</span>
     </div>
   );
 }
@@ -169,9 +143,9 @@ function ProfitGapSpread({
               The Profit Gap
             </h2>
             <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: surface, opacity: 0.8 }}>
-              This is the first number Rise looks at. Revenue can hold while contribution profit
-              slips underneath it. Type your real numbers over the public seed and watch the real
-              profit per order move.
+              This is the first number Rise looks at. Top-line can hold while contribution profit
+              quietly leaks. Type your real numbers over the public seed and watch the real profit
+              per order move.
             </p>
 
             <div className="mt-10" data-calc="1">
@@ -187,7 +161,7 @@ function ProfitGapSpread({
               </div>
               <div className="mt-4 inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
                 <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Contribution per order</span>
-                <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{fmtMoney(contribution)}</span>
+                <span className="text-[1.05rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{fmtMoney(contribution)}</span>
               </div>
             </div>
           </div>
@@ -234,7 +208,7 @@ function ProfitGapSpread({
           >
             See it on your real numbers
           </a>
-          <span className="text-[0.95rem]" style={{ color: surface, opacity: 0.6 }}>
+          <span className="text-[0.9rem]" style={{ color: surface, opacity: 0.6 }}>
             A live look picks up the inputs a public scan cannot reach.
           </span>
         </div>
@@ -243,7 +217,7 @@ function ProfitGapSpread({
   );
 }
 
-export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
+export function CandidateEditorial({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const d = report.dtc;
   if (!d) return null;
 
@@ -306,7 +280,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <span className="font-extrabold text-lg tracking-tight" style={{ fontFamily: headingFont, color: ink }}>{wordmark}</span>
           )}
           <div className="flex items-center gap-4">
-            <span className="hidden sm:inline text-[0.72rem] uppercase tracking-[0.22em]" style={{ color: ink, opacity: 0.55 }}>Growth Scan · Confidential</span>
+            <span className="hidden sm:inline text-[0.7rem] uppercase tracking-[0.22em]" style={{ color: ink, opacity: 0.55 }}>Growth Scan · Confidential</span>
             <a
               href={bookingUrl}
               target="_blank"
@@ -339,13 +313,13 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             </h1>
           </div>
           <div className="lg:col-span-3">
-            <div className="text-[0.95rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
+            <div className="text-[0.9rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
               <div className="font-bold" style={{ color: ink, opacity: 1 }}>Prepared by {wordmark}</div>
               <div className="mt-1">A read of {companyName}'s public store data, laddered to the levers that move growth.</div>
               {tier ? (
                 <div className="mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5" style={{ border: `1px solid ${ink}22` }}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
-                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: ink, opacity: 0.75 }}>{capitalize(tier)} read</span>
+                  <span className="text-[0.75rem] uppercase tracking-[0.16em]" style={{ color: ink, opacity: 0.75 }}>{capitalize(tier)} read</span>
                 </div>
               ) : null}
             </div>
@@ -371,7 +345,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="lg:col-span-8">
             <div className="grid sm:grid-cols-2 sm:gap-x-10" style={{ borderTop: `1px solid ${ink}14` }}>
               {signalEntries.map(([signal, status]) => (
-                <ProvenanceMarker key={signal} signal={signal} status={status} readFrom={READ_FROM[signal] || 'public data'} accent={accent} ink={ink} />
+                <ProvenanceMarker key={signal} signal={signal} status={status} accent={accent} ink={ink} />
               ))}
             </div>
           </div>
@@ -402,7 +376,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               {breakdownEntries.map(([lever, b]) => (
                 <div key={lever}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <span className="font-bold text-[1.0625rem]" style={{ fontFamily: headingFont, color: ink }}>{LEVER_LABEL[lever] || lever}</span>
+                    <span className="font-bold text-[1.05rem]" style={{ fontFamily: headingFont, color: ink }}>{LEVER_LABEL[lever] || lever}</span>
                     <span className="tabular-nums text-[0.95rem] font-semibold" style={{ color: ink, opacity: 0.7 }}>{b.value}/{b.max}</span>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: `${ink}12` }}>
@@ -431,7 +405,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
           <div className="flex flex-wrap gap-2.5">
             {stackConfirmed.map((t) => (
-              <span key={t} className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.95rem] font-semibold" style={{ border: `1px solid ${ink}22`, color: ink }}>
+              <span key={t} className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.9rem] font-semibold" style={{ border: `1px solid ${ink}22`, color: ink }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
                 {t}
               </span>
@@ -442,7 +416,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               <p className="text-[0.85rem] uppercase tracking-[0.16em] mb-3" style={{ color: ink, opacity: 0.55 }}>Not detected in your stack</p>
               <div className="flex flex-wrap gap-2.5">
                 {stackMissing.map((t) => (
-                  <span key={t} className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[0.95rem]" style={{ border: `1px dashed ${ink}33`, color: ink, opacity: 0.65 }}>
+                  <span key={t} className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[0.9rem]" style={{ border: `1px dashed ${ink}33`, color: ink, opacity: 0.65 }}>
                     {t}
                   </span>
                 ))}
@@ -511,7 +485,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                       </h3>
                     </div>
                     <div className="lg:col-span-7">
-                      <p className="text-[1.0625rem] sm:text-[1.2rem] leading-[1.6]" style={{ color: ink, opacity: 0.85 }}>
+                      <p className="text-[1.0625rem] sm:text-[1.15rem] leading-[1.6]" style={{ color: ink, opacity: 0.85 }}>
                         {clean(f.evidence)}
                       </p>
                       {sourceLink}
@@ -531,7 +505,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                         {clean(f.title)}
                       </h3>
                     </div>
-                    <p className="max-w-2xl text-[1.0625rem] sm:text-[1.2rem] leading-[1.6]" style={{ color: ink, opacity: 0.85 }}>
+                    <p className="max-w-2xl text-[1.0625rem] sm:text-[1.15rem] leading-[1.6]" style={{ color: ink, opacity: 0.85 }}>
                       {clean(f.evidence)}
                     </p>
                     {sourceLink}
@@ -554,7 +528,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', color: ink, lineHeight: 1.05 }}>
               A public read only surfaced the basics
             </h2>
-            <p className="mt-5 text-[1.2rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
+            <p className="mt-5 text-[1.15rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
               Some of your sources were not readable from the outside, so we are not going to invent a
               number. The full teardown, catalog economics, discount exposure, and the Profit Gap comes
               off a live look together.
@@ -596,7 +570,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 4.6vw, 3.25rem)', color: ink, lineHeight: 1.03 }}>
               How Rise runs growth
             </h2>
-            <p className="mt-6 max-w-xl text-[1.2rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
+            <p className="mt-6 max-w-xl text-[1.15rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
               Paid media and performance creative that compound, plus a Financial Health view that tracks
               contribution profit on every order. A live look picks up what a public scan cannot reach.
             </p>

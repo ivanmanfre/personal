@@ -1,0 +1,198 @@
+{
+ "company_name": "The Rodial Group",
+ "label": "rich",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "status": "absent"
+   }
+  },
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "Rise DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "popup",
+     "newsletter",
+     "subscribe",
+     "10% off",
+     "get 10%",
+     "sign up"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-07-20T17:54:12.328013+00:00",
+   "source_url": "https://rodial.com/"
+  },
+  "reviews": {
+   "data": {
+    "rating": 4.7,
+    "has_reviews": true,
+    "review_count": 23
+   },
+   "status": "present",
+   "fetched_at": "2026-07-20T17:54:10.215380+00:00",
+   "source_url": "https://rodial.com/products/spf-50-drops-mini"
+  },
+  "shopify": {
+   "data": {
+    "oos_pct": 14.4,
+    "price_band": {
+     "max": 1285.0,
+     "min": 1.9,
+     "median": 42.0
+    },
+    "catalog_size": 180,
+    "has_subscription": false,
+    "new_products_90d": 18,
+    "variant_depth_avg": 1.1,
+    "discount_depth_pct": 42.7,
+    "products_on_discount": 59
+   },
+   "status": "present",
+   "fetched_at": "2026-07-20T17:54:08.489642+00:00",
+   "source_url": "https://rodial.com/products.json",
+   "endpoint_used": "products.json"
+  },
+  "findings": [
+   {
+    "kind": "gap",
+    "lever": "profit_visibility",
+    "title": "The Profit Gap is running through your discount line",
+    "signal": "shopify",
+    "evidence": "59 of your 180 live products are discounted, averaging 42.7% off. That can hold your revenue while contribution profit slips underneath it. The gap between the two is the first number Rise looks at.",
+    "source_url": "https://rodial.com/products.json"
+   },
+   {
+    "kind": "gap",
+    "lever": "cro",
+    "title": "Your price band is wide and the median sits low",
+    "signal": "shopify",
+    "evidence": "Catalog runs $1.90 to $1,285 with a $42 median. A wide band with a low median makes blended AOV fragile on paid. The lever is threshold and bundle offers on the landing path the ads point to.",
+    "source_url": "https://rodial.com/products.json"
+   },
+   {
+    "kind": "negative",
+    "lever": "paid_media",
+    "title": "Paid clicks are landing on sold-out variants",
+    "signal": "shopify",
+    "evidence": "14.4% of your variants read out-of-stock right now. Every paid click that hits a sold-out variant is spend with no shot at converting, a direct drag on blended MER.",
+    "source_url": "https://rodial.com/products.json"
+   },
+   {
+    "kind": "gap",
+    "lever": "cro",
+    "title": "Strong rating, thin review volume on the pages your ads land on",
+    "signal": "reviews",
+    "evidence": "Your PDP shows a 4.7 rating across 23 reviews. The rating earns trust; the low count undersells it on a paid landing page. Review velocity is a conversion-rate lever on cold traffic.",
+    "source_url": "https://rodial.com/products/spf-50-drops-mini"
+   }
+  ],
+  "hero_hook": "59 of your 180 products are discounted right now. Here's where the profit is going.",
+  "pagespeed": {
+   "status": "absent"
+  },
+  "fact_table": [
+   "1.1",
+   "1.9",
+   "1285",
+   "14.4",
+   "18",
+   "180",
+   "23",
+   "4.7",
+   "42",
+   "42.7",
+   "59"
+  ],
+  "profit_gap": {
+   "seed_aov": 42.0,
+   "source_note": "AOV seed is your public median product price; discount is the catalog average. Editable, so type your real numbers.",
+   "seed_discount_pct": 42.7
+  },
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "klaviyo",
+     "yotpo",
+     "okendo",
+     "loox",
+     "rebuy",
+     "gorgias"
+    ],
+    "is_shopify": true,
+    "pdp_checked": true,
+    "missing_critical": [
+     "attentive",
+     "recharge"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-07-20T17:54:08.142186+00:00",
+   "source_url": "https://rodial.com/"
+  },
+  "completeness": {
+   "tier": "partial",
+   "present": [
+    "shopify",
+    "tech_stack",
+    "reviews",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "present",
+    "shopify": "present",
+    "ads.meta": "absent",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 4
+  },
+  "growth_score": 40,
+  "og_image_url": null,
+  "score_breakdown": {
+   "cro": {
+    "max": 20,
+    "value": 8,
+    "rationale": "headroom identified"
+   },
+   "paid_media": {
+    "max": 20,
+    "value": 8,
+    "rationale": "headroom identified"
+   },
+   "profit_visibility": {
+    "max": 20,
+    "value": 8,
+    "rationale": "headroom identified"
+   }
+  }
+ },
+ "fact_table": [
+  "1.1",
+  "1.9",
+  "1285",
+  "14.4",
+  "18",
+  "180",
+  "23",
+  "4.7",
+  "42",
+  "42.7",
+  "59"
+ ]
+}

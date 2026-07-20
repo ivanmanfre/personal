@@ -1,0 +1,110 @@
+{
+ "company_name": "GoPure",
+ "label": "blocked-heavy",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "status": "absent"
+   }
+  },
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "Rise DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "attentive",
+     "popup",
+     "subscribe"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-07-20T17:54:49.311662+00:00",
+   "source_url": "https://gopure.com/"
+  },
+  "reviews": {
+   "data": {
+    "has_reviews": false
+   },
+   "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
+   "status": "empty",
+   "fetched_at": "2026-07-20T17:54:48.209043+00:00",
+   "source_url": "https://gopure.com/products/instant-lift-eye-gel"
+  },
+  "shopify": {
+   "status": "blocked"
+  },
+  "findings": [
+   {
+    "kind": "negative",
+    "lever": "cro",
+    "title": "No visible reviews on the page paid traffic hits",
+    "signal": "reviews",
+    "evidence": "We couldn't find review markup on your product page. Cold paid traffic converts on social proof, so surfacing reviews on the PDP is a direct conversion lever.",
+    "source_url": "https://gopure.com/products/instant-lift-eye-gel"
+   }
+  ],
+  "hero_hook": "A public read of your store, and where the growth is.",
+  "pagespeed": {
+   "status": "absent"
+  },
+  "fact_table": [],
+  "profit_gap": null,
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "klaviyo",
+     "yotpo"
+    ],
+    "is_shopify": true,
+    "pdp_checked": true,
+    "missing_critical": [
+     "attentive",
+     "recharge",
+     "rebuy"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-07-20T17:54:47.213799+00:00",
+   "source_url": "https://gopure.com/"
+  },
+  "completeness": {
+   "tier": "thin",
+   "present": [
+    "tech_stack",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "empty",
+    "shopify": "blocked",
+    "ads.meta": "absent",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 2
+  },
+  "growth_score": 40,
+  "og_image_url": null,
+  "score_breakdown": {
+   "cro": {
+    "max": 20,
+    "value": 8,
+    "rationale": "headroom identified"
+   }
+  }
+ },
+ "fact_table": []
+}

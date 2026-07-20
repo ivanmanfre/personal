@@ -78,6 +78,7 @@ const ScanGradePage = lazy(() => import('./components/ScanGradePage'));
 const ClientBoardPage = lazy(() => import('./components/ClientBoardPage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
+const ScanLabPage = lazy(() => import('./components/dev/ScanLabPage'));
 
 function App() {
   const location = useLocation();
@@ -106,6 +107,17 @@ function App() {
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);
+
+  // DEV-ONLY scan-design tournament harness — chrome-free like the real /scan/:slug.
+  if (location.pathname.startsWith('/dev/scan-lab')) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/dev/scan-lab" element={<ScanLabPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   // Public video viewer - full-screen, no nav/footer
   if (isViewer) {

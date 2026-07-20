@@ -1,0 +1,83 @@
+{
+ "company_name": "Apple",
+ "label": "thin",
+ "dtc": {
+  "brand": {
+   "wordmark": "Rise DTC",
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "accent_hex": "#ffc71d",
+   "ink_hex": "#111111",
+   "surface_hex": "#ffffff",
+   "is_dark": false,
+   "font_heading": "Sora",
+   "font_body": "Manrope",
+   "booking_url": "https://meetings.hubspot.com/mattan5"
+  },
+  "completeness": {
+   "signals": {
+    "shopify": "blocked",
+    "ads.meta": "absent",
+    "tech_stack": "present",
+    "reviews": "blocked",
+    "pagespeed": "absent",
+    "signup": "empty"
+   },
+   "present_count": 1,
+   "scored_of": 6,
+   "present": [
+    "tech_stack"
+   ],
+   "tier": "thin"
+  },
+  "shopify": {
+   "status": "blocked"
+  },
+  "ads": {
+   "meta": {
+    "status": "absent"
+   }
+  },
+  "tech_stack": {
+   "status": "present",
+   "fetched_at": "2026-07-20T16:23:41.291213+00:00",
+   "source_url": "https://apple.com/",
+   "data": {
+    "confirmed": [],
+    "missing_critical": [
+     "klaviyo",
+     "attentive",
+     "recharge",
+     "rebuy"
+    ],
+    "is_shopify": false,
+    "pdp_checked": false
+   },
+   "html_len": 249092
+  },
+  "reviews": {
+   "status": "blocked"
+  },
+  "pagespeed": {
+   "status": "absent"
+  },
+  "signup": {
+   "status": "empty",
+   "fetched_at": "2026-07-20T16:23:44.051265+00:00",
+   "source_url": "https://apple.com/",
+   "data": {
+    "capture_markers": [],
+    "has_capture_markers": false
+   },
+   "partial": true,
+   "reason": "no static email-capture markers in initial HTML (popups may inject post-load)"
+  },
+  "growth_score": null,
+  "score_breakdown": {},
+  "findings": [],
+  "profit_gap": null,
+  "hero_hook": "A public read of your store, and where the growth is.",
+  "og_image_url": null,
+  "fact_table": []
+ },
+ "fact_table": []
+}
