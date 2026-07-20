@@ -42,6 +42,9 @@ interface Draft {
   created_at: string;
   published_at: string | null;
   post_body: string | null;
+  type: 'text' | 'single_image' | 'carousel';
+  has_media: boolean;
+  scheduled_at: string | null;
 }
 interface ActionRow {
   id: string;
@@ -49,6 +52,15 @@ interface ActionRow {
   ref: string | null;
   payload: any;
   created_at: string;
+}
+interface Idea {
+  id: string;
+  hook: string;
+  title?: string;
+  source_label?: string;
+  pillar?: string;
+  format?: string;
+  created_at?: string;
 }
 
 const stripPrefix = (t: string) => (t || '').replace(/^\[[^\]]+\]\s*/, '');
@@ -62,6 +74,29 @@ const fmtDate = (iso: string) => {
 const qaSeverity = (s: number | null): Severity =>
   s == null ? 'neutral' : s >= 75 ? 'good' : s >= 60 ? 'warn' : 'bad';
 const money = (n: number | null | undefined) => `$${(n ?? 0).toFixed(2)}`;
+
+// Next open buffer slot: 4 days out, rolled forward off the weekend (Ivan
+// posts weekdays only). Reads the clock only inside the call, never at
+// module scope, so this stays pure/deterministic per-invocation.
+const nextBufferSlot = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + 4);
+  const day = d.getDay();
+  if (day === 6) d.setDate(d.getDate() + 2);
+  else if (day === 0) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+};
+
+// Muted pill — same look as StatusPill's default (lowercase, bordered,
+// dim text). Reused for the idea pillar tag and the asset-guard state.
+function MutedPill({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: 11, color: 'var(--d-paper-dim)', border: '1px solid var(--d-rule-strong)',
+      borderRadius: 999, padding: '2px 8px', textTransform: 'lowercase', letterSpacing: '.02em',
+    }}>{label}</span>
+  );
+}
 
 const Loading = ({ what }: { what: string }) => (
   <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading {what}…</div>
@@ -85,13 +120,33 @@ function StatusPill({ status }: { status: string }) {
 }
 
 // ---- draft row --------------------------------------------------------------
-function DraftRow({ d, onToggle }: { d: Draft; onToggle: (d: Draft, next: boolean) => Promise<void> }) {
+function DraftRow({ d, onToggle, onSchedule }: {
+  d: Draft;
+  onToggle: (d: Draft, next: boolean) => Promise<void>;
+  onSchedule: (d: Draft) => Promise<{ ok: boolean; error?: string }>;
+}) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [schedBusy, setSchedBusy] = useState(false);
+  const [schedNote, setSchedNote] = useState('');
   const canToggle = d.status === 'review';
+  const canSchedule = d.status === 'review' && d.has_media !== false;
+
+  const handleSchedule = async () => {
+    if (schedBusy) return;
+    setSchedBusy(true);
+    setSchedNote('');
+    try {
+      const res = await onSchedule(d);
+      if (!res.ok && res.error === 'awaiting_media') setSchedNote('waiting on image');
+    } finally {
+      setSchedBusy(false);
+    }
+  };
+
   return (
     <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? 'Collapse' : 'Expand'}
@@ -107,9 +162,26 @@ function DraftRow({ d, onToggle }: { d: Draft; onToggle: (d: Draft, next: boolea
         </span>
         <StatusPill status={d.status} />
         {d.qa_score != null && <StatusChip label={`QA ${d.qa_score}`} severity={qaSeverity(d.qa_score)} />}
+        {d.status === 'scheduled' && d.scheduled_at && (
+          <StatusChip label={`Scheduled · ${fmtDate(d.scheduled_at)}`} severity="good" />
+        )}
         <span style={{ fontSize: 12, color: 'var(--d-paper-dim)', width: 52, textAlign: 'right', flexShrink: 0 }}>
           {fmtDate(d.created_at)}
         </span>
+        {d.status === 'review' && (
+          canSchedule ? (
+            <button
+              className="dv-btn dv-btn--good"
+              disabled={schedBusy}
+              onClick={handleSchedule}
+              style={{ padding: '4px 10px', fontSize: 12, flexShrink: 0 }}
+            >
+              {schedBusy ? 'Scheduling…' : 'Schedule to buffer'}
+            </button>
+          ) : (
+            <MutedPill label="waiting on image" />
+          )
+        )}
         <label
           title={canToggle ? 'Show on the client board' : 'Only review drafts can be shown'}
           style={{ display: 'flex', alignItems: 'center', gap: 6, width: 96, justifyContent: 'flex-end', flexShrink: 0, opacity: canToggle ? 1 : 0.4 }}
@@ -129,11 +201,62 @@ function DraftRow({ d, onToggle }: { d: Draft; onToggle: (d: Draft, next: boolea
           />
         </label>
       </div>
+      {schedNote && (
+        <div style={{ fontSize: 11, color: 'var(--d-warn, var(--d-paper-dim))', padding: '4px 0 0 26px' }}>{schedNote}</div>
+      )}
       {open && (
         <div style={{ padding: '10px 0 4px 26px', whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.55, color: 'var(--d-paper-2, var(--d-paper))' }}>
           {d.post_body || <span style={{ color: 'var(--d-paper-dim)' }}>No body.</span>}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---- idea row ----------------------------------------------------------------
+function IdeaRow({ idea, onDecide }: {
+  idea: Idea;
+  onDecide: (idea: Idea, decision: 'approved' | 'rejected') => Promise<void>;
+}) {
+  const [busy, setBusy] = useState<'approved' | 'rejected' | null>(null);
+
+  const decide = async (decision: 'approved' | 'rejected') => {
+    if (busy) return;
+    setBusy(decision);
+    try { await onDecide(idea, decision); } finally { setBusy(null); }
+  };
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, color: 'var(--d-paper)' }}>{idea.hook}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            {idea.source_label && (
+              <span style={{ fontSize: 12, color: 'var(--d-paper-dim)' }}>{idea.source_label}</span>
+            )}
+            {idea.pillar && <MutedPill label={idea.pillar} />}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button
+            className="dv-btn dv-btn--good"
+            disabled={busy !== null}
+            onClick={() => decide('approved')}
+            style={{ padding: '4px 10px', fontSize: 12 }}
+          >
+            {busy === 'approved' ? 'Approving…' : 'Approve → generate'}
+          </button>
+          <button
+            className="dv-btn dv-btn--dim"
+            disabled={busy !== null}
+            onClick={() => decide('rejected')}
+            style={{ padding: '4px 10px', fontSize: 12 }}
+          >
+            {busy === 'rejected' ? 'Passing…' : 'Pass'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -165,14 +288,17 @@ function ClientDetail({ client, onBack }: {
 }) {
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const [actions, setActions] = useState<ActionRow[] | null>(null);
+  const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [draftsErr, setDraftsErr] = useState('');
   const [actionsErr, setActionsErr] = useState('');
+  const [ideasErr, setIdeasErr] = useState('');
 
   const loadDetail = useCallback(async () => {
-    setDraftsErr(''); setActionsErr('');
-    const [dRes, aRes] = await Promise.all([
+    setDraftsErr(''); setActionsErr(''); setIdeasErr('');
+    const [dRes, aRes, iRes] = await Promise.all([
       supabase.rpc('operator_client_drafts', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_actions', { p_gate: GATE, p_slug: client.board.slug }),
+      supabase.rpc('operator_client_ideas', { p_gate: GATE, p_client_id: client.client_id }),
     ]);
     if (dRes.error || (dRes.data && dRes.data.ok === false)) {
       setDraftsErr(dRes.error?.message || dRes.data?.error || 'drafts load failed');
@@ -185,6 +311,12 @@ function ClientDetail({ client, onBack }: {
       setActions([]);
     } else {
       setActions((aRes.data?.actions || []) as ActionRow[]);
+    }
+    if (iRes.error || (iRes.data && iRes.data.ok === false)) {
+      setIdeasErr(iRes.error?.message || iRes.data?.error || 'ideas load failed');
+      setIdeas([]);
+    } else {
+      setIdeas((iRes.data?.ideas || []) as Idea[]);
     }
   }, [client.client_id, client.board.slug]);
 
@@ -200,6 +332,34 @@ function ClientDetail({ client, onBack }: {
       // revert to the exact prior value
       setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, board_visible: !next } : x)) ?? prev);
       setDraftsErr(res.error?.message || res.data?.error || 'toggle failed');
+    }
+  }, []);
+
+  const onSchedule = useCallback(async (d: Draft): Promise<{ ok: boolean; error?: string }> => {
+    const res = await supabase.rpc('operator_schedule_draft', {
+      p_gate: GATE, p_draft_id: d.id, p_publish_at: nextBufferSlot(),
+    });
+    if (res.data?.ok) {
+      const scheduledAt = res.data.scheduled_at as string | undefined;
+      setDrafts((prev) => prev?.map((x) => (
+        x.id === d.id ? { ...x, status: 'scheduled', scheduled_at: scheduledAt ?? x.scheduled_at } : x
+      )) ?? prev);
+      return { ok: true };
+    }
+    const err: string | undefined = res.error?.message || res.data?.error;
+    if (err !== 'awaiting_media') setDraftsErr(err || 'schedule failed');
+    return { ok: false, error: err };
+  }, []);
+
+  const onDecideIdea = useCallback(async (idea: Idea, decision: 'approved' | 'rejected') => {
+    setIdeas((prev) => prev?.filter((x) => x.id !== idea.id) ?? prev);
+    const res = await supabase.rpc('operator_approve_idea', {
+      p_gate: GATE, p_idea_id: idea.id, p_decision: decision,
+    });
+    if (res.error || (res.data && res.data.ok === false)) {
+      setIdeasErr(res.error?.message || res.data?.error || 'decision failed');
+      // restore on failure (idea may already be gone from the list elsewhere)
+      setIdeas((prev) => (prev && !prev.some((x) => x.id === idea.id)) ? [idea, ...prev] : prev);
     }
   }, []);
 
@@ -226,11 +386,20 @@ function ClientDetail({ client, onBack }: {
         {boardLink && <>{' · '}<a href={boardLink} target="_blank" rel="noreferrer" style={{ color: 'var(--d-good)' }}>view board as client ↗</a></>}
       </div>
 
+      <Card label="IDEAS — approve to send into generation, or pass">
+        {ideasErr && <ErrLine msg={ideasErr} />}
+        {ideas == null ? <Loading what="ideas" /> :
+          ideas.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No staged ideas.</div> :
+          ideas.map((idea) => <IdeaRow key={idea.id} idea={idea} onDecide={onDecideIdea} />)}
+      </Card>
+
+      <div style={{ height: 18 }} />
+
       <Card label="DRAFTS — flip a review draft on to show it on the client board">
         {draftsErr && <ErrLine msg={draftsErr} />}
         {drafts == null ? <Loading what="drafts" /> :
           drafts.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No drafts.</div> :
-          drafts.map((d) => <DraftRow key={d.id} d={d} onToggle={onToggle} />)}
+          drafts.map((d) => <DraftRow key={d.id} d={d} onToggle={onToggle} onSchedule={onSchedule} />)}
       </Card>
 
       <div style={{ height: 18 }} />
