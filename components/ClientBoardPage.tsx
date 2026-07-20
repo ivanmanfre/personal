@@ -532,7 +532,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <span className="min-w-0">
           <span className="block truncate font-semibold" style={{ fontSize: size === 'lg' ? 13.5 : 12.5, color: '#111' }}>{name}</span>
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11.5 : 10.5, color: '#666' }}>{founder?.headline || `Founder, ${board.company_name}`} · 1st</span>
-          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>Scheduled · {fmtDay(item.publish_date) || 'this week'} · 🌐</span>
+          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !item.publish_date ? 'Draft · in the buffer' : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
       {item.body && (
