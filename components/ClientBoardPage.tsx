@@ -176,6 +176,8 @@ interface OutreachSpec {
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
+/** One row of the client-visible draft history (client_board_draft_history RPC). */
+interface HistoryEntry { action: string; at: string; by?: string | null; event?: string | null; note?: string | null; before?: string | null; after?: string | null }
 interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
@@ -1951,11 +1953,13 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, fetchHistory }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
+  /** Live board: draft history from the insert-only actions audit. */
+  fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
@@ -1971,6 +1975,36 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [err, setErr] = useState('');
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review';
+
+  // History (live): every edit / swap / remove this draft has seen, latest first.
+  const [history, setHistory] = useState<HistoryEntry[] | null>(null);
+  useEffect(() => {
+    if (!isLive || !fetchHistory) return;
+    let gone = false;
+    fetchHistory(item.id).then((items) => { if (!gone) setHistory(items); });
+    return () => { gone = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
+  const historyLabel = (h: HistoryEntry): string => {
+    if (h.action === 'edit_copy') return 'Copy edited';
+    if (h.action === 'approve') return 'Approved';
+    if (h.action === 'request_changes') return 'Change requested';
+    if (h.action === 'note') {
+      switch (h.event) {
+        case 'angle_swap': return 'Idea swapped';
+        case 'angle_swap_undone': return 'Swap undone';
+        case 'post_removed': return 'Post removed';
+        case 'post_restored': return 'Post restored';
+        case 'undo_approve': return 'Approve walked back';
+        default: return 'Note sent';
+      }
+    }
+    return h.action.replace(/_/g, ' ');
+  };
+  const historyWhen = (iso: string): string => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  };
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
@@ -2171,6 +2205,25 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             </div>
             <p className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}`, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{nextLine}</p>
           </div>
+
+          {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
+          {isLive && history && history.length > 0 && (
+            <div className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+              <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</div>
+              <div className="mt-2.5 flex flex-col">
+                {history.map((h, i) => (
+                  <div key={i} className="flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                    <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{historyLabel(h)}{h.by ? <span style={{ fontWeight: 400, color: DIM }}> · {h.by}</span> : null}</span>
+                      {h.note && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
+                      {h.action === 'edit_copy' && h.after && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         </div>
 
@@ -4983,6 +5036,54 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Real slot data (live): carousel_drafts.scheduled_at is the schedule authority — the
+  // board jsonb never carries publish dates for buffered drafts. Fetched once per load;
+  // merged into the queue below. Unscheduled drafts keep the honest buffer fallback.
+  const [schedule, setSchedule] = useState<Record<string, { status: string; scheduled_at: string | null }>>({});
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_schedule', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_schedule_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; items?: { id: string; status: string; scheduled_at: string | null }[] } | null;
+        if (!out?.ok || !Array.isArray(out.items)) return;
+        const map: Record<string, { status: string; scheduled_at: string | null }> = {};
+        out.items.forEach((it) => { map[it.id] = { status: it.status, scheduled_at: it.scheduled_at }; });
+        setSchedule(map);
+      } catch { /* schedule is progressive enhancement — the buffer fallback stays honest */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
+  // History log (live): reads the insert-only client_board_actions audit for one draft.
+  const fetchHistory = async (ref: string): Promise<HistoryEntry[]> => {
+    if (!slug) return [];
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_draft_history', { p_slug: slug, p_token: token, p_ref: ref });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return [];
+        resp = await supabase.rpc('client_board_draft_history_v2', { p_slug: slug, p_session: sess.token, p_ref: ref });
+      }
+      if (resp.error) return [];
+      const out = resp.data as { ok?: boolean; items?: HistoryEntry[] } | null;
+      return out?.ok && Array.isArray(out.items) ? out.items : [];
+    } catch { return []; }
+  };
+
   // Direct draft editing (live): applies the new copy server-side (draft + board queue in
   // one RPC) and logs a before/after action row for the operator. Local queue state
   // updates so the edit survives navigation without a refetch.
@@ -5310,10 +5411,17 @@ export default function ClientBoardPage() {
       ],
     };
   };
+  // Schedule overlay: a draft the operator scheduled carries its real date (and moves to
+  // the Scheduled stage). Applied before angle-swap resolution so swaps stay honest.
+  const withSchedule = (q: QueueItem): QueueItem => {
+    const s = schedule[q.id];
+    if (!s || s.status !== 'scheduled' || !s.scheduled_at) return q;
+    return { ...q, stage: q.stage === 'published' ? q.stage : ('scheduled' as Stage), publish_date: s.scheduled_at.slice(0, 10) };
+  };
   const viewBoard = useMemo(
-    () => (board ? { ...board, queue: board.queue.map(resolveItem) } : null),
+    () => (board ? { ...board, queue: board.queue.map((q) => resolveItem(withSchedule(q))) } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [board, angleSwaps],
+    [board, angleSwaps, schedule],
   );
   // The bench for a slot: its seeded alternates; once an angle is picked, the ORIGINAL
   // topic joins the bench (the rejected angle is benched, never lost).
@@ -5812,6 +5920,7 @@ export default function ClientBoardPage() {
           isLive={isLive}
           act={act}
           editDraft={editDraft}
+          fetchHistory={fetchHistory}
         />
       )}
       {ideaPreview && (
