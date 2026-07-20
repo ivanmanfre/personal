@@ -13,6 +13,7 @@ import type { CarouselDraft } from '../hooks/useContentLibrary';
 const SUPA = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
 const FEED_URL = `${SUPA}/functions/v1/lm-curator-feed`;
 const DECIDE_URL = `${SUPA}/functions/v1/lm-curator-decide`;
+const ANGLE_SUMMARY_URL = `${SUPA}/functions/v1/idea-angle-summary`;
 const ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 export type IdeaDecision = 'approve' | 'reject' | 'defer';
@@ -172,15 +173,43 @@ export function candidateToIdeaDraft(c: IdeaCandidate): CarouselDraft {
   };
 }
 
+// Fetch the tight Haiku angle headlines for the reviewing/post candidates. The
+// edge fn caches them on the row, so this is instant once summarized. Non-fatal:
+// on any failure the caller keeps the raw scored topic as the title.
+async function fetchAngleSummaries(): Promise<Record<string, string>> {
+  const r = await fetch(ANGLE_SUMMARY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ANON_KEY },
+    body: '{}',
+  });
+  if (!r.ok) throw new Error('angle-summary HTTP ' + r.status);
+  const j = await r.json();
+  return (j && typeof j.summaries === 'object' && j.summaries) || {};
+}
+
 // Fetch the curator feed and project the pending POST candidates as Idea-stage rows.
 export async function fetchIdeaDrafts(): Promise<CarouselDraft[]> {
   const r = await fetch(FEED_URL, { headers: { Authorization: 'Bearer ' + ANON_KEY } });
   if (!r.ok) throw new Error('idea-feed HTTP ' + r.status);
   const j = await r.json();
   const pending: IdeaCandidate[] = Array.isArray(j?.pending) ? j.pending : [];
-  return pending
+  const drafts = pending
     .filter((c) => c.content_type === 'post')
     .map(candidateToIdeaDraft);
+
+  // Overlay the tight angle headline onto the title (the Angle column reads it).
+  // The raw scored topic stays in `topic` + the assembled description, so nothing
+  // is lost — the row just reads at a glance instead of clipping a full clause.
+  try {
+    const summaries = await fetchAngleSummaries();
+    for (const d of drafts) {
+      const s = d.ideaCandidateId ? summaries[d.ideaCandidateId] : undefined;
+      if (s) d.title = s;
+    }
+  } catch (err) {
+    console.warn('[idea-candidates] angle summaries unavailable:', err);
+  }
+  return drafts;
 }
 
 // Approve / reject / defer an idea — calls the existing (unchanged) decide edge fn.
