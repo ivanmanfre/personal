@@ -51,6 +51,8 @@ type StageKey = 'ideas' | 'review' | 'buffer' | 'live';
 const num = (n: number | null | undefined, digits = 0) => (n == null ? '—' : n.toFixed(digits));
 const fig = (n: number | null | undefined) => (n == null ? '—' : String(Math.round(n)));
 const pct = (r: number | null | undefined) => (r == null ? '—' : `${Math.round(r * 100)}%`);
+// LM launch posts: structural flag stamped on the row, title fallback for legacy.
+const isLmLaunch = (d: Draft) => d.taxonomy?.lm_launch === true || /launch post/i.test(d.title || '');
 
 // ── Section root ─────────────────────────────────────────────────────────────
 export function ClientOps() {
@@ -71,7 +73,7 @@ export function ClientOps() {
 
   const {
     drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates,
-    reload, onToggle, onSchedule, onDecideIdea, onSwapCover, onMarkActionsSeen,
+    reload, onToggle, onSchedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen,
   } = useClientDetail(client);
 
   const [stage, setStage] = useState<StageKey>('review');
@@ -86,7 +88,11 @@ export function ClientOps() {
   // ── Derived lane arrays (guard nulls) ──────────────────────────────────────
   const reviewDrafts = useMemo(
     () => (drafts || []).filter((d) => d.status === 'review')
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+      .sort((a, b) => {
+        const la = isLmLaunch(a) ? 1 : 0, lb = isLmLaunch(b) ? 1 : 0;
+        if (la !== lb) return la - lb; // posts first, LM launches grouped after
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }),
     [drafts],
   );
   const scheduledDrafts = useMemo(() => (drafts || []).filter((d) => d.status === 'scheduled'), [drafts]);
@@ -151,12 +157,13 @@ export function ClientOps() {
       rider: reviewDrafts.length > 0 ? 'read + judge below' : 'queue clear',
     },
     {
-      key: 'buffer', no: '03', label: 'In buffer', count: scheduledDrafts.length, zero: scheduledDrafts.length === 0,
-      rider: A.nextPublish ? `next ${fmtDate(A.nextPublish)}` : 'none dated yet',
+      key: 'live', no: '03', label: 'On board', count: liveDrafts.length, zero: liveDrafts.length === 0,
+      rider: liveDrafts.length > 0 ? 'client sees these · can veto' : 'nothing shown yet',
     },
     {
-      key: 'live', no: '04', label: 'Live on board', count: liveDrafts.length, zero: liveDrafts.length === 0,
-      rider: A.funnel.views > 0 ? `${A.funnel.views} views so far` : 'no funnel traffic yet',
+      key: 'buffer', no: '04', label: 'In buffer', count: A.bufferDepth ?? scheduledDrafts.length,
+      zero: (A.bufferDepth ?? scheduledDrafts.length) === 0,
+      rider: A.nextPublish ? `next ${fmtDate(A.nextPublish)}` : 'queued · no dates yet',
     },
   ];
 
@@ -274,7 +281,7 @@ export function ClientOps() {
             ))}
           </div>
           <p className="co2-flowcap">
-            Ideas approve into drafts → drafts you schedule fill the buffer → live posts drive the lead-magnet funnel. Click a stage to work it.
+            Ideas approve into drafts → reviewed drafts go on the board → the buffer queues them with publish dates → published posts drive the lead-magnet funnel. Click a stage to work it.
           </p>
 
           {/* ── FOCUSED WORK LANE ─────────────────────────────────────────── */}
@@ -306,6 +313,7 @@ export function ClientOps() {
               toggleBusyId={toggleBusyId}
               onSchedule={handleSchedule}
               onToggle={handleToggle}
+              onEditBody={onEditBody}
               onNote={reload}
             />
           )}
@@ -434,18 +442,40 @@ function IdeasLane({ ideas, loading, err, selId, onSelect, decideBusy, onDecide,
   );
 }
 
-// ── Review lane: rail + client-faithful reader + schedule/toggle + inspect ────
-function ReviewLane({ drafts, loading, err, disqualified, cursor, current, identity, onCursor, schedBusy, schedNote, toggleBusyId, onSchedule, onToggle, onNote }: {
+// ── Review lane: grouped rail + client-faithful reader + edit + inspect ───────
+function ReviewLane({ drafts, loading, err, disqualified, cursor, current, identity, onCursor, schedBusy, schedNote, toggleBusyId, onSchedule, onToggle, onEditBody, onNote }: {
   drafts: Draft[]; loading: boolean; err?: string; disqualified: number; cursor: number; current: Draft | null;
   identity: BoardIdentity | null;
   onCursor: (i: number) => void; schedBusy: boolean; schedNote: string; toggleBusyId: string | null;
-  onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void; onNote: () => void;
+  onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void;
+  onEditBody: (d: Draft, body: string) => Promise<boolean>; onNote: () => void;
 }) {
+  const [editing, setEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+  React.useEffect(() => { setEditing(false); setEditText(current?.post_body || ''); }, [current?.id]);
+
   const image = current && current.type === 'single_image' && isUrl(current.image_urls?.[0]) ? current.image_urls![0] : null;
   const canSchedule = current?.status === 'review' && current.has_media !== false;
+  const firstLaunchIdx = drafts.findIndex((d) => isLmLaunch(d));
+  const currentIsLaunch = current ? isLmLaunch(current) : false;
+  // Merged machine timeline: the linked idea's log first, then the draft's own.
+  const timeline = React.useMemo(() => {
+    if (!current) return [];
+    return [...(current.idea_agent_log || []), ...(current.agent_log || [])];
+  }, [current]);
+  const linked = !!(current && (current.idea_source_label || current.idea_icp_score != null));
+
+  const saveEdit = async () => {
+    if (!current || saving) return;
+    setSaving(true);
+    try { if (await onEditBody(current, editText)) { setEditing(false); onNote(); } }
+    finally { setSaving(false); }
+  };
+
   return (
     <section className="co2-laneblock">
-      <div className="ec-kicker">In review — read each draft as the client's post · schedule to buffer, or flip it live on the board</div>
+      <div className="ec-kicker">In review — read each draft as the client's post · edit, schedule to buffer, or flip it live on the board</div>
       {err && <div className="co2-err">{err}</div>}
       {disqualified > 0 && <div className="co2-note">{disqualified} disqualified · hidden from the line</div>}
       {loading ? (
@@ -456,20 +486,24 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
         <div className="ws-reader ws-reader--insp">
           <aside className="ws-rail">
             {drafts.map((d, i) => (
-              <button key={d.id} className={`ws-rail-row ${i === cursor ? 'ws-rail-row--cur' : ''}`} onClick={() => onCursor(i)}>
-                <div className="co2-rail-top">
-                  {d.type === 'single_image' && isUrl(d.image_urls?.[0]) && (
-                    <img className="co2-thumb" src={d.image_urls![0]} alt="" loading="lazy" />
-                  )}
-                  <div className="ws-rail-title">{stripPrefix(d.title) || '(untitled)'}</div>
-                </div>
-                <div className="ws-rail-meta">
-                  {d.type === 'text' ? 'Text' : d.type === 'single_image' ? 'Image' : 'Carousel'}
-                  {d.qa_score != null ? ` · QA ${d.qa_score}` : ''}
-                  {d.board_visible ? ' · on board' : ''}
-                  {` · ${ageLabel(d.created_at)} old`}
-                </div>
-              </button>
+              <React.Fragment key={d.id}>
+                {i === 0 && firstLaunchIdx !== 0 && <div className="co2-railgroup">Posts</div>}
+                {i === firstLaunchIdx && <div className="co2-railgroup">Lead magnet launches</div>}
+                <button className={`ws-rail-row ${i === cursor ? 'ws-rail-row--cur' : ''}`} onClick={() => onCursor(i)}>
+                  <div className="co2-rail-top">
+                    {d.type === 'single_image' && isUrl(d.image_urls?.[0]) && (
+                      <img className="co2-thumb" src={d.image_urls![0]} alt="" loading="lazy" />
+                    )}
+                    <div className="ws-rail-title">{stripPrefix(d.title) || '(untitled)'}</div>
+                  </div>
+                  <div className="ws-rail-meta">
+                    {isLmLaunch(d) ? 'LM launch' : d.type === 'text' ? 'Text' : d.type === 'single_image' ? 'Image' : 'Carousel'}
+                    {d.qa_score != null ? ` · QA ${d.qa_score}` : ''}
+                    {d.board_visible ? ' · on board' : ''}
+                    {` · ${ageLabel(d.created_at)} old`}
+                  </div>
+                </button>
+              </React.Fragment>
             ))}
           </aside>
 
@@ -477,43 +511,56 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
             {current && (
               <div key={current.id}>
                 <div className="ws-read-cap">
-                  <b>In review</b>
+                  <b>{currentIsLaunch ? 'Lead magnet launch' : 'In review'}</b>
                   <span>· {current.type.replace('_', ' ')}</span>
                   {current.qa_score != null && <span>· QA {current.qa_score}</span>}
                   <span className="ws-read-pos">{cursor + 1} of {drafts.length}</span>
                 </div>
 
-                <ClientPost text={current.post_body || ''} identity={identity} image={image} />
-
-                {current.type === 'carousel' && current.image_urls && current.image_urls.length > 0 && (
-                  <div className="ws-slides">
-                    {current.image_urls.map((u, i) => <img key={i} src={u} alt="" loading="lazy" />)}
+                {editing ? (
+                  <div>
+                    <textarea autoFocus className="ws-edit" rows={16} value={editText} onChange={(e) => setEditText(e.target.value)} />
+                    <div className="ws-actions">
+                      <button className="ws-key ws-key--primary" disabled={saving} onClick={saveEdit}>{saving ? 'Saving…' : 'Save copy'}</button>
+                      <button className="ws-key" onClick={() => { setEditing(false); setEditText(current.post_body || ''); }}>Cancel</button>
+                    </div>
                   </div>
-                )}
+                ) : (
+                  <>
+                    <ClientPost text={current.post_body || ''} identity={identity} image={image} />
 
-                <div className="ws-actions">
-                  {canSchedule ? (
-                    <button className="ws-key ws-key--primary" disabled={schedBusy} onClick={() => onSchedule(current)}>
-                      {schedBusy ? 'Scheduling…' : 'Schedule to buffer'}
-                    </button>
-                  ) : current.status === 'review' ? (
-                    <span className="co2-await">◷ waiting on image</span>
-                  ) : (
-                    <span className="co2-note">{current.status}</span>
-                  )}
-                  <label className="co2-toggle" title={current.status === 'review' ? 'Show on the client board' : 'Only review drafts can be shown'}>
-                    <span>On board</span>
-                    <button
-                      role="switch"
-                      aria-checked={current.board_visible}
-                      aria-label="On board"
-                      disabled={current.status !== 'review' || toggleBusyId === current.id}
-                      className={`co2-switch ${current.board_visible ? 'co2-switch--on' : ''}`}
-                      onClick={() => onToggle(current, !current.board_visible)}
-                    />
-                  </label>
-                </div>
-                {schedNote && <div className="co2-await" style={{ marginTop: '0.5rem' }}>{schedNote}</div>}
+                    {current.type === 'carousel' && current.image_urls && current.image_urls.length > 0 && (
+                      <div className="ws-slides">
+                        {current.image_urls.map((u, i) => <img key={i} src={u} alt="" loading="lazy" />)}
+                      </div>
+                    )}
+
+                    <div className="ws-actions">
+                      {canSchedule ? (
+                        <button className="ws-key ws-key--primary" disabled={schedBusy} onClick={() => onSchedule(current)}>
+                          {schedBusy ? 'Scheduling…' : 'Schedule to buffer'}
+                        </button>
+                      ) : current.status === 'review' ? (
+                        <span className="co2-await">◷ waiting on image</span>
+                      ) : (
+                        <span className="co2-note">{current.status}</span>
+                      )}
+                      <button className="ws-key" onClick={() => { setEditText(current.post_body || ''); setEditing(true); }}>Edit copy</button>
+                      <label className="co2-toggle" title={current.status === 'review' ? 'Show on the client board' : 'Only review drafts can be shown'}>
+                        <span>On board</span>
+                        <button
+                          role="switch"
+                          aria-checked={current.board_visible}
+                          aria-label="On board"
+                          disabled={current.status !== 'review' || toggleBusyId === current.id}
+                          className={`co2-switch ${current.board_visible ? 'co2-switch--on' : ''}`}
+                          onClick={() => onToggle(current, !current.board_visible)}
+                        />
+                      </label>
+                    </div>
+                    {schedNote && <div className="co2-await" style={{ marginTop: '0.5rem' }}>{schedNote}</div>}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -523,23 +570,34 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
               {/* graft 3 (C): PIPELINE PROVENANCE — where this draft came from */}
               <div className="co2-prov">
                 <div className="co2-block-lbl">Pipeline provenance</div>
-                <div className="co2-prov-line"><span>From idea</span><b>{current.idea_source_label || 'not linked'}</b></div>
-                {current.idea_source_ref && (
-                  <div className="co2-prov-line">
-                    <span>Ref</span>
-                    {isUrl(current.idea_source_ref)
-                      ? <b><a className="co2-provlink" href={current.idea_source_ref} target="_blank" rel="noreferrer">source ↗</a></b>
-                      : <b className="co2-mono">{current.idea_source_ref}</b>}
+                {linked ? (
+                  <>
+                    <div className="co2-prov-line"><span>From idea</span><b>{current.idea_source_label || 'linked idea'}</b></div>
+                    {current.idea_source_ref && (
+                      <div className="co2-prov-line">
+                        <span>Ref</span>
+                        {isUrl(current.idea_source_ref)
+                          ? <b><a className="co2-provlink" href={current.idea_source_ref} target="_blank" rel="noreferrer">source ↗</a></b>
+                          : <b className="co2-mono">{current.idea_source_ref}</b>}
+                      </div>
+                    )}
+                    <div className="co2-prov-line">
+                      <span>Idea ICP</span>
+                      <b>{current.idea_icp_score != null ? `${Math.round(current.idea_icp_score)} · ${icpBand(current.idea_icp_score)}` : 'not scored'}</b>
+                    </div>
+                    {current.source_post_id && <div className="co2-prov-line"><span>Origin</span><b>spun from a source post</b></div>}
+                  </>
+                ) : (
+                  <div className="co2-miss" style={{ padding: '0.2rem 0 0.4rem' }}>
+                    {currentIsLaunch ? 'LM launch post — its lead magnet is the source.' : 'Pre-pipeline draft — no linked idea.'}
                   </div>
                 )}
-                <div className="co2-prov-line">
-                  <span>Idea ICP</span>
-                  <b>{current.idea_icp_score != null ? `${Math.round(current.idea_icp_score)} · ${icpBand(current.idea_icp_score)}` : 'not scored'}</b>
-                </div>
-                {current.source_post_id && <div className="co2-prov-line"><span>Origin</span><b>spun from a source post</b></div>}
               </div>
               <QAVerdictPanel entries={current.agent_log || []} />
-              <AgentLogFeed entries={current.agent_log || []} table="carousel_drafts" rowId={current.id} onNoteAdded={onNote} />
+              {(current.idea_agent_log?.length ?? 0) > 0 && (
+                <div className="co2-note" style={{ margin: '0.3rem 0 -0.3rem' }}>timeline includes the source idea's agents</div>
+              )}
+              <AgentLogFeed entries={timeline} table="carousel_drafts" rowId={current.id} onNoteAdded={onNote} />
             </aside>
           )}
         </div>
@@ -548,33 +606,42 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
   );
 }
 
-// ── Buffer lane: scheduled drafts ledger + honest board-queue depth ──────────
+// ── Buffer lane: the board queue itself + any dated scheduled drafts ──────────
 function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading }: {
   scheduled: Draft[]; bufferDepth: number | null; nextPublish: string | null;
   queue: ReturnType<typeof useClientDetail>['queue']; loading: boolean;
 }) {
+  const entries = queue || [];
   return (
     <section className="co2-laneblock">
-      <div className="ec-kicker">In buffer — scheduled to publish on the client's cadence</div>
+      <div className="ec-kicker">In buffer — the board's publish queue · dates land when a draft is scheduled</div>
       {loading ? (
         <div className="ws-loading">Loading…</div>
-      ) : scheduled.length === 0 ? (
-        <div className="co2-emptyline">Nothing scheduled yet — schedule a reviewed draft into the buffer.</div>
+      ) : entries.length === 0 && scheduled.length === 0 ? (
+        <div className="co2-emptyline">Buffer empty — schedule a reviewed draft to queue it.</div>
       ) : (
         <div className="co2-ledger">
-          {scheduled.map((d) => (
+          {entries.map((q: any, i: number) => (
+            <div key={q.id || i} className="co2-lrow">
+              <span className="co2-ltitle">{stripPrefix(q.title || q.hook || '(untitled)')}</span>
+              <span className="co2-lmeta">
+                {q.status ? `${q.status} · ` : ''}
+                {q.publish_date ? `publishes ${fmtDate(q.publish_date)}` : 'no date yet'}
+              </span>
+            </div>
+          ))}
+          {scheduled.filter((d) => !entries.some((q: any) => q.id === d.id)).map((d) => (
             <div key={d.id} className="co2-lrow">
               <span className="co2-ltitle">{stripPrefix(d.title) || '(untitled)'}</span>
-              <span className="co2-lmeta">{d.board_visible ? 'on board · ' : ''}{d.scheduled_at ? `publishes ${fmtDate(d.scheduled_at)}` : 'awaiting slot'}</span>
+              <span className="co2-lmeta">scheduled{d.scheduled_at ? ` · publishes ${fmtDate(d.scheduled_at)}` : ''} · syncing to queue</span>
             </div>
           ))}
         </div>
       )}
       <div className="co2-note" style={{ marginTop: '0.9rem' }}>
         {bufferDepth != null
-          ? `Board queue holds ${bufferDepth} entr${bufferDepth === 1 ? 'y' : 'ies'}${nextPublish ? ` · next publish ${fmtDate(nextPublish)}` : ' · no publish dates set yet'}.`
+          ? `${bufferDepth} queued${nextPublish ? ` · next publish ${fmtDate(nextPublish)}` : ' · none carry a publish date yet — the client board runs on its cadence once dates land'}.`
           : 'Board queue not loaded.'}
-        {queue && queue.length > 0 ? ` (${queue.length} in board JSON)` : ''}
       </div>
     </section>
   );
@@ -587,7 +654,7 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
 }) {
   return (
     <section className="co2-laneblock">
-      <div className="ec-kicker">Live on board — visible to the client · pull a review draft off to hide it</div>
+      <div className="ec-kicker">On the client board — what the client sees right now · pull a review draft off to hide it</div>
       {loading ? (
         <div className="ws-loading">Loading…</div>
       ) : live.length === 0 && published.length === 0 ? (
@@ -710,30 +777,50 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
         </div>
       )}
 
-      {/* LM covers pick-strip — rendered ONCE, only when a variation pair exists */}
-      {boardLms != null && boardLms.length > 0 && (
+      {/* LM covers — one row per lead magnet: pairs are pickable, gaps are named */}
+      {(boardLms != null || lms != null) && (
         <div style={{ marginTop: '1.4rem' }}>
-          <div className="ec-kicker">LM covers — pick the one the board runs</div>
-          {boardLms.map((lm) => (
-            <div key={lm.id} className="co2-lrow" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '0.5rem' }}>
-              <span className="co2-ltitle">{lm.title}</span>
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
-                {(lm.covers || []).map((url) => {
-                  const active = url === lm.cover_url;
-                  return (
-                    <button
-                      key={url}
-                      onClick={() => { if (!active) onSwapCover(lm.id, url); }}
-                      title={active ? 'Live on the board' : 'Set as the board cover'}
-                      className={`co2-coverpick ${active ? 'co2-coverpick--on' : ''}`}
-                    >
-                      <img src={url} alt="" loading="lazy" />
-                    </button>
-                  );
-                })}
+          <div className="ec-kicker">LM covers — the standard is a pair per lead magnet · pick the one the board runs</div>
+          {(boardLms || []).map((lm) => {
+            const covers = Array.isArray(lm.covers) ? lm.covers : (lm.cover_url ? [lm.cover_url] : []);
+            const hasPair = covers.length > 1;
+            return (
+              <div key={lm.id} className="co2-lrow" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '0.5rem' }}>
+                <span className="co2-ltitle">{lm.title}</span>
+                <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {covers.map((url) => {
+                    const active = url === lm.cover_url;
+                    return (
+                      <button
+                        key={url}
+                        onClick={() => { if (hasPair && !active) onSwapCover(lm.id, url); }}
+                        title={!hasPair ? 'The only cover generated' : active ? 'Live on the board' : 'Set as the board cover'}
+                        className={`co2-coverpick ${active ? 'co2-coverpick--on' : ''}`}
+                        style={!hasPair ? { cursor: 'default' } : undefined}
+                      >
+                        <img src={url} alt="" loading="lazy" />
+                      </button>
+                    );
+                  })}
+                  {!hasPair && <span className="co2-miss">second option not generated yet</span>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+          {(lms || [])
+            .filter((row) => {
+              const t = stripPrefix(row.topic).toLowerCase();
+              return !(boardLms || []).some((b) => {
+                const bt = (b.title || '').toLowerCase();
+                return bt && (t.includes(bt) || bt.includes(t));
+              });
+            })
+            .map((row) => (
+              <div key={row.id} className="co2-lrow" style={{ alignItems: 'baseline', gap: '0.8rem' }}>
+                <span className="co2-ltitle">{stripPrefix(row.topic)}</span>
+                <span className="co2-miss">no covers generated yet</span>
+              </div>
+            ))}
         </div>
       )}
     </section>
@@ -869,6 +956,9 @@ const CSS = `
 .ec .co2-idt .co2-idt-row { grid-template-columns:88px minmax(0,1fr) 120px 104px 128px; gap:0.7rem; }
 @media (max-width:1080px){ .ec .co2-idt-wrap{ grid-template-columns:1fr; } .ec .co2-idt-inspect{ border-left:0; border-top:1px solid var(--ec-rule); padding-left:0; padding-top:1rem; } }
 @media (max-width:640px){ .ec .co2-idt .ws-idt-head{ display:none; } .ec .co2-idt .co2-idt-row{ grid-template-columns:58px minmax(0,1fr) auto; } .ec .co2-idt-scores, .ec .co2-idt-src{ display:none; } }
+
+/* Rail group headers (posts vs LM launches) */
+.ec .co2-railgroup { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.09em; text-transform:uppercase; color:var(--ec-mutedc); padding:0.7rem 0.4rem 0.25rem; border-bottom:1px solid var(--ec-rule-strong); }
 
 /* Review rail thumbnail */
 .ec .co2-rail-top { display:flex; align-items:flex-start; gap:0.5rem; }

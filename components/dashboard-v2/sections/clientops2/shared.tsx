@@ -44,6 +44,7 @@ export interface Draft {
   idea_source_label: string | null;
   idea_source_ref: string | null;
   idea_icp_score: number | null;
+  idea_agent_log?: AgentLogEntry[];
   board_visible: boolean;
   created_at: string;
   published_at: string | null;
@@ -267,7 +268,7 @@ export function useClientDetail(client: ClientOverview | null) {
     else setLms((lRes.data?.lms || []) as Lm[]);
     const board = bRes.data?.board;
     const entries = (board?.lead_magnets || []) as BoardLm[];
-    setBoardLms(entries.filter((e) => Array.isArray(e.covers) && e.covers.length > 1));
+    setBoardLms(entries.filter((e) => (Array.isArray(e.covers) && e.covers.length > 0) || e.cover_url));
     setIdentity({
       founderName: board?.founder?.name || null,
       founderHeadline: board?.founder?.headline || null,
@@ -314,6 +315,18 @@ export function useClientDetail(client: ClientOverview | null) {
     return true;
   }, []);
 
+  const onEditBody = useCallback(async (d: Draft, body: string) => {
+    const prevBody = d.post_body;
+    setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, post_body: body } : x)) ?? prev);
+    const res = await supabase.rpc('operator_edit_draft_body', { p_gate: GATE, p_draft_id: d.id, p_body: body });
+    if (res.error || (res.data && res.data.ok === false)) {
+      setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, post_body: prevBody } : x)) ?? prev);
+      setErrors((e) => ({ ...e, drafts: res.error?.message || res.data?.error || 'edit failed' }));
+      return false;
+    }
+    return true;
+  }, []);
+
   const onSwapCover = useCallback(async (lmId: string, url: string) => {
     if (!client) return;
     setBoardLms((prev) => prev?.map((x) => (x.id === lmId ? { ...x, cover_url: url } : x)) ?? prev);
@@ -345,7 +358,7 @@ export function useClientDetail(client: ClientOverview | null) {
     [drafts, ideas, lms, queue],
   );
 
-  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onDecideIdea, onSwapCover, onMarkActionsSeen };
+  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen };
 }
 
 // ── Client-faithful LinkedIn preview ─────────────────────────────────────────

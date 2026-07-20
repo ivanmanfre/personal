@@ -17,14 +17,15 @@ const LEGACY_SECTION_REMAP: Record<string, SectionId> = {
   content: 'posts',    // Content group opens on the Posts board
   reach: 'outreach',   // Pipeline group opens on the Outreach work surface
   ops: 'health',       // System health absorbs Overview + Workflows + Scheduled Ops
-  clients: 'risedtc',  // Clients group opens on the Rise DTC desk
+  clients: 'clientops', // Clients group opens on the Client Ops cockpit
   knowledge: 'brain',  // Brain is the knowledge home (Prompts lives under Content)
   system: 'health',    // legacy "system" = System health
   ideas: 'posts',      // content ideas are the Idea STAGE on the Posts board
   steal: 'opsideas',
   warm: 'outreach',    // Warm nav retired → folded into Outreach work surface
-  boards: 'risedtc',   // Boards nav retired → Rise DTC is the live client home
+  boards: 'clientops', // Boards nav retired → Client Ops is the client home
   healthp: 'personal', // personal Health nav retired → Personal keeps the sub-tab
+  risedtc: 'clientops', // per-client roadmap page retired → Client Ops cockpit
 };
 
 function resolveSection(raw: string | null, valid: Set<string>): SectionId | null {

@@ -5,7 +5,6 @@ import { Shell } from './Shell';
 import { PwaInstall } from './PwaInstall';
 import { registerServiceWorker } from './registerSW';
 import { Today } from './sections/Today';
-import { ClientsRoadmap } from './sections/ClientsRoadmap';
 import { SystemPulse } from './sections/SystemPulse';
 import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
@@ -89,7 +88,6 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
   {
     group: 'clients',
     items: [
-      { id: 'risedtc', name: 'RISE DTC', render: () => <ClientsRoadmap /> },
       { id: 'clientops', name: 'Client Ops', render: () => <ClientOps /> },
     ],
   },
