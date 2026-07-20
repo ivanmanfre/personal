@@ -1205,7 +1205,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           role="button" tabIndex={0}
           onClick={() => setOpenRow(isOpen ? null : q.id)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenRow(isOpen ? null : q.id); } }}
-          className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
+          className="cb-ledger-row grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
           style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
         >
           <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : live ? 'in the buffer' : 'date at sign-off'}</span>
@@ -1297,7 +1297,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         role="button" tabIndex={0}
         onClick={() => onOpenIdea(idea)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenIdea(idea); } }}
-        className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
+        className="cb-ledger-row grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
         style={{ margin: '0 -14px' }}
       >
         <span style={{ fontFamily: MONO, fontSize: 12, color: INK_MUTE }}>idea</span>
@@ -1369,7 +1369,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         /* LEAD MAGNETS — live: capture assets belong in the same pool as the posts (one
            comprehensive ledger). Preview keeps its dedicated LM-tab funnel story. */
         const lms = board.lead_magnets || [];
-        const lmRowCls = 'grid items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]';
+        const lmRowCls = 'cb-ledger-row grid items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]';
         const lmSection = (live && lms.length > 0) ? (
           <section>
             <LedgerSectionHead eyebrow="Lead magnets" count={lms.length} blurb="Capture assets in the same pool as the posts. Live ones take opt-ins around the clock." accent={accent} />
@@ -5805,6 +5805,18 @@ export default function ClientBoardPage() {
   .cb-cal-chip:hover { transform: none }
   .cb-cal-row { animation: none }
 }
+
+/* ============ Polish: ledger rows ============ */
+/* Hover draws the house accent rule down the row's left edge — the BB accent-rule
+   grammar answering the cursor. No shadows, no lift. */
+.cb-ledger-row { position: relative; }
+.cb-ledger-row::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--cb-accent); transform: scaleY(0); transform-origin: 50% 50%;
+  transition: transform .18s cubic-bezier(.25,1,.5,1);
+}
+.cb-ledger-row:hover::before, .cb-ledger-row:focus-visible::before { transform: scaleY(1); }
+@media (prefers-reduced-motion: reduce) { .cb-ledger-row::before { transition: none } }
 `}</style>
     <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
