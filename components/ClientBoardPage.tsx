@@ -112,6 +112,8 @@ interface QueueItem {
   publish_date?: string;
   /** Where the idea came from (ideas pipeline: Hand-picked / call / subreddit / newsjack). */
   source_label?: string;
+  /** A feed post whose job is to launch a lead magnet — labelled as such, not "Text post". */
+  lm_launch?: boolean;
   generating?: boolean;
   agent_trail?: AgentStep[];
   /** Transient: the agent step currently running, shown inline on the row (intro choreography). */
@@ -332,7 +334,8 @@ None of it shows in the dashboard. All of it shows in a margin audit.
 Scaling multiplies whatever is already in the account, including the leaks. Audit first, then scale.`;
 
 /** Format kicker: refines the raw kind into the client-readable format label. */
-function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url'>): string {
+function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch'>): string {
+  if (q.lm_launch) return 'Lead magnet launch';
   if (q.kind === 'post') return q.media_url ? 'Image post' : 'Text post';
   return KIND_LABEL[q.kind] || q.kind;
 }
