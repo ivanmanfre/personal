@@ -87,6 +87,12 @@ interface LeadMagnetEntry {
   /** Cover variation pair (operator-swappable); cover_url is the one currently running. */
   covers?: string[];
   promise?: string;
+  /** Authored promo assets (real deliverables, saved copy — never invented statuses). */
+  promo?: {
+    email?: { subject: string; body: string };
+    announcement?: string;
+    dm?: string;
+  };
 }
 /** Idea-bank entry: an upcoming topic the engine holds but has NOT drafted yet. It has
  *  no date and no metrics — it drafts when it reaches its calendar slot. Rendered as the
@@ -2814,9 +2820,12 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">
-          {/* Cover: real cover image when present, else a typographic plate in the brand tones. */}
+          {/* Cover: real cover image when present, else a typographic plate in the brand tones.
+              Live: the cover is media beside the facts, not a hero that fills the sheet. */}
           {entry.cover_url ? (
-            <img src={entry.cover_url} alt="" className="w-full rounded-xl object-cover" style={{ border: `1px solid ${LINE}` }} />
+            live
+              ? <img src={entry.cover_url} alt="" className="rounded-xl" style={{ border: `1px solid ${LINE}`, height: 210, width: 'auto', maxWidth: '100%', objectFit: 'cover', display: 'block' }} />
+              : <img src={entry.cover_url} alt="" className="w-full rounded-xl object-cover" style={{ border: `1px solid ${LINE}` }} />
           ) : (
             <div className="flex aspect-[16/9] flex-col justify-between rounded-xl p-6" style={{ background: heroBg, border: `1px solid ${LINE}` }}>
               <span className="w-fit uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: onHero, opacity: 0.85 }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</span>
@@ -2878,25 +2887,38 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
               : (live ? 'In build. It goes up on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
           </p>
 
-          {/* The page itself, live in the drawer — the real URL, not a mockup. */}
+          {/* The pages, live in the drawer — the real URLs, not mockups. The landing gate is
+              what a stranger sees; the unlocked view is what their email buys. */}
           {live && isLiveLm && url && (
             <div className="mt-6">
-              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The page, live</div>
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The landing gate, live</div>
               <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex items-center gap-1.5 px-3.5 py-2" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
                   {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: 'rgba(2,49,47,0.10)' }} aria-hidden />)}
                   <span className="ml-2 truncate" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{url.replace(/^https?:\/\//, '')}</span>
                 </div>
-                <iframe src={url} title={entry.title} loading="lazy" style={{ width: '100%', height: 560, border: 'none', display: 'block', background: '#fff' }} />
+                <iframe src={url} title={entry.title} loading="lazy" style={{ width: '100%', height: 470, border: 'none', display: 'block', background: '#fff' }} />
+              </div>
+              <div className="mb-2 mt-5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>Behind the gate</div>
+              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex items-center gap-1.5 px-3.5 py-2" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                  {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: 'rgba(2,49,47,0.10)' }} aria-hidden />)}
+                  <span className="ml-2 truncate" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{`${url.replace(/^https?:\/\//, '').replace(/\/?$/, '/')}?unlocked=1`}</span>
+                </div>
+                <iframe src={`${url.replace(/\/?$/, '/')}?unlocked=1`} title={`${entry.title} — unlocked`} loading="lazy" style={{ width: '100%', height: 470, border: 'none', display: 'block', background: '#fff' }} />
               </div>
             </div>
           )}
 
-          {/* The promo kit: real copy only, nothing invented. */}
+          {/* The promo kit: real copy only, nothing invented. Authored templates render as the
+              artifact they are (a DM as chat, an email as mail, the announcement as a post) with
+              an honest status line — never an "already sending" claim. */}
           {live && isLiveLm && (
             <div className="mt-6">
               <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The promo kit</div>
-              {giftDms.length > 0 && (
+
+              {/* DMs: the real orbit gift-touch when it belongs to this asset, plus the authored template. */}
+              {(giftDms.length > 0 || entry.promo?.dm) && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {giftDms.map((sm, i) => (
                     <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
@@ -2904,13 +2926,49 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                       <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
                     </div>
                   ))}
+                  {entry.promo?.dm && (
+                    <div className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>DM · the share template</div>
+                      <div className="rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5" style={{ background: '#fff', border: `1px solid ${DIVIDE}`, maxWidth: '34ch' }}>
+                        <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK }}>{entry.promo.dm}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-              <p className={giftDms.length > 0 ? 'mt-3 text-[12.5px]' : 'text-[12.5px]'} style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {giftDms.length > 0
-                  ? 'The feed announcement drafts into your buffer when its launch slot is scheduled.'
-                  : 'The feed announcement and outreach touches draft into your buffer when its launch slot is scheduled. They land here as they exist.'}
-              </p>
+
+              {/* The delivery email, rendered as mail. */}
+              {entry.promo?.email && (
+                <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Delivery email · subject</span>
+                    <div className="mt-0.5 text-[14px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{entry.promo.email.subject}</div>
+                  </div>
+                  <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.email.body}</p>
+                  <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
+                    Written and saved as the delivery template. The send rail is not switched on yet.
+                  </div>
+                </div>
+              )}
+
+              {/* The feed announcement, rendered as the post it becomes. */}
+              {entry.promo?.announcement && (
+                <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Feed announcement</span>
+                  </div>
+                  <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.announcement}</p>
+                  <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
+                    Written and ready. It queues into the buffer when its launch slot is picked.
+                  </div>
+                </div>
+              )}
+
+              {!entry.promo?.email && !entry.promo?.announcement && giftDms.length === 0 && !entry.promo?.dm && (
+                <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
+                  The feed announcement and outreach touches draft into your buffer when its launch slot is scheduled. They land here as they exist.
+                </p>
+              )}
             </div>
           )}
         </div>
