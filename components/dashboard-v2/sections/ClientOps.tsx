@@ -451,6 +451,37 @@ function LmRow({ lm, onChanged }: { lm: Lm; onChanged: () => void }) {
   );
 }
 
+// ---- board LM cover swap ----------------------------------------------------
+/** Board-JSON lead-magnet entry carrying a cover variation pair (client_boards.board). */
+interface BoardLm { id: string; title: string; cover_url?: string; covers?: string[] }
+
+function CoverSwapRow({ lm, onSwap }: { lm: BoardLm; onSwap: (lmId: string, url: string) => void }) {
+  return (
+    <div style={{ borderBottom: '1px solid var(--d-rule)', padding: '10px 0' }}>
+      <div style={{ fontSize: 14, color: 'var(--d-paper)', marginBottom: 8 }}>{lm.title}</div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        {(lm.covers || []).map((url) => {
+          const active = url === lm.cover_url;
+          return (
+            <button
+              key={url}
+              onClick={() => { if (!active) onSwap(lm.id, url); }}
+              title={active ? 'Live on the board' : 'Set as the board cover'}
+              style={{
+                padding: 0, background: 'none', cursor: active ? 'default' : 'pointer',
+                border: active ? '2px solid var(--d-good)' : '1px solid var(--d-rule)',
+                borderRadius: 10, overflow: 'hidden', opacity: active ? 1 : 0.72, lineHeight: 0,
+              }}
+            >
+              <img src={url} alt="" style={{ height: 96, display: 'block' }} loading="lazy" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ---- action feed row --------------------------------------------------------
 function ActionFeedRow({ a }: { a: ActionRow }) {
   const p = a.payload || {};
@@ -480,6 +511,7 @@ function ClientDetail({ client, onBack }: {
   const [actions, setActions] = useState<ActionRow[] | null>(null);
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [lms, setLms] = useState<Lm[] | null>(null);
+  const [boardLms, setBoardLms] = useState<BoardLm[] | null>(null);
   const [draftsErr, setDraftsErr] = useState('');
   const [actionsErr, setActionsErr] = useState('');
   const [ideasErr, setIdeasErr] = useState('');
@@ -487,11 +519,12 @@ function ClientDetail({ client, onBack }: {
 
   const loadDetail = useCallback(async () => {
     setDraftsErr(''); setActionsErr(''); setIdeasErr(''); setLmsErr('');
-    const [dRes, aRes, iRes, lRes] = await Promise.all([
+    const [dRes, aRes, iRes, lRes, bRes] = await Promise.all([
       supabase.rpc('operator_client_drafts', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_actions', { p_gate: GATE, p_slug: client.board.slug }),
       supabase.rpc('operator_client_ideas', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_lms', { p_gate: GATE, p_client_id: client.client_id }),
+      supabase.rpc('get_client_board', { p_slug: client.board.slug, p_token: client.board.token }),
     ]);
     if (dRes.error || (dRes.data && dRes.data.ok === false)) {
       setDraftsErr(dRes.error?.message || dRes.data?.error || 'drafts load failed');
@@ -517,7 +550,11 @@ function ClientDetail({ client, onBack }: {
     } else {
       setLms((lRes.data?.lms || []) as Lm[]);
     }
-  }, [client.client_id, client.board.slug]);
+    // Cover variation pairs live on the board JSON (client_boards.board.lead_magnets).
+    // Non-fatal: no pairs (or a board fetch error) just hides the covers card.
+    const entries = (bRes.data?.board?.lead_magnets || []) as BoardLm[];
+    setBoardLms(entries.filter((e) => Array.isArray(e.covers) && e.covers.length > 1));
+  }, [client.client_id, client.board.slug, client.board.token]);
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
 
@@ -561,6 +598,18 @@ function ClientDetail({ client, onBack }: {
       setIdeas((prev) => (prev && !prev.some((x) => x.id === idea.id)) ? [idea, ...prev] : prev);
     }
   }, []);
+
+  const onSwapCover = useCallback(async (lmId: string, url: string) => {
+    // optimistic; a failed swap reloads the detail to restore server truth
+    setBoardLms((prev) => prev?.map((x) => (x.id === lmId ? { ...x, cover_url: url } : x)) ?? prev);
+    const res = await supabase.rpc('operator_set_lm_cover', {
+      p_gate: GATE, p_slug: client.board.slug, p_lm_id: lmId, p_cover_url: url,
+    });
+    if (res.error || (res.data && res.data.ok === false)) {
+      setLmsErr(res.error?.message || res.data?.error || 'cover swap failed');
+      loadDetail();
+    }
+  }, [client.board.slug, loadDetail]);
 
   const boardLink = client.board?.url ? `${client.board.url}?k=${client.board.token ?? ''}` : undefined;
 
@@ -617,6 +666,15 @@ function ClientDetail({ client, onBack }: {
           lms.length === 0 ? <div style={{ color: 'var(--d-paper-dim)', fontSize: 13, padding: '10px 0' }}>No lead magnets yet.</div> :
           lms.map((lm) => <LmRow key={lm.id} lm={lm} onChanged={loadDetail} />)}
       </Card>
+
+      {boardLms != null && boardLms.length > 0 && (
+        <>
+          <div style={{ height: 18 }} />
+          <Card label="LM COVERS — variation pair per asset — click the one the board should run">
+            {boardLms.map((lm) => <CoverSwapRow key={lm.id} lm={lm} onSwap={onSwapCover} />)}
+          </Card>
+        </>
+      )}
 
       <div style={{ height: 18 }} />
 

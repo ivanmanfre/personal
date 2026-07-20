@@ -84,6 +84,8 @@ interface LeadMagnetEntry {
   /** Captured-lead count for this asset, when available. */
   captured?: number;
   cover_url?: string;
+  /** Cover variation pair (operator-swappable); cover_url is the one currently running. */
+  covers?: string[];
   promise?: string;
 }
 /** Idea-bank entry: an upcoming topic the engine holds but has NOT drafted yet. It has
@@ -2692,6 +2694,26 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
             <div className="flex aspect-[16/9] flex-col justify-between rounded-xl p-6" style={{ background: heroBg, border: `1px solid ${LINE}` }}>
               <span className="w-fit uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: onHero, opacity: 0.85 }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</span>
               <span style={{ fontFamily: fontStack, fontWeight: 700, fontSize: 26, lineHeight: 1.12, color: onHero }}>{entry.title}</span>
+            </div>
+          )}
+
+          {/* Cover variation pair: both options, the running one marked. Swap happens operator-side. */}
+          {(entry.covers?.length ?? 0) > 1 && (
+            <div className="mt-4">
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>Cover options</div>
+              <div className="flex gap-3">
+                {entry.covers!.map((c) => {
+                  const running = c === entry.cover_url;
+                  return (
+                    <div key={c} className="overflow-hidden rounded-lg" style={{ border: running ? `2px solid ${accent}` : `1px solid ${LINE}`, opacity: running ? 1 : 0.78 }}>
+                      <img src={c} alt="" loading="lazy" style={{ height: 108, display: 'block' }} />
+                      <div className="px-2 py-1 text-center uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: running ? INK : INK_MUTE }}>
+                        {running ? 'Running' : 'Alternate'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
