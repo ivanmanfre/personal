@@ -306,9 +306,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           How Rise runs growth
         </h2>
         <p className="text-sm opacity-80 leading-relaxed mb-6 max-w-xl">
-          Paid media and performance creative that compound, paired with a real Financial Health
-          view of every order: contribution profit, not top-line vanity. That's the read a live
-          look together gets you past a public scan.
+          Paid media and performance creative that compound, plus a Financial Health view that
+          tracks contribution profit on every order. A live look picks up what a public scan can't reach.
         </p>
         <a
           href={bookingUrl}
