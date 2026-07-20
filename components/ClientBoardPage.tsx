@@ -114,6 +114,8 @@ interface QueueItem {
   source_label?: string;
   /** A feed post whose job is to launch a lead magnet — labelled as such, not "Text post". */
   lm_launch?: boolean;
+  /** For a lead-magnet launch post: the LM id (lml-*) it announces, so the LM drawer can show it. */
+  lm_ref?: string;
   generating?: boolean;
   agent_trail?: AgentStep[];
   /** Transient: the agent step currently running, shown inline on the row (intro choreography). */
@@ -1405,48 +1407,15 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
             </section>
           );
         });
-        /* LEAD MAGNETS — live: capture assets belong in the same pool as the posts (one
-           comprehensive ledger). Preview keeps its dedicated LM-tab funnel story. */
-        const lms = board.lead_magnets || [];
-        const lmRowCls = 'cb-ledger-row grid items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]';
-        const lmSection = (live && lms.length > 0) ? (
-          <section>
-            <LedgerSectionHead eyebrow="Lead magnets" count={lms.length} blurb="" accent={accent} />
-            {lms.map((lm) => {
-              const lmLive = lm.status === 'live';
-              const inner = (
-                <>
-                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'live' : 'in build'}</span>
-                  <span className="min-w-0">
-                    <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{lm.title}</span>
-                    {lm.promise && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{lm.promise}</span>}
-                  </span>
-                  <span className="hidden capitalize sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{lm.format || 'lead magnet'}</span>
-                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? (onClientDomain(lm.url, board.domain) ? '● on your domain' : '● live') : 'in build'}</span>
-                  <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>▸</span>
-                </>
-              );
-              return (
-                <div key={lm.id} style={{ borderBottom: `1px solid ${LINE}` }}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setLmDetail(lm)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLmDetail(lm); } }}
-                    className={`${lmRowCls} cursor-pointer`}
-                    style={{ margin: '0 -14px' }}
-                  >{inner}</div>
-                </div>
-              );
-            })}
-          </section>
-        ) : null;
+        /* Lead magnets are no longer a separate All-content section: they live in the dedicated
+           Lead magnets tab, and their launch posts flow through the pool as "Lead magnet launch"
+           items (per Ivan 2026-07-20). */
         /* Live boards lead with the work that needs the client (Your review first); a wall
            of ideas above the review stack made the drafts look missing. Preview boards keep
            ideas first, since the sales-funnel boards are built around that order. */
         return (
           <div className="max-w-[980px]">
-            {live ? <>{stageSections}{lmSection}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
+            {live ? <>{stageSections}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
           </div>
         );
       })()}
@@ -2797,6 +2766,10 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   const giftDms = (live && url && board.outreach?.orbit_plan?.gift?.url === url)
     ? (board.outreach?.orbit_plan?.samples || [])
     : [];
+  // The real launch post for this LM, when one is queued (lm_ref points back at this asset).
+  const launchPost = live ? (board.queue || []).find((q) => q.lm_ref === entry.id) : undefined;
+  // Cover lightbox: the drawer cover is a comfortable size, click opens it full.
+  const [zoom, setZoom] = useState(false);
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <motion.div className="fixed inset-0 bg-black/40" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} aria-hidden />
@@ -2824,35 +2797,15 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">
           {/* Cover: real cover image when present, else a typographic plate in the brand tones.
-              Live: the cover is media beside the facts, not a hero that fills the sheet. */}
+              A comfortable, full-width size; click to open it full-screen. */}
           {entry.cover_url ? (
-            live
-              ? <img src={entry.cover_url} alt="" className="rounded-xl" style={{ border: `1px solid ${LINE}`, height: 210, width: 'auto', maxWidth: '100%', objectFit: 'cover', display: 'block' }} />
-              : <img src={entry.cover_url} alt="" className="w-full rounded-xl object-cover" style={{ border: `1px solid ${LINE}` }} />
+            <button type="button" onClick={() => setZoom(true)} title="Click to view full size" className="block w-full cursor-zoom-in overflow-hidden rounded-xl p-0" style={{ border: `1px solid ${LINE}`, background: 'none', lineHeight: 0 }}>
+              <img src={entry.cover_url} alt={entry.title} className="w-full object-contain" style={{ maxHeight: 440, display: 'block' }} />
+            </button>
           ) : (
             <div className="flex aspect-[16/9] flex-col justify-between rounded-xl p-6" style={{ background: heroBg, border: `1px solid ${LINE}` }}>
               <span className="w-fit uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: onHero, opacity: 0.85 }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</span>
               <span style={{ fontFamily: fontStack, fontWeight: 700, fontSize: 26, lineHeight: 1.12, color: onHero }}>{entry.title}</span>
-            </div>
-          )}
-
-          {/* Cover variation pair: both options, the running one marked. Swap happens operator-side. */}
-          {(entry.covers?.length ?? 0) > 1 && (
-            <div className="mt-4">
-              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>Cover options</div>
-              <div className="flex gap-3">
-                {entry.covers!.map((c) => {
-                  const running = c === entry.cover_url;
-                  return (
-                    <div key={c} className="overflow-hidden rounded-lg" style={{ border: running ? `2px solid ${accent}` : `1px solid ${LINE}`, opacity: running ? 1 : 0.78 }}>
-                      <img src={c} alt="" loading="lazy" style={{ height: 108, display: 'block' }} />
-                      <div className="px-2 py-1 text-center uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: running ? INK : INK_MUTE }}>
-                        {running ? 'Running' : 'Alternate'}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           )}
 
@@ -2954,8 +2907,21 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                 </div>
               )}
 
-              {/* The feed announcement, rendered as the post it becomes. */}
-              {entry.promo?.announcement && (
+              {/* The launch post: the REAL post in the buffer when one is queued for this LM,
+                  otherwise the authored announcement template. */}
+              {launchPost ? (
+                <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>The launch post</span>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>in the buffer</span>
+                  </div>
+                  {entry.cover_url && <img src={entry.cover_url} alt="" loading="lazy" className="w-full object-cover" style={{ maxHeight: 200, display: 'block', borderBottom: `1px solid ${DIVIDE}` }} />}
+                  <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{launchPost.body || launchPost.hook}</p>
+                  <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
+                    The post that launches this on your feed. It publishes from the buffer at its slot, with the cover as its image.
+                  </div>
+                </div>
+              ) : entry.promo?.announcement ? (
                 <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
                   <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
                     <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Feed announcement</span>
@@ -2965,9 +2931,9 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                     Written and ready. It queues into the buffer when its launch slot is picked.
                   </div>
                 </div>
-              )}
+              ) : null}
 
-              {!entry.promo?.email && !entry.promo?.announcement && giftDms.length === 0 && !entry.promo?.dm && (
+              {!entry.promo?.email && !entry.promo?.announcement && !launchPost && giftDms.length === 0 && !entry.promo?.dm && (
                 <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
                   The feed announcement and outreach touches draft into your buffer when its launch slot is scheduled. They land here as they exist.
                 </p>
@@ -2990,6 +2956,18 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
           </div>
         )}
       </motion.div>
+
+      {/* Cover lightbox: the full image, click anywhere to close. */}
+      {zoom && entry.cover_url && (
+        <motion.div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-6"
+          initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }}
+          onClick={() => setZoom(false)} role="dialog" aria-modal="true"
+          style={{ cursor: 'zoom-out' }}
+        >
+          <img src={entry.cover_url} alt={entry.title} style={{ maxWidth: '95vw', maxHeight: '92vh', objectFit: 'contain', borderRadius: 8 }} />
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -4250,12 +4228,12 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
             {o.orbit_plan && (() => {
               const op = o.orbit_plan!;
               return (<>
-                <LeadsBlockHead n="06" label="client orbit" sub="warm intros through brands you already serve" />
+                <LeadsBlockHead n="06" label="client engager" sub="warm intros through brands you already serve" />
                 <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
                   {op.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
                   {(op.seeds || []).length > 0 && (
                     <div className="mt-4">
-                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands we orbit</div>
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands you serve</div>
                       {(op.seeds || []).map((s) => {
                         const [brand, person] = s.name.split(/\s*\u00b7\s*/);
                         return (
