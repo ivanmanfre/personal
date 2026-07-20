@@ -2382,8 +2382,25 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
     arr.push(it);
     byDate.set(it.date, arr);
   });
+  // Live truth: a buffer draft the operator scheduled carries a real date even when no
+  // committed calendar item links to it. Render it on its day so the calendar never
+  // contradicts the queue ("0 posts" while a post sits scheduled for Friday).
+  const linkedRefs = new Set(cal.items.map((it) => it.ref).filter(Boolean));
+  const queueItems: CalendarItem[] = board.queue
+    .filter((q) => q.stage === 'scheduled' && q.publish_date && !linkedRefs.has(q.id))
+    .map((q) => ({
+      date: q.publish_date!,
+      kind: q.kind === 'carousel' ? 'carousel' : q.kind === 'lm' ? 'lm' : 'post',
+      label: q.hook || q.title || 'Scheduled post',
+      ref: q.id,
+    }));
+  queueItems.forEach((it) => {
+    const arr = byDate.get(it.date) || [];
+    arr.push(it);
+    byDate.set(it.date, arr);
+  });
   const totals = { post: 0, carousel: 0, lm: 0, newsletter: 0 };
-  cal.items.forEach((it) => { if (it.kind in totals) (totals as any)[it.kind] += 1; });
+  [...cal.items, ...queueItems].forEach((it) => { if (it.kind in totals) (totals as any)[it.kind] += 1; });
 
   // Washed 8-15% tints plus a 3px full-tone rail on the left: chips carry the color
   // system so the grid itself can stay quiet.
@@ -2596,6 +2613,8 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
     : { background: 'rgba(19,18,16,0.06)', color: caText(accent) };
   const statusChip = live
     ? { label: boardLive ? 'On your domain' : 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
+    : entry.status === 'built'
+    ? { label: 'Built', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
     : entry.status === 'in_production'
     ? { label: 'In production', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
     : { label: 'Planned', bg: 'rgba(2,49,47,0.05)', color: DIM, dot: null };
@@ -2654,7 +2673,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   const onHero = isLiveLm ? inkOn(liveHeaderHex) : `color-mix(in srgb, ${accent} 72%, ${INK})`;
   // Live board: "Live" is reserved for announced-on-the-feed. Up-on-the-domain is the
   // honest state until the launch post runs.
-  const statusLabel = isLiveLm ? (live ? 'On your domain' : 'Live') : 'Concept';
+  const statusLabel = isLiveLm ? (live ? 'On your domain' : 'Live') : entry.status === 'built' ? 'Built' : 'Concept';
   const url = entry.url;
   // Promo kit (live): only REAL related copy renders. The orbit gift-touch DM belongs to
   // this asset when the orbit plan's gift points at the same URL.
@@ -2746,6 +2765,8 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
               ? (live
                 ? 'Up on your domain with capture on. It announces on your feed when its launch slot comes up.'
                 : 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.')
+              : entry.status === 'built'
+              ? 'Built and working. It goes up on your domain when its launch slot comes up.'
               : (live ? 'In build. It goes up on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
           </p>
 
