@@ -600,7 +600,14 @@ function stageStatus(q: QueueItem, stage: Stage, startIso?: string, live = false
       ? <span className="inline-flex items-center gap-2 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="var(--cb-mint)" /> {q.live_step || 'Generating…'}</span>
       : <span className="text-[12px]" style={{ color: FAINT }}>In production</span>;
   }
-  if (stage === 'review') return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>In your review{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
+  if (stage === 'review') {
+    if (live) {
+      return q.publish_date
+        ? <span className="text-[12px] tabular-nums" style={{ color: DIM }}>Scheduled for {weekAbbr(q.publish_date)} · {fmtDay(q.publish_date)}</span>
+        : <span className="text-[12px] tabular-nums" style={{ color: DIM }}>In the buffer · takes the next open slot</span>;
+    }
+    return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>In your review{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
+  }
   if (stage === 'scheduled') return <span className="text-[12px] font-medium tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)}</span>;
   // Preview: example state, not a claim. Live: published rows ARE real, report them straight.
   if (live) return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Published{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
@@ -624,37 +631,6 @@ function daysUntil(iso?: string): number | null {
   return Math.round((t - today.getTime()) / 86400000);
 }
 
-/** Right-aligned two-line publish cell for list rows: tabular date over a faint hint.
- *  Dates stay neutral ink — status is carried by a 5px dot, mint only when live. */
-function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
-  if (stage === 'drafted' && q.generating) {
-    return (
-      <span className="inline-flex items-center justify-end gap-2 text-[12px] font-medium" style={{ color: DIM }}>
-        <PulseDot color="var(--cb-mint)" /> {q.live_step || 'Generating…'}
-      </span>
-    );
-  }
-  const sub =
-    stage === 'review'
-      ? 'in your review'
-      : stage === 'scheduled'
-      ? 'approved · queued'
-      : stage === 'published'
-      ? 'example report'
-      : 'in production';
-  return (
-    <span className="block text-right">
-      <span className="block text-[12.5px] font-medium tabular-nums" style={{ color: INK, fontVariantNumeric: 'tabular-nums' }}>
-        {fmtDay(q.publish_date) || 'this week'}
-      </span>
-      <span className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: FAINT }}>
-        {stage === 'scheduled' && <span className="inline-block h-[5px] w-[5px] rounded-full" style={{ background: FAINT }} aria-hidden />}
-        {sub}
-      </span>
-    </span>
-  );
-}
-
 const STAGE_SOFT_META: Record<Stage, string> = {
   planned: 'planned', drafted: 'in production', review: 'awaiting', scheduled: 'queued', published: 'example',
 };
@@ -666,9 +642,22 @@ function weekAbbr(iso?: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { weekday: 'short' });
 }
 
+/** Full weekday for the live "Scheduled for <day>" marks. */
+function weekdayLong(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { weekday: 'long' });
+}
+
 /** Mono stage mark for a ledger row — honest, and the auto-publish clock is part of it. */
 function stageMark(q: QueueItem, stage: Stage, autoDays: number, live = false): { text: string; sub?: string; color: string; pulse?: boolean } {
   if (stage === 'review') {
+    // Live boards publish from the buffer — the mark states the slot truth, never a gate.
+    if (live) {
+      return q.publish_date
+        ? { text: `● Scheduled for ${weekAbbr(q.publish_date)}`, sub: 'yours to edit until then', color: caText('var(--cb-accent)') }
+        : { text: '● In the buffer', sub: 'takes the next open slot', color: caText('var(--cb-accent)') };
+    }
     return { text: '● Your review', sub: 'waiting on you', color: caText('var(--cb-accent)') };
   }
   if (stage === 'scheduled') return { text: '✓ Scheduled', sub: q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : undefined, color: caText('var(--cb-accent)') };
@@ -1095,7 +1084,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
   );
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos, live = false }: {
+function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, foldPhotos, live = false }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
@@ -1103,6 +1092,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   /** Live board: published rows are real (no "example" framing) and idea copy names the operator. */
   live?: boolean;
   onApprove: (id: string) => void;
+  /** Live board: "remove this post" — the client's veto on a buffered draft (recorded). */
+  onRemove?: (id: string) => void;
   flashId: string | null;
   view: ContentView;
   setView: (v: ContentView) => void;
@@ -1114,9 +1105,13 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   const autoDays = board.auto_publish_days ?? 3;
   // Live overrides for the published stage: on a real board published rows are reports,
   // not demo examples. Preview keeps the module constants exactly.
-  const stageLabelOf = (s: Stage) => (live && s === 'published' ? 'Published' : STAGE_META[s].label);
+  const stageLabelOf = (s: Stage) => (live && s === 'published' ? 'Published' : live && s === 'review' ? 'Up next' : STAGE_META[s].label);
   const listSections = live
-    ? LIST_STAGE_SECTIONS.map((s) => (s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' } : s))
+    ? LIST_STAGE_SECTIONS.map((s) =>
+        s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' }
+        : s.stage === 'review' ? { ...s, label: 'Up next', blurb: 'Publishing from the buffer. Edit, swap, or remove anything before it goes out.' }
+        : s.stage === 'scheduled' ? { ...s, blurb: 'Locked to a date. Each publishes on its slot.' }
+        : s)
     : LIST_STAGE_SECTIONS;
   const ideasBlurb = live ? 'Ideas waiting in your bank. Ask for the ones you want drafted next, or pass.' : IDEAS_BLURB;
   const reduce = useReducedMotion();
@@ -1161,6 +1156,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (live) return; // live boards have no approve/request-change keys
       if (!hoverId || !reviewIds.includes(hoverId)) return;
       if (e.key === 'a' || e.key === 'A') { e.preventDefault(); startApprove(hoverId); }
       if (e.key === 'r' || e.key === 'R') {
@@ -1205,7 +1201,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
           style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
         >
-          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'date at sign-off'}</span>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : live ? 'in the buffer' : 'date at sign-off'}</span>
           <span className="min-w-0">
             <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{q.hook || q.title}</span>
             {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
@@ -1236,7 +1232,18 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                     : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" />}
                 </div>
                 <div className="flex flex-col gap-3 pt-1.5">
-                  {stage === 'review' && !skipped ? (
+                  {stage === 'review' && !skipped && live ? (
+                    <>
+                      <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT, maxWidth: '40ch' }}>Exactly how it lands in the feed. Edit it, or take it out — otherwise it publishes from the buffer as-is.</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>edit the post…</button>
+                        <button onClick={(e) => { e.stopPropagation(); onRemove?.(q.id); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>remove this post…</button>
+                      </div>
+                      <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
+                        {q.publish_date ? `Scheduled for ${weekdayLong(q.publish_date)}.` : 'In the buffer · takes the next open slot.'}
+                      </div>
+                    </>
+                  ) : stage === 'review' && !skipped ? (
                     <>
                       <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT, maxWidth: '40ch' }}>Exactly how it lands in the feed. Approve it, or say what to change in plain words.</p>
                       <div className="flex flex-wrap items-center gap-3">
@@ -1255,7 +1262,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                   ) : q.generating ? (
                     <BuildSequence trail={q.agent_trail || []} accent={accent} />
                   ) : stage === 'scheduled' ? (
-                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>Signed off. On the schedule.</div>
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>{live ? `Scheduled${q.publish_date ? ` for ${weekdayLong(q.publish_date)}` : ''}. It publishes on its slot.` : 'Signed off. On the schedule.'}</div>
                   ) : q.kind === 'lm' ? (
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{live ? 'Live: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.' : 'Live on your domain: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.'}</div>
                   ) : stage === 'published' ? (
@@ -1309,8 +1316,10 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         <div className="min-w-[240px] flex-1">
           <SectionHead
             eyebrow="All content"
-            title={<>Every piece, <Accent>in your voice.</Accent></>}
-            sub={`Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
+            title={live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>in your voice.</Accent></>}
+            sub={live
+              ? 'Drafts and scheduled posts, each moving toward its slot. Publishing runs from the buffer — edit, swap, or remove anything before it goes out.'
+              : `Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
           />
         </div>
         <div className="inline-flex shrink-0 overflow-hidden rounded-[8px]" style={{ border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
@@ -1446,7 +1455,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
       )}
 
       {/* Story intake: where the client's REAL material enters the engine. The chip is a
-          format explainer, not history — nothing on this card claims past activity. */}
+          format explainer, not history — nothing on this card claims past activity.
+          Preview-only: on live boards idea intake lives on the operator side. */}
+      {!live && (
       <div className="mt-8 max-w-[880px] rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 10%, white)` }} aria-hidden>
@@ -1469,6 +1480,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           </div>
         </div>
       </div>
+      )}
 
       {/* Live mode: the client photo pool folds in here (no standalone Photos tab). */}
       {foldPhotos && (
@@ -1488,231 +1500,12 @@ function weekDayList(startIso: string): string[] {
 const KIND_SORT: Record<string, number> = { newsletter: 0, post: 1, carousel: 2, lm: 3, newsjack: 4 };
 interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
 
-/** Trust mark: the draft was checked against the client's voice model. Neutral chip —
- *  accent stays rationed to actions. The full trail is one tap away (card opens the modal). */
-function VoiceChip({ accent }: { accent: string }) {
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium"
-      style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
-      title="Checked against your voice profile. Open the card for the full trail."
-    >
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
-      </svg>
-      Voice-matched
-    </span>
-  );
-}
-
-/** One actionable card in the week flow. Desktop: buttons + A/R/N on the focused card.
- *  Mobile: swipe right = approve, swipe left = different idea, tap = detail modal.
- *  Swipe release uses a tween (no spring) per the motion contract. */
-function WeekCard({ q, accent, focused, approving, flashOn, autoDays, panel, onFocus, onOpen, onApprove, onServeAngle, onPickAngle, onClosePanel, onSkip, cardRef }: {
-  q: QueueItem; accent: string; focused: boolean; approving: boolean; flashOn: boolean; autoDays: number;
-  panel: { alt?: AltAngle; none?: boolean } | null;
-  onFocus: () => void;
-  onOpen: (opts?: { changing?: boolean }) => void;
-  onApprove: () => void;
-  onServeAngle: () => void;
-  onPickAngle: (alt: AltAngle) => void;
-  onClosePanel: () => void;
-  onSkip: () => void;
-  cardRef: (el: HTMLDivElement | null) => void;
-}) {
-  const reduce = useReducedMotion();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const x = useMotionValue(0);
-  const approveReveal = useTransform(x, [24, 90], [0, 1]);
-  const angleReveal = useTransform(x, [-90, -24], [1, 0]);
-  const dragged = useRef(false);
-  const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
-  const settle = () => animate(x, 0, { duration: 0.2, ease: EASE as any });
-  const kbd = (k: string) => (
-    <kbd className="ml-1 hidden h-[15px] min-w-[15px] items-center justify-center rounded-[4px] px-1 text-[9.5px] leading-none sm:inline-flex" style={{ fontFamily: MONO, background: 'rgba(2,49,47,0.06)', border: `1px solid ${LINE}`, color: DIM }}>{k}</kbd>
-  );
-  const inkCta = inkOn(accent);
-  return (
-    <div className="relative" ref={cardRef}>
-      {/* Swipe reveals (mobile): the gesture's own affordance layers. */}
-      <motion.div className="absolute inset-0 flex items-center rounded-xl px-5 sm:hidden" style={{ opacity: approveReveal, background: `color-mix(in srgb, ${accent} 10%, white)` }} aria-hidden>
-        <span className="inline-flex items-center gap-2 text-[13px] font-semibold" style={{ color: accent }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          Approve
-        </span>
-      </motion.div>
-      <motion.div className="absolute inset-0 flex items-center justify-end rounded-xl px-5 sm:hidden" style={{ opacity: angleReveal, background: 'rgba(2,49,47,0.05)' }} aria-hidden>
-        <span className="text-[13px] font-semibold" style={{ color: DIM }}>Different idea</span>
-      </motion.div>
-      <motion.div
-        role="button"
-        tabIndex={0}
-        drag={coarse ? 'x' : false}
-        dragMomentum={false}
-        dragConstraints={{ left: -140, right: 140 }}
-        dragElastic={0.12}
-        style={{ x, border: `1px solid ${focused ? 'transparent' : LINE}`, boxShadow: focused ? `0 0 0 2px ${accent}, 0 4px 14px rgba(2,32,32,0.08)` : undefined, background: flashOn ? FLASH_BG : '#fff', transition: 'background-color 700ms ease' }}
-        onDragStart={() => { dragged.current = true; }}
-        onDragEnd={(_, info) => {
-          const dx = info.offset.x;
-          settle();
-          if (dx > 90) onApprove();
-          else if (dx < -90) onServeAngle();
-          window.setTimeout(() => { dragged.current = false; }, 60);
-        }}
-        onClick={() => { if (dragged.current) return; onOpen(); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-        onMouseEnter={onFocus}
-        onFocus={onFocus}
-        className="relative cursor-pointer rounded-xl p-3.5 outline-none sm:p-4"
-        aria-label={`${q.hook || q.title}, awaiting your review`}
-      >
-        <div className="flex items-start gap-3">
-          {/* Text posts lead with the title itself — the typographic thumb would repeat it. */}
-          {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} />}
-          <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-medium leading-snug" style={{ color: INK }}>{q.hook || q.title}</div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
-              {q.pillar && (
-                <span className="inline-flex items-center gap-1.5 text-[12px] capitalize" style={{ color: FAINT }}>
-                  <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                  {q.pillar}
-                </span>
-              )}
-              <VoiceChip accent={accent} />
-            </div>
-          </div>
-          <span className="hidden shrink-0 sm:block"><PublishCell q={q} stage="review" /></span>
-        </div>
-        {/* Desktop action row — Approve is the only filled button. */}
-        <div className="mt-3 hidden items-center gap-2 sm:flex">
-          <button
-            onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); onApprove(); }}
-            className="inline-flex min-h-[32px] items-center rounded-[6px] px-3.5 text-[12.5px] font-semibold"
-            style={{ background: accent, color: inkCta }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden className="mr-1.5">
-              <path d="M5 13l4 4 10-10" stroke={inkCta} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Approve{kbd('A')}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onServeAngle(); }}
-            className="inline-flex min-h-[32px] items-center rounded-[6px] bg-white px-3 text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
-            style={{ color: DIM, border: `1px solid ${LINE}` }}
-          >
-            Different idea{kbd('N')}
-          </button>
-          <div className="relative ml-auto">
-            <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen((m) => !m); }}
-              aria-label="More options"
-              aria-expanded={menuOpen}
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <circle cx="5" cy="12" r="1.6" fill={DIM} /><circle cx="12" cy="12" r="1.6" fill={DIM} /><circle cx="19" cy="12" r="1.6" fill={DIM} />
-              </svg>
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} aria-hidden />
-                <div className="absolute right-0 top-9 z-20 w-48 rounded-lg bg-white p-1" style={{ border: `1px solid ${LINE}`, boxShadow: '0 8px 24px rgba(2,32,32,0.12)' }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onOpen({ changing: true }); }}
-                    className="flex w-full items-center justify-between rounded-[6px] px-2.5 py-2 text-left text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
-                    style={{ color: INK }}
-                  >
-                    Request a change{kbd('R')}
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onSkip(); }}
-                    className="flex w-full rounded-[6px] px-2.5 py-2 text-left text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
-                    style={{ color: DIM }}
-                  >
-                    Skip this day
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-        {/* Different-idea panel: a seeded alternate ANGLE, never an instant draft. */}
-        <AnimatePresence initial={false}>
-          {panel && (
-            <motion.div
-              initial={reduce ? false : { opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={reduce ? undefined : { opacity: 0, height: 0 }}
-              transition={{ duration: 0.2, ease: EASE }}
-              className="overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {panel.none ? (
-                <div className="mt-3 rounded-lg p-3.5" style={{ background: 'rgba(2,49,47,0.03)', border: `1px dashed ${LINE}` }}>
-                  <p className="text-[13px] leading-relaxed" style={{ color: DIM }}>
-                    No alternate angle is queued for this slot. Request a change and it gets adjusted.
-                  </p>
-                  <div className="mt-2.5 flex gap-2">
-                    <button onClick={() => { onClosePanel(); onOpen({ changing: true }); }} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
-                    <button onClick={onClosePanel} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-medium" style={{ color: FAINT }}>Close</button>
-                  </div>
-                </div>
-              ) : panel.alt ? (
-                <div className="mt-3 rounded-lg p-3.5" style={{ background: `color-mix(in srgb, ${accent} 4%, white)`, border: `1px dashed color-mix(in srgb, ${accent} 30%, white)` }}>
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Different idea for this slot</div>
-                  <div className="mt-1.5 text-[13.5px] font-semibold" style={{ color: INK }}>{panel.alt.title}</div>
-                  <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: DIM }}>{panel.alt.hook}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px]" style={{ color: FAINT }}>
-                    {panel.alt.pillar && (
-                      <span className="inline-flex items-center gap-1.5 capitalize">
-                        <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                        {panel.alt.pillar}
-                      </span>
-                    )}
-                    {panel.alt.drafts_by && <span className="tabular-nums">Drafts {fmtDay(panel.alt.drafts_by)} if you pick it</span>}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button onClick={() => onPickAngle(panel.alt!)} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3.5 text-[12.5px] font-semibold" style={{ background: accent, color: inkCta }}>Use this angle</button>
-                    <button onClick={onServeAngle} className="inline-flex min-h-[32px] items-center rounded-[6px] bg-white px-3 text-[12.5px] font-medium" style={{ border: `1px solid ${LINE}`, color: DIM }}>Show another</button>
-                    <button onClick={onClosePanel} className="inline-flex min-h-[32px] items-center rounded-[6px] px-2.5 text-[12.5px] font-medium" style={{ color: FAINT }}>Keep current</button>
-                  </div>
-                </div>
-              ) : null}
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* Approve moment: the check draws, then the card settles into its locked state. */}
-        {approving && (
-          <motion.span
-            className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.85)' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15, ease: EASE }}
-            aria-hidden
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <motion.path
-                d="M4.5 12.5l5 5 10-11"
-                stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.3, ease: EASE }}
-              />
-            </svg>
-            <span className="text-[13px] font-semibold" style={{ color: accent }}>Approved</span>
-          </motion.span>
-        )}
-      </motion.div>
-    </div>
-  );
-}
-
-function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen }: {
+function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
+  /** Live board: publishing runs from the buffer — no approve gate. The deck shows every
+   *  buffered draft with the client powers (edit / swap / remove), each recorded. */
+  live?: boolean;
   /** Ids the CLIENT approved this session (persisted) — distinct from data-scheduled items. */
   approvedIds: Set<string>;
   angleSwaps: Record<string, AltAngle>;
@@ -1771,8 +1564,12 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
 
   // The flow ledger: total = review-stage pieces this week; handled = approved,
   // re-angled or skipped. d1 joins the count the moment the intro lands it.
+  // Live: the deck is the BUFFER — every review-stage draft, dated or not (undated
+  // drafts take the next open slot, so tying the deck to the calendar week hides them).
   const weekQ = board.queue.filter((q) => daySet.has(q.publish_date || '') && q.stage !== 'published');
-  const actionable = [...weekQ.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+  const actionable = live
+    ? [...board.queue.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '9999').localeCompare(b.publish_date || '9999'))
+    : [...weekQ.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
   const handledOf = (q: QueueItem) => approvedIds.has(q.id) || !!angleSwaps[q.id] || !!skips[q.id];
   const total = actionable.length;
   const done = actionable.filter(handledOf).length;
@@ -1836,8 +1633,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       if (!id) return;
       const item = board.queue.find((q) => q.id === id);
       if (!item) return;
-      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); startApprove(id); }
-      if (e.key === 'r' || e.key === 'R') { e.preventDefault(); onOpen(item, { changing: true }); }
+      if (!live && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); startApprove(id); }
+      if (!live && (e.key === 'r' || e.key === 'R')) { e.preventDefault(); onOpen(item, { changing: true }); }
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); serveAngle(id); }
     };
     window.addEventListener('keydown', h);
@@ -1897,20 +1694,22 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {doneState || total === 0 ? (
             <div className="mb-2">
               <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
-                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
+                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : live ? <>Week of {fmtDay(days[0])} · the buffer</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
               </div>
               <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
-                {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
+                {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : live ? <>The buffer <Accent>is clear.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
               </div>
             </div>
           ) : (
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
                 <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
-                  Week of {fmtDay(days[0])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go
+                  {live
+                    ? <>Week of {fmtDay(days[0])} · {total} in the buffer</>
+                    : <>Week of {fmtDay(days[0])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go</>}
                 </div>
                 <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK, whiteSpace: 'nowrap' }}>
-                  {weekdayName(focused?.publish_date)}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
+                  {live && !focused?.publish_date ? 'Up next' : weekdayName(focused?.publish_date)}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
                 </div>
               </div>
               <div className="hidden shrink-0 items-center gap-2 sm:flex" aria-hidden>
@@ -1935,7 +1734,11 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 {total === 0 && waitingElsewhere > 0
                   ? `${waitingElsewhere} draft${waitingElsewhere === 1 ? ' is' : 's are'} waiting for your look in All content. Approve them and they take their slots on this calendar.`
                   : total === 0
-                  ? 'Nothing needs you this week. We keep drafting behind the scenes, and new pieces land here for your review.'
+                  ? (live
+                    ? 'The buffer is refilling. New drafts land here as the engine writes them, a few days ahead of their slots.'
+                    : 'Nothing needs you this week. We keep drafting behind the scenes, and new pieces land here for your review.')
+                  : live
+                  ? 'Handled. The rest of the buffer keeps publishing on schedule, and new drafts land here as they are written.'
                   : 'Approved in your voice and queued to their slots. Next week is drafting behind the scenes, and nothing goes out until you approve it.'}
               </p>
               {total === 0 && waitingElsewhere > 0 && (
@@ -1957,7 +1760,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
             <>
               {pendingIds.length > 0 && (
                 <p className="mb-4 text-[12px] sm:hidden" style={{ fontFamily: MONO, letterSpacing: '0.04em', color: INK_MUTE }}>
-                  Swipe right to approve · left for a different idea · tap to read
+                  {live ? 'Swipe left for a different idea · tap to read' : 'Swipe right to approve · left for a different idea · tap to read'}
                 </p>
               )}
               {/* The card deck: front card over two rotated ghosts; flings on approve. */}
@@ -1973,7 +1776,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       dragSnapToOrigin
                       dragConstraints={{ left: 0, right: 0 }}
                       dragElastic={0.5}
-                      onDragEnd={(_, info) => { if (info.offset.x > 90) startApprove(focused.id); else if (info.offset.x < -90) serveAngle(focused.id); }}
+                      onDragEnd={(_, info) => { if (info.offset.x > 90 && !live) startApprove(focused.id); else if (info.offset.x < -90) serveAngle(focused.id); }}
                       initial={reduce ? false : { opacity: 0, x: 28, rotate: 1, scale: 0.98 }}
                       animate={{ opacity: 1, x: 0, rotate: 0, scale: 1, transition: { duration: 0.45, ease: [0.2, 0.8, 0.3, 1] } }}
                       exit={reduce ? { opacity: 0 } : { opacity: 0, x: '130%', rotate: 9, transition: { duration: 0.36, ease: [0.5, 0, 0.9, 0.4] } }}
@@ -1981,7 +1784,11 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       style={{ background: PAPER_RAISE, border: `1px solid ${caBorder('#1a1a1a', 18)}`, borderRadius: 14, padding: '22px 26px', boxShadow: HERO_SHADOW, touchAction: coarseWeek ? 'pan-y' : undefined }}
                     >
                       <div className="mb-3.5 flex items-baseline justify-between gap-3">
-                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)} · goes out {weekdayName(focused.publish_date)}</span>
+                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>
+                          {kickerOf(focused)} · {live
+                            ? (focused.publish_date ? `Scheduled for ${weekdayName(focused.publish_date)}` : 'in the buffer · takes the next open slot')
+                            : `goes out ${weekdayName(focused.publish_date)}`}
+                        </span>
                         <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, color: INK_MUTE }}>{provenance}</span>
                       </div>
                       {swapChip && (
@@ -1993,23 +1800,32 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                         <FeedPreview item={focused} board={board} accent={accent} fontStack={fontStack} size="lg" />
                       </div>
                       <div className="mt-4.5 flex flex-wrap items-center gap-3" style={{ marginTop: 18 }}>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); startApprove(focused.id); }}
-                          className="uppercase transition-colors duration-150"
-                          style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', background: INK, color: PAPER, border: 'none', borderRadius: 8, padding: '14px 28px', cursor: 'pointer' }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = INK; }}
-                        >Approve ✓</button>
+                        {!live && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); startApprove(focused.id); }}
+                            className="uppercase transition-colors duration-150"
+                            style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', background: INK, color: PAPER, border: 'none', borderRadius: 8, padding: '14px 28px', cursor: 'pointer' }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = INK; }}
+                          >Approve ✓</button>
+                        )}
                         <button
                           onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
                           className="uppercase transition-colors duration-150"
                           style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK, border: `1px solid ${LINE_BOLD}`, borderRadius: 8, padding: '13px 18px', cursor: 'pointer' }}
                         >⟲ swap the idea</button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onOpen(focused, { changing: true }); }}
+                          onClick={(e) => { e.stopPropagation(); live ? onOpen(focused, { editing: true }) : onOpen(focused, { changing: true }); }}
                           style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
                         >edit a line…</button>
-                        <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>nothing publishes until you approve it</span>
+                        {live && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
+                            style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                          >remove this post…</button>
+                        )}
+                        {!live && <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>nothing publishes until you approve it</span>}
+                        {live && <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>yours to change until it publishes</span>}
                       </div>
                       {/* Different-idea panel: a seeded alternate ANGLE, never an instant draft. */}
                       <AnimatePresence initial={false}>
@@ -2024,9 +1840,13 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           >
                             {curPanel.none ? (
                               <div className="mt-4 rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE}` }}>
-                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>No alternate angle is queued for this slot. Request a change and it gets adjusted.</p>
+                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
+                                  {live ? 'No alternate angle is queued for this slot. Edit the post directly, or remove it.' : 'No alternate angle is queued for this slot. Request a change and it gets adjusted.'}
+                                </p>
                                 <div className="mt-2.5 flex gap-2">
-                                  <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
+                                  {live
+                                    ? <button onClick={() => { setAngle(null); onOpen(focused, { editing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Edit the post</button>
+                                    : <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>}
                                   <button onClick={() => setAngle(null)} className="px-3 py-2 text-[12.5px]" style={{ color: INK_MUTE }}>Close</button>
                                 </div>
                               </div>
@@ -2131,9 +1951,11 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false, initialEditing = false, isLive, act, editDraft }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
+  /** Live board: "remove this post" veto (recorded). */
+  onRemove?: (id: string) => void;
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
@@ -2152,14 +1974,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
-  const statusLabel = stage === 'review' ? 'In your review'
-    : stage === 'scheduled' ? 'Approved'
+  const statusLabel = stage === 'review' ? (isLive ? (item.publish_date ? `Scheduled for ${weekdayLong(item.publish_date)}` : 'In the buffer') : 'In your review')
+    : stage === 'scheduled' ? (isLive ? 'Scheduled' : 'Approved')
     : stage === 'drafted' ? 'Being written'
-    : stage === 'published' ? 'Example' : 'Planned';
-  const nextLine = stage === 'review' ? 'Approve it, edit it, or request a change. Approved posts publish on their dates.'
-    : stage === 'scheduled' ? 'Approved. It publishes on its date.'
+    : stage === 'published' ? (isLive ? 'Published' : 'Example') : 'Planned';
+  const nextLine = stage === 'review' ? (isLive
+      ? 'It publishes from the buffer on its slot. Edit it, swap the idea, or remove it any time before then — every change is logged for your operator.'
+      : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
+    : stage === 'scheduled' ? (isLive ? 'Scheduled. It publishes on its date.' : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
-    : stage === 'published' ? 'An example of how published posts will report here once posting starts.'
+    : stage === 'published' ? (isLive ? 'Published. Its numbers report on the Performance tab.' : 'An example of how published posts will report here once posting starts.')
     : 'It drafts a few days before its date, then lands in your review.';
 
   // Edit + request-changes: live boards record the real action and only confirm after ok:true.
@@ -2350,8 +2174,33 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
         </div>
         </div>
 
-        {/* Sticky action footer — Approve stays visible while the body scrolls. */}
-        {canAct && (
+        {/* Sticky action footer. Live: the client powers (edit / remove) — publishing is
+            not gated, so there is no approve. Preview keeps the approve flow. */}
+        {canAct && isLive && (
+          <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => { setEditSaved(false); setEditing(true); }}
+                className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
+                style={{ background: INK, color: PAPER }}
+              >
+                Edit the post
+              </button>
+              <button
+                onClick={() => { onRemove?.(item.id); onClose(); }}
+                className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
+                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+              >
+                Remove this post
+              </button>
+              <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
+                {item.publish_date ? `Publishes ${weekdayLong(item.publish_date)} unless you change it.` : 'Takes the next open slot unless you change it.'}
+              </span>
+            </div>
+          </div>
+        )}
+        {/* Preview: approve stays visible while the body scrolls. */}
+        {canAct && !isLive && (
           <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
               <motion.button
@@ -2407,10 +2256,12 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
 // ---------- Calendar surface ----------
 const KIND_TIME: Record<string, string> = { post: '09:00', carousel: '09:00', newsletter: '08:00', lm: '12:00' };
 
-function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
+function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = false }: {
   board: Board; accent: string; mint: string; onOpen: (it: CalendarItem) => void;
   /** Queue ids currently in Scheduled (approved) — their linked chips get a check mark. */
   scheduledIds: Set<string>;
+  /** Live board: dates come from the buffer, not from a sign-off. */
+  live?: boolean;
 }) {
   const cal = board.calendar;
   if (!cal) return null;
@@ -2498,7 +2349,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
         ))}
       </div>
       {totals.post + totals.carousel + totals.lm + totals.newsletter === 0 && (
-        <p className="-mt-1 mb-5 text-[13px]" style={{ color: DIM }}>Approved drafts take their dates here right after your sign-off.</p>
+        <p className="-mt-1 mb-5 text-[13px]" style={{ color: DIM }}>{live ? 'Posts take their dates here as the buffer schedules them.' : 'Approved drafts take their dates here right after your sign-off.'}</p>
       )}
 
       {/* Mobile: agenda list grouped by day (the grid clips at Mon-Wed under 640px). */}
@@ -2618,138 +2469,6 @@ const LM_FORMAT_LABEL: Record<string, string> = {
   assessment: 'Assessment', calculator: 'Calculator', worksheet: 'Worksheet', checklist: 'Checklist',
   benchmark: 'Benchmark', report_card: 'Report card', diagnostic: 'Diagnostic',
 };
-
-/** One lead-magnet idea-bank row (live boards): concept + format chip + the same
- *  greenlight/pass grammar as content ideas. The RPC note row IS the action. */
-function LmIdeaRow({ idea, accent, live, act }: {
-  idea: LmIdea; accent: string; live: boolean;
-  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
-}) {
-  const [busy, setBusy] = useState<'build' | 'pass' | null>(null);
-  const [sent, setSent] = useState<'build' | 'pass' | null>(null);
-  const [err, setErr] = useState('');
-  const send = async (kind: 'build' | 'pass') => {
-    if (busy || sent) return;
-    if (live && act) {
-      setBusy(kind); setErr('');
-      const r = await act('note', idea.id, {
-        event: kind === 'build' ? 'lm_idea_build_next' : 'lm_idea_pass',
-        title: idea.title,
-      });
-      setBusy(null);
-      if (!r.ok) { setErr(r.error || 'Could not send that. Try again.'); return; }
-    }
-    setSent(kind);
-  };
-  return (
-    <div className="px-3.5 py-[15px]" style={{ borderBottom: `1px solid ${LINE}`, margin: '0 -14px' }}>
-      <div className="flex gap-3.5">
-      {idea.cover_url && (
-        <img
-          src={idea.cover_url}
-          alt=""
-          loading="lazy"
-          className="h-[84px] w-[84px] shrink-0 rounded-[8px] object-cover"
-          style={{ border: `1px solid ${LINE}` }}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
-        <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{idea.title}</span>
-        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>
-          {LM_FORMAT_LABEL[idea.format || ''] || 'Concept'}
-        </span>
-        {idea.source_label && (
-          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: FAINT }}>{idea.source_label}</span>
-        )}
-      </div>
-      {idea.note && (
-        <p className="mt-1.5 pl-[18px]" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>{idea.note}</p>
-      )}
-      <div className="mt-2.5 pl-[18px]">
-        {sent ? (
-          <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
-            Sent.{' '}
-            <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
-              {sent === 'build' ? 'Requested. It goes on the build list.' : 'Noted. It stays on the bench.'}
-            </span>
-          </span>
-        ) : (
-          <span className="inline-flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>on the bench</span>
-            {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
-          </span>
-        )}
-      </div>
-      </div>
-      </div>
-    </div>
-  );
-}
-
-/** Client-proposed LM concept, live boards only: one line in, a note action out. Sits
- *  under the idea bank so the bank reads as two-way, the engine's concepts plus theirs. */
-function LmSuggestRow({ accent, act }: {
-  accent: string;
-  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
-}) {
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [err, setErr] = useState('');
-  const send = async () => {
-    const t = text.trim();
-    if (!t || busy) return;
-    setBusy(true); setErr('');
-    if (act) {
-      const r = await act('note', null, { event: 'lm_idea_propose', text: t });
-      if (!r.ok) { setBusy(false); setErr(r.error || 'Could not send that. Try again.'); return; }
-    }
-    setBusy(false); setSent(true); setText('');
-  };
-  return (
-    <div className="px-3.5 py-[15px]" style={{ margin: '0 -14px' }}>
-      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Suggest a lead magnet</div>
-      {sent ? (
-        <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
-          Sent.{' '}
-          <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
-            It shows up here if it makes the cut.
-          </span>
-          {' '}
-          <button
-            onClick={() => setSent(false)}
-            style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, fontSize: 12.5, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
-          >
-            suggest another
-          </button>
-        </span>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2.5">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void send(); } }}
-            placeholder="An idea of yours: a tool, a checklist, a report…"
-            aria-label="Suggest a lead magnet"
-            className="min-w-0 flex-1 rounded-[6px] px-3 py-2 text-[13.5px] outline-none"
-            style={{ fontFamily: BODY, border: `1px solid ${LINE}`, background: '#fff', color: INK }}
-          />
-          <button
-            onClick={() => { void send(); }}
-            disabled={busy || !text.trim()}
-            className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
-            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy || !text.trim() ? 'default' : 'pointer', opacity: busy || !text.trim() ? 0.55 : 1 }}
-          >
-            {busy ? 'Sending…' : 'Send'}
-          </button>
-          {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
@@ -3024,7 +2743,7 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
                 <div>
                   <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>
                     {st.label}
-                    {st.needs_photo && <span className="ml-2 uppercase" style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.1em', color: FAINT }}>from your photo pool</span>}
+                    {st.needs_photo && <span className="ml-2 uppercase" style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.1em', color: FAINT }}>from your lifestyle library</span>}
                   </div>
                   <div className="mt-0.5" style={{ fontFamily: BODY, fontSize: 12.5, lineHeight: 1.5, color: INK_SOFT }}>{st.blurb}</div>
                 </div>
@@ -3037,10 +2756,8 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
   );
 }
 
-function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }: {
+function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
   board: Board; accent: string; mint: string; fontStack: string; live?: boolean;
-  /** Board action recorder for the LM idea bank (live boards). */
-  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const lm = board.lm;
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
@@ -3143,12 +2860,11 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
   ) : null;
 
   if (live) {
-    const lmIdeas = board.lm_ideas || [];
+    // Production surface: the library only. Ideas live on the operator side, resources
+    // open at their real URLs (no embed), and leads report on the Leads tab.
     return (
       <div>
         <SectionHead eyebrow="Live assessments" title={<>Lead magnets.</>} />
-
-        {/* 1. Library */}
         {libraryGrid && (
           <div>
             <div className="mb-1 flex items-baseline gap-2.5">
@@ -3160,28 +2876,6 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
             {libraryGrid}
           </div>
         )}
-
-        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas.
-            The suggest row keeps the bank two-way: the client can pitch a concept of their own. */}
-        <section className="mt-8 max-w-[880px]">
-          {lmIdeas.length > 0 && (
-            <>
-              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="On the bench for the next build. Got your own idea? Drop it below." accent={accent} />
-              {lmIdeas.map((li) => (
-                <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
-              ))}
-            </>
-          )}
-          <LmSuggestRow accent={accent} act={act} />
-        </section>
-
-        {/* 3. The live tool itself, real URL chrome. */}
-        <div className="mt-8">
-          <div className="mb-3"><CardHead>The live assessment</CardHead></div>
-          {embedBlock}
-        </div>
-
-        {capturedBlock}
         {drawer}
       </div>
     );
@@ -3462,7 +3156,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
           <CardHead>Why this mix</CardHead>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
-          {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in. We review the weights together every month.
+          {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in.{isLive ? '' : ' We review the weights together every month.'}
         </p>
         <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids</p>
       </div>
@@ -3549,13 +3243,20 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
 
   return (
     <div>
-      <SectionHead
-        eyebrow="Weekly to your list"
-        title={<>Your newsletter, <Accent>in your voice.</Accent></>}
-        sub={live
-          ? 'One issue a week, written in your voice. Every lead your assessments capture will get it.'
-          : 'One issue a week, written in your voice. Every lead your assessments capture gets it.'}
-      />
+      {live ? (
+        /* Production panel, not a pitch: the masthead is the name + the real cadence/status. */
+        <SectionHead
+          eyebrow="Newsletter"
+          title={<>{nl.name}.</>}
+          sub={[nl.cadence, nl.status ? `Status: ${nl.status}.` : ''].filter(Boolean).join(' \u00b7 ')}
+        />
+      ) : (
+        <SectionHead
+          eyebrow="Weekly to your list"
+          title={<>Your newsletter, <Accent>in your voice.</Accent></>}
+          sub={'One issue a week, written in your voice. Every lead your assessments capture gets it.'}
+        />
+      )}
 
       {/* Hero: memo identity next to an inbox preview of the next issue. */}
       {(() => {
@@ -3579,7 +3280,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
                 )}
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                  Drafted in your voice, ready for your review
+                  {live ? 'Drafted ahead, shared here before each send' : 'Drafted in your voice, ready for your review'}
                 </span>
               </div>
             </div>
@@ -4068,7 +3769,6 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.sequences.title || 'The sequences, message by message'}</span>
-                  <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>approve-first</span>
                 </div>
                 {o.sequences.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
                 <div className="mt-4 space-y-2.5">
@@ -4104,7 +3804,6 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.candidates.title || 'The first list, name by name'}</span>
-                  <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your bless</span>
                 </div>
                 {o.candidates.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
                 <div className="mt-4 space-y-2.5">
@@ -4183,7 +3882,6 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                 <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{op.title || 'Client orbit: the playbook'}</span>
-                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your sign-off</span>
                   </div>
                   {op.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
                   {(op.seeds || []).length > 0 && (
@@ -4633,7 +4331,7 @@ function PhotosSurface({ board: _board, accent, slug, compact = false }: { board
     <div>
       {compact ? (
         <div className="mb-4">
-          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Your photo pool</div>
+          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Lifestyle pictures library</div>
           <div className="mt-2" style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.4vw, 26px)', lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>Photos we pull from</div>
           <p className="mt-2 max-w-[58ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
             Candid shots of you doing real things. Real faces pull harder than stock, so these feed your post images.
@@ -4641,7 +4339,7 @@ function PhotosSurface({ board: _board, accent, slug, compact = false }: { board
         </div>
       ) : (
         <SectionHead
-          eyebrow="Your photo pool"
+          eyebrow="Lifestyle pictures library"
           title="Photos"
           sub="Candid shots of you doing real things, plus a few founder, family and friends photos. Real faces pull harder than stock. These feed your post images."
         />
@@ -5321,10 +5019,14 @@ export default function ClientBoardPage() {
     setAngleSwaps((s) => ({ ...s, [id]: alt }));
     flash(id);
     armUndo(id, 'angle');
+    // Live: the swap is a real client action — record it for the operator's log.
+    if (isLiveRef.current) { void act('note', id, { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook }); }
   };
   const skipDay = (id: string) => {
     setWeekSkips((s) => ({ ...s, [id]: true as const }));
     armUndo(id, 'skip');
+    // Live: "remove this post" — recorded, and undo records the restore below.
+    if (isLiveRef.current) { void act('note', id, { event: 'post_removed' }); }
   };
   const unskipDay = (id: string) => {
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
@@ -5336,6 +5038,8 @@ export default function ClientBoardPage() {
         // Live: tell the operator the client walked back an approve (truthful, uses the
         // note action — the earlier approve row is not deleted, it is superseded by this).
         if (u.kind === 'approve' && isLiveRef.current) { void act('note', u.id, { event: 'undo_approve' }); }
+        if (u.kind === 'skip' && isLiveRef.current) { void act('note', u.id, { event: 'post_restored' }); }
+        if (u.kind === 'angle' && isLiveRef.current) { void act('note', u.id, { event: 'angle_swap_undone' }); }
         if (u.kind === 'approve') setStageOverride((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
         else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
         else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
@@ -5814,11 +5518,12 @@ export default function ClientBoardPage() {
         onGoContent={() => goTab('review')}
         flashId={flashId}
         modalOpen={!!detail}
+        live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
-    calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} act={act} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
+    calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
@@ -5965,6 +5670,8 @@ export default function ClientBoardPage() {
           ))}
         </nav>
         <div className="mt-auto flex flex-col gap-4 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
+          {/* Idea intake is preview theater only — on live boards ideas queue on the operator side. */}
+          {!isLive && (
           <div>
             <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>Drop an idea</div>
             <button
@@ -5976,8 +5683,9 @@ export default function ClientBoardPage() {
             </button>
             <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
+          )}
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
-            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in review` : 'live') : 'engine running'}
+            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in the buffer` : 'live') : 'engine running'}
           </div>
           {isPreview && (
             <div className="flex items-center gap-2 text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>
@@ -6077,7 +5785,7 @@ export default function ClientBoardPage() {
             className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-30 flex justify-center px-4 lg:bottom-6"
           >
             <div className="pointer-events-auto flex items-center gap-2 rounded-lg py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-white" style={{ background: INK, boxShadow: '0 8px 24px rgba(2,32,32,0.28)' }}>
-              {undo.kind === 'approve' ? 'Post approved' : undo.kind === 'angle' ? 'New angle locked' : 'Day skipped'}
+              {undo.kind === 'approve' ? 'Post approved' : undo.kind === 'angle' ? 'New angle locked' : isLive ? 'Post removed' : 'Day skipped'}
               <button
                 onClick={undoApprove}
                 className="ml-1 inline-flex min-h-[32px] items-center gap-1.5 rounded-[6px] px-2.5 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/10"
@@ -6100,6 +5808,7 @@ export default function ClientBoardPage() {
           initialEditing={detailEditing}
           onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); }}
           onApprove={approve}
+          onRemove={skipDay}
           isLive={isLive}
           act={act}
           editDraft={editDraft}
