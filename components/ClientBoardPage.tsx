@@ -159,7 +159,7 @@ interface OutreachSpec {
     title?: string; note?: string;
     groups: {
       key?: string; name: string; badge?: string; note?: string;
-      items: { name: string; role?: string; company?: string; domain?: string; note?: string }[];
+      items: { name: string; role?: string; company?: string; domain?: string; note?: string; linkedin_url?: string }[];
     }[];
   };
   /** Conversation inbox (live boards): warm/cold threads with latest messages. While
@@ -349,7 +349,7 @@ function CountUpNum({ n, size }: { n: number; size: number }) {
   const serif = size >= 24;
   return (
     <span
-      className="tabular-nums"
+      className="cb-num-serif tabular-nums"
       style={serif
         ? { fontFamily: SERIF, fontStyle: 'italic', fontSize: size, lineHeight: 1.05, color: INK }
         : { fontWeight: 600, fontSize: size, lineHeight: 1.05, color: INK }}
@@ -450,7 +450,7 @@ function KindChip({ q }: { q: Pick<QueueItem, 'kind' | 'media_url'>; accent?: st
 /** Italic accent "drama" phrase for a display headline — one per headline, full accent
  *  (headlines are >19px so no AA mix needed). */
 function Accent({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontStyle: 'italic', color: 'var(--cb-accent)' }}>{children}</span>;
+  return <span className="cb-accent-phrase" style={{ fontStyle: 'italic', color: 'var(--cb-accent)' }}>{children}</span>;
 }
 
 /** Editorial masthead on every tab: mono eyebrow → DM Serif Display headline (with one
@@ -1366,12 +1366,43 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
             </section>
           );
         });
+        /* LEAD MAGNETS — live: capture assets belong in the same pool as the posts (one
+           comprehensive ledger). Preview keeps its dedicated LM-tab funnel story. */
+        const lms = board.lead_magnets || [];
+        const lmRowCls = 'grid items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]';
+        const lmSection = (live && lms.length > 0) ? (
+          <section>
+            <LedgerSectionHead eyebrow="Lead magnets" count={lms.length} blurb="Capture assets in the same pool as the posts. Live ones take opt-ins around the clock." accent={accent} />
+            {lms.map((lm) => {
+              const lmLive = lm.status === 'live';
+              const inner = (
+                <>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'live' : 'in build'}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{lm.title}</span>
+                    {lm.promise && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{lm.promise}</span>}
+                  </span>
+                  <span className="hidden capitalize sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{lm.format || 'lead magnet'}</span>
+                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? '● live · taking opt-ins' : 'in build'}</span>
+                  <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>{lmLive && lm.url ? '↗' : ''}</span>
+                </>
+              );
+              return (
+                <div key={lm.id} style={{ borderBottom: `1px solid ${LINE}` }}>
+                  {lmLive && lm.url
+                    ? <a href={lm.url} target="_blank" rel="noreferrer" className={lmRowCls} style={{ margin: '0 -14px', textDecoration: 'none' }}>{inner}</a>
+                    : <div className={lmRowCls} style={{ margin: '0 -14px' }}>{inner}</div>}
+                </div>
+              );
+            })}
+          </section>
+        ) : null;
         /* Live boards lead with the work that needs the client (Your review first); a wall
            of ideas above the review stack made the drafts look missing. Preview boards keep
            ideas first, since the sales-funnel boards are built around that order. */
         return (
           <div className="max-w-[980px]">
-            {live ? <>{stageSections}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
+            {live ? <>{stageSections}{lmSection}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
           </div>
         );
       })()}
@@ -3492,6 +3523,8 @@ type PipelineStep = { key: string; label: string; done: boolean; current?: boole
 type ThreadMsg = { from: 'lead' | 'engine'; label: string; when?: string; text: string };
 type PipelineLead = {
   name: string; role?: string; company?: string; icp: number;
+  /** Real profile URL — names on live boards link out, never bare. */
+  linkedin_url?: string;
   track: 'handraiser' | 'reactor';
   source: 'comment' | 'optin' | 'like';
   steps: PipelineStep[];
@@ -3647,14 +3680,28 @@ function StepTrail({ steps, accent }: { steps: PipelineStep[]; accent: string })
 /** A clickable lead row. Opens the detail modal with the full message thread. */
 function LeadRow({ lead, accent, onOpen, live = false }: { lead: PipelineLead; accent: string; onOpen: (l: PipelineLead) => void; live?: boolean }) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(lead)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(lead); } }}
       aria-label={`Open ${lead.name}`}
-      className="group -mx-3 block w-full rounded-lg px-3 py-4 text-left transition-colors duration-150 hover:bg-[rgba(26,26,26,0.03)]"
+      className="group -mx-3 block w-full cursor-pointer rounded-lg px-3 py-4 text-left transition-colors duration-150 hover:bg-[rgba(26,26,26,0.03)]"
       style={{ borderTop: `1px solid ${DIVIDE}` }}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span style={{ fontFamily: SERIF, fontSize: 17, color: INK }}>{lead.name}</span>
+        {lead.linkedin_url ? (
+          <a
+            href={lead.linkedin_url}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="underline-offset-2 hover:underline"
+            style={{ fontFamily: SERIF, fontSize: 17, color: INK }}
+          >{lead.name} <span aria-hidden style={{ fontSize: 12, color: FAINT }}>↗</span></a>
+        ) : (
+          <span style={{ fontFamily: SERIF, fontSize: 17, color: INK }}>{lead.name}</span>
+        )}
         <span style={{ fontFamily: BODY, fontSize: 13, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
         <span className="ml-auto flex items-center gap-2.5">
           {lead.in_newsletter && (
@@ -3680,7 +3727,20 @@ function LeadRow({ lead, accent, onOpen, live = false }: { lead: PipelineLead; a
       <div className="mt-2.5">
         <StepTrail steps={lead.steps} accent={accent} />
       </div>
-    </button>
+    </div>
+  );
+}
+
+/** Numbered section head for the live Leads tab: the outreach program reads as six
+ *  numbered chapters instead of a scatter of card titles (mirrors the dashboard nav
+ *  hierarchy chunking). */
+function LeadsBlockHead({ n, label, sub }: { n: string; label: string; sub?: React.ReactNode }) {
+  return (
+    <div className="mb-3 mt-9 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
+      <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{n}</span>
+      <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>{label}</span>
+      {sub && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{sub}</span>}
+    </div>
   );
 }
 
@@ -3726,7 +3786,6 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
       {live && board.outreach && (() => {
         const o = board.outreach!;
         const lanes = o.lanes || [];
-        const funnel = o.funnel || [];
         return (
           <section className="mb-10">
             <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
@@ -3734,15 +3793,12 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
               {o.note && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{o.note}</span>}
             </div>
 
-            {/* The bar: who qualifies. */}
-            {o.icp && (
+            {/* 01 — The bar: who qualifies. ICP stays; the funnel lecture is gone (D1). */}
+            {o.icp && (<>
+              <LeadsBlockHead n="01" label="the bar" sub={o.icp.label} />
               <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the bar</span>
-                  {o.icp.label && <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: INK }}>{o.icp.label}</span>}
-                </div>
                 {(o.icp.bar || []).length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {(o.icp.bar || []).map((b) => (
                       <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium" style={{ border: `1px solid ${LINE}`, background: caWash(accent, 5), color: INK }}>
                         <span className="h-[5px] w-[5px] shrink-0" style={{ background: caText(accent) }} aria-hidden />
@@ -3753,36 +3809,12 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                 )}
                 {o.icp.note && <p className="mt-3 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.icp.note}</p>}
               </div>
-            )}
+            </>)}
 
-            {/* The funnel: engager to call, in four steps. */}
-            {funnel.length > 0 && (
-              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex flex-col sm:flex-row">
-                  {funnel.map((s, i) => (
-                    <div key={i} className="relative flex gap-3 pb-5 last:pb-0 sm:flex-1 sm:flex-col sm:gap-2 sm:pb-0 sm:pr-4 sm:last:pr-0">
-                      {i < funnel.length - 1 && (
-                        <>
-                          <span className="absolute bottom-0 left-[9px] top-6 w-px sm:hidden" style={{ background: LINE }} aria-hidden />
-                          <span className="absolute hidden h-px sm:block" style={{ background: LINE, top: 9, left: 30, right: 8 }} aria-hidden />
-                        </>
-                      )}
-                      <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
-                        <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{i + 1}</span>
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-semibold leading-snug" style={{ color: INK }}>{s.step}</div>
-                        {s.detail && <div className="mt-0.5 text-[12px] leading-snug" style={{ color: DIM }}>{s.detail}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* The four lanes, staged. Counts are real or absent. */}
-            {lanes.length > 0 && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {/* 02 — The four lanes, staged. Counts are real or absent. */}
+            {lanes.length > 0 && (<>
+              <LeadsBlockHead n="02" label="the lanes" />
+              <div className="grid gap-3 sm:grid-cols-2">
                 {lanes.map((ln) => (
                   <div key={ln.key || ln.name} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
                     <div className="flex items-start justify-between gap-2.5">
@@ -3820,15 +3852,13 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   </div>
                 ))}
               </div>
-            )}
+            </>)}
 
-            {/* Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
-            {o.sequences && (o.sequences.channels || []).length > 0 && (
-              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.sequences.title || 'The sequences, message by message'}</span>
-                </div>
-                {o.sequences.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
+            {/* 03 — Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
+            {o.sequences && (o.sequences.channels || []).length > 0 && (<>
+              <LeadsBlockHead n="03" label="the sequences" sub="message by message" />
+              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                {o.sequences.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
                 <div className="mt-4 space-y-2.5">
                   {o.sequences.channels.map((ch) => (
                     <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
@@ -3855,15 +3885,14 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   ))}
                 </div>
               </div>
-            )}
+            </>)}
 
-            {/* Named candidate list: real sourced people awaiting the client's bless. */}
-            {o.candidates && (o.candidates.groups || []).length > 0 && (
-              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{o.candidates.title || 'The first list, name by name'}</span>
-                </div>
-                {o.candidates.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
+            {/* 04 — Named candidate list: real sourced people. Names link to the real
+                profile (backfilled from the sourcing run); strike-a-name still applies. */}
+            {o.candidates && (o.candidates.groups || []).length > 0 && (<>
+              <LeadsBlockHead n="04" label="the first list" sub="name by name" />
+              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
                 <div className="mt-4 space-y-2.5">
                   {o.candidates.groups.map((g, gi) => (
                     <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
@@ -3877,7 +3906,18 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                       <div className="mt-1">
                         {g.items.map((it) => (
                           <div key={it.name + (it.company || '')} className="-mx-2 flex flex-col gap-x-3 gap-y-0.5 rounded-md border-t px-2 py-2 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
-                            <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
+                            {it.linkedin_url ? (
+                              <a
+                                href={it.linkedin_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="shrink-0 text-[13px] font-semibold underline-offset-2 hover:underline sm:w-44"
+                                style={{ color: INK }}
+                              >{it.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
+                            ) : (
+                              <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
+                            )}
                             <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
                               {[it.role, it.company].filter(Boolean).join(' · ')}
                               {it.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{it.domain}</span></>}
@@ -3891,21 +3931,20 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   ))}
                 </div>
               </div>
-            )}
+            </>)}
 
-            {/* Conversation inbox: real threads once the seat connects; labeled example until then. */}
-            {o.chats && (o.chats.threads || []).length > 0 && (
-              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-[13.5px] font-semibold" style={{ color: INK }}>The inbox</span>
-                  {o.chats.mock ? (
-                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6' }}>example preview · replaced by your live inbox</span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>live</span>
-                  )}
-                </div>
-                {o.chats.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.chats.note}</p>}
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {/* 05 — Conversation inbox: real threads once the seat connects. While mocked,
+                one short amber mark keeps the example honest; no status chip otherwise (D2). */}
+            {o.chats && (o.chats.threads || []).length > 0 && (<>
+              <LeadsBlockHead
+                n="05"
+                label="the inbox"
+                sub={o.chats.mock ? (
+                  <span className="inline-flex items-center px-2 py-0.5 uppercase not-italic" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6' }}>example · goes live when LinkedIn connects</span>
+                ) : undefined}
+              />
+              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="grid gap-3 lg:grid-cols-2">
                   {o.chats.threads.map((th, i) => (
                     <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}`, opacity: o.chats!.mock ? 0.85 : 1 }}>
                       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
@@ -3931,26 +3970,31 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                   ))}
                 </div>
               </div>
-            )}
+            </>)}
 
-            {/* Client-orbit playbook: seeds, touches, gift, and the sample DMs awaiting sign-off. */}
+            {/* 06 — Client orbit (D4): brand, your contact, and where the scan stands read
+                as three separate registers instead of one run-on line. */}
             {o.orbit_plan && (() => {
               const op = o.orbit_plan!;
-              return (
-                <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{op.title || 'Client orbit: the playbook'}</span>
-                  </div>
-                  {op.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
+              return (<>
+                <LeadsBlockHead n="06" label="client orbit" sub="warm intros through brands you already serve" />
+                <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                  {op.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
                   {(op.seeds || []).length > 0 && (
                     <div className="mt-4">
-                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>seed clients</div>
-                      {(op.seeds || []).map((s) => (
-                        <div key={s.name} className="flex flex-col gap-0.5 border-t py-2 sm:flex-row sm:gap-3" style={{ borderColor: DIVIDE }}>
-                          <span className="shrink-0 text-[13px] font-semibold" style={{ color: INK }}>{s.name}</span>
-                          {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
-                        </div>
-                      ))}
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands we orbit</div>
+                      {(op.seeds || []).map((s) => {
+                        const [brand, person] = s.name.split(/\s*\u00b7\s*/);
+                        return (
+                          <div key={s.name} className="grid gap-x-4 gap-y-0.5 border-t py-2.5 sm:grid-cols-[220px_1fr]" style={{ borderColor: DIVIDE }}>
+                            <span className="min-w-0">
+                              <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{brand}</span>
+                              {person && <span className="block truncate text-[12px]" style={{ color: DIM }}>{person} · your contact there</span>}
+                            </span>
+                            {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   {(op.touches || []).length > 0 && (
@@ -3986,11 +4030,11 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                     </div>
                   )}
                 </div>
-              );
+              </>);
             })()}
 
-            {/* Delineate the pipeline section that follows. */}
-            <div className="mt-10 border-b pb-2 uppercase" style={{ borderColor: LINE_BOLD, fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>pipeline</div>
+            {/* 07 — the pipeline ledger that follows. */}
+            <LeadsBlockHead n="07" label="pipeline" sub="everyone your content pulled in" />
           </section>
         );
       })()}
@@ -4082,7 +4126,11 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{lead.name}</h3>
+                <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>
+                  {lead.linkedin_url
+                    ? <a href={lead.linkedin_url} target="_blank" rel="noreferrer" className="underline-offset-4 hover:underline">{lead.name} <span aria-hidden style={{ fontSize: 13, color: FAINT }}>↗</span></a>
+                    : lead.name}
+                </h3>
                 <span style={{ fontFamily: BODY, fontSize: 13.5, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
               </div>
               {lead.headline && (
@@ -4285,9 +4333,9 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
                       <span className="block truncate text-[13.5px] leading-snug" style={{ fontFamily: BODY, color: INK }}>{p.title || 'Untitled post'}</span>
                       {p.published_at && <span className="block text-[11px] tabular-nums" style={{ color: FAINT }}>{fmtDay(p.published_at)}</span>}
                     </span>
-                    <span className="w-16 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.impressions)}</span>
-                    <span className="w-14 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.reactions)}</span>
-                    <span className="w-14 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.comments)}</span>
+                    <span className="w-16 shrink-0 text-right cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.impressions)}</span>
+                    <span className="w-14 shrink-0 text-right cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.reactions)}</span>
+                    <span className="w-14 shrink-0 text-right cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.comments)}</span>
                   </>
                 );
                 const rowClass = 'flex items-baseline gap-3 py-2.5';
@@ -5685,6 +5733,11 @@ export default function ClientBoardPage() {
 [data-skin="blackbox"] .cb-linkedin-preview { box-shadow: 0 1px 2px rgba(19,18,16,0.06) !important; }
 /* Black Box labels + eyebrows: uppercase 700 grotesk. */
 [data-skin="blackbox"] .uppercase { font-weight: 700 !important; }
+/* Schibsted carries no italic face: the browser fauxes an oblique on numerals and accent
+   phrases. Blackbox renders them upright (weight carries the emphasis); editorial keeps
+   its true DM Serif italics. */
+[data-skin="blackbox"] .cb-num-serif { font-style: normal !important; font-weight: 800; }
+[data-skin="blackbox"] .cb-accent-phrase { font-style: normal !important; }
 /* Display headings: Schibsted Grotesk 800, tight tracking. */
 [data-skin="blackbox"] h1, [data-skin="blackbox"] h2, [data-skin="blackbox"] h3,
 [data-skin="blackbox"] .cb-display { font-weight: 800 !important; letter-spacing: -0.035em; }
