@@ -112,7 +112,7 @@ function ProfitGapCalculator({
         Your Profit Gap, self-computed
       </h2>
       <p className="text-sm opacity-70 mb-8" style={{ color: ink }}>
-        Type your real numbers — this is seeded from your public median price, not your actuals. {sourceNote}
+        Type your real numbers. This is seeded from your public median price, not your actuals. {sourceNote}
       </p>
       <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5 mb-8">
         {sliders.map((s) => (
@@ -289,7 +289,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
         ) : (
           <p className="text-sm opacity-80 leading-relaxed">
-            A public read only surfaced the basics — the full teardown comes off a live look together.
+            A public read only surfaced the basics. The full teardown comes off a live look together.
           </p>
         )}
       </section>
@@ -307,7 +307,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         </h2>
         <p className="text-sm opacity-80 leading-relaxed mb-6 max-w-xl">
           Paid media and performance creative that compound, paired with a real Financial Health
-          view of every order — contribution profit, not top-line vanity. That's the read a live
+          view of every order: contribution profit, not top-line vanity. That's the read a live
           look together gets you past a public scan.
         </p>
         <a
