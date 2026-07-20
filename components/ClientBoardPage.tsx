@@ -507,9 +507,12 @@ function PulseDot({ color, size = 7 }: { color: string; size?: number }) {
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate' }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false }: {
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none';
+  /** Live board: the typographic plate is a preview fabrication — render the real
+   *  generated image (media_url) or nothing. */
+  live?: boolean;
 }) {
   const founder = board.founder;
   const name = founder?.name || board.company_name;
@@ -517,7 +520,9 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   const av = size === 'lg' ? 44 : 38;
   const bodyPx = size === 'lg' ? 13.5 : 12.5;
   const titlePx = size === 'lg' ? 24 : 18;
-  const showCover = cover !== 'none' && (item.kind === 'post' || item.kind === 'carousel' || cover === 'render');
+  const showCover = !live && cover !== 'none' && (item.kind === 'post' || item.kind === 'carousel' || cover === 'render');
+  // Live: the drafting placeholder only renders when an image is really being generated.
+  const showRender = cover === 'render' && (!live || (!!item.generating && item.style !== 'text'));
   return (
     <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
@@ -535,7 +540,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
       )}
       {item.media_url ? (
         <img src={item.media_url} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} />
-      ) : cover === 'render' ? (
+      ) : showRender ? (
         <div className="flex items-center justify-center gap-2.5" style={{ aspectRatio: '1200/500', borderRadius: 6, border: `1px dashed ${caBorder(accent, 45)}` }}>
           <PulseDot color={accent} size={8} />
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.14em', color: INK_MUTE }}>cover rendering…</span>
@@ -1228,10 +1233,10 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
               <div className="grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]">
                 <div style={{ maxWidth: 430 }}>
                   {q.body || stage === 'review' || stage === 'scheduled'
-                    ? <FeedPreview item={q.body ? q : { ...q, body: q.body }} board={board} accent={accent} fontStack={fontStack} size="sm" cover={q.generating ? 'render' : 'plate'} />
+                    ? <FeedPreview item={q.body ? q : { ...q, body: q.body }} board={board} accent={accent} fontStack={fontStack} size="sm" cover={q.generating ? 'render' : 'plate'} live={live} />
                     : q.generating
-                    ? <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" cover="render" />
-                    : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" />}
+                    ? <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" cover="render" live={live} />
+                    : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" live={live} />}
                 </div>
                 <div className="flex flex-col gap-3 pt-1.5">
                   {stage === 'review' && !skipped && live ? (
@@ -1799,7 +1804,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                         </div>
                       )}
                       <div onClick={() => onOpen(focused)} className="cursor-pointer">
-                        <FeedPreview item={focused} board={board} accent={accent} fontStack={fontStack} size="lg" />
+                        <FeedPreview item={focused} board={board} accent={accent} fontStack={fontStack} size="lg" live={live} />
                       </div>
                       <div className="mt-4.5 flex flex-wrap items-center gap-3" style={{ marginTop: 18 }}>
                         {!live && (
