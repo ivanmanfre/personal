@@ -299,6 +299,14 @@ function realHostOf(url?: string): string {
   if (!url) return '';
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
 }
+/** True only when the asset's real host is the CLIENT's own domain — the only case
+ *  where "On your domain" is honest. resources.* subdomains of the agency are "Live". */
+function onClientDomain(url?: string, domain?: string): boolean {
+  if (!url || !domain) return false;
+  const host = realHostOf(url);
+  const d = domain.replace(/^www\./, '');
+  return host === d || host.endsWith('.' + d);
+}
 function lmPath(title?: string): string {
   return (title || 'lead-magnet').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim()
     .split(/\s+/).slice(-3).join('-');
@@ -1378,13 +1386,13 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
               const lmLive = lm.status === 'live';
               const inner = (
                 <>
-                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'on domain' : 'in build'}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{lmLive ? 'live' : 'in build'}</span>
                   <span className="min-w-0">
                     <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{lm.title}</span>
                     {lm.promise && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{lm.promise}</span>}
                   </span>
                   <span className="hidden capitalize sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{lm.format || 'lead magnet'}</span>
-                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? '● on your domain' : 'in build'}</span>
+                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: lmLive ? caText(accent) : INK_MUTE }}>{lmLive ? (onClientDomain(lm.url, board.domain) ? '● on your domain' : '● live') : 'in build'}</span>
                   <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>▸</span>
                 </>
               );
@@ -2594,9 +2602,9 @@ const LM_FORMAT_LABEL: Record<string, string> = {
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
-function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, boardLive = false }: {
+function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, boardLive = false, clientDomain }: {
   entry: LeadMagnetEntry; accent: string; mint: string; brand?: BoardBrand; fontStack: string; i: number;
-  onOpen?: (e: LeadMagnetEntry) => void;
+  onOpen?: (e: LeadMagnetEntry) => void; clientDomain?: string;
   /** Live BOARD (not entry status): drop the vanity "On your domain" framing. */
   boardLive?: boolean;
 }) {
@@ -2612,7 +2620,7 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
     ? { background: 'rgba(255,255,255,0.12)', color: '#ffffff' }
     : { background: 'rgba(19,18,16,0.06)', color: caText(accent) };
   const statusChip = live
-    ? { label: boardLive ? 'On your domain' : 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
+    ? { label: boardLive ? (onClientDomain(entry.url, clientDomain) ? 'On your domain' : 'Live') : 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
     : entry.status === 'built'
     ? { label: 'Built', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
     : entry.status === 'in_production'
@@ -2673,7 +2681,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   const onHero = isLiveLm ? inkOn(liveHeaderHex) : `color-mix(in srgb, ${accent} 72%, ${INK})`;
   // Live board: "Live" is reserved for announced-on-the-feed. Up-on-the-domain is the
   // honest state until the launch post runs.
-  const statusLabel = isLiveLm ? (live ? 'On your domain' : 'Live') : entry.status === 'built' ? 'Built' : 'Concept';
+  const statusLabel = isLiveLm ? (live && onClientDomain(entry.url, board.domain) ? 'On your domain' : 'Live') : entry.status === 'built' ? 'Built' : 'Concept';
   const url = entry.url;
   // Promo kit (live): only REAL related copy renders. The orbit gift-touch DM belongs to
   // this asset when the orbit plan's gift points at the same URL.
@@ -2763,7 +2771,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
           <p className="mt-6" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE }}>
             {isLiveLm
               ? (live
-                ? 'Up on your domain with capture on. It announces on your feed when its launch slot comes up.'
+                ? (onClientDomain(entry.url, board.domain) ? 'Up on your domain with capture on. It announces on your feed when its launch slot comes up.' : 'Live with capture on. It announces on your feed when its launch slot comes up.')
                 : 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.')
               : entry.status === 'built'
               ? 'Built and working. It goes up on your domain when its launch slot comes up.'
@@ -3007,7 +3015,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
   const libraryGrid = (board.lead_magnets || []).length > 0 ? (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {(board.lead_magnets || []).map((entry, i) => (
-        <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} boardLive={live} />
+        <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} boardLive={live} clientDomain={board.domain} />
       ))}
     </div>
   ) : null;
@@ -3064,7 +3072,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
               <CardHead>Library</CardHead>
             </div>
             <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
-              {liveN} on your domain, {buildN} in build.
+              {liveN} live and capturing, {buildN} in build.
             </p>
             {libraryGrid}
           </div>
