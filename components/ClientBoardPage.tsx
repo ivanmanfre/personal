@@ -1330,8 +1330,10 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
       </div>
 
       {view === 'list' && (() => {
-        /* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */
-        const ideasSection = ideas.length > 0 ? (
+        /* IDEAS — the engine's upcoming idea bank, not yet drafted. Preview/demo only:
+           on a live client board the idea queue lives on Ivan's side (Client Ops), so
+           the client sees finished posts, never the raw idea bank. Hides when absent. */
+        const ideasSection = (!live && ideas.length > 0) ? (
           <section>
             <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
             {ideas.map(renderIdeaRow)}
