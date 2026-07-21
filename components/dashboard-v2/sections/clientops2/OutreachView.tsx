@@ -42,7 +42,7 @@ function IcpChip({ score }: { score: number | null }) {
 
 type Mode = 'list' | 'waiting';
 
-const laneBadge = (c: OutreachCampaign): string => (c.is_active ? 'ARMED' : 'Not armed');
+const laneBadge = (c: OutreachCampaign): string => (c.is_active ? 'Live' : 'Sending paused');
 
 // Channel a prospect is set up for, best-effort from the row.
 const channelLabel = (p: OutreachProspect): string => {
@@ -103,11 +103,11 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 
       {error && <div className="co2-err">{error}</div>}
 
-      {/* NOT-ARMED truth banner — reads the campaigns' real is_active state. */}
+      {/* Sending-paused truth banner — reads the campaigns' real is_active state. */}
       {!anyArmed && (
         <div className="co3-armbanner">
           <span className="co3-armdot" aria-hidden />
-          Nothing is armed. All lanes are off, so nothing has sent. This is the copy queued to go out and the people it would reach the moment you arm sends.
+          Sending is paused, so nothing has gone out. This is the copy queued to go out and the people it would reach the moment sending goes live.
         </div>
       )}
 
@@ -281,7 +281,7 @@ function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: bool
       <div className="co3-send-head">
         <span className="co3-send-l">Send from {clientId}'s seat</span>
         <span className={`co3-send-state ${armed ? 'co3-send-state--armed' : ''}`}>
-          {armed ? 'ARMED' : 'DISABLED — lane not armed'}
+          {armed ? 'Live' : 'Sending paused'}
         </span>
       </div>
       <textarea
@@ -292,11 +292,11 @@ function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: bool
         rows={2}
       />
       <div className="co3-send-row">
-        <button className="co3-send-btn" disabled={!armed || busy} onClick={attempt} title={armed ? 'Send' : 'Disabled until you arm this lane'}>
+        <button className="co3-send-btn" disabled={!armed || busy} onClick={attempt} title={armed ? 'Send' : 'Off until sending goes live'}>
           {busy ? 'Sending…' : 'Send'}
         </button>
         {!armed && (
-          <span className="co3-send-note">Disabled until you arm this lane. Nothing sends from here.</span>
+          <span className="co3-send-note">Off until sending goes live. Nothing sends from here.</span>
         )}
         {result && <span className="co3-send-note">{result}</span>}
       </div>
@@ -315,7 +315,7 @@ function WaitingView({ needsReply, awaiting, armed }: {
         <div className="co3-empty-note">
           {armed
             ? 'Every messaged lead has been answered. New sends land here the moment someone is messaged and has not replied.'
-            : 'No sends have gone out yet. This queue fills when lanes are armed: a lead shows here once a DM or InMail is sent and no reply has come back. Leads who reply jump to the top for your answer.'}
+            : 'No sends have gone out yet. This queue fills once sending goes live: a lead shows here once a DM or InMail is sent and no reply has come back. Leads who reply jump to the top for your answer.'}
         </div>
       </div>
     );

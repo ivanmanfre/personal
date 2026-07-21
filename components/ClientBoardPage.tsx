@@ -1351,7 +1351,7 @@ function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }
 function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
-  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
+  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
   /** Live board: published rows are real (no "example" framing) and idea copy names the operator. */
   live?: boolean;
@@ -1568,7 +1568,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                         </p>
                       )}
                       <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                        {isScheduled(q) ? <>Scheduled for {fmtSchedLA(q.scheduled_at, q.publish_date)}. <button onClick={(e) => { e.stopPropagation(); onOpen(q); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Edit time</button></> : 'Not on the calendar yet. Open it to give it a day and time.'}
+                        {isScheduled(q) ? <>Scheduled for {fmtSchedLA(q.scheduled_at, q.publish_date)}. <button onClick={(e) => { e.stopPropagation(); onOpen(q, { scheduling: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Edit time</button></> : <>Not on the calendar yet. <button onClick={(e) => { e.stopPropagation(); onOpen(q, { scheduling: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Set date &amp; time</button></>}
                       </div>
                     </>
                   ) : stage === 'review' && !skipped ? (
@@ -2059,7 +2059,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (ref: string) => void;
   onRefillDay?: (ref: string) => void;
-  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
+  onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
   onOpenCal: (it: CalendarItem) => void;
   onApprove: (id: string) => void;
   onPickAngle: (id: string, alt: AltAngle) => void;
@@ -2530,6 +2530,13 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                         >edit a line…</button>
                         {live && (
                           <button
+                            onClick={(e) => { e.stopPropagation(); onOpen(focused, { scheduling: true }); }}
+                            title="Change this post's date and time"
+                            style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                          >edit the time…</button>
+                        )}
+                        {live && (
+                          <button
                             onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
                             style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
                           >remove this post…</button>
@@ -2703,9 +2710,9 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
-  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
+  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
   /** Live board: remove an unscheduled buffer post — reversible hide (board_visible=false). */
@@ -2771,9 +2778,19 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Reschedule (live): the client picks a new date + LA time; setSchedule writes
   // carousel_drafts.scheduled_at server-side. The date/time inputs are entered as LA wall
   // time, then converted to a real UTC instant so the stored slot matches what he saw.
-  const [schedOpen, setSchedOpen] = useState(false);
-  const [schedDate, setSchedDate] = useState('');
-  const [schedTime, setSchedTime] = useState('09:00');
+  // Direct "Edit time" entry point: cards can open the modal straight into the scheduler
+  // (initialSchedOpen), prefilled from the post's current LA slot.
+  const schedPrefill = (src?: string): { d: string; t: string } => {
+    if (!src) return { d: '', t: '09:00' };
+    const dd = new Date(src);
+    if (Number.isNaN(dd.getTime())) return { d: '', t: '09:00' };
+    const d = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dd);
+    const t = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(dd);
+    return { d, t };
+  };
+  const [schedOpen, setSchedOpen] = useState(initialSchedOpen);
+  const [schedDate, setSchedDate] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).d : '');
+  const [schedTime, setSchedTime] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).t : '09:00');
   const [schedBusy, setSchedBusy] = useState(false);
   const [schedErr, setSchedErr] = useState('');
   const [schedLabel, setSchedLabel] = useState<string | null>(null);
@@ -4928,390 +4945,14 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
         </p>
       </div>
 
-      {/* Outreach program (live boards): the bar, the funnel, the four staged lanes. Real
-          counts only; every lane names what arms it. Renders above the pipeline. */}
-      {live && board.outreach && (() => {
-        const o = board.outreach!;
-        // Hide any retired / no-ratified-sequence lane (e.g. the dead Network Activation
-        // lane) from the client view. Same filter on the message sequences so a dead lane
-        // never surfaces a message-less shell.
-        const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
-        const seqChannels = (o.sequences?.channels || []).filter((ch) => !isDeadLane(ch.name));
-        return (
-          <section className="mb-10">
-            <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
-              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>outreach</span>
-              {o.note && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{o.note}</span>}
-            </div>
-
-            {/* This month's send allowance — real counts from the send log, caps from
-                config. Honest zero until the engine sends; never a fabricated figure. */}
-            {usage && (
-              <div className="mb-8">
-                <LeadsBlockHead n="00" label="this month" sub="your RISE DTC send allowance" />
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    { big: `${usage.inmail_remaining}`, unit: 'left', lbl: 'InMails remaining this month', sub: `${usage.inmail_used} sent of ${usage.inmail_cap}`, hot: usage.inmail_remaining <= 5 },
-                    { big: `${usage.connect_sent}`, unit: `of ${usage.connect_cap}`, lbl: 'Connection requests', sub: `${usage.connect_cap - usage.connect_sent} left this month`, hot: false },
-                    { big: `${usage.dm_sent}`, unit: 'sent', lbl: 'DMs sent this month', sub: usage.dm_sent === 0 ? 'none sent yet' : 'follow-ups to accepts', hot: false },
-                  ].map((t) => (
-                    <div key={t.lbl} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: t.hot ? caText(accent) : INK }}>{t.big}</span>
-                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>{t.unit}</span>
-                      </div>
-                      <div className="mt-2 text-[12.5px] font-semibold leading-snug" style={{ color: INK }}>{t.lbl}</div>
-                      <div className="mt-1 text-[11.5px]" style={{ fontFamily: BODY, color: DIM }}>{t.sub}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 01 — The bar: who qualifies. ICP stays; the funnel lecture is gone (D1). */}
-            {o.icp && (<>
-              <LeadsBlockHead n="01" label="the bar" sub={o.icp.label} />
-              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                {(o.icp.bar || []).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {(o.icp.bar || []).map((b) => (
-                      <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium" style={{ border: `1px solid ${LINE}`, background: caWash(accent, 5), color: INK }}>
-                        <span className="h-[5px] w-[5px] shrink-0" style={{ background: caText(accent) }} aria-hidden />
-                        {b}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {o.icp.note && <p className="mt-3 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.icp.note}</p>}
-              </div>
-            </>)}
-
-            {/* 02 — The four lanes, staged. Counts are real or absent. */}
-            {lanes.length > 0 && (<>
-              <LeadsBlockHead n="02" label="the lanes" />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {lanes.map((ln) => (
-                  <div key={ln.key || ln.name} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
-                    <div className="flex items-start justify-between gap-2.5">
-                      <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ln.name}</div>
-                      {ln.status && (
-                        <span className="inline-flex shrink-0 items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>{ln.status}</span>
-                      )}
-                    </div>
-                    {(typeof ln.count === 'number' || typeof ln.scanned === 'number') && (
-                      <div className="mt-2.5 flex items-baseline gap-4">
-                        {typeof ln.count === 'number' && (
-                          <span className="flex items-baseline gap-1.5">
-                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.count}</span>
-                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>counted</span>
-                          </span>
-                        )}
-                        {typeof ln.scanned === 'number' && (
-                          <span className="flex items-baseline gap-1.5">
-                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.scanned}</span>
-                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>reviewed</span>
-                          </span>
-                        )}
-                        {typeof ln.fits === 'number' && (
-                          <span className="flex items-baseline gap-1.5">
-                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: caText(accent) }}>{ln.fits}</span>
-                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>fits</span>
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {ln.detail && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{ln.detail}</p>}
-                    {ln.arms && (
-                      <div className="mt-2.5 border-t pt-2 uppercase" style={{ borderColor: DIVIDE, fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>status: {ln.arms}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>)}
-
-            {/* 03 — Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
-            {o.sequences && seqChannels.length > 0 && (<>
-              <LeadsBlockHead n="03" label="the sequences" sub="message by message" />
-              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                {o.sequences.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
-                <div className="mt-4 space-y-2.5">
-                  {seqChannels.map((ch) => (
-                    <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                        <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
-                        {/* Every lane ships off. The stamp is not decorative — nothing sends until the written go. */}
-                        {ch.armed !== true && (
-                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6', padding: '2px 6px' }}>not armed</span>
-                        )}
-                        {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
-                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} {ch.steps.length === 1 ? 'message' : 'messages'} <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
-                      </summary>
-                      <div className="px-4 pb-4">
-                      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>Nothing sends until your written go.</div>
-                      {ch.gate && (
-                        <p className="mb-2 rounded px-2.5 py-1.5 text-[12px] leading-snug" style={{ color: '#8a6d1a', background: '#faf5e6', border: '1px solid #eadfb4' }}>{ch.gate}</p>
-                      )}
-                      {ch.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
-                      <div className="mt-3 space-y-3">
-                        {ch.steps.map((st, i) => (
-                          <div key={i} className="rounded-lg bg-white p-3.5" style={{ border: `1px solid ${LINE}` }}>
-                            <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                              <span className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{st.label}</span>
-                              {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
-                            </div>
-                            <SeqText text={st.text} accent={accent} />
-                            {st.flag && (
-                              <div className="mt-2 flex items-start gap-1.5 rounded px-2 py-1.5" style={{ background: '#faf5e6', border: '1px solid #eadfb4' }}>
-                                <span aria-hidden style={{ color: '#8a6d1a', fontSize: 11, lineHeight: 1.4 }}>⚑</span>
-                                <span className="text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>{st.flag}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            </>)}
-
-            {/* 04 — Named candidate list: real sourced people. Names link to the real
-                profile (backfilled from the sourcing run); strike-a-name still applies. */}
-            {o.candidates && (o.candidates.groups || []).length > 0 && (<>
-              <LeadsBlockHead n="04" label="the first list" sub="name by name" />
-              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
-                <div className="mt-4 space-y-2.5">
-                  {o.candidates.groups.map((g, gi) => (
-                    <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
-                      <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                        <span className="text-[13px] font-semibold" style={{ color: INK }}>{g.name}</span>
-                        {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{g.badge}</span>}
-                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{g.items.length} names <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
-                      </summary>
-                      <div className="px-3.5 pb-3.5">
-                      {g.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
-                      <div className="mt-1">
-                        {g.items.map((it) => (
-                          <div key={it.name + (it.company || '')} className="-mx-2 flex flex-col gap-x-3 gap-y-0.5 rounded-md border-t px-2 py-2 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
-                            {it.linkedin_url ? (
-                              <a
-                                href={it.linkedin_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 text-[13px] font-semibold underline-offset-2 hover:underline sm:w-44"
-                                style={{ color: INK }}
-                              >{it.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
-                            ) : (
-                              <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
-                            )}
-                            <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
-                              {[it.role, it.company].filter(Boolean).join(' · ')}
-                              {it.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{it.domain}</span></>}
-                            </span>
-                            {it.note && <span className="shrink-0 text-[11px]" style={{ fontFamily: MONO, color: FAINT }}>{it.note}</span>}
-                          </div>
-                        ))}
-                      </div>
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            </>)}
-
-            {/* 05 — Conversation inbox: real threads once the seat connects. While mocked,
-                one short amber mark keeps the example honest; no status chip otherwise (D2). */}
-            {o.chats && (o.chats.threads || []).length > 0 && (<>
-              <LeadsBlockHead
-                n="05"
-                label="the inbox"
-                sub={o.chats.mock ? (
-                  <span className="inline-flex items-center px-2 py-0.5 uppercase not-italic" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6' }}>example · goes live when LinkedIn connects</span>
-                ) : undefined}
-              />
-              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {o.chats.threads.map((th, i) => (
-                    <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}`, opacity: o.chats!.mock ? 0.85 : 1 }}>
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                        <span className="text-[13px] font-semibold" style={{ color: INK }}>
-                          {th.name}{th.company ? <span style={{ color: DIM, fontWeight: 400 }}> · {th.company}</span> : null}
-                        </span>
-                        <span className="flex items-baseline gap-2">
-                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{th.lane}</span>
-                          {th.last_when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{th.last_when}</span>}
-                        </span>
-                      </div>
-                      <div className="mt-2.5 space-y-2">
-                        {th.messages.map((m, j) => (
-                          <div key={j} className={m.from === 'you' ? 'flex justify-end' : 'flex'}>
-                            <div className="max-w-[85%] rounded-lg px-3 py-2" style={{ background: m.from === 'you' ? caWash(accent, 8) : '#fff', border: `1px solid ${LINE}` }}>
-                              <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>
-                              {m.when && <div className="mt-1 text-right" style={{ fontFamily: MONO, fontSize: 8.5, color: FAINT }}>{m.when}</div>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>)}
-
-            {/* 06 — Client orbit (D4): brand, your contact, and where the scan stands read
-                as three separate registers instead of one run-on line. */}
-            {o.orbit_plan && (() => {
-              const op = o.orbit_plan!;
-              return (<>
-                <LeadsBlockHead n="06" label="client engager" sub="warm intros through brands you already serve" />
-                <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                  {op.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
-                  {(op.seeds || []).length > 0 && (
-                    <div className="mt-4">
-                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands you serve</div>
-                      {(op.seeds || []).map((s) => {
-                        const [brand, person] = s.name.split(/\s*\u00b7\s*/);
-                        return (
-                          <div key={s.name} className="grid gap-x-4 gap-y-0.5 border-t py-2.5 sm:grid-cols-[220px_1fr]" style={{ borderColor: DIVIDE }}>
-                            <span className="min-w-0">
-                              <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{brand}</span>
-                              {person && <span className="block truncate text-[12px]" style={{ color: DIM }}>{person} · your contact there</span>}
-                            </span>
-                            {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {(op.touches || []).length > 0 && (
-                    <div className="mt-4">
-                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the three touches</div>
-                      {(op.touches || []).map((t) => (
-                        <div key={t.label} className="flex gap-3 border-t py-2" style={{ borderColor: DIVIDE }}>
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{t.label}</span>
-                          </span>
-                          <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{t.text}</span>
-                        </div>
-                      ))}
-                      {op.gift?.url && (
-                        <div className="mt-2 text-[12.5px]" style={{ color: DIM }}>
-                          The gift is live now:{' '}
-                          <a href={op.gift.url} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2" style={{ color: caText(accent) }}>{op.gift.name || 'open it'}</a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(op.samples || []).length > 0 && (
-                    <div className="mt-4">
-                      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>sample messages, in your voice</div>
-                      <div className="grid gap-3 lg:grid-cols-2">
-                        {(op.samples || []).map((sm, i) => (
-                          <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                            {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{sm.label}</div>}
-                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>);
-            })()}
-
-            {/* 07 — Orbit finds: the real people pulled from the client's orbit scans. Honest
-                one-liners + caveats; nothing queued or sent. No pipeline steppers here. */}
-            {o.orbit_finds && (o.orbit_finds.people || []).length > 0 && (<>
-              <LeadsBlockHead n="07" label="orbit finds" sub="pending your review" />
-              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-                {o.orbit_finds.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.orbit_finds.note}</p>}
-                <div className="mt-3">
-                  {o.orbit_finds.people.map((p) => (
-                    <div key={p.name + (p.company || '')} className="grid gap-x-4 gap-y-1 border-t py-3 sm:grid-cols-[210px_1fr]" style={{ borderColor: DIVIDE }}>
-                      <span className="min-w-0">
-                        {p.linkedin_url ? (
-                          <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="block truncate text-[13px] font-semibold underline-offset-2 hover:underline" style={{ color: INK }}>{p.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
-                        ) : (
-                          <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{p.name}</span>
-                        )}
-                        <span className="block truncate text-[12px]" style={{ color: DIM }}>
-                          {[p.role, p.company].filter(Boolean).join(' · ')}
-                          {p.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{p.domain}</span></>}
-                        </span>
-                      </span>
-                      <span className="min-w-0">
-                        {p.one_liner && <span className="block text-[12.5px] leading-snug" style={{ color: INK_SOFT }}>{p.one_liner}</span>}
-                        {p.caveat && (
-                          <span className="mt-1 inline-flex items-start gap-1.5 text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>
-                            <span aria-hidden>⚑</span>{p.caveat}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Nothing queued or sent. Pulled for your review only.</p>
-              </div>
-            </>)}
-
-            {/* 08 — Send log: the real per-lead outbound trail + reply status, read live
-                from outreach_messages (never baked JSON). Honest empty until a lane sends. */}
-            <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
-            <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-              {(!log || log.length === 0) ? (
-                <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
-                  Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment a lane arms, with the date it went out and whether they replied. This reads the live send record, not a sample.
-                </p>
-              ) : (
-                <div className="space-y-2.5">
-                  {log.map((entry) => {
-                    const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
-                    return (
-                      <details key={entry.prospect_id} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                          <span className="text-[13px] font-semibold" style={{ color: INK }}>{entry.name || '(unnamed)'}</span>
-                          {entry.company && <span className="text-[12px]" style={{ color: DIM }}>{entry.company}</span>}
-                          {entry.lane && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{entry.lane}</span>}
-                          {entry.replied && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent), padding: '2px 6px' }}>replied</span>}
-                          <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{sent.length} sent <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
-                        </summary>
-                        <div className="space-y-2 px-3.5 pb-3.5">
-                          {sent.map((m, i) => (
-                            <div key={i} className="rounded-lg bg-white p-3" style={{ border: `1px solid ${LINE}` }}>
-                              <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>→ sent</span>
-                                <span style={{ fontFamily: MONO, fontSize: 9.5, color: FAINT }}>{[m.type, m.channel].filter(Boolean).join(' · ')}{m.sent_at ? ` · ${fmtSchedLA(m.sent_at)}` : ''}</span>
-                              </div>
-                              {m.text && <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>}
-                            </div>
-                          ))}
-                          {entry.replied && (
-                            <div className="text-[11.5px]" style={{ fontFamily: MONO, color: caText(accent) }}>
-                              Replied{entry.last_reply_at ? ` · ${fmtSchedLA(entry.last_reply_at)}` : ''}
-                            </div>
-                          )}
-                        </div>
-                      </details>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 09 — the pipeline ledger that follows. */}
-            <LeadsBlockHead n="09" label="pipeline" sub="everyone your content pulled in" />
-          </section>
-        );
-      })()}
+      {/* Outreach program lives on its own first-class Outreach tab now (OutreachSurface).
+          This surface renders the captured-leads pipeline only. */}
 
       {leads.length === 0 ? (
         <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
           <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
             {live
-              ? 'Everyone matched to your buyer profile who engages your content lands here. Once your outbound lanes go live: hand-raisers get the resource and a follow-up; high-fit engagers get a connection request and a DM. Yours to keep.'
+              ? 'Everyone matched to your buyer profile who engages your content lands here. Once your outreach goes live: hand-raisers get the resource and a follow-up; high-fit engagers get a connection request and a DM. Yours to keep.'
               : 'Every ICP-matched person who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit reactors get a connection request and a DM. Yours to keep.'}
           </p>
         </div>
@@ -5351,6 +4992,400 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** Plain send-status pill. Green "Live" when messages are actually going out, grey
+ *  "Sending paused" when nothing is moving. No jargon — a client word for the state. */
+function SendStatusPill({ live, accent }: { live: boolean; accent: string }) {
+  return live ? (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent) }}>
+      <span className="h-[6px] w-[6px] rounded-full" style={{ background: inkOn(accent) }} aria-hidden />
+      Live
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: '#5c5c5c', background: '#ececea', border: '1px solid #dcdcd8' }}>
+      <span className="h-[6px] w-[6px] rounded-full" style={{ background: '#9a9a96' }} aria-hidden />
+      Sending paused
+    </span>
+  );
+}
+
+/** Outreach surface (live boards): the send program on its own first-class tab — this
+ *  month's allowance, the bar, the sources, the message sequences, the first list, the
+ *  inbox, the client-engager play, orbit finds, and the live send log. Reads usage + the
+ *  per-lead send log from live RPCs; nothing here is baked pipeline JSON. */
+function OutreachSurface({ board, accent, usage = null, log = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null }) {
+  const o = board.outreach;
+  if (!o) {
+    return (
+      <div className="pb-16">
+        <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
+          <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>Your outreach program lands here once it is set up.</p>
+        </div>
+      </div>
+    );
+  }
+  // Hide any retired / no-ratified-sequence source (e.g. the dead Network Activation
+  // path) from the client view. Same filter on the message sequences so a dead source
+  // never surfaces a message-less shell.
+  const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
+  const seqChannels = (o.sequences?.channels || []).filter((ch) => !isDeadLane(ch.name));
+  // Plain send state: green "Live" the moment real sends show up (usage counts or a send
+  // log entry), grey "Sending paused" until then. Honest — nothing sends until go-live.
+  const sendingLive = (log != null && log.length > 0) || (usage != null && (usage.connect_sent > 0 || usage.dm_sent > 0 || usage.inmail_used > 0));
+
+  return (
+    <div className="pb-16">
+      <div className="mb-7">
+        <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>who we reach, and how</span>
+          <SendStatusPill live={sendingLive} accent={accent} />
+        </div>
+        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(29px, 3.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>Outreach</h2>
+        <p className="mt-3.5 max-w-[62ch]" style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
+          {o.note || 'Who your engine reaches out to on your behalf, the exact messages it sends, and every send once it goes out. Nothing sends until your written go.'}
+        </p>
+      </div>
+
+      <section className="mb-10">
+        {/* This month's send allowance — real counts from the send log, caps from
+            config. Honest zero until the engine sends; never a fabricated figure. */}
+        {usage && (
+          <div className="mb-8">
+            <LeadsBlockHead n="00" label="this month" sub="your RISE DTC send allowance" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { big: `${usage.inmail_remaining}`, unit: 'left', lbl: 'InMails remaining this month', sub: `${usage.inmail_used} sent of ${usage.inmail_cap}`, hot: usage.inmail_remaining <= 5 },
+                { big: `${usage.connect_sent}`, unit: `of ${usage.connect_cap}`, lbl: 'Connection requests', sub: `${usage.connect_cap - usage.connect_sent} left this month`, hot: false },
+                { big: `${usage.dm_sent}`, unit: 'sent', lbl: 'DMs sent this month', sub: usage.dm_sent === 0 ? 'none sent yet' : 'follow-ups to accepts', hot: false },
+              ].map((t) => (
+                <div key={t.lbl} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: t.hot ? caText(accent) : INK }}>{t.big}</span>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>{t.unit}</span>
+                  </div>
+                  <div className="mt-2 text-[12.5px] font-semibold leading-snug" style={{ color: INK }}>{t.lbl}</div>
+                  <div className="mt-1 text-[11.5px]" style={{ fontFamily: BODY, color: DIM }}>{t.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 01 — The bar: who qualifies. */}
+        {o.icp && (<>
+          <LeadsBlockHead n="01" label="the bar" sub={o.icp.label} />
+          <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+            {(o.icp.bar || []).length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {(o.icp.bar || []).map((b) => (
+                  <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium" style={{ border: `1px solid ${LINE}`, background: caWash(accent, 5), color: INK }}>
+                    <span className="h-[5px] w-[5px] shrink-0" style={{ background: caText(accent) }} aria-hidden />
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
+            {o.icp.note && <p className="mt-3 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.icp.note}</p>}
+          </div>
+        </>)}
+
+        {/* 02 — The sources people come from. Counts are real or absent. Send state lives
+            in the header pill, so no per-source status stamp here. */}
+        {lanes.length > 0 && (<>
+          <LeadsBlockHead n="02" label="the sources" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {lanes.map((ln) => (
+              <div key={ln.key || ln.name} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ln.name}</div>
+                {(typeof ln.count === 'number' || typeof ln.scanned === 'number') && (
+                  <div className="mt-2.5 flex items-baseline gap-4">
+                    {typeof ln.count === 'number' && (
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.count}</span>
+                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>counted</span>
+                      </span>
+                    )}
+                    {typeof ln.scanned === 'number' && (
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.scanned}</span>
+                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>reviewed</span>
+                      </span>
+                    )}
+                    {typeof ln.fits === 'number' && (
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: caText(accent) }}>{ln.fits}</span>
+                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>fits</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+                {ln.detail && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{ln.detail}</p>}
+              </div>
+            ))}
+          </div>
+        </>)}
+
+        {/* 03 — Per-channel sequences: the actual messages each source sends, cold vs warm. */}
+        {o.sequences && seqChannels.length > 0 && (<>
+          <LeadsBlockHead n="03" label="the sequences" sub="message by message" />
+          <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+            {o.sequences.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
+            <div className="mt-4 space-y-2.5">
+              {seqChannels.map((ch) => (
+                <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
+                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
+                    {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
+                    <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} {ch.steps.length === 1 ? 'message' : 'messages'} <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                  </summary>
+                  <div className="px-4 pb-4">
+                  <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>Nothing sends until your written go.</div>
+                  {ch.gate && (
+                    <p className="mb-2 rounded px-2.5 py-1.5 text-[12px] leading-snug" style={{ color: '#8a6d1a', background: '#faf5e6', border: '1px solid #eadfb4' }}>{ch.gate}</p>
+                  )}
+                  {ch.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
+                  <div className="mt-3 space-y-3">
+                    {ch.steps.map((st, i) => (
+                      <div key={i} className="rounded-lg bg-white p-3.5" style={{ border: `1px solid ${LINE}` }}>
+                        <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{st.label}</span>
+                          {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
+                        </div>
+                        <SeqText text={st.text} accent={accent} />
+                        {st.flag && (
+                          <div className="mt-2 flex items-start gap-1.5 rounded px-2 py-1.5" style={{ background: '#faf5e6', border: '1px solid #eadfb4' }}>
+                            <span aria-hidden style={{ color: '#8a6d1a', fontSize: 11, lineHeight: 1.4 }}>⚑</span>
+                            <span className="text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>{st.flag}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </>)}
+
+        {/* 04 — Named candidate list: real sourced people. */}
+        {o.candidates && (o.candidates.groups || []).length > 0 && (<>
+          <LeadsBlockHead n="04" label="the first list" sub="name by name" />
+          <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+            {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
+            <div className="mt-4 space-y-2.5">
+              {o.candidates.groups.map((g, gi) => (
+                <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
+                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{g.name}</span>
+                    {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{g.badge}</span>}
+                    <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{g.items.length} names <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                  </summary>
+                  <div className="px-3.5 pb-3.5">
+                  {g.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
+                  <div className="mt-1">
+                    {g.items.map((it) => (
+                      <div key={it.name + (it.company || '')} className="-mx-2 flex flex-col gap-x-3 gap-y-0.5 rounded-md border-t px-2 py-2 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
+                        {it.linkedin_url ? (
+                          <a
+                            href={it.linkedin_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 text-[13px] font-semibold underline-offset-2 hover:underline sm:w-44"
+                            style={{ color: INK }}
+                          >{it.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
+                        ) : (
+                          <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
+                        )}
+                        <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
+                          {[it.role, it.company].filter(Boolean).join(' · ')}
+                          {it.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{it.domain}</span></>}
+                        </span>
+                        {it.note && <span className="shrink-0 text-[11px]" style={{ fontFamily: MONO, color: FAINT }}>{it.note}</span>}
+                      </div>
+                    ))}
+                  </div>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </>)}
+
+        {/* 05 — Conversation inbox: real threads once the seat connects. */}
+        {o.chats && (o.chats.threads || []).length > 0 && (<>
+          <LeadsBlockHead
+            n="05"
+            label="the inbox"
+            sub={o.chats.mock ? (
+              <span className="inline-flex items-center px-2 py-0.5 uppercase not-italic" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6' }}>example · goes live when LinkedIn connects</span>
+            ) : undefined}
+          />
+          <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {o.chats.threads.map((th, i) => (
+                <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}`, opacity: o.chats!.mock ? 0.85 : 1 }}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                    <span className="text-[13px] font-semibold" style={{ color: INK }}>
+                      {th.name}{th.company ? <span style={{ color: DIM, fontWeight: 400 }}> · {th.company}</span> : null}
+                    </span>
+                    <span className="flex items-baseline gap-2">
+                      <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{th.lane}</span>
+                      {th.last_when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{th.last_when}</span>}
+                    </span>
+                  </div>
+                  <div className="mt-2.5 space-y-2">
+                    {th.messages.map((m, j) => (
+                      <div key={j} className={m.from === 'you' ? 'flex justify-end' : 'flex'}>
+                        <div className="max-w-[85%] rounded-lg px-3 py-2" style={{ background: m.from === 'you' ? caWash(accent, 8) : '#fff', border: `1px solid ${LINE}` }}>
+                          <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>
+                          {m.when && <div className="mt-1 text-right" style={{ fontFamily: MONO, fontSize: 8.5, color: FAINT }}>{m.when}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>)}
+
+        {/* 06 — Client orbit: brand, your contact, and where the scan stands. */}
+        {o.orbit_plan && (() => {
+          const op = o.orbit_plan!;
+          return (<>
+            <LeadsBlockHead n="06" label="client engager" sub="warm intros through brands you already serve" />
+            <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+              {op.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
+              {(op.seeds || []).length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands you serve</div>
+                  {(op.seeds || []).map((s) => {
+                    const [brand, person] = s.name.split(/\s*·\s*/);
+                    return (
+                      <div key={s.name} className="grid gap-x-4 gap-y-0.5 border-t py-2.5 sm:grid-cols-[220px_1fr]" style={{ borderColor: DIVIDE }}>
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{brand}</span>
+                          {person && <span className="block truncate text-[12px]" style={{ color: DIM }}>{person} · your contact there</span>}
+                        </span>
+                        {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {(op.touches || []).length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the three touches</div>
+                  {(op.touches || []).map((t) => (
+                    <div key={t.label} className="flex gap-3 border-t py-2" style={{ borderColor: DIVIDE }}>
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
+                        <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{t.label}</span>
+                      </span>
+                      <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{t.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(op.samples || []).length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>sample messages, in your voice</div>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {(op.samples || []).map((sm, i) => (
+                      <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                        {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{sm.label}</div>}
+                        <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>);
+        })()}
+
+        {/* 07 — Orbit finds: real people pulled from the client's orbit scans. */}
+        {o.orbit_finds && (o.orbit_finds.people || []).length > 0 && (<>
+          <LeadsBlockHead n="07" label="orbit finds" sub="pending your review" />
+          <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+            {o.orbit_finds.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.orbit_finds.note}</p>}
+            <div className="mt-3">
+              {o.orbit_finds.people.map((p) => (
+                <div key={p.name + (p.company || '')} className="grid gap-x-4 gap-y-1 border-t py-3 sm:grid-cols-[210px_1fr]" style={{ borderColor: DIVIDE }}>
+                  <span className="min-w-0">
+                    {p.linkedin_url ? (
+                      <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="block truncate text-[13px] font-semibold underline-offset-2 hover:underline" style={{ color: INK }}>{p.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
+                    ) : (
+                      <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{p.name}</span>
+                    )}
+                    <span className="block truncate text-[12px]" style={{ color: DIM }}>
+                      {[p.role, p.company].filter(Boolean).join(' · ')}
+                      {p.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{p.domain}</span></>}
+                    </span>
+                  </span>
+                  <span className="min-w-0">
+                    {p.one_liner && <span className="block text-[12.5px] leading-snug" style={{ color: INK_SOFT }}>{p.one_liner}</span>}
+                    {p.caveat && (
+                      <span className="mt-1 inline-flex items-start gap-1.5 text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>
+                        <span aria-hidden>⚑</span>{p.caveat}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Nothing queued or sent. Pulled for your review only.</p>
+          </div>
+        </>)}
+
+        {/* 08 — Send log: the real per-lead outbound trail + reply status, read live from
+            outreach_messages (never baked JSON). Honest empty until sends go live. */}
+        <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
+        <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+          {(!log || log.length === 0) ? (
+            <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
+              Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment sends go live, with the date it went out and whether they replied. This reads the live send record, not a sample.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {log.map((entry) => {
+                const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
+                return (
+                  <details key={entry.prospect_id} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
+                      <span className="text-[13px] font-semibold" style={{ color: INK }}>{entry.name || '(unnamed)'}</span>
+                      {entry.company && <span className="text-[12px]" style={{ color: DIM }}>{entry.company}</span>}
+                      {entry.lane && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{entry.lane}</span>}
+                      {entry.replied && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent), padding: '2px 6px' }}>replied</span>}
+                      <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{sent.length} sent <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                    </summary>
+                    <div className="space-y-2 px-3.5 pb-3.5">
+                      {sent.map((m, i) => (
+                        <div key={i} className="rounded-lg bg-white p-3" style={{ border: `1px solid ${LINE}` }}>
+                          <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>→ sent</span>
+                            <span style={{ fontFamily: MONO, fontSize: 9.5, color: FAINT }}>{[m.type, m.channel].filter(Boolean).join(' · ')}{m.sent_at ? ` · ${fmtSchedLA(m.sent_at)}` : ''}</span>
+                          </div>
+                          {m.text && <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>}
+                        </div>
+                      ))}
+                      {entry.replied && (
+                        <div className="text-[11.5px]" style={{ fontFamily: MONO, color: caText(accent) }}>
+                          Replied{entry.last_reply_at ? ` · ${fmtSchedLA(entry.last_reply_at)}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -5867,13 +5902,14 @@ const TABS = [
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
   { id: 'voice', label: 'Voice', group: 'Content' },
   { id: 'photos', label: 'Photos', group: 'Content' },
-  { id: 'leads', label: 'Leads', group: 'Reports' },
+  { id: 'outreach', label: 'Outreach', group: 'Outreach' },
+  { id: 'leads', label: 'Leads', group: 'Leads' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
   { id: 'team', label: 'Team', group: 'Settings' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
-const NAV_GROUPS = ['Content', 'Reports', 'Settings'] as const;
+const NAV_GROUPS = ['Content', 'Outreach', 'Leads', 'Reports', 'Settings'] as const;
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
@@ -5908,6 +5944,12 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
       <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
       <circle cx="9" cy="10.5" r="1.6" />
       <path d="m4.5 17 4.5-4.5 3 3 3-3.5 5 5" />
+    </>
+  ),
+  outreach: (
+    <>
+      <path d="M21 4 11 14" />
+      <path d="M21 4 15 20l-4-6-6-4 16-6z" />
     </>
   ),
   leads: <path d="M3.5 5.5h17l-6.5 7.7v5.6l-4 2v-7.6z" />,
@@ -6327,6 +6369,7 @@ export default function ClientBoardPage() {
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
   const [detailEditing, setDetailEditing] = useState(false);
+  const [detailScheduling, setDetailScheduling] = useState(false);
   // Ideas are not approvable yet — they open a lightweight preview, kept separate from the
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
@@ -7411,7 +7454,7 @@ export default function ClientBoardPage() {
   }
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
-  const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); };
+  const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
   const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
   const approvedIds = new Set(Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
   const surfaces: Record<TabId, React.ReactNode> = {
@@ -7454,6 +7497,7 @@ export default function ClientBoardPage() {
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
+    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
@@ -7475,12 +7519,16 @@ export default function ClientBoardPage() {
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
   // fold into the content surface). Team (self-serve invites) is live-only — preview
   // boards are demo funnels with no allow-list to manage.
-  const visibleTabs = isLive
+  // Outreach is a first-class tab, but it only carries a live send program — preview
+  // demo boards and boards with no outreach package don't show it.
+  const outreachAvailable = isLive && !!viewBoard.outreach;
+  const visibleTabs = (isLive
     ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
-    : TABS.filter((t) => t.id !== 'team');
+    : TABS.filter((t) => t.id !== 'team')
+  ).filter((t) => t.id !== 'outreach' || outreachAvailable);
   const activeTab: TabId = isLive
-    ? (tab === 'voice' || tab === 'photos' ? 'week' : tab)
-    : (tab === 'team' ? 'week' : tab);
+    ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
+    : (tab === 'team' || tab === 'outreach' ? 'week' : tab);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -7774,7 +7822,8 @@ export default function ClientBoardPage() {
           stage={stageOf(detail)}
           initialChanging={detailChanging}
           initialEditing={detailEditing}
-          onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); }}
+          initialSchedOpen={detailScheduling}
+          onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); setDetailScheduling(false); }}
           onApprove={approve}
           onRemove={skipDay}
           onHideBuffer={isLive ? removeBufferPost : undefined}

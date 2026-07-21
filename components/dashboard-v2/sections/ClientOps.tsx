@@ -78,6 +78,9 @@ export function ClientOps() {
   } = useClientDetail(client);
 
   const [stage, setStage] = useState<StageKey>('review');
+  // Top-level cockpit areas — mirrors the client board's Content / Outreach / Leads tabs
+  // so Outreach reads first-class instead of buried under the content line.
+  const [opsTab, setOpsTab] = useState<'content' | 'outreach' | 'leads'>('content');
   const [reviewCursor, setReviewCursor] = useState(0);
   const [ideaSelId, setIdeaSelId] = useState<string | null>(null);
 
@@ -264,6 +267,22 @@ export function ClientOps() {
             ))}
           </div>
 
+          {/* ── COCKPIT AREAS: Content / Outreach / Leads (mirrors the client board). ─── */}
+          <div className="co2-optabs" role="tablist" aria-label="Cockpit areas">
+            {([['content', 'Content'], ['outreach', 'Outreach'], ['leads', 'Leads']] as const).map(([k, label]) => (
+              <button
+                key={k}
+                role="tab"
+                aria-selected={opsTab === k}
+                className={`co2-optab ${opsTab === k ? 'co2-optab--on' : ''}`}
+                onClick={() => setOpsTab(k)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {opsTab === 'content' && (<>
           {/* ── HERO: the production line (B chassis). Red once: In review. ─── */}
           <div className="co2-line" role="tablist" aria-label="Production line stages">
             {stages.map((s) => (
@@ -338,14 +357,19 @@ export function ClientOps() {
             />
           )}
 
-          {/* ── OUTREACH (W2): per-client DM/InMail list + waiting-on-response ── */}
-          <OutreachView clientId={client.client_id} company={client.company} />
-
-          {/* ── PARALLEL: lead-magnet line (graft 2 rollup + per-LM cards) ──── */}
-          <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} onSwapCover={onSwapCover} onNote={reload} />
-
-          {/* ── Client activity feed ──────────────────────────────────────── */}
+          {/* ── Client activity feed (their actions on the content) ────────── */}
           <ActionsFeed actions={actions} unseen={actionsUnseen} onMarkSeen={onMarkActionsSeen} err={errors.actions} />
+          </>)}
+
+          {opsTab === 'outreach' && (
+            /* ── OUTREACH (W2): per-client DM/InMail list + waiting-on-response ── */
+            <OutreachView clientId={client.client_id} company={client.company} />
+          )}
+
+          {opsTab === 'leads' && (
+            /* ── LEADS: the lead-magnet line + capture funnel (graft 2 rollup + per-LM cards) ── */
+            <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} onSwapCover={onSwapCover} onNote={reload} />
+          )}
         </>
       )}
     </div>
@@ -932,6 +956,12 @@ const CSS = `
 .ec .co2-health { margin-bottom:1.6rem; }
 @media (max-width:1080px){ .ec .co2-health{ grid-template-columns:repeat(3,1fr)!important; } .ec .co2-health .ws-tally-tile:nth-child(4){ border-left:0; } .ec .co2-health .ws-tally-tile:nth-child(n+4){ border-top:1px solid var(--ec-rule); } }
 @media (max-width:560px){ .ec .co2-health{ grid-template-columns:repeat(2,1fr)!important; } .ec .co2-health .ws-tally-tile:nth-child(odd){ border-left:0; } .ec .co2-health .ws-tally-tile:nth-child(n+3){ border-top:1px solid var(--ec-rule); } .ec .co2-health .ws-tally-tile:nth-child(5){ grid-column:span 2; } }
+
+/* Cockpit area tabs: Content / Outreach / Leads */
+.ec .co2-optabs { display:flex; gap:0; border-bottom:1px solid var(--ec-rule-strong); margin:0 0 1.4rem; }
+.ec .co2-optab { font-family:var(--ec-sans); font-size:12px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--ec-mutedc); background:transparent; border:0; border-bottom:2px solid transparent; padding:0.7rem 1.1rem; margin-bottom:-1px; cursor:pointer; transition:color 0.15s ease, border-color 0.15s ease; }
+.ec .co2-optab:hover { color:var(--ec-ink); }
+.ec .co2-optab--on { color:var(--ec-ink); border-bottom-color:var(--ec-ink); }
 
 /* HERO stage strip (B chassis) */
 .ec .co2-line { display:flex; align-items:stretch; border-top:3px solid var(--ec-ink); border-bottom:1px solid var(--ec-rule-strong); margin-bottom:0.5rem; }
