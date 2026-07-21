@@ -4,6 +4,7 @@ import {
   useClientOutreach,
   useClientPendingDrafts,
   approveRiseDraft,
+  editRiseDraft,
   fmtDate,
   ageLabel,
   GATE,
@@ -96,13 +97,13 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
   const replyDrafts = (pendingDrafts || []).filter((d) => d.kind === 'reply').length;
   const anyArmed = !!data?.armed;
 
-  // Pending responses come first: land on the Drafts view the moment a reply someone
-  // is owed is waiting (Ivan: "first thing that appears"). Fires once, never fights nav.
+  // Drafts waiting on you come first: land on the Drafts view the moment ANY draft is
+  // waiting (Ivan: "I want first to see the draft waiting on me"). Fires once, never fights nav.
   const didAutoLand = useRef(false);
   useEffect(() => {
     if (didAutoLand.current || pendingDrafts == null) return;
-    if (replyDrafts > 0) { setMode('drafts'); didAutoLand.current = true; }
-  }, [pendingDrafts, replyDrafts]);
+    if (totalDrafts > 0) { setMode('drafts'); didAutoLand.current = true; }
+  }, [pendingDrafts, totalDrafts]);
 
   return (
     <section className="co2-laneblock co3-root">
@@ -191,15 +192,28 @@ function DraftRow({ d, company, onApproved }: { d: PendingDraft; company: string
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [done, setDone] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(d.text || '');
+  const [draft, setDraft] = useState(d.text || '');   // the persisted, displayed body
   const meta = KIND_META[d.kind] || KIND_META.draft;
   const send = async () => {
-    if (busy || done) return;
+    if (busy || done || editing) return;
     if (!window.confirm(`Approve and send this ${meta.label} to ${d.name || 'this lead'}? It sends from the client's seat.`)) return;
     setBusy(true); setNote('');
     const r = await approveRiseDraft(d.message_id);
     setBusy(false);
     if (r.ok) { setDone(true); setNote(r.note || 'Approved.'); setTimeout(onApproved, 1200); }
     else setNote(r.note || r.error || 'Could not approve.');
+  };
+  const saveEdit = async () => {
+    if (busy) return;
+    const t = text.trim();
+    if (t.length < 3) { setNote('Draft is too short.'); return; }
+    setBusy(true); setNote('');
+    const r = await editRiseDraft(d.message_id, t);
+    setBusy(false);
+    if (r.ok) { setDraft(t); setEditing(false); setNote('Saved.'); }
+    else setNote(r.error === 'not_a_pending_draft' ? 'Already sent, can’t edit.' : (r.error || 'Could not save.'));
   };
   return (
     <div className="co3-draft">
@@ -229,11 +243,35 @@ function DraftRow({ d, company, onApproved }: { d: PendingDraft; company: string
           <div className="co3-trigger-t">“{d.inbound.text}”</div>
         </div>
       ))}
-      <div className="co3-draft-body co3-draft-body--reply">{d.text}</div>
+      {editing ? (
+        <textarea
+          className="co3-draft-edit"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={Math.max(3, Math.min(12, text.split('\n').length + 1))}
+          autoFocus
+        />
+      ) : (
+        <div className="co3-draft-body co3-draft-body--reply">{draft}</div>
+      )}
       <div className="co3-draft-row">
-        <button className="co3-send-btn" disabled={busy || done} onClick={send} title="Approve and send">
-          {done ? 'Approved ✓' : busy ? 'Approving…' : 'Approve & send'}
-        </button>
+        {editing ? (
+          <>
+            <button className="co3-send-btn" disabled={busy} onClick={saveEdit} title="Save edits">
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+            <button className="co3-edit-btn" disabled={busy} onClick={() => { setText(draft); setEditing(false); setNote(''); }}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="co3-send-btn" disabled={busy || done} onClick={send} title="Approve and send">
+              {done ? 'Approved ✓' : busy ? 'Approving…' : 'Approve & send'}
+            </button>
+            {!done && <button className="co3-edit-btn" onClick={() => { setText(draft); setEditing(true); setNote(''); }} title="Edit before sending">Edit</button>}
+          </>
+        )}
         {!d.has_link && d.kind !== 'dm1' && <span className="co3-draft-warn">no scan link in this draft</span>}
         {note && <span className="co3-send-note">{note}</span>}
       </div>
@@ -572,6 +610,11 @@ const CSS = `
 .ec .co3-bubble-t { font-family:var(--ec-clinical); font-size:12.5px; line-height:1.5; color:var(--ec-body); white-space:pre-wrap; }
 .ec .co3-draft-body { font-family:var(--ec-sans); font-size:13.5px; line-height:1.55; color:var(--ec-body); white-space:pre-wrap; background:var(--ec-paper); border:1px solid var(--ec-rule); padding:0.6rem 0.7rem; }
 .ec .co3-draft-body--reply { border-left:3px solid var(--ec-ink); }
+.ec .co3-draft-edit { width:100%; box-sizing:border-box; font-family:var(--ec-sans); font-size:13.5px; line-height:1.55; color:var(--ec-ink); background:#fff; border:1px solid var(--ec-ink); border-left:3px solid var(--ec-ink); padding:0.6rem 0.7rem; resize:vertical; }
+.ec .co3-draft-edit:focus { outline:none; box-shadow:inset 0 0 0 1px var(--ec-ink); }
+.ec .co3-edit-btn { font-family:var(--ec-sans); font-size:12px; font-weight:600; color:var(--ec-ink); background:transparent; border:1px solid var(--ec-rule-strong); padding:0.4rem 0.7rem; cursor:pointer; }
+.ec .co3-edit-btn:hover { background:rgba(19,18,16,0.05); }
+.ec .co3-edit-btn:disabled { opacity:0.5; cursor:default; }
 .ec .co3-draft-row { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; }
 .ec .co3-draft-warn { font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
 

@@ -358,6 +358,14 @@ export async function approveRiseDraft(messageId: string): Promise<{ ok: boolean
   return { ok: !!r.ok, note: r.note, error: r.error };
 }
 
+/** Edit a pending draft's text before approving it. Gated + pending-only server-side. */
+export async function editRiseDraft(messageId: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('operator_edit_rise_draft', { p_gate: GATE, p_message_id: messageId, p_text: text });
+  if (error) return { ok: false, error: error.message };
+  const r = (data as { ok?: boolean; error?: string }) || {};
+  return { ok: !!r.ok, error: r.error };
+}
+
 // ── Overview hook ────────────────────────────────────────────────────────────
 export function useClientsOverview() {
   const [clients, setClients] = useState<ClientOverview[] | null>(null);
