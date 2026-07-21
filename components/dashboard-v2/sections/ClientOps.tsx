@@ -3,6 +3,7 @@ import '../editorial-cockpit.css';
 import '../review/worksurface.css';
 import QAVerdictPanel from '../../dashboard/QAVerdictPanel';
 import AgentLogFeed from '../../dashboard/AgentLogFeed';
+import PostCalendarView, { type CalendarItem, type CalendarTone } from '../../dashboard/PostCalendarView';
 import {
   useClientsOverview,
   useClientDetail,
@@ -74,7 +75,7 @@ export function ClientOps() {
 
   const {
     drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates,
-    reload, onToggle, onSchedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen,
+    reload, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen,
   } = useClientDetail(client);
 
   const [stage, setStage] = useState<StageKey>('review');
@@ -344,7 +345,7 @@ export function ClientOps() {
           )}
 
           {stage === 'buffer' && (
-            <BufferLane scheduled={scheduledDrafts} bufferDepth={A.bufferDepth} nextPublish={A.nextPublish} queue={queue} loading={drafts == null} />
+            <BufferLane scheduled={scheduledDrafts} bufferDepth={A.bufferDepth} nextPublish={A.nextPublish} queue={queue} loading={drafts == null} onReschedule={onReschedule} />
           )}
 
           {stage === 'live' && (
@@ -639,17 +640,65 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
   );
 }
 
-// ── Buffer lane: the board queue itself + any dated scheduled drafts ──────────
-function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading }: {
+// Client-draft status → calendar tone (the calendar's own union). Anything
+// unexpected falls back to 'scheduled' so a chip still renders.
+const CAL_TONES: CalendarTone[] = ['idea', 'generating', 'review', 'approved', 'scheduled', 'published', 'disqualified', 'error', 'failed', 'cancelled'];
+const toCalTone = (s: string): CalendarTone => ((CAL_TONES as string[]).includes(s) ? (s as CalendarTone) : 'scheduled');
+
+// ── Buffer lane: a drag-to-reschedule calendar of the scheduled buffer + the
+// board queue ledger. Posts read emerald, lead-magnet launches read violet.
+// Dragging a chip re-times it through the SAME gated operator_schedule_draft
+// RPC the "Schedule to buffer" button already uses — client writes stay gated.
+function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading, onReschedule }: {
   scheduled: Draft[]; bufferDepth: number | null; nextPublish: string | null;
   queue: ReturnType<typeof useClientDetail>['queue']; loading: boolean;
+  onReschedule: (d: Draft, isoDate: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const entries = queue || [];
+  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+
+  // Every scheduled draft carries a date → it's a calendar chip. LM launches
+  // render as 'lm' (violet) so posts and lead magnets read apart at a glance.
+  const calItems: CalendarItem[] = useMemo(
+    () => scheduled
+      .filter((d) => d.scheduled_at)
+      .map((d) => ({
+        id: d.id,
+        title: stripPrefix(d.title) || '(untitled)',
+        kind: isLmLaunch(d) ? 'lm' as const : 'post' as const,
+        scheduledAt: d.scheduled_at,
+        tone: toCalTone(d.status),
+        reschedulable: d.status === 'review' || d.status === 'scheduled',
+      })),
+    [scheduled],
+  );
+  const byId = useMemo(() => new Map(scheduled.map((d) => [d.id, d])), [scheduled]);
+  const handleCalReschedule = useCallback(async (item: CalendarItem, isoDate: string): Promise<void> => {
+    const d = byId.get(item.id);
+    if (d) await onReschedule(d, isoDate);
+  }, [byId, onReschedule]);
+
   return (
     <section className="co2-laneblock">
-      <div className="ec-kicker">In buffer — the board's publish queue · dates land when a draft is scheduled</div>
+      <div className="co2-feed-head">
+        <div className="ec-kicker" style={{ margin: 0 }}>In buffer — drag a post to any day to re-time it · dates drive the client board's cadence</div>
+        <div className="co2-optabs" role="tablist" aria-label="Buffer view" style={{ margin: 0 }}>
+          {([['calendar', 'Calendar'], ['list', 'List']] as const).map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={view === k}
+              className={`co2-optab ${view === k ? 'co2-optab--on' : ''}`} onClick={() => setView(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       {loading ? (
         <div className="ws-loading">Loading…</div>
+      ) : view === 'calendar' ? (
+        calItems.length === 0 ? (
+          <div className="co2-emptyline">Nothing dated in the buffer yet — schedule a reviewed draft to place it on the calendar.</div>
+        ) : (
+          <PostCalendarView items={calItems} onOpenItem={() => {}} onReschedule={handleCalReschedule} />
+        )
       ) : entries.length === 0 && scheduled.length === 0 ? (
         <div className="co2-emptyline">Buffer empty — schedule a reviewed draft to queue it.</div>
       ) : (

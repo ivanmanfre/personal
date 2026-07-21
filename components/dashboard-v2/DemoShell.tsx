@@ -10,6 +10,7 @@ import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
 import { ClientOps } from './sections/ClientOps';
+import { Calendar } from './sections/Calendar';
 import { LiveProvider } from './live/LiveProvider';
 import { useNavBadges } from './useNavBadges';
 import type { NavItem, SectionId } from './types';
@@ -72,6 +73,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     group: 'content',
     items: [
       { id: 'posts', name: 'Posts', render: host(<PostWorkSurface />) },
+      { id: 'calendar', name: 'Calendar', render: () => <Calendar /> },
       { id: 'lmstudio', name: 'LM Studio', render: host(<LmWorkSurface />) },
       { id: 'styles', name: 'Styles', render: () => <StylesLive /> },
       { id: 'prompts', name: 'Prompts', render: host(<PromptLibraryPanel />) },

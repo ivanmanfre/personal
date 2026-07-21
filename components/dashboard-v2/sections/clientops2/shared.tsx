@@ -445,6 +445,31 @@ export function useClientDetail(client: ClientOverview | null) {
     return { ok: false, error: err };
   }, []);
 
+  // Drag-to-a-chosen-day reschedule. Reuses the SAME gated RPC as onSchedule —
+  // the only difference is the operator picks a day on the calendar instead of
+  // the auto next-buffer slot, and it also re-times an already-scheduled draft.
+  // Preserves the draft's existing time-of-day; defaults new schedules to 09:00.
+  const onReschedule = useCallback(async (d: Draft, isoDate: string): Promise<{ ok: boolean; error?: string }> => {
+    const [y, m, day] = isoDate.split('-').map(Number);
+    const base = d.scheduled_at ? new Date(d.scheduled_at) : new Date();
+    base.setFullYear(y, m - 1, day);
+    if (!d.scheduled_at) base.setHours(9, 0, 0, 0);
+    const publishAt = base.toISOString();
+    const prev = { status: d.status, scheduled_at: d.scheduled_at };
+    setDrafts((cur) => cur?.map((x) => (x.id === d.id ? { ...x, status: 'scheduled', scheduled_at: publishAt } : x)) ?? cur);
+    const res = await supabase.rpc('operator_schedule_draft', { p_gate: GATE, p_draft_id: d.id, p_publish_at: publishAt });
+    if (res.data?.ok) {
+      const scheduledAt = res.data.scheduled_at as string | undefined;
+      if (scheduledAt) setDrafts((cur) => cur?.map((x) => (x.id === d.id ? { ...x, scheduled_at: scheduledAt } : x)) ?? cur);
+      return { ok: true };
+    }
+    // Roll the optimistic move back on failure.
+    setDrafts((cur) => cur?.map((x) => (x.id === d.id ? { ...x, ...prev } : x)) ?? cur);
+    const err: string | undefined = res.error?.message || res.data?.error;
+    if (err !== 'awaiting_media') setErrors((e) => ({ ...e, drafts: err || 'reschedule failed' }));
+    return { ok: false, error: err };
+  }, []);
+
   const onDecideIdea = useCallback(async (idea: Idea, decision: 'approved' | 'rejected') => {
     setIdeas((prev) => prev?.filter((x) => x.id !== idea.id) ?? prev);
     const res = await supabase.rpc('operator_approve_idea', { p_gate: GATE, p_idea_id: idea.id, p_decision: decision });
@@ -499,7 +524,7 @@ export function useClientDetail(client: ClientOverview | null) {
     [drafts, ideas, lms, queue],
   );
 
-  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen };
+  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen };
 }
 
 // ── Client-faithful LinkedIn preview ─────────────────────────────────────────
