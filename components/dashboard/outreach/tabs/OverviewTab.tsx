@@ -5,6 +5,7 @@ import { feedRollup, warmVsCold } from '../feedHelpers';
 import { NextUpCard } from '../NextUpCard';
 import { OutreachTimingHeatmap } from '../OutreachTimingHeatmap';
 import { MessagingLanes } from '../MessagingLanes';
+import { AnchorYieldCard } from '../AnchorYieldCard';
 
 // ── Overview window constant ─────────────────────────────────────────────────
 // Fixed campaign-start date. All overview KPI tiles use prospects whose
@@ -186,6 +187,9 @@ export const OverviewTab: React.FC<Props> = ({
         {/* Timing heatmap — best day/slot to send */}
         <OutreachTimingHeatmap />
       </div>
+
+      {/* Anchor yield — per-anchor harvest productivity (prune/keep the roster) */}
+      <AnchorYieldCard />
 
       {/* Action queue — replies waiting + next sends (this is the inbox fold) */}
       <NextUpCard
