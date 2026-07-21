@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import {
   useClientOutreach,
@@ -93,7 +93,16 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
   const totalProspects = prospects.length;
   const totalWaiting = needsReply.length + awaiting.length;
   const totalDrafts = (pendingDrafts || []).length;
+  const replyDrafts = (pendingDrafts || []).filter((d) => d.kind === 'reply').length;
   const anyArmed = !!data?.armed;
+
+  // Pending responses come first: land on the Drafts view the moment a reply someone
+  // is owed is waiting (Ivan: "first thing that appears"). Fires once, never fights nav.
+  const didAutoLand = useRef(false);
+  useEffect(() => {
+    if (didAutoLand.current || pendingDrafts == null) return;
+    if (replyDrafts > 0) { setMode('drafts'); didAutoLand.current = true; }
+  }, [pendingDrafts, replyDrafts]);
 
   return (
     <section className="co2-laneblock co3-root">
@@ -104,14 +113,14 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
           Outreach — every DM and InMail the system will send for {company}, with replies pulled in
         </div>
         <div className="co3-tabs" role="tablist" aria-label="Outreach views">
-          <button role="tab" aria-selected={mode === 'list'} className={`co3-tab ${mode === 'list' ? 'co3-tab--on' : ''}`} onClick={() => setMode('list')}>
-            All outreach{totalProspects ? ` · ${totalProspects}` : ''}
+          <button role="tab" aria-selected={mode === 'drafts'} className={`co3-tab ${mode === 'drafts' ? 'co3-tab--on' : ''} ${totalDrafts ? 'co3-tab--flag' : ''}`} onClick={() => setMode('drafts')}>
+            {replyDrafts ? 'Pending responses' : 'Drafts waiting on you'}{totalDrafts ? ` · ${totalDrafts}` : ''}
           </button>
           <button role="tab" aria-selected={mode === 'waiting'} className={`co3-tab ${mode === 'waiting' ? 'co3-tab--on' : ''}`} onClick={() => setMode('waiting')}>
             Waiting on response{totalWaiting ? ` · ${totalWaiting}` : ''}
           </button>
-          <button role="tab" aria-selected={mode === 'drafts'} className={`co3-tab ${mode === 'drafts' ? 'co3-tab--on' : ''} ${totalDrafts ? 'co3-tab--flag' : ''}`} onClick={() => setMode('drafts')}>
-            Drafts waiting on you{totalDrafts ? ` · ${totalDrafts}` : ''}
+          <button role="tab" aria-selected={mode === 'list'} className={`co3-tab ${mode === 'list' ? 'co3-tab--on' : ''}`} onClick={() => setMode('list')}>
+            All outreach{totalProspects ? ` · ${totalProspects}` : ''}
           </button>
           <button className="ws-tool-icon" onClick={() => { reload(); reloadDrafts(); }} title="Refresh outreach">↻</button>
         </div>
