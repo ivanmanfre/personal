@@ -3555,11 +3555,6 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
     if (entry.promo) entry.promo.email = { subject: subjDraft, body: bodyDraft }; else (entry as LeadMagnetEntry).promo = { email: { subject: subjDraft, body: bodyDraft } };
     setEditing(null);
   };
-  // Promo kit (live): only REAL related copy renders. The orbit gift-touch DM belongs to
-  // this asset when the orbit plan's gift points at the same URL.
-  const giftDms = (live && url && board.outreach?.orbit_plan?.gift?.url === url)
-    ? (board.outreach?.orbit_plan?.samples || [])
-    : [];
   // The real launch post for this LM, when one is queued (lm_ref points back at this asset).
   const launchPost = live ? (board.queue || []).find((q) => q.lm_ref === entry.id) : undefined;
   // Cover lightbox: the drawer cover is a comfortable size, click opens it full.
@@ -3656,21 +3651,12 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
             <div className="mt-6">
               <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The promo kit</div>
 
-              {/* DMs: the real orbit gift-touch when it belongs to this asset, plus the
-                  keyword-delivery DM (the note we auto-send when someone comments the LM's
-                  keyword) — editable in place. */}
-              {(giftDms.length > 0 || entry.promo?.dm || onEditPromo) && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {giftDms.map((sm, i) => (
-                    <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                      {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>DM · {sm.label}</div>}
-                      <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
-                    </div>
-                  ))}
-                  {(entry.promo?.dm || onEditPromo) && (
+              {/* Touch 1 — the single delivery DM we auto-send after someone comments the LM's
+                  keyword. No outreach sequence renders here; the client-engager lane owns that. */}
+              {(entry.promo?.dm || onEditPromo) && (
                     <div className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <div className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{gateKeyword ? `DM sent when they comment “${gateKeyword}”` : 'DM sent when they comment your keyword'}</div>
+                        <div className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{gateKeyword ? `DM sent after they comment “${gateKeyword}”` : 'DM sent after they comment your keyword'}</div>
                         {onEditPromo && editing !== 'dm' && (
                           <button onClick={() => { setDmDraft(entry.promo?.dm || ''); setPromoErr(''); setEditing('dm'); }} className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.08em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer' }}>Edit</button>
                         )}
@@ -3693,10 +3679,8 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                       )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* The delivery email, rendered as mail — editable in place. */}
+              {/* Touch 2 — the delivery email, sent after they open the landing page. Editable in place. */}
               {(entry.promo?.email || onEditPromo) && (
                 <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
                   {editing === 'email' ? (
@@ -3726,7 +3710,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                         ? <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.email.body}</p>
                         : <p className="px-4 py-4 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>No delivery email yet. Edit to write the email that sends your lead magnet.</p>}
                       <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                        Saved as your delivery template. Edit it any time.
+                        Sent after they open your landing page. Saved as your delivery template — edit it any time.
                       </div>
                     </>
                   )}
@@ -3759,7 +3743,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                 </div>
               ) : null}
 
-              {!entry.promo?.email && !entry.promo?.announcement && !launchPost && giftDms.length === 0 && !entry.promo?.dm && (
+              {!entry.promo?.email && !entry.promo?.announcement && !launchPost && !entry.promo?.dm && (
                 <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
                   The feed announcement and outreach touches draft into your buffer when its launch slot is scheduled. They land here as they exist.
                 </p>
