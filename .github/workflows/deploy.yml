@@ -164,3 +164,54 @@ jobs:
             git pull --rebase origin main
           done
           git push origin main
+
+  # Rise scan mirror: white-label the dtc_growth scans onto Rise's own domain,
+  # served at resources.risedtc.com/scan/ (real files in the rise-dtc-resources
+  # repo — no redirects). Same source, third build with base=/scan/, ONLY
+  # dtc_growth scan routes prerendered (content_system scans never land on
+  # Rise's domain). No Ivan assets are copied: DTC reports reference only the
+  # remote Rise logo + per-brand OG, never /ivan-portrait* or /content-system/*.
+  rise-scan-mirror:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: rise-scan-mirror
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install chromium --with-deps
+
+      - run: npm run build && RISE_SCAN_MIRROR=1 node scripts/prerender.mjs
+        env:
+          VITE_BASE: /scan/
+          VITE_SCAN_ORIGIN: https://resources.risedtc.com
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
+          VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
+
+      - name: Push rise scan mirror to rise-dtc-resources
+        env:
+          MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/rise-dtc-resources.git" /tmp/rise-site
+          rsync -a --delete --exclude CNAME dist/ /tmp/rise-site/scan/
+          # Bare /scan/ would serve the SPA shell (Ivan-branded default OG) on Rise's
+          # white-label domain — replace it with a redirect to Rise's resources home.
+          printf '%s\n' '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>RISE DTC</title></head><body><script>location.replace("/")</script></body></html>' > /tmp/rise-site/scan/index.html
+          cd /tmp/rise-site
+          git add scan/
+          if git diff --cached --quiet; then echo "rise scan mirror unchanged"; exit 0; fi
+          git -c user.name="rise-scan-mirror-bot" -c user.email="noreply@ivanmanfredi.com" commit -m "rise scan mirror: sync from personal-site $GITHUB_SHA"
+          for i in 1 2 3 4 5; do
+            git push origin main && exit 0
+            git pull --rebase origin main
+          done
+          git push origin main

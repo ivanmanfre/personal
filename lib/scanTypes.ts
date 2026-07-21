@@ -174,6 +174,10 @@ export interface DtcBrand {
   font_heading?: string;     // Sora
   font_body?: string;        // Manrope
   booking_url: string;       // meetings.hubspot.com/mattan5
+  // Brand-level OG fallback (Rise's own 1200x630 share card). Without it a scan row
+  // with og_image_url=null inherits index.html's default og:image — Ivan's portrait —
+  // which must never unfurl on Rise's white-label domain.
+  og_image_url?: string | null;
 }
 
 // One source-anchored finding. Every number in evidence must trace to the fact table.

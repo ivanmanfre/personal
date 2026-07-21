@@ -278,7 +278,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     title: `A growth scan for ${companyName}`,
     description: clean(d.hero_hook) || `A public read of ${companyName}'s store, and where the growth is.`,
     canonical: `${(import.meta as any).env?.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
-    ogImage: d.og_image_url || undefined,
+    ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
   });
 

@@ -185,6 +185,33 @@ if (SCAN_MIRROR) {
   console.log(`[prerender] SCAN_MIRROR: ${ROUTES.length} scan routes only`);
 }
 
+// RISE_SCAN_MIRROR=1: white-label mirror of ONLY Rise's dtc_growth scans, destined for the
+// rise-dtc-resources repo's scan/ dir, served at resources.risedtc.com/scan/ (so prospect-facing
+// scan links live on Rise's own domain, not ivanmanfredi.com). Same /scan strip + per-scan OG as
+// SCAN_MIRROR; the difference is the route set is filtered to dtc_growth slugs only (content_system
+// scans stay off Rise's domain).
+const RISE_SCAN_MIRROR = process.env.RISE_SCAN_MIRROR === '1';
+if (RISE_SCAN_MIRROR) {
+  const sUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const sKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  let dtc = [];
+  if (sUrl && sKey) {
+    try {
+      const res = await fetch(
+        `${sUrl}/rest/v1/scans?status=eq.complete&matched_offer=eq.dtc_growth&company_slug=not.is.null&select=company_slug`,
+        { headers: { apikey: sKey, Authorization: `Bearer ${sKey}` } },
+      );
+      if (res.ok) dtc = (await res.json()).map((r) => r.company_slug).filter(Boolean);
+      else console.warn(`[prerender] RISE_SCAN_MIRROR enum HTTP ${res.status}`);
+    } catch (e) {
+      console.warn('[prerender] RISE_SCAN_MIRROR enum failed:', e.message);
+    }
+  }
+  const want = new Set(dtc.map((s) => `/scan/${s}`));
+  ROUTES.splice(0, ROUTES.length, ...ROUTES.filter((r) => want.has(r)));
+  console.log(`[prerender] RISE_SCAN_MIRROR: ${ROUTES.length} dtc_growth scan routes only`);
+}
+
 // CLIENT_MIRROR=1: the build (VITE_BASE=/client/) is destined for the
 // inboundonsteroids-site repo's client/ dir, served at inboundonsteroids.com/client/.
 // Only /client routes render, and the on-disk path strips the leading /client so dist/
@@ -302,7 +329,14 @@ process.on('SIGTERM', () => shutdown(143));
         await page
           .waitForFunction(() => /^(A content system|An inbound engine|A growth scan) for /.test(document.title), { timeout: 15000 })
           .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
-        await page.waitForTimeout(400);
+        // Bake the full report body, not just OG tags. The scan content arrives via a
+        // client-side Supabase fetch, so without this wait the baked #root is empty and
+        // a visitor with a blocker/slow network sees a blank page. Every other route
+        // already bakes its body (they render synchronously); this aligns scans.
+        await page
+          .waitForFunction(() => ((document.getElementById('root') || {}).innerText || '').length > 1500, { timeout: 20000 })
+          .catch(() => console.error(`[prerender][${route}] scan body under threshold — baking whatever rendered`));
+        await page.waitForTimeout(600);
       }
 
       // Client boards fetch their row via the get_client_board RPC before useMetadata()
@@ -330,7 +364,7 @@ process.on('SIGTERM', () => shutdown(143));
       // Strip any query string (e.g. /client/:slug?k=<token>) from the on-disk path:
       // GitHub Pages resolves the file by path only, so this maps to
       // dist/<path>/index.html and the token stays out of the directory name.
-      const outPath = SCAN_MIRROR
+      const outPath = (SCAN_MIRROR || RISE_SCAN_MIRROR)
         ? (route.split('?')[0].replace(/^\/scan/, '') || '/')
         : CLIENT_MIRROR
         ? (route.split('?')[0].replace(/^\/client/, '') || '/')
