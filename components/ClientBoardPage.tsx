@@ -358,6 +358,25 @@ function fmtSchedLA(scheduledAt?: string, publishDate?: string): string {
   }
   return fmtDay(publishDate);
 }
+/** Turn an LA wall-clock date (YYYY-MM-DD) + time (HH:MM) into a real UTC ISO instant.
+ *  The client always enters + reads time in America/Los_Angeles; the offset is read from
+ *  the zone so it stays correct across DST. */
+function laWallToUtcISO(dateStr: string, timeStr: string): string {
+  const probe = new Date(`${dateStr}T12:00:00Z`);
+  const asLA = new Date(probe.toLocaleString('en-US', { timeZone: CLIENT_TZ }));
+  const asUTC = new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offMin = Math.round((asUTC.getTime() - asLA.getTime()) / 60000); // +420 for PDT
+  const [hh, mm] = timeStr.split(':').map((n) => parseInt(n, 10));
+  const base = new Date(`${dateStr}T00:00:00Z`).getTime();
+  return new Date(base + (hh * 60 + mm + offMin) * 60000).toISOString();
+}
+/** The LA date parts (YYYY-MM-DD) + time (HH:MM) of a UTC instant, for prefilling inputs. */
+function laParts(scheduledAt?: string): { date: string; time: string } {
+  const d = scheduledAt ? new Date(scheduledAt) : new Date();
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  return { date, time };
+}
 /** Just the LA clock time ("10:00 AM PT") for compact chips. */
 function fmtTimeLA(scheduledAt?: string): string {
   if (!scheduledAt) return '';
@@ -399,7 +418,8 @@ function resolveLaunchLm(q: Pick<QueueItem, 'lm_launch' | 'lm_ref' | 'source_det
   if (!lm && slug) lm = lms.find((e) => (e.url || '').includes(slug));
   if (lm && lm.url) return { title: lm.title, landing: lm.url, cover: (lm.covers && lm.covers[0]) || lm.cover_url };
   if (slug && /^[a-z0-9-]+$/.test(slug)) {
-    const landing = `https://resources.ivanmanfredi.com/${slug}/`;
+    // Client-facing: always the client's own white-label domain, never the agency host.
+    const landing = `https://resources.risedtc.com/${slug}/`;
     return { title: sd?.label || q.title || 'Lead magnet', landing, cover: `${landing}assets/cover.jpg` };
   }
   return null;
@@ -684,7 +704,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <span className="min-w-0">
           <span className="block truncate font-semibold" style={{ fontSize: size === 'lg' ? 13.5 : 12.5, color: '#111' }}>{name}</span>
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11.5 : 10.5, color: '#666' }}>{founder?.headline || `Founder, ${board.company_name}`} · 1st</span>
-          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · in the buffer' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
+          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · not scheduled yet' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
       {item.body && (
@@ -1276,7 +1296,7 @@ function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }
   );
 }
 
-function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
+function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
@@ -1292,6 +1312,12 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
   onRefillDay?: (id: string) => void;
   /** Unschedule a post (clears its slot, returns it to the buffer bucket). */
   onBackToBuffer?: (id: string) => void;
+  /** Take a scheduled post off its day AND hold the day empty (no auto-fill). */
+  onLeaveDayEmpty?: (id: string, date?: string) => void;
+  /** Clear a scheduled day (unschedule the post; it returns to the ready list). */
+  onClearDay?: (id: string, date?: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live board: save an edit to an LM's delivery email / keyword DM (folded LM drawer). */
+  onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
   flashId: string | null;
   view: ContentView;
   setView: (v: ContentView) => void;
@@ -1406,7 +1432,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
       : q.promise || '';
     // Compact live date: the scheduled slot in Mattan's timezone, or the buffer.
     const dateCol = live
-      ? (isScheduled(q) ? fmtSchedLA(q.scheduled_at, q.publish_date) : 'in the buffer')
+      ? (isScheduled(q) ? fmtSchedLA(q.scheduled_at, q.publish_date) : 'not scheduled')
       : (q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'date at sign-off');
     return (
       <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -1418,11 +1444,17 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
           style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
         >
           <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.35, color: INK_SOFT }}>{dateCol}</span>
-          <span className="min-w-0">
-            {/* Live: the hook wraps — the reader can tell what the post is about from the row.
-                Preview keeps the single-line ledger look. Compact type for density. */}
-            <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: live ? 1.3 : undefined, color: INK }}>{q.hook || q.title}</span>
-            {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 11.5, color: INK_MUTE }}>{provenance}</span>}
+          <span className="flex min-w-0 items-start gap-2.5">
+            {/* Attached photo (manual or auto-rotated lifestyle): a small thumbnail on the card. */}
+            {q.media_url && (
+              <img src={q.media_url} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 40, height: 40, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            )}
+            <span className="min-w-0">
+              {/* Live: the hook wraps — the reader can tell what the post is about from the row.
+                  Preview keeps the single-line ledger look. Compact type for density. */}
+              <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: live ? 1.3 : undefined, color: INK }}>{q.hook || q.title}</span>
+              {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 11.5, color: INK_MUTE }}>{provenance}</span>}
+            </span>
           </span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: mark.color }}>
@@ -1461,25 +1493,21 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                 <div className="flex flex-col gap-3 pt-1.5">
                   {stage === 'review' && !skipped && live ? (
                     <>
-                      {/* Two big, clearly-labeled actions — Edit and Remove — instead of a row
-                          of tiny verbose links. Source line names the honest provenance. */}
+                      {/* One clean set of choices — no buffer jargon. Edit the words, or clear
+                          the day (the post goes back to your ready posts). Time is edited from
+                          the post's own view. */}
                       <div className="flex flex-wrap items-center gap-2.5">
                         <button
                           onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }}
                           className="inline-flex min-h-[40px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
                           style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
                         >Edit</button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onRemove?.(q.id); }}
-                          className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                          style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
-                        >Remove</button>
                         {isScheduled(q) && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); onBackToBuffer?.(q.id); }}
-                            className="text-[13px] font-medium"
-                            style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}
-                          >Back to buffer</button>
+                            onClick={(e) => { e.stopPropagation(); onClearDay?.(q.id, q.publish_date); }}
+                            className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                            style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                          >Clear this day</button>
                         )}
                       </div>
                       {chip?.quote && (
@@ -1488,7 +1516,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                         </p>
                       )}
                       <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                        {isScheduled(q) ? `Scheduled for ${fmtSchedLA(q.scheduled_at, q.publish_date)}. Yours to change until it publishes.` : 'In the buffer, takes the next open slot.'}
+                        {isScheduled(q) ? <>Scheduled for {fmtSchedLA(q.scheduled_at, q.publish_date)}. <button onClick={(e) => { e.stopPropagation(); onOpen(q); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Edit time</button></> : 'Not on the calendar yet. Open it to give it a day and time.'}
                       </div>
                     </>
                   ) : stage === 'review' && !skipped ? (
@@ -1676,7 +1704,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                 )}
                 {bufferRows.length > 0 && (
                   <section>
-                    <LedgerSectionHead eyebrow="In the buffer" count={bufferRows.length} blurb="Written and waiting. Each takes the next open slot unless you schedule or remove it." accent={accent} />
+                    <LedgerSectionHead eyebrow="Ready to schedule" count={bufferRows.length} blurb="Written and waiting. Add one to any open day, or remove it." accent={accent} />
                     {bufferRows.map(renderLedgerRow)}
                   </section>
                 )}
@@ -1824,7 +1852,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
       )}
 
       {lmDetail && (
-        <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
+        <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} onEditPromo={live ? onEditPromo : undefined} />
       )}
     </div>
   );
@@ -1842,8 +1870,12 @@ interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
  *  so a launch post reads as ready (not "where is the page?"). Cover is 404-safe: it
  *  self-hides on load error, and the links still show. Uses theme tokens, so it re-skins
  *  in blackbox automatically. */
-function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; cover?: string }; accent: string }) {
+function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; resource?: string; cover?: string }; accent: string }) {
   const [coverOk, setCoverOk] = useState(true);
+  const linkStyle: React.CSSProperties = { fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 };
+  // Only show two links when the landing and resource genuinely differ. When they are the
+  // same page (the usual case), show ONE link so it never reads as two identical links.
+  const twoLinks = !!lm.resource && lm.resource !== lm.landing;
   return (
     <div className="mt-1 rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
       <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>The lead magnet it launches</div>
@@ -1854,8 +1886,14 @@ function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; co
         <div className="min-w-0">
           <div className="truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: INK }}>{lm.title}</div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Landing page →</a>
-            <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Resource →</a>
+            {twoLinks ? (
+              <>
+                <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={linkStyle}>Landing page →</a>
+                <a href={lm.resource} target="_blank" rel="noopener noreferrer" className="uppercase" style={linkStyle}>Resource →</a>
+              </>
+            ) : (
+              <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={linkStyle}>Open the lead magnet →</a>
+            )}
           </div>
         </div>
       </div>
@@ -1863,7 +1901,85 @@ function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; co
   );
 }
 
-function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
+/** Inline date + time editor, entered and shown in the client's timezone (LA / PT). Saves
+ *  the real UTC instant through onSave (client_board_set_schedule). Used directly on the
+ *  week card so the client changes the time without digging into a modal. */
+function ScheduleTimeEditor({ scheduledAt, accent, onSave, onCancel }: {
+  scheduledAt?: string; accent: string;
+  onSave: (iso: string) => Promise<{ ok: boolean; error?: string }>;
+  onCancel: () => void;
+}) {
+  const init = laParts(scheduledAt);
+  const [date, setDate] = useState(init.date);
+  const [time, setTime] = useState(init.time);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const ink = inkOn(accent);
+  const save = async () => {
+    if (!date) return;
+    setBusy(true); setErr('');
+    const r = await onSave(laWallToUtcISO(date, time || '09:00'));
+    setBusy(false);
+    if (!r.ok) { setErr(r.error === 'bad_date' ? 'Pick a date within the next year.' : (r.error || 'Could not save that. Try again.')); return; }
+    onCancel();
+  };
+  return (
+    <div className="rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }} onClick={(e) => e.stopPropagation()}>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE, marginBottom: 6 }}>Date &amp; time (your time, PT)</div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+        <button onClick={save} disabled={busy || !date} className="inline-flex min-h-[36px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold" style={{ background: accent, color: ink, border: 'none', cursor: 'pointer', opacity: busy || !date ? 0.6 : 1 }}>{busy ? 'Saving…' : 'Save time'}</button>
+        <button onClick={onCancel} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+      </div>
+      {err && <div className="mt-1.5 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
+    </div>
+  );
+}
+
+/** Picker to ADD a post to an empty day. Lists the ready (not-yet-scheduled) drafts; the
+ *  post most recently cleared from THIS day floats to the top so add-back is obvious. Picking
+ *  one schedules it to the day (default morning PT; the time is editable after). */
+function AddPostPicker({ ready, restoreFirst, accent, onPick, onCancel }: {
+  ready: QueueItem[]; restoreFirst?: string; accent: string;
+  onPick: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  onCancel: () => void;
+}) {
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+  const ordered = restoreFirst
+    ? [...ready.filter((q) => q.id === restoreFirst), ...ready.filter((q) => q.id !== restoreFirst)]
+    : ready;
+  const pick = async (id: string) => {
+    setBusy(id); setErr('');
+    const r = await onPick(id);
+    setBusy('');
+    if (!r.ok) { setErr(r.error || 'Could not add that. Try again.'); return; }
+    onCancel();
+  };
+  return (
+    <div className="mt-2 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+      {ordered.length === 0 ? (
+        <p style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>No ready posts to add yet. New drafts appear here as they are written.</p>
+      ) : ordered.map((q) => {
+        const isRestore = q.id === restoreFirst;
+        return (
+          <div key={q.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+            <span className="min-w-0">
+              {isRestore && <span className="mb-0.5 block uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: caText(accent) }}>the one you just cleared</span>}
+              <span className="block text-[13px] font-semibold" style={{ color: INK }}>{q.hook || q.title}</span>
+            </span>
+            <button onClick={() => pick(q.id)} disabled={!!busy} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy === q.id ? 'Adding…' : 'Add'}</button>
+          </div>
+        );
+      })}
+      {err && <div className="text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
+      <button onClick={onCancel} className="self-start text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+    </div>
+  );
+}
+
+function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   /** Live board: publishing runs from the buffer — no approve gate. The deck shows every
@@ -1879,6 +1995,14 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   onPickReplacement?: (id: string, item: PoolDraft) => void;
   /** Unschedule the focused post (clears its slot, returns it to the buffer bucket). */
   onBackToBuffer?: (id: string) => void;
+  /** Take a scheduled post off its day AND hold the day empty (no auto-fill). */
+  onLeaveDayEmpty?: (id: string, date?: string) => void;
+  /** Client schedule controls: set a post's exact time, clear a day, add a ready post to a day. */
+  onSetSchedule?: (id: string, iso: string) => Promise<{ ok: boolean; error?: string }>;
+  onClearDay?: (id: string, date?: string) => Promise<{ ok: boolean; error?: string }>;
+  onScheduleToDay?: (id: string, date: string) => Promise<{ ok: boolean; error?: string }>;
+  /** date (YYYY-MM-DD) → the draft id most recently cleared from that day (offered first on add). */
+  recentlyCleared?: Record<string, string>;
   /** Deliberately-empty slots (persist server-side, keyed by draft id OR day date). */
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (ref: string) => void;
@@ -2026,10 +2150,29 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   // (no weekend posting); an open weekday offers a direct "mark this day empty" so he can
   // hold it to post manually. Empty days offer a reopen. The panel is interactive, not a
   // fading toast.
-  const [dayPanel, setDayPanel] = useState<{ day: string; kind: 'weekend' | 'open' | 'empty' } | null>(null);
+  const [dayPanel, setDayPanel] = useState<{ day: string; kind: 'weekend' | 'open' | 'empty'; ref?: string } | null>(null);
+  // Which focused card currently has its inline time editor open.
+  const [timeEditId, setTimeEditId] = useState<string | null>(null);
+  // Whether the "Add a post" picker is expanded inside the day panel.
+  const [addOpen, setAddOpen] = useState(false);
+  // Ready (not-yet-scheduled) posts the client can add to an empty day.
+  const readyToAdd = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduled(q) && !skips[q.id]);
+  // A day whose scheduled post has been "left empty" (held): reconstructed from the leftEmpty
+  // map keyed by the post's id, or a date-level hold (round-2 mark-empty on an open day).
+  const heldRefForDay = (day: string): string | null => {
+    const heldPost = actionable.find((q) => q.publish_date === day && leftEmpty[q.id]);
+    if (heldPost) return heldPost.id;
+    if (leftEmpty[day]) return day;
+    return null;
+  };
   const clickDay = (day: string) => {
+    setAddOpen(false);
     // Weekend: never a fillable slot. The cadence is Monday to Friday.
     if (isWeekendDay(day)) { setDayPanel({ day, kind: 'weekend' }); return; }
+    // Held-empty day (a post left empty, or an open day marked empty): offer reopen, never
+    // open the held post.
+    const held = heldRefForDay(day);
+    if (held) { setDayPanel({ day, kind: 'empty', ref: held }); return; }
     const pendingHere = actionable.find((q) => q.publish_date === day && pendingIds.includes(q.id));
     if (pendingHere) {
       setDayPanel(null);
@@ -2042,7 +2185,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     if (qSlot?.q) { setDayPanel(null); onOpen(qSlot.q); return; }
     const cSlot = slots.find((s) => s.cal);
     if (cSlot?.cal) { setDayPanel(null); onOpenCal(cSlot.cal); return; }
-    setDayPanel({ day, kind: leftEmpty[day] ? 'empty' : 'open' });
+    setDayPanel({ day, kind: 'open' });
   };
   const upNext = (() => {
     const fi = focusId ? pendingIds.indexOf(focusId) : -1;
@@ -2060,7 +2203,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     const dayActionable = actionable.filter((q) => q.publish_date === d);
     const handledDay = dayActionable.length > 0 && dayActionable.every(handledOf);
     const isCurrent = !doneState && focused?.publish_date === d;
-    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d) };
+    const held = dayActionable.some((q) => leftEmpty[q.id]) || !!leftEmpty[d];
+    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d), held };
   });
   const swapChip = focused && angleSwaps[focused.id];
   const focusedChip = focused && live ? sourceChip(focused) : null;
@@ -2077,7 +2221,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       {upNext.map((q) => (
         <button key={q.id} onClick={() => setFocusId(q.id)} className="rounded-[10px] px-4 py-3.5 text-left transition-opacity hover:opacity-100" style={{ background: PAPER_RAISE, border: `1px solid ${LINE}`, opacity: 0.85 }}>
           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>{live && isScheduled(q) ? `${fmtSchedLA(q.scheduled_at, q.publish_date)} · ${kickerOf(q)}` : `${weekdayName(q.publish_date)} · ${kickerOf(q)}`}</div>
-          <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: INK }}>{q.hook || q.title}</div>
+          <div className="flex items-start gap-2.5">
+            {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 38, height: 38, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+            <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: INK }}>{q.hook || q.title}</div>
+          </div>
         </button>
       ))}
       <div className="pt-2" style={{ borderTop: `1px solid ${LINE}` }}>
@@ -2135,12 +2282,12 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 ) : live ? (
                   /* Live: each weekday is a real target — click focuses that day's post, or
                      offers to mark the open day empty. */
-                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={leftEmpty[tk.day] ? 'empty' : tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
+                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.held ? 'empty' : tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28, padding: 0,
                     fontFamily: MONO, fontSize: 10,
-                    border: `1.5px ${leftEmpty[tk.day] ? 'dashed' : 'solid'} ${tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
-                    background: tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
-                    color: tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
+                    border: `1.5px ${tk.held ? 'dashed' : 'solid'} ${tk.held ? LINE_BOLD : tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
+                    background: tk.held ? 'transparent' : tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
+                    color: tk.held ? INK_MUTE : tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
                     transition: 'all .3s ease', cursor: 'pointer',
                   }}>{tk.letter}</button>
                 ) : (
@@ -2193,29 +2340,35 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                   {live ? 'Swipe left for a different idea · tap to read' : 'Swipe right to approve · left for a different idea · tap to read'}
                 </p>
               )}
-              {/* Day-click panel (live): weekend = no posting; an open weekday offers a
-                  direct "mark this day empty" (hold it to post manually); an empty day offers
-                  a reopen. */}
+              {/* Day-click panel (live): weekend = no posting; any weekday with no post shows
+                  a clear "Add a post" that opens the picker (the just-cleared post floats to
+                  the top). No buffer jargon. */}
               {dayPanel && (
                 <div className="mb-3 rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE_BOLD}` }}>
                   {dayPanel.kind === 'weekend' ? (
                     <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
                       No posts on weekends. Your cadence is Monday to Friday.
                     </p>
-                  ) : dayPanel.kind === 'empty' ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
-                        <b style={{ color: INK }}>{weekdayName(dayPanel.day)}</b> is marked empty. Nothing publishes, the slot is yours to post manually.
-                      </p>
-                      <button onClick={() => { onRefillDay?.(dayPanel.day); setDayPanel(null); }} className="shrink-0 rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}>Reopen this day</button>
-                    </div>
                   ) : (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
-                        <b style={{ color: INK }}>{weekdayName(dayPanel.day)}</b> is open. New drafts take it automatically, or hold it for something of your own.
-                      </p>
-                      <button onClick={() => { onLeaveEmpty?.(dayPanel.day); setDayPanel(null); }} className="shrink-0 rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Mark this day empty</button>
-                    </div>
+                    <>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
+                          <b style={{ color: INK }}>{weekdayName(dayPanel.day)}</b> has no post yet.
+                        </p>
+                        {!addOpen && (
+                          <button onClick={() => setAddOpen(true)} className="shrink-0 rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Add a post</button>
+                        )}
+                      </div>
+                      {addOpen && (
+                        <AddPostPicker
+                          ready={readyToAdd}
+                          restoreFirst={recentlyCleared[dayPanel.day]}
+                          accent={accent}
+                          onPick={(id) => onScheduleToDay ? onScheduleToDay(id, dayPanel.day) : Promise.resolve({ ok: false })}
+                          onCancel={() => { setAddOpen(false); setDayPanel(null); }}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -2255,39 +2408,48 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           </div>
                           <div className="flex flex-col gap-2.5 pt-1">
                             <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
-                            <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
-                              {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'In the buffer, takes the next open slot'}
-                            </span>
+                            {timeEditId === focused.id ? (
+                              <ScheduleTimeEditor
+                                scheduledAt={focused.scheduled_at}
+                                accent={accent}
+                                onSave={(iso) => onSetSchedule ? onSetSchedule(focused.id, iso) : Promise.resolve({ ok: false })}
+                                onCancel={() => setTimeEditId(null)}
+                              />
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
+                                  {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'Not on the calendar yet'}
+                                </span>
+                                {isScheduled(focused) && (
+                                  <button onClick={(e) => { e.stopPropagation(); setTimeEditId(focused.id); }} className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Edit time</button>
+                                )}
+                              </div>
+                            )}
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
                             {focusedLm && <LmLaunchCard lm={focusedLm} accent={accent} />}
-                            {/* Bigger, clearly-labeled actions. Swap opens a LIST of alternatives. */}
+                            {/* One clean set of choices — no buffer jargon. Edit the words, change
+                                the time, clear the day, or swap the idea. */}
                             <div className="mt-1 flex flex-wrap items-center gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
                               <button
                                 onClick={(e) => { e.stopPropagation(); onOpen(focused, { editing: true }); }}
                                 className="inline-flex min-h-[40px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
                                 style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
                               >Edit</button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
-                                className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
-                              >Remove</button>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
-                                className="uppercase transition-colors duration-150"
-                                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 4 }}
-                              >⟲ swap the idea</button>
                               {isScheduled(focused) && (
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); onBackToBuffer?.(focused.id); }}
-                                  style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}
-                                >back to buffer</button>
+                                  onClick={(e) => { e.stopPropagation(); onClearDay?.(focused.id, focused.publish_date); }}
+                                  className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                                >Clear this day</button>
                               )}
                             </div>
-                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>yours to change until it publishes</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
+                              className="self-start uppercase transition-colors duration-150"
+                              style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 4 }}
+                            >⟲ swap the idea</button>
+                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>Clear this day puts the post back with your ready posts and opens the day.</span>
                           </div>
                         </div>
                       ) : (
@@ -2412,14 +2574,14 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {live && bufferItems.length > 0 && (
             <div className="mt-8">
               <div className="flex items-baseline gap-2.5">
-                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>In the buffer</div>
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Ready to add</div>
                 <span className="rounded-full px-1.5 text-[11px] font-semibold tabular-nums" style={{ background: PAPER_SUNK, color: INK_MUTE }}>{bufferItems.length}</span>
               </div>
-              <p className="mt-1.5 text-[13px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>Written and waiting. Not on the calendar yet. Open one to give it a date, or leave it here.</p>
+              <p className="mt-1.5 text-[13px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>Written and waiting. Not on the calendar yet. Open a day above and Add a post to place one.</p>
               <div className="mt-3 flex flex-col gap-2">
                 {bufferItems.map((q) => (
                   <button key={q.id} onClick={() => onOpen(q)} className={`rounded-[10px] px-4 py-3 text-left ${LIFT}`} style={{ background: PAPER_RAISE, border: `1px dashed ${LINE_BOLD}` }}>
-                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 4 }}>{kickerOf(q)} · in the buffer</div>
+                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 4 }}>{kickerOf(q)} · ready to add</div>
                     <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.35, color: INK }}>{q.hook || q.title}</div>
                   </button>
                 ))}
@@ -2639,7 +2801,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
-  const statusLabel = stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'In the buffer') : 'In your review')
+  const statusLabel = stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Not scheduled yet') : 'In your review')
     : stage === 'scheduled' ? (isLive ? 'Scheduled' : 'Approved')
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? (isLive ? 'Published' : 'Example') : 'Planned';
@@ -2940,7 +3102,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       <input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
                       <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
                       <button onClick={applySchedule} disabled={schedBusy || !schedDate} className="inline-flex min-h-[38px] items-center rounded-[6px] px-4 text-[13px] font-semibold" style={{ background: accent, color: ctaInk, opacity: schedBusy || !schedDate ? 0.6 : 1 }}>{schedBusy ? 'Saving…' : 'Save time'}</button>
-                      <button onClick={clearSchedule} disabled={schedBusy} className="text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Move to buffer</button>
+                      <button onClick={clearSchedule} disabled={schedBusy} className="text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Clear this day</button>
                       <button onClick={() => setSchedOpen(false)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
                     </div>
                     {schedErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{schedErr}</div>}
@@ -2984,15 +3146,25 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               >
                 Edit
               </button>
-              <button
-                onClick={() => { onRemove?.(item.id); onClose(); }}
-                className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
-              >
-                Remove
-              </button>
+              {isScheduled(item) ? (
+                <button
+                  onClick={async () => { if (setSchedule) { await setSchedule(item.id, null); } item.scheduled_at = undefined; item.publish_date = undefined; onClose(); }}
+                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+                >
+                  Clear this day
+                </button>
+              ) : (
+                <button
+                  onClick={() => { onRemove?.(item.id); onClose(); }}
+                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+                >
+                  Remove
+                </button>
+              )}
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it.` : 'Takes the next open slot unless you change it.'}
+                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Use Change date & time above to move it.` : 'Add it to a day with Change date & time above.'}
               </span>
             </div>
           </div>
@@ -3351,8 +3523,10 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, board
 
 /** Lead-magnet detail drawer (same right-anchored grammar as the post drawer). Client depth
  *  only: title, format, status, cover/live link, captured-leads count, date. No internals. */
-function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, onClose }: {
+function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, onClose, onEditPromo }: {
   entry: LeadMagnetEntry; board: Board; accent: string; mint: string; fontStack: string; live?: boolean; onClose: () => void;
+  /** Live board: save an edit to this LM's delivery email / keyword DM. */
+  onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -3368,6 +3542,35 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   // honest state until the launch post runs.
   const statusLabel = isLiveLm ? (live && onClientDomain(entry.url, board.domain) ? 'On your domain' : 'Live') : entry.status === 'built' ? 'Built' : 'Concept';
   const url = entry.url;
+  // A distinct direct-resource URL, if the data carries one (else landing == resource).
+  const resourceUrl = (entry as unknown as { resource_url?: string }).resource_url;
+  // The keyword that triggers the DM delivery (a sibling agent sets this on the LM).
+  const gateKeyword = (entry as unknown as { gate_keyword?: string }).gate_keyword;
+  // Inline promo editing state (live): edit the delivery email + keyword DM in place.
+  const [editing, setEditing] = useState<null | 'email' | 'dm'>(null);
+  const [dmDraft, setDmDraft] = useState(entry.promo?.dm || '');
+  const [subjDraft, setSubjDraft] = useState(entry.promo?.email?.subject || '');
+  const [bodyDraft, setBodyDraft] = useState(entry.promo?.email?.body || '');
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoErr, setPromoErr] = useState('');
+  const saveDm = async () => {
+    if (!onEditPromo) return;
+    setPromoBusy(true); setPromoErr('');
+    const r = await onEditPromo(entry.id, 'dm', dmDraft);
+    setPromoBusy(false);
+    if (!r.ok) { setPromoErr(r.error || 'Could not save that. Try again.'); return; }
+    if (entry.promo) entry.promo.dm = dmDraft; else (entry as LeadMagnetEntry).promo = { dm: dmDraft };
+    setEditing(null);
+  };
+  const saveEmail = async () => {
+    if (!onEditPromo) return;
+    setPromoBusy(true); setPromoErr('');
+    const r = await onEditPromo(entry.id, 'email', { subject: subjDraft, body: bodyDraft });
+    setPromoBusy(false);
+    if (!r.ok) { setPromoErr(r.error || 'Could not save that. Try again.'); return; }
+    if (entry.promo) entry.promo.email = { subject: subjDraft, body: bodyDraft }; else (entry as LeadMagnetEntry).promo = { email: { subject: subjDraft, body: bodyDraft } };
+    setEditing(null);
+  };
   // Promo kit (live): only REAL related copy renders. The orbit gift-touch DM belongs to
   // this asset when the orbit plan's gift points at the same URL.
   const giftDms = (live && url && board.outreach?.orbit_plan?.gift?.url === url)
@@ -3416,10 +3619,6 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
             </div>
           )}
 
-          {entry.promise && (
-            <p className="mt-5 max-w-[58ch]" style={{ fontFamily: BODY, fontSize: 14.5, lineHeight: 1.6, color: INK_SOFT }}>{entry.promise}</p>
-          )}
-
           <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl sm:grid-cols-3" style={{ background: LINE, border: `1px solid ${LINE}` }}>
             <div className="bg-white px-4 py-3.5">
               <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Status</div>
@@ -3450,26 +3649,19 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
               : (live ? 'In build. It goes up on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
           </p>
 
-          {/* The pages, live in the drawer — the real URLs, not mockups. The landing gate is
-              what a stranger sees; the unlocked view is what their email buys. */}
-          {live && isLiveLm && url && (
-            <div className="mt-6">
-              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The landing gate, live</div>
-              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex items-center gap-1.5 px-3.5 py-2" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
-                  {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: 'rgba(2,49,47,0.10)' }} aria-hidden />)}
-                  <span className="ml-2 truncate" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{url.replace(/^https?:\/\//, '')}</span>
-                </div>
-                <iframe src={url} title={entry.title} loading="lazy" style={{ width: '100%', height: 470, border: 'none', display: 'block', background: '#fff' }} />
-              </div>
-              <div className="mb-2 mt-5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>Behind the gate</div>
-              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
-                <div className="flex items-center gap-1.5 px-3.5 py-2" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
-                  {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: 'rgba(2,49,47,0.10)' }} aria-hidden />)}
-                  <span className="ml-2 truncate" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{`${url.replace(/^https?:\/\//, '').replace(/\/?$/, '/')}?unlocked=1`}</span>
-                </div>
-                <iframe src={`${url.replace(/\/?$/, '/')}?unlocked=1`} title={`${entry.title} — unlocked`} loading="lazy" style={{ width: '100%', height: 470, border: 'none', display: 'block', background: '#fff' }} />
-              </div>
+          {/* Just the links — the landing page and the direct resource. No full embed inside
+              the card. Landing and resource are the same page for these assets, so show one
+              link (dedup); a distinct resource url would render as a second link. */}
+          {isLiveLm && url && (
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+              {resourceUrl && resourceUrl !== url ? (
+                <>
+                  <a href={url} target="_blank" rel="noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Landing page →</a>
+                  <a href={resourceUrl} target="_blank" rel="noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Resource →</a>
+                </>
+              ) : (
+                <a href={url} target="_blank" rel="noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Landing page &amp; resource →</a>
+              )}
             </div>
           )}
 
@@ -3480,8 +3672,10 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
             <div className="mt-6">
               <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>The promo kit</div>
 
-              {/* DMs: the real orbit gift-touch when it belongs to this asset, plus the authored template. */}
-              {(giftDms.length > 0 || entry.promo?.dm) && (
+              {/* DMs: the real orbit gift-touch when it belongs to this asset, plus the
+                  keyword-delivery DM (the note we auto-send when someone comments the LM's
+                  keyword) — editable in place. */}
+              {(giftDms.length > 0 || entry.promo?.dm || onEditPromo) && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {giftDms.map((sm, i) => (
                     <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
@@ -3489,28 +3683,69 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                       <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
                     </div>
                   ))}
-                  {entry.promo?.dm && (
+                  {(entry.promo?.dm || onEditPromo) && (
                     <div className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>DM · the share template</div>
-                      <div className="rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5" style={{ background: '#fff', border: `1px solid ${DIVIDE}`, maxWidth: '34ch' }}>
-                        <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK }}>{entry.promo.dm}</p>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <div className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{gateKeyword ? `DM sent when they comment “${gateKeyword}”` : 'DM sent when they comment your keyword'}</div>
+                        {onEditPromo && editing !== 'dm' && (
+                          <button onClick={() => { setDmDraft(entry.promo?.dm || ''); setPromoErr(''); setEditing('dm'); }} className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.08em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer' }}>Edit</button>
+                        )}
                       </div>
+                      {editing === 'dm' ? (
+                        <div>
+                          <textarea value={dmDraft} onChange={(e) => setDmDraft(e.target.value)} rows={5} className="w-full rounded-lg p-3 text-[13px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: '#fff' }} />
+                          <div className="mt-2 flex items-center gap-2.5">
+                            <button onClick={saveDm} disabled={promoBusy} className="rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer', opacity: promoBusy ? 0.6 : 1 }}>{promoBusy ? 'Saving…' : 'Save DM'}</button>
+                            <button onClick={() => setEditing(null)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                          </div>
+                          {promoErr && <div className="mt-1.5 text-[12px]" style={{ color: '#c0392b' }}>{promoErr}</div>}
+                        </div>
+                      ) : entry.promo?.dm ? (
+                        <div className="rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5" style={{ background: '#fff', border: `1px solid ${DIVIDE}`, maxWidth: '34ch' }}>
+                          <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK }}>{entry.promo.dm}</p>
+                        </div>
+                      ) : (
+                        <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>No DM yet. Add the note we send when someone comments your keyword.</p>
+                      )}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* The delivery email, rendered as mail. */}
-              {entry.promo?.email && (
+              {/* The delivery email, rendered as mail — editable in place. */}
+              {(entry.promo?.email || onEditPromo) && (
                 <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
-                  <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
-                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Delivery email · subject</span>
-                    <div className="mt-0.5 text-[14px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{entry.promo.email.subject}</div>
-                  </div>
-                  <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.email.body}</p>
-                  <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                    Written and saved as the delivery template. The send rail is not switched on yet.
-                  </div>
+                  {editing === 'email' ? (
+                    <div className="p-4">
+                      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Delivery email · subject</div>
+                      <input value={subjDraft} onChange={(e) => setSubjDraft(e.target.value)} className="mt-1 w-full rounded-lg p-2.5 text-[14px] font-semibold outline-none" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+                      <div className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Body</div>
+                      <textarea value={bodyDraft} onChange={(e) => setBodyDraft(e.target.value)} rows={8} className="mt-1 w-full rounded-lg p-3 text-[13.5px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: '#fff' }} />
+                      <div className="mt-2 flex items-center gap-2.5">
+                        <button onClick={saveEmail} disabled={promoBusy} className="rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer', opacity: promoBusy ? 0.6 : 1 }}>{promoBusy ? 'Saving…' : 'Save email'}</button>
+                        <button onClick={() => setEditing(null)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                      {promoErr && <div className="mt-1.5 text-[12px]" style={{ color: '#c0392b' }}>{promoErr}</div>}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                        <div className="min-w-0">
+                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Delivery email · subject</span>
+                          <div className="mt-0.5 text-[14px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{entry.promo?.email?.subject || 'No subject yet'}</div>
+                        </div>
+                        {onEditPromo && (
+                          <button onClick={() => { setSubjDraft(entry.promo?.email?.subject || ''); setBodyDraft(entry.promo?.email?.body || ''); setPromoErr(''); setEditing('email'); }} className="shrink-0 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.08em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer' }}>Edit</button>
+                        )}
+                      </div>
+                      {entry.promo?.email?.body
+                        ? <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.email.body}</p>
+                        : <p className="px-4 py-4 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>No delivery email yet. Edit to write the email that sends your lead magnet.</p>}
+                      <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
+                        Saved as your delivery template. Edit it any time.
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -3520,12 +3755,12 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                 <div className="mt-4 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-center justify-between gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
                     <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>The launch post</span>
-                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>in the buffer</span>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>on the calendar</span>
                   </div>
                   {entry.cover_url && <img src={entry.cover_url} alt="" loading="lazy" className="w-full object-cover" style={{ maxHeight: 200, display: 'block', borderBottom: `1px solid ${DIVIDE}` }} />}
                   <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{launchPost.body || launchPost.hook}</p>
                   <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                    The post that launches this on your feed. It publishes from the buffer at its slot, with the cover as its image.
+                    The post that launches this on your feed. It publishes on its scheduled day, with the cover as its image.
                   </div>
                 </div>
               ) : entry.promo?.announcement ? (
@@ -3703,8 +3938,9 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
   );
 }
 
-function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
+function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, onEditPromo }: {
   board: Board; accent: string; mint: string; fontStack: string; live?: boolean;
+  onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const lm = board.lm;
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
@@ -3803,7 +4039,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: {
     </div>
   );
   const drawer = lmDetail ? (
-    <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
+    <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} onEditPromo={live ? onEditPromo : undefined} />
   ) : null;
 
   if (live) {
@@ -6112,6 +6348,27 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Lifestyle photo pool (live): the client's uploaded photos, fetched once. Used to
+  // auto-rotate a photo onto eligible solo text posts (display-only, deterministic). Empty
+  // pool → nothing assigned (graceful). Preview boards skip this.
+  const [photoPool, setPhotoPool] = useState<string[]>([]);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.storage.from('client-photos').list(slug, { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+        if (cancelled || error || !data) return;
+        const urls = data.filter((f) => f.id !== null && !/^\./.test(f.name))
+          .map((f) => supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl);
+        setPhotoPool(urls);
+      } catch { /* no pool → text-only, as today */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug]);
+
   // Real slot data (live): carousel_drafts.scheduled_at is the schedule authority — the
   // board jsonb never carries publish dates for buffered drafts. Fetched once per load;
   // merged into the queue below. Unscheduled drafts keep the honest buffer fallback.
@@ -6260,6 +6517,31 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Edit an LM's delivery email or keyword DM (live). Writes board.lead_magnets[i].promo via
+  // the gated client_board_edit_lm_promo RPC + logs an edit_lm_promo action; updates local
+  // board state so the edit shows at once. Same token/session routing as editDraft.
+  const editLmPromo = async (lmId: string, field: 'email' | 'dm', value: unknown): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_edit_lm_promo', { p_slug: slug, p_token: token, p_lm_id: lmId, p_field: field, p_value: value });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_edit_lm_promo_v2', { p_slug: slug, p_session: sess.token, p_lm_id: lmId, p_field: field, p_value: value });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+      if (out.ok) {
+        setBoard((b) => b ? { ...b, lead_magnets: (b.lead_magnets || []).map((e) => e.id === lmId ? { ...e, promo: { ...(e.promo || {}), [field]: value } } : e) } : b);
+      }
+      return out;
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
   // Attach / replace / clear a post's image with a chosen lifestyle photo (live).
   // Sets carousel_drafts.image_urls + the board queue item's media_url in one RPC,
   // and logs a set_media action for the operator. Same token/session routing as editDraft.
@@ -6361,16 +6643,58 @@ export default function ClientBoardPage() {
     if (r.ok) flash(id);
     return r;
   };
+  // date (YYYY-MM-DD) → the draft most recently cleared from that day, so "Add a post" can
+  // offer to put it straight back at the top of the list.
+  const [recentlyCleared, setRecentlyCleared] = useState<Record<string, string>>({});
+  // "Clear this day" (client): take the post off its day and open the day up. The post is
+  // not lost — it returns to the ready list (unscheduled) and can be added to any day again.
+  // Writes carousel_drafts.scheduled_at=null through the same client_board_set_schedule RPC
+  // the client uses to edit a time (this is a client-triggered runtime action, never a batch
+  // rewrite of the operator's schedule).
+  const clearDay = async (id: string, date?: string): Promise<{ ok: boolean; error?: string }> => {
+    const d = (date || '').slice(0, 10);
+    const r = await setScheduleRPC(id, null);
+    if (r.ok) { if (d) setRecentlyCleared((s) => ({ ...s, [d]: id })); flash(id); }
+    return r;
+  };
+  // "Add a post" (client): schedule a ready post onto a chosen day. Defaults to a morning
+  // slot in the client's timezone; the exact time is editable right after on the card.
+  const scheduleToDay = async (id: string, date: string): Promise<{ ok: boolean; error?: string }> => {
+    const d = date.slice(0, 10);
+    const r = await setScheduleRPC(id, laWallToUtcISO(d, '09:00'));
+    if (r.ok) { setRecentlyCleared((s) => { const { [d]: _drop, ...rest } = s; return rest; }); flash(id); }
+    return r;
+  };
   // "Leave this day empty": deliberate + persistent, no restore nag. Records day_left_empty
   // so it survives reload on any device (slot_state reconstructs it). Distinct from skipDay.
   const leaveEmpty = (id: string) => {
     setLeftEmpty((s) => ({ ...s, [id]: true as const }));
     if (isLiveRef.current) { void act('note', id, { event: 'day_left_empty' }); }
   };
-  // Reopen a deliberately-empty day (the only path back — never an automatic prompt).
+  // Reopen a deliberately-empty day (the only path back — never an automatic prompt). Clears
+  // BOTH the empty-hold and any removal for this ref, so a held post's day returns to auto.
   const refillDay = (id: string) => {
     setLeftEmpty((s) => { const { [id]: _drop, ...rest } = s; return rest; });
-    if (isLiveRef.current) { void act('note', id, { event: 'day_refilled' }); }
+    setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    if (isLiveRef.current) {
+      void act('note', id, { event: 'day_refilled' });
+      void act('note', id, { event: 'post_restored' });
+    }
+  };
+  // "Leave this day empty" from a SCHEDULED card: take the post off the day AND hold the day
+  // empty so nothing auto-fills it (a human can post there manually). Distinct from "Back to
+  // buffer", which unschedules the post and leaves the day free to auto-fill. This holds the
+  // day purely through the insert-only action log (post_removed + day_left_empty, keyed by
+  // the draft id) — it NEVER writes carousel_drafts.scheduled_at, so the operator's manual
+  // schedule is untouched. Reopening the day restores auto. Survives reload (slot_state).
+  const leaveDayEmpty = (id: string, _date?: string) => {
+    setWeekSkips((s) => ({ ...s, [id]: true as const }));
+    setLeftEmpty((s) => ({ ...s, [id]: true as const }));
+    flash(id);
+    if (isLiveRef.current) {
+      void act('note', id, { event: 'post_removed' });
+      void act('note', id, { event: 'day_left_empty' });
+    }
   };
   // Open-slot: restore the original post. Clears the removal and any replacement, and
   // records both so the log stays the source of truth across refreshes.
@@ -6700,10 +7024,30 @@ export default function ClientBoardPage() {
     const flip = s.status === 'scheduled' && q.stage !== 'published';
     return { ...q, scheduled_at: s.scheduled_at, publish_date: s.scheduled_at.slice(0, 10), ...(flip ? { stage: 'scheduled' as Stage } : {}) };
   };
+  // Auto lifestyle photos (live, display-only, NO write): rotate the client's photo pool
+  // onto ~60% of eligible solo TEXT posts, deterministically by draft id so it is stable
+  // across reloads (never random per render). Eligible = a plain post that is NOT a lead
+  // magnet launch and NOT a carousel and has NO image already (a manual attach always wins).
+  // Empty pool → nothing assigned. Round-robin over the pool (ordered by name) so the same
+  // photo never lands back-to-back. Computed from the RAW queue; keyed by draft id.
+  const autoPhoto = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (!board || photoPool.length === 0) return map;
+    const hashStr = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+    const eligible = board.queue
+      .filter((q) => q.kind === 'post' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url)
+      .slice()
+      .sort((a, b) => a.id.localeCompare(b.id));
+    let ri = 0;
+    for (const q of eligible) {
+      if (hashStr(q.id) % 100 < 60) { map[q.id] = photoPool[ri % photoPool.length]; ri++; }
+    }
+    return map;
+  }, [board, photoPool]);
   const viewBoard = useMemo(
-    () => (board ? { ...board, queue: board.queue.map((q) => resolveItem(withSchedule(q))) } : null),
+    () => (board ? { ...board, queue: board.queue.map((q) => resolveItem(withSchedule(q))).map((q) => (!q.media_url && autoPhoto[q.id]) ? { ...q, media_url: autoPhoto[q.id] } : q) } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [board, angleSwaps, schedule],
+    [board, angleSwaps, schedule, autoPhoto],
   );
   // Deep-link: /client/:slug?token=...&post=<draft-id> (or #post-<id>) opens that post's
   // detail. The week-1 brief links each scheduled post this way. Harmless on any board:
@@ -6920,6 +7264,11 @@ export default function ClientBoardPage() {
         pool={replacementPool}
         onPickReplacement={pickReplacement}
         onBackToBuffer={backToBuffer}
+        onLeaveDayEmpty={leaveDayEmpty}
+        onSetSchedule={setScheduleRPC}
+        onClearDay={clearDay}
+        onScheduleToDay={scheduleToDay}
+        recentlyCleared={recentlyCleared}
         leftEmpty={leftEmpty}
         onLeaveEmpty={leaveEmpty}
         onRefillDay={refillDay}
@@ -6935,9 +7284,9 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} onEditPromo={editLmPromo} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
