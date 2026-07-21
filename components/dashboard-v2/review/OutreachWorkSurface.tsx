@@ -339,7 +339,7 @@ const OutreachWorkSurface: React.FC = () => {
               <span className="ws-lane-cap-hint">followup_drafts · pending approval</span>
             </div>
             <div className="ors-fu-note">
-              Relocated from the retired Warm section. Read-only: approval is not armed here. Send a follow-up from Classic → the prospect thread.
+              Relocated from the retired Warm section. Read-only here. Send a follow-up from Classic → the prospect thread.
             </div>
 
             {warm.queue.state === 'offline' ? (

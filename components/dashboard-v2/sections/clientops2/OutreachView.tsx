@@ -114,7 +114,7 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
       {data == null && !error ? (
         <div className="ws-loading">Loading outreach…</div>
       ) : mode === 'list' ? (
-        <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} />
+        <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} company={company} />
       ) : (
         <WaitingView needsReply={needsReply} awaiting={awaiting} armed={anyArmed} />
       )}
@@ -123,7 +123,7 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 }
 
 // ── Simple list — lane-grouped: sequence copy + the people in that lane ────────
-function ListView({ data, seqByLane, armed, clientId }: { data: OutreachPayload; seqByLane: Record<string, OutreachSeq>; armed: boolean; clientId: string }) {
+function ListView({ data, seqByLane, armed, clientId, company }: { data: OutreachPayload; seqByLane: Record<string, OutreachSeq>; armed: boolean; clientId: string; company: string }) {
   const byCampaign = useMemo(() => {
     const m: Record<string, OutreachProspect[]> = {};
     data.prospects.forEach((p) => { (m[p.campaign_id] ||= []).push(p); });
@@ -168,7 +168,7 @@ function ListView({ data, seqByLane, armed, clientId }: { data: OutreachPayload;
               <div className="co2-emptyline" style={{ padding: '0.8rem 0' }}>No one staged in this lane.</div>
             ) : (
               <div className="co3-people">
-                {rows.map((p) => <ProspectRow key={p.id} p={p} armed={armed} clientId={clientId} />)}
+                {rows.map((p) => <ProspectRow key={p.id} p={p} armed={armed} clientId={clientId} company={company} />)}
               </div>
             )}
           </div>
@@ -191,7 +191,7 @@ function SeqStep({ step }: { step: OutreachSeqStep }) {
   );
 }
 
-function ProspectRow({ p, armed, clientId }: { p: OutreachProspect; armed: boolean; clientId: string }) {
+function ProspectRow({ p, armed, clientId, company }: { p: OutreachProspect; armed: boolean; clientId: string; company: string }) {
   const [open, setOpen] = useState(false);
   const hasCopy = !!(p.connection_note || p.offer_angle || (p.messages && p.messages.length));
   const gated = !!p.gate?.gated;
@@ -240,29 +240,28 @@ function ProspectRow({ p, armed, clientId }: { p: OutreachProspect; armed: boole
           ) : (
             <div className="co3-copy-none">No per-person copy generated yet. This person gets the lane sequence above, filled from their real store and profile at send.</div>
           )}
-          <SendComposer p={p} armed={armed} clientId={clientId} />
+          <SendComposer p={p} clientId={clientId} company={company} />
         </div>
       )}
     </div>
   );
 }
 
-// Operator send from the panel — GATED + INERT. The button renders so the seat is
-// visibly wired, but it is disabled until the send lane is armed
-// (integration_config.operator_send_armed = true, read server-side by
-// operator_send_to_lead). Nothing can fire from here in this build: the arm flag is
-// false and, even armed, the RPC connects to no dispatch pipeline. Safe by construction.
-function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: boolean; clientId: string }) {
+// Operator send from the panel. Live now: the button is enabled and asks for a plain
+// confirm before it fires. The real permission still lives server-side in
+// operator_send_to_lead (gate + integration_config.operator_send_armed), so a stray
+// click cannot dispatch on its own — the confirm is the operator's own guardrail.
+function SendComposer({ p, clientId, company }: { p: OutreachProspect; clientId: string; company: string }) {
   const [text, setText] = useState('');
   const [result, setResult] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const channel = (p.preferred_channel || 'linkedin').toLowerCase().includes('inmail') ? 'inmail' : 'linkedin';
+  const seat = company || clientId;
 
-  // Only reachable when armed (the button is otherwise disabled). Even then, the RPC is
-  // designed to refuse: it returns disabled_until_armed / send_pipeline_not_connected and
-  // never dispatches. This handler exists so the wiring is real, not so a send can happen.
   const attempt = async () => {
-    if (!armed || busy) return;
+    if (busy) return;
+    if (!text.trim()) { setResult('Write the message first.'); return; }
+    if (!window.confirm(`Send from ${seat}'s seat?`)) return;
     setBusy(true); setResult('');
     try {
       const { data, error } = await supabase.rpc('operator_send_to_lead', {
@@ -279,10 +278,8 @@ function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: bool
   return (
     <div className="co3-send">
       <div className="co3-send-head">
-        <span className="co3-send-l">Send from {clientId}'s seat</span>
-        <span className={`co3-send-state ${armed ? 'co3-send-state--armed' : ''}`}>
-          {armed ? 'Live' : 'Sending paused'}
-        </span>
+        <span className="co3-send-l">Send from {seat}'s seat</span>
+        <span className="co3-send-state co3-send-state--armed">Live</span>
       </div>
       <textarea
         className="co3-send-ta"
@@ -292,12 +289,9 @@ function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: bool
         rows={2}
       />
       <div className="co3-send-row">
-        <button className="co3-send-btn" disabled={!armed || busy} onClick={attempt} title={armed ? 'Send' : 'Off until sending goes live'}>
+        <button className="co3-send-btn" disabled={busy} onClick={attempt} title="Send">
           {busy ? 'Sending…' : 'Send'}
         </button>
-        {!armed && (
-          <span className="co3-send-note">Off until sending goes live. Nothing sends from here.</span>
-        )}
         {result && <span className="co3-send-note">{result}</span>}
       </div>
     </div>

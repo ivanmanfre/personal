@@ -189,6 +189,20 @@ interface OutreachLogEntry {
   reply_count: number; replied: boolean; last_sent_at: string | null; last_reply_at: string | null;
   messages: OutreachLogMessage[];
 }
+/** One prospect on the "up next" send queue (client_board_outreach_status RPC). */
+interface OutreachQueueItem { name: string; company: string | null; domain: string | null; icp_score: number | null; lane: 'orbit' | 'cold' | string }
+/** Live campaign state for the send-status pill + the up-next view. Reads campaign
+ *  is_active + the committed first-send time, never send activity. */
+interface OutreachStatus {
+  is_live: boolean;
+  any_active: boolean;
+  dispatch_scheduled: boolean;
+  campaigns: { key: string; name: string; active: boolean }[];
+  todays_sends: number;
+  daily_cap: number;
+  next_window_at: string | null;
+  up_next: OutreachQueueItem[];
+}
 interface OutreachSpec {
   note?: string;
   icp?: { label?: string; bar?: string[]; note?: string };
@@ -385,6 +399,51 @@ function fmtSchedLA(scheduledAt?: string, publishDate?: string): string {
   }
   return fmtDay(publishDate);
 }
+/** Split a scheduled instant into a readable day + time in the client's timezone, with a
+ *  plain "Today"/"Tomorrow" prefix when it lands soon. Powers the readable schedule chip. */
+function fmtSchedParts(scheduledAt?: string, publishDate?: string): { day: string; time: string } {
+  if (scheduledAt) {
+    const d = new Date(scheduledAt);
+    if (!Number.isNaN(d.getTime())) {
+      const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: CLIENT_TZ });
+      const now = new Date();
+      const today = dayKey(now);
+      const tmrw = dayKey(new Date(now.getTime() + 86400000));
+      const target = dayKey(d);
+      const dateLabel = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
+      const day = target === today ? `Today · ${dateLabel}` : target === tmrw ? `Tomorrow · ${dateLabel}` : dateLabel;
+      const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
+      return { day, time: `${time} PT` };
+    }
+  }
+  return { day: fmtDay(publishDate), time: '' };
+}
+
+/** Readable "when this goes out" chip — a clock, a labelled day and a bold time, replacing
+ *  the cramped mono timestamp. Reads plainly ("Today · Tue 21 Jul", "3:00 PM PT"). */
+function SchedChip({ scheduledAt, publishDate, scheduled, accent }: { scheduledAt?: string; publishDate?: string; scheduled: boolean; accent: string }) {
+  if (!scheduled) {
+    return (
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px]" style={{ fontFamily: BODY, color: INK_MUTE, background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+        Not on the calendar yet
+      </span>
+    );
+  }
+  const { day, time } = fmtSchedParts(scheduledAt, publishDate);
+  return (
+    <span className="inline-flex w-fit items-center gap-2.5 rounded-lg px-3 py-2" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0">
+        <circle cx="12" cy="12" r="9" stroke={caText(accent)} strokeWidth="1.8" />
+        <path d="M12 7.5V12l3 2" stroke={caText(accent)} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="flex flex-col leading-tight">
+        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>Goes out {day}</span>
+        <span style={{ fontFamily: BODY, fontSize: 15, fontWeight: 700, color: INK }}>{time}</span>
+      </span>
+    </span>
+  );
+}
+
 /** Turn an LA wall-clock date (YYYY-MM-DD) + time (HH:MM) into a real UTC ISO instant.
  *  The client always enters + reads time in America/Los_Angeles; the offset is read from
  *  the zone so it stays correct across DST. */
@@ -451,6 +510,30 @@ function resolveLaunchLm(q: Pick<QueueItem, 'lm_launch' | 'lm_ref' | 'source_det
   }
   return null;
 }
+/** The card thumbnail for a queue item: the generated post image first, then a plumbed
+ *  cover, then — for a lead-magnet post or a lead-magnet-typed card — the LM's active
+ *  cover (cover_url is the running one; covers[0] is the fallback of the swap pair). This
+ *  is why an LM card shows its cover just like a normal post shows its image. */
+function cardImageUrl(q: QueueItem, board?: Pick<Board, 'lead_magnets'>): string | undefined {
+  if (q.media_url) return q.media_url;
+  if (q.cover_url) return q.cover_url;
+  const lms = board?.lead_magnets || [];
+  const isLaunch = q.lm_launch || q.source_detail?.kind === 'lm_launch';
+  const slug = (q.source_detail?.lm_ref || '').trim();
+  // Find the LM this card is about — by board id, then by slug on the url, then (for an
+  // lm-typed card) by title. Prefer cover_url (the active/running cover set by the swap
+  // feature) over covers[0] (the other half of the pair).
+  let lm = q.lm_ref ? lms.find((e) => e.id === q.lm_ref) : undefined;
+  if (!lm && slug) lm = lms.find((e) => (e.url || '').includes(slug));
+  if (!lm && q.kind === 'lm' && q.title) lm = lms.find((e) => (e.title || '').toLowerCase() === (q.title || '').toLowerCase());
+  const cov = lm ? (lm.cover_url || (lm.covers && lm.covers[0])) : undefined;
+  if (cov) return cov;
+  // A launch post whose LM has no board row yet → the white-label cover on its own domain
+  // (404-safe: the <img> onError hides it, so a missing cover just shows no image).
+  if (isLaunch && slug && /^[a-z0-9-]+$/.test(slug)) return `https://resources.risedtc.com/${slug}/assets/cover.jpg`;
+  return undefined;
+}
+
 /** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
  *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
 function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
@@ -606,8 +689,8 @@ function RollingNumber({ n }: { n: number }) {
 /** 16:9 row/card thumbnail: real media when it exists; text posts get a mini
  *  typographic tile (opening words of the hook, sans semibold, accent-washed);
  *  other formats get a glyph tile. */
-function Thumb({ q, accent, large = false }: { q: QueueItem; accent: string; large?: boolean }) {
-  const src = q.media_url || q.cover_url;
+function Thumb({ q, accent, large = false, board }: { q: QueueItem; accent: string; large?: boolean; board?: Pick<Board, 'lead_magnets'> }) {
+  const src = cardImageUrl(q, board);
   const cls = large ? 'aspect-video w-full rounded-lg' : 'h-10 w-14 rounded-[6px]';
   if (src) {
     return <img src={src} alt="" loading="lazy" className={`${cls} shrink-0 object-cover`} style={{ border: `1px solid ${LINE}`, background: 'rgba(2,49,47,0.04)' }} />;
@@ -762,8 +845,8 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
       {item.body && (
         <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', marginBottom: 12, whiteSpace: 'pre-line' }}>{item.body}</div>
       )}
-      {item.media_url ? (
-        <img src={item.media_url} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} />
+      {(item.media_url || cardImageUrl(item, board)) ? (
+        <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
       ) : showRender ? (
         <div className="flex items-center justify-center gap-2.5" style={{ aspectRatio: '1200/500', borderRadius: 6, border: `1px dashed ${caBorder(accent, 45)}` }}>
           <PulseDot color={accent} size={8} />
@@ -1497,9 +1580,10 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         >
           <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.35, color: INK_SOFT }}>{dateCol}</span>
           <span className="flex min-w-0 items-start gap-2.5">
-            {/* Attached photo (manual or auto-rotated lifestyle): a small thumbnail on the card. */}
-            {q.media_url && (
-              <img src={q.media_url} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 40, height: 40, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            {/* Card thumbnail: the post image, or — for a lead-magnet post — its LM cover,
+                so every card carries a picture the same way. */}
+            {cardImageUrl(q, board) && (
+              <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 40, height: 40, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             )}
             <span className="min-w-0">
               {/* Live: the hook wraps — the reader can tell what the post is about from the row.
@@ -1531,7 +1615,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                      preview (expand on tap) so the ledger never forces a long scroll. */
                   <div style={{ maxWidth: '64ch' }}>
                     <CollapsibleBody text={q.body} onOpen={() => onOpen(q)} />
-                    {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} />}
+                    {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
                   </div>
                 ) : (
                 <div style={{ maxWidth: 430 }}>
@@ -1810,7 +1894,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                       >
                         {/* Text posts skip the typographic thumb here — the card already
                             leads with the title, so the tile would say it twice. */}
-                        {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} large />}
+                        {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} large board={board} />}
                         <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
                         <span className="text-[13px] font-medium leading-snug" style={{ color: INK, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {q.hook || q.title}
@@ -2274,7 +2358,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
         <button key={q.id} onClick={() => setFocusId(q.id)} className="rounded-[10px] px-4 py-3.5 text-left transition-opacity hover:opacity-100" style={{ background: PAPER_RAISE, border: `1px solid ${LINE}`, opacity: 0.85 }}>
           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>{live && isScheduled(q) ? `${fmtSchedLA(q.scheduled_at, q.publish_date)} · ${kickerOf(q)}` : `${weekdayName(q.publish_date)} · ${kickerOf(q)}`}</div>
           <div className="flex items-start gap-2.5">
-            {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 38, height: 38, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+            {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 38, height: 38, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
             <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: INK }}>{q.hook || q.title}</div>
           </div>
         </button>
@@ -2460,9 +2544,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           </div>
                           <div className="flex flex-col gap-2.5 pt-1">
                             <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
-                            <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
-                              {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'Not on the calendar yet'}
-                            </span>
+                            <SchedChip scheduledAt={focused.scheduled_at} publishDate={focused.publish_date} scheduled={isScheduled(focused)} accent={accent} />
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
                             {focusedLm && <LmLaunchCard lm={focusedLm} accent={accent} />}
@@ -5005,10 +5087,41 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
 
 /** Plain send-status pill. Green "Live" when messages are actually going out, grey
  *  "Sending paused" when nothing is moving. No jargon — a client word for the state. */
+/** A whole number that counts up to its target on mount (and whenever it changes).
+ *  Falls back to the plain value under prefers-reduced-motion. */
+function CountUp({ value, className, style }: { value: number; className?: string; style?: React.CSSProperties }) {
+  const reduce = useReducedMotion();
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, (v) => Math.round(v).toString());
+  const [text, setText] = useState('0');
+  useEffect(() => {
+    if (reduce) { setText(String(value)); return; }
+    const controls = animate(mv, value, { duration: 0.9, ease: [0.16, 1, 0.3, 1] });
+    const unsub = rounded.on('change', (v) => setText(v));
+    return () => { controls.stop(); unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, reduce]);
+  return <span className={className} style={style}>{text}</span>;
+}
+
+/** Live send-state pill. Green "Live" (with a soft pulsing dot) reads the committed
+ *  campaign state, not send activity; grey "Sending paused" only when nothing is live. */
 function SendStatusPill({ live, accent }: { live: boolean; accent: string }) {
+  const reduce = useReducedMotion();
   return live ? (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent) }}>
-      <span className="h-[6px] w-[6px] rounded-full" style={{ background: inkOn(accent) }} aria-hidden />
+      <span className="relative flex h-[7px] w-[7px]" aria-hidden>
+        {!reduce && (
+          <motion.span
+            className="absolute inline-flex h-full w-full rounded-full"
+            style={{ background: inkOn(accent) }}
+            initial={{ opacity: 0.5, scale: 1 }}
+            animate={{ opacity: 0, scale: 2.4 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
+          />
+        )}
+        <span className="relative inline-flex h-[7px] w-[7px] rounded-full" style={{ background: inkOn(accent) }} />
+      </span>
       Live
     </span>
   ) : (
@@ -5019,11 +5132,112 @@ function SendStatusPill({ live, accent }: { live: boolean; accent: string }) {
   );
 }
 
-/** Outreach surface (live boards): the send program on its own first-class tab — this
- *  month's allowance, the bar, the sources, the message sequences, the first list, the
- *  inbox, the client-engager play, orbit finds, and the live send log. Reads usage + the
- *  per-lead send log from live RPCs; nothing here is baked pipeline JSON. */
-function OutreachSurface({ board, accent, usage = null, log = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null }) {
+/** Plain-language "Today 3:00 PM PT" for a send window timestamp, or a soft fallback. */
+function fmtWindowLA(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: CLIENT_TZ });
+  const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
+  const today = dayKey(now);
+  const tmrw = dayKey(new Date(now.getTime() + 86400000));
+  const target = dayKey(d);
+  const label = target === today ? 'Today' : target === tmrw ? 'Tomorrow' : d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
+  return `${label} ${time} PT`;
+}
+
+/** Plain source label for a queued prospect's lane key. */
+function laneLabel(lane: string): string {
+  return lane === 'orbit' ? 'Client orbit' : lane === 'cold' ? 'Cold' : lane === 'warm' ? 'Warm engager' : lane;
+}
+
+/** "What sends next" — the live send queue in the exact order the engine works it, plus
+ *  today's count and the next window. Reads the status RPC; hidden until it loads. This
+ *  is the "what happens next" view. Rows lift on hover; the list slides in on mount. */
+function UpNextBlock({ status, accent }: { status: OutreachStatus | null; accent: string }) {
+  const reduce = useReducedMotion();
+  if (!status) return null;
+  const queue = status.up_next || [];
+  const cap = status.daily_cap || 20;
+  const sent = status.todays_sends || 0;
+  const win = fmtWindowLA(status.next_window_at);
+  const pct = Math.min(100, Math.round((sent / Math.max(cap, 1)) * 100));
+  return (
+    <section className="mb-10">
+      <LeadsBlockHead n="00" label="up next" sub="what goes out, and when" />
+      <div className="overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        {/* Today's pace + next window — the "when". */}
+        <div className="flex flex-wrap items-end justify-between gap-4 px-5 pt-5">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <CountUp value={sent} className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 40, lineHeight: 1, color: INK }} />
+              <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 22, lineHeight: 1, color: INK_MUTE }}>/ {cap}</span>
+            </div>
+            <div className="mt-1.5 text-[12.5px] font-semibold" style={{ color: INK }}>connections sent today</div>
+          </div>
+          <div className="text-right">
+            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>next send</div>
+            <div className="mt-1 flex items-center justify-end gap-1.5 text-[14px] font-semibold" style={{ fontFamily: BODY, color: caText(accent) }}>
+              {win ? (
+                <>{win}</>
+              ) : (
+                <>Sending now</>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Pace bar. */}
+        <div className="mx-5 mt-3.5 h-[6px] overflow-hidden rounded-full" style={{ background: PAPER_SUNK }}>
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: caText(accent) }}
+            initial={{ width: reduce ? `${pct}%` : 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+        {/* The queue, in send order. */}
+        <div className="mt-4 border-t px-2 pb-2" style={{ borderColor: DIVIDE }}>
+          {queue.length === 0 ? (
+            <p className="px-3 py-6 text-center text-[12.5px]" style={{ fontFamily: BODY, color: INK_MUTE }}>
+              The queue is clear for now. Fresh prospects join it as they are sourced.
+            </p>
+          ) : (
+            <ol>
+              {queue.map((q, i) => (
+                <motion.li
+                  key={(q.name || '') + (q.company || '') + i}
+                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: reduce ? 0 : Math.min(i * 0.045, 0.4), ease: [0.16, 1, 0.3, 1] }}
+                  className="group -mx-0 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+                >
+                  <span className="w-5 shrink-0 tabular-nums text-right" style={{ fontFamily: MONO, fontSize: 11, color: FAINT }}>{i + 1}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-semibold" style={{ color: INK }}>{q.name}</span>
+                    {q.company && <span className="block truncate text-[12px]" style={{ color: DIM }}>{q.company}{q.domain ? <span style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}> · {q.domain}</span> : null}</span>}
+                  </span>
+                  {typeof q.icp_score === 'number' && (
+                    <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>fit {q.icp_score}</span>
+                  )}
+                  <span className="w-[86px] shrink-0 text-right uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: INK_MUTE }}>{laneLabel(q.lane)}</span>
+                  <span className="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden style={{ color: FAINT, fontSize: 12 }}>→</span>
+                </motion.li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Outreach surface (live boards): the send program on its own first-class tab — the
+ *  up-next queue, this month's allowance, the bar, the sources, the message sequences,
+ *  the first list, the inbox, the client-engager play, orbit finds, and the live send log.
+ *  Reads usage + status + the per-lead send log from live RPCs; nothing here is baked. */
+function OutreachSurface({ board, accent, usage = null, log = null, status = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null }) {
   const o = board.outreach;
   if (!o) {
     return (
@@ -5039,9 +5253,11 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
   // never surfaces a message-less shell.
   const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
   const seqChannels = (o.sequences?.channels || []).filter((ch) => !isDeadLane(ch.name));
-  // Plain send state: green "Live" the moment real sends show up (usage counts or a send
-  // log entry), grey "Sending paused" until then. Honest — nothing sends until go-live.
-  const sendingLive = (log != null && log.length > 0) || (usage != null && (usage.connect_sent > 0 || usage.dm_sent > 0 || usage.inmail_used > 0));
+  // Send state reads the committed campaign status (is_active + the scheduled first-send),
+  // never send activity. Falls back to the send-activity heuristic only until status loads.
+  const sendingLive = status != null
+    ? status.is_live
+    : (log != null && log.length > 0) || (usage != null && (usage.connect_sent > 0 || usage.dm_sent > 0 || usage.inmail_used > 0));
 
   return (
     <div className="pb-16">
@@ -5052,23 +5268,25 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
         </div>
         <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(29px, 3.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>Outreach</h2>
         <p className="mt-3.5 max-w-[62ch]" style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
-          {o.note || 'Who your engine reaches out to on your behalf, the exact messages it sends, and every send once it goes out. Nothing sends until your written go.'}
+          {o.note || 'Who your engine reaches out to on your behalf, the exact messages it sends, and every send once it goes out.'}
         </p>
       </div>
+
+      <UpNextBlock status={status} accent={accent} />
 
       <section className="mb-10">
         {/* This month's send allowance — real counts from the send log, caps from
             config. Honest zero until the engine sends; never a fabricated figure. */}
         {usage && (
           <div className="mb-8">
-            <LeadsBlockHead n="00" label="this month" sub="your RISE DTC send allowance" />
+            <LeadsBlockHead n="01" label="this month" sub="your RISE DTC send allowance" />
             <div className="grid gap-3 sm:grid-cols-3">
               {[
                 { big: `${usage.inmail_remaining}`, unit: 'left', lbl: 'InMails remaining this month', sub: `${usage.inmail_used} sent of ${usage.inmail_cap}`, hot: usage.inmail_remaining <= 5 },
                 { big: `${usage.connect_sent}`, unit: `of ${usage.connect_cap}`, lbl: 'Connection requests', sub: `${usage.connect_cap - usage.connect_sent} left this month`, hot: false },
                 { big: `${usage.dm_sent}`, unit: 'sent', lbl: 'DMs sent this month', sub: usage.dm_sent === 0 ? 'none sent yet' : 'follow-ups to accepts', hot: false },
               ].map((t) => (
-                <div key={t.lbl} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                <div key={t.lbl} className={`rounded-xl bg-white p-4 ${LIFT}`} style={{ border: `1px solid ${LINE}` }}>
                   <div className="flex items-baseline gap-1.5">
                     <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: t.hot ? caText(accent) : INK }}>{t.big}</span>
                     <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>{t.unit}</span>
@@ -5083,7 +5301,7 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
 
         {/* 01 — The bar: who qualifies. */}
         {o.icp && (<>
-          <LeadsBlockHead n="01" label="the bar" sub={o.icp.label} />
+          <LeadsBlockHead n="02" label="the bar" sub={o.icp.label} />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {(o.icp.bar || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -5102,10 +5320,10 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
         {/* 02 — The sources people come from. Counts are real or absent. Send state lives
             in the header pill, so no per-source status stamp here. */}
         {lanes.length > 0 && (<>
-          <LeadsBlockHead n="02" label="the sources" />
+          <LeadsBlockHead n="03" label="the sources" />
           <div className="grid gap-3 sm:grid-cols-2">
             {lanes.map((ln) => (
-              <div key={ln.key || ln.name} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+              <div key={ln.key || ln.name} className={`rounded-xl bg-white p-4 ${LIFT}`} style={{ border: `1px solid ${LINE}` }}>
                 <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ln.name}</div>
                 {(typeof ln.count === 'number' || typeof ln.scanned === 'number') && (
                   <div className="mt-2.5 flex items-baseline gap-4">
@@ -5137,7 +5355,7 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
 
         {/* 03 — Per-channel sequences: the actual messages each source sends, cold vs warm. */}
         {o.sequences && seqChannels.length > 0 && (<>
-          <LeadsBlockHead n="03" label="the sequences" sub="message by message" />
+          <LeadsBlockHead n="04" label="the sequences" sub="message by message" />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {o.sequences.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
             <div className="mt-4 space-y-2.5">
@@ -5149,10 +5367,6 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
                     <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} {ch.steps.length === 1 ? 'message' : 'messages'} <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                   </summary>
                   <div className="px-4 pb-4">
-                  <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>Nothing sends until your written go.</div>
-                  {ch.gate && (
-                    <p className="mb-2 rounded px-2.5 py-1.5 text-[12px] leading-snug" style={{ color: '#8a6d1a', background: '#faf5e6', border: '1px solid #eadfb4' }}>{ch.gate}</p>
-                  )}
                   {ch.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
                   <div className="mt-3 space-y-3">
                     {ch.steps.map((st, i) => (
@@ -5162,12 +5376,6 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
                           {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
                         </div>
                         <SeqText text={st.text} accent={accent} />
-                        {st.flag && (
-                          <div className="mt-2 flex items-start gap-1.5 rounded px-2 py-1.5" style={{ background: '#faf5e6', border: '1px solid #eadfb4' }}>
-                            <span aria-hidden style={{ color: '#8a6d1a', fontSize: 11, lineHeight: 1.4 }}>⚑</span>
-                            <span className="text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>{st.flag}</span>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -5180,7 +5388,7 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
 
         {/* 04 — Named candidate list: real sourced people. */}
         {o.candidates && (o.candidates.groups || []).length > 0 && (<>
-          <LeadsBlockHead n="04" label="the first list" sub="name by name" />
+          <LeadsBlockHead n="05" label="the first list" sub="name by name" />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
             <div className="mt-4 space-y-2.5">
@@ -5261,63 +5469,9 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
           </div>
         </>)}
 
-        {/* 06 — Client orbit: brand, your contact, and where the scan stands. */}
-        {o.orbit_plan && (() => {
-          const op = o.orbit_plan!;
-          return (<>
-            <LeadsBlockHead n="06" label="client engager" sub="warm intros through brands you already serve" />
-            <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-              {op.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
-              {(op.seeds || []).length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the brands you serve</div>
-                  {(op.seeds || []).map((s) => {
-                    const [brand, person] = s.name.split(/\s*·\s*/);
-                    return (
-                      <div key={s.name} className="grid gap-x-4 gap-y-0.5 border-t py-2.5 sm:grid-cols-[220px_1fr]" style={{ borderColor: DIVIDE }}>
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{brand}</span>
-                          {person && <span className="block truncate text-[12px]" style={{ color: DIM }}>{person} · your contact there</span>}
-                        </span>
-                        {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {(op.touches || []).length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the three touches</div>
-                  {(op.touches || []).map((t) => (
-                    <div key={t.label} className="flex gap-3 border-t py-2" style={{ borderColor: DIVIDE }}>
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
-                        <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{t.label}</span>
-                      </span>
-                      <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{t.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {(op.samples || []).length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>sample messages, in your voice</div>
-                  <div className="grid gap-3 lg:grid-cols-2">
-                    {(op.samples || []).map((sm, i) => (
-                      <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                        {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{sm.label}</div>}
-                        <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </>);
-        })()}
-
-        {/* 07 — Orbit finds: real people pulled from the client's orbit scans. */}
+        {/* Orbit finds: real people pulled from the client's orbit scans. */}
         {o.orbit_finds && (o.orbit_finds.people || []).length > 0 && (<>
-          <LeadsBlockHead n="07" label="orbit finds" sub="pending your review" />
+          <LeadsBlockHead n="06" label="orbit finds" sub="sourced from your clients' networks" />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {o.orbit_finds.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.orbit_finds.note}</p>}
             <div className="mt-3">
@@ -5345,13 +5499,12 @@ function OutreachSurface({ board, accent, usage = null, log = null }: { board: B
                 </div>
               ))}
             </div>
-            <p className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Nothing queued or sent. Pulled for your review only.</p>
           </div>
         </>)}
 
         {/* 08 — Send log: the real per-lead outbound trail + reply status, read live from
             outreach_messages (never baked JSON). Honest empty until sends go live. */}
-        <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
+        <LeadsBlockHead n="07" label="send log" sub="every message actually sent, from the live record" />
         <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
           {(!log || log.length === 0) ? (
             <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
@@ -6609,6 +6762,34 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token]);
 
+  // Live send status (live): campaign state + the up-next queue, from a read-only RPC.
+  // Drives the "Live" pill (reads campaign is_active + the committed first-send time,
+  // never send activity) and the "what sends next" view. Same token/session posture.
+  const [outreachStatus, setOutreachStatus] = useState<OutreachStatus | null>(null);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_outreach_status', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_outreach_status_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; status?: OutreachStatus | null } | null;
+        if (!out?.ok || !out.status) return;
+        setOutreachStatus(out.status);
+      } catch { /* status strip is progressive enhancement — absent = simply not shown */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
   // Slot state (live): a removed slot — and any replacement pulled into it — is
   // reconstructed from the insert-only action log so it SURVIVES a hard refresh (and
   // shows the same on any device). This is the server truth; localStorage is only a
@@ -7504,7 +7685,7 @@ export default function ClientBoardPage() {
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} />,
+    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
