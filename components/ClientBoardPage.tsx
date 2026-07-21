@@ -146,7 +146,7 @@ interface QueueItem {
    *  style chip so the deck shows the range of formats, not one look. */
   style?: string;
 }
-interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
+interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string; time?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
 interface NewsletterIssue { id: string; ref?: string; date: string; stage: 'scheduled' | 'planned' | string; title: string; body?: string }
 interface NurtureStep { step: string; detail?: string }
@@ -3251,13 +3251,18 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
   // committed calendar item links to it. Render it on its day so the calendar never
   // contradicts the queue ("0 posts" while a post sits scheduled for Friday).
   const linkedRefs = new Set(cal.items.map((it) => it.ref).filter(Boolean));
+  // Live boards schedule from the buffer: a post carries a real publish_date while its stage
+  // stays 'review' (it never flips to 'scheduled' until it publishes). So on a live board ANY
+  // queue item with a date belongs on the calendar — filtering by stage==='scheduled' left the
+  // whole month empty. Preview boards keep the exact prior behavior (only 'scheduled' renders).
   const queueItems: CalendarItem[] = board.queue
-    .filter((q) => q.stage === 'scheduled' && q.publish_date && !linkedRefs.has(q.id))
+    .filter((q) => q.publish_date && !linkedRefs.has(q.id) && (live ? q.stage !== 'published' : q.stage === 'scheduled'))
     .map((q) => ({
       date: q.publish_date!,
       kind: q.kind === 'carousel' ? 'carousel' : q.kind === 'lm' ? 'lm' : 'post',
       label: q.hook || q.title || 'Scheduled post',
       ref: q.id,
+      time: q.scheduled_at ? fmtTimeLA(q.scheduled_at) : undefined,
     }));
   queueItems.forEach((it) => {
     const arr = byDate.get(it.date) || [];
@@ -3288,7 +3293,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 
   // Span the grid from cal.start through the END of the last scheduled item's month, so a
   // plan that runs into next month renders whole (cal.weeks is only the seeded minimum).
-  const lastIso = cal.items.reduce((m, it) => (it.date > m ? it.date : m), cal.start);
+  const lastIso = [...cal.items, ...queueItems].reduce((m, it) => (it.date > m ? it.date : m), cal.start);
   const lastD = new Date(lastIso + 'T00:00:00');
   const endOfSpan = new Date(lastD.getFullYear(), lastD.getMonth() + 1, 0);
   const spanDays = Math.max(1, Math.round((endOfSpan.getTime() - start.getTime()) / 86400000) + 1);
@@ -3352,7 +3357,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
             <div className="mb-1 mt-3 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] tabular-nums" style={{ color: FAINT }}>{fmtDay(iso)}</div>
             <div className="flex flex-col gap-1">
               {dayItems.map((it, i) => {
-                const time = KIND_TIME[it.kind];
+                const time = it.time || KIND_TIME[it.kind];
                 if (it.kind === 'newsjack' || it.kind === 'call' || it.kind === 'review') {
                   return <div key={i} className="rounded-[6px] px-2.5 py-2 text-[12px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                 }
@@ -3416,7 +3421,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                     </div>
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
-                        const time = KIND_TIME[it.kind];
+                        const time = it.time || KIND_TIME[it.kind];
                         const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} · ${labelOf(it)}`;
                         if (it.kind === 'newsjack' || it.kind === 'call' || it.kind === 'review') {
                           return <div key={i} title={tip} className="truncate rounded-[4px] px-1.5 py-1 text-[10.5px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
