@@ -73,6 +73,10 @@ type Stage = 'planned' | 'drafted' | 'review' | 'scheduled' | 'published';
  *  instant draft). Attached to queue items as `alt_angles` — the slot IS the queue
  *  item, so the bench travels with it. */
 interface AltAngle { id: string; title: string; hook: string; pillar?: string; drafts_by?: string }
+/** A ready draft the client can pull into a freed slot (client_board_replacement_pool). */
+interface PoolDraft { id: string; title?: string; body?: string }
+/** What now occupies a freed slot after the client picks from the pool. */
+interface SlotReplacement { draft_id: string; title?: string; hook?: string; body?: string }
 interface LeadMagnetEntry {
   id: string;
   title: string;
@@ -174,8 +178,18 @@ interface OutreachSpec {
     title?: string; note?: string;
     channels: {
       key?: string; name: string; badge?: string; note?: string;
-      steps: { label: string; when?: string; text: string }[];
+      /** Every lane ships off. When false (or absent), the lane carries a NOT ARMED stamp. */
+      armed?: boolean;
+      /** What has to happen before the lane can arm (e.g. a named-client OK). */
+      gate?: string;
+      steps: { label: string; when?: string; text: string; flag?: string }[];
     }[];
+  };
+  /** Real people pulled from the client's orbit scans, honest one-liners + caveats.
+   *  Nothing queued or sent — surfaced for the client's yes/no before any lane arms. */
+  orbit_finds?: {
+    note?: string;
+    people: { name: string; role?: string; company?: string; domain?: string; linkedin_url?: string; one_liner?: string; caveat?: string }[];
   };
   /** Named candidate list awaiting the client's bless (live boards). Every item is a REAL
    *  sourced person — no samples here, ever. Groups map to lanes. */
@@ -1135,7 +1149,7 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
   );
 }
 
-function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, foldPhotos, live = false }: {
+function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
@@ -1150,6 +1164,16 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
   setView: (v: ContentView) => void;
   /** Week-home "skip this day" marks: skipped items stay listed but lose their actions. */
   skips: Record<string, true>;
+  /** A freed slot the client refilled from the pool (keyed by slot id). */
+  replacements?: Record<string, SlotReplacement>;
+  /** Ready drafts (board_visible, off the queue) the client can pull into a freed slot. */
+  pool?: PoolDraft[];
+  /** The slot's own bench angles. */
+  benchFor?: (id: string) => AltAngle[];
+  /** Open-slot actions: restore the original, pull a pool draft, or take a bench angle. */
+  onRestore?: (id: string) => void;
+  onPickReplacement?: (id: string, item: PoolDraft) => void;
+  onPickReplacementAngle?: (id: string, alt: AltAngle) => void;
   /** Live mode folds the client photo pool in here (no standalone Photos tab). */
   foldPhotos?: React.ReactNode;
 }) {
@@ -1173,6 +1197,8 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
   const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
   const firstReviewId = groups.find((g) => g.stage === 'review')?.items.filter((q) => !skips[q.id]).sort(byDate)[0]?.id || null;
   const [openRow, setOpenRow] = useState<string | null>(firstReviewId);
+  /** Open-slot: which freed slot currently has its replacement picker expanded. */
+  const [pickerRow, setPickerRow] = useState<string | null>(null);
   /** Live pool: a lead-magnet row opens the full asset drawer (cover, live page, promo kit). */
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
   const flashStyle = (id: string): React.CSSProperties => ({
@@ -1319,6 +1345,56 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                       </div>
                       <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>Nothing publishes until you approve it.</div>
                     </>
+                  ) : stage === 'review' && skipped && live ? (
+                    (() => {
+                      const repl = replacements[q.id];
+                      const bench = benchFor ? benchFor(q.id) : [];
+                      const showPicker = pickerRow === q.id;
+                      if (repl) {
+                        return (
+                          <div className="rounded-lg p-3.5" style={{ background: caWash(accent, 5), border: `1px solid ${caBorder(accent, 30)}` }}>
+                            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>now running in this slot</div>
+                            <div className="mt-1.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14.5, color: INK }}>{repl.title || 'A ready draft'}</div>
+                            {(repl.body || repl.hook) && <p className="mt-0.5" style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.55, color: INK_SOFT }}>{repl.body || repl.hook}</p>}
+                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="mt-2.5" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>undo — bring the original back</button>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE_BOLD}` }}>
+                          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>your slot · open</div>
+                          <p className="mt-1.5" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>Your slot. Post your own, restore this one, or pick a replacement.</p>
+                          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}>Restore this post</button>
+                            <button onClick={(e) => { e.stopPropagation(); setPickerRow(showPicker ? null : q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>{showPicker ? 'Close' : 'Pick a replacement'}</button>
+                          </div>
+                          {showPicker && (
+                            <div className="mt-3 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                              {bench.length === 0 && pool.length === 0 ? (
+                                <p style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>No other ready drafts to pull in yet. Post your own in this slot, or restore the original.</p>
+                              ) : (
+                                <>
+                                  {bench.length > 0 && <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from this slot&apos;s bench</div>}
+                                  {bench.map((alt) => (
+                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{alt.title}</span><span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span></span>
+                                      <button onClick={() => { setPickerRow(null); onPickReplacementAngle?.(q.id, alt); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
+                                    </div>
+                                  ))}
+                                  {pool.length > 0 && <div className="mt-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from your ready drafts</div>}
+                                  {pool.map((it) => (
+                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{it.title || 'Ready draft'}</span>{it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}</span>
+                                      <button onClick={() => { setPickerRow(null); onPickReplacement?.(q.id, it); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
                   ) : q.generating ? (
                     <BuildSequence trail={q.agent_trail || []} accent={accent} />
                   ) : stage === 'scheduled' ? (
@@ -4096,6 +4172,23 @@ function LeadRow({ lead, accent, onOpen, live = false }: { lead: PipelineLead; a
   );
 }
 
+/** Renders a sequence message, styling {curly-brace} fields as unmistakable fill-at-send
+ *  chips so nothing on the board reads as a finished, ready-to-fire message. */
+function SeqText({ text, accent }: { text: string; accent: string }) {
+  const parts = text.split(/(\{[^}]+\})/g);
+  return (
+    <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>
+      {parts.map((p, i) =>
+        /^\{[^}]+\}$/.test(p) ? (
+          <span key={i} className="mx-[1px] rounded px-1 py-[1px]" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent), background: caWash(accent, 8), border: `1px solid ${caBorder(accent, 30)}` }}>{p.slice(1, -1)}</span>
+        ) : (
+          <span key={i}>{p}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
 /** Numbered section head for the live Leads tab: the outreach program reads as six
  *  numbered chapters instead of a scatter of card titles (mirrors the dashboard nav
  *  hierarchy chunking). */
@@ -4251,12 +4344,20 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
                 <div className="mt-4 space-y-2.5">
                   {o.sequences.channels.map((ch) => (
                     <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
-                      <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
+                      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                         <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
+                        {/* Every lane ships off. The stamp is not decorative — nothing sends until the written go. */}
+                        {ch.armed !== true && (
+                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: '#8a6d1a', border: '1px solid #d9c17a', background: '#faf5e6', padding: '2px 6px' }}>not armed</span>
+                        )}
                         {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
-                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} messages <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                        <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} {ch.steps.length === 1 ? 'message' : 'messages'} <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                       </summary>
                       <div className="px-4 pb-4">
+                      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>Nothing sends until your written go.</div>
+                      {ch.gate && (
+                        <p className="mb-2 rounded px-2.5 py-1.5 text-[12px] leading-snug" style={{ color: '#8a6d1a', background: '#faf5e6', border: '1px solid #eadfb4' }}>{ch.gate}</p>
+                      )}
                       {ch.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{ch.note}</p>}
                       <div className="mt-3 space-y-3">
                         {ch.steps.map((st, i) => (
@@ -4265,7 +4366,13 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
                               <span className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{st.label}</span>
                               {st.when && <span style={{ fontFamily: MONO, fontSize: 9, color: FAINT }}>{st.when}</span>}
                             </div>
-                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{st.text}</p>
+                            <SeqText text={st.text} accent={accent} />
+                            {st.flag && (
+                              <div className="mt-2 flex items-start gap-1.5 rounded px-2 py-1.5" style={{ background: '#faf5e6', border: '1px solid #eadfb4' }}>
+                                <span aria-hidden style={{ color: '#8a6d1a', fontSize: 11, lineHeight: 1.4 }}>⚑</span>
+                                <span className="text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>{st.flag}</span>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -4422,8 +4529,43 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
               </>);
             })()}
 
-            {/* 07 — the pipeline ledger that follows. */}
-            <LeadsBlockHead n="07" label="pipeline" sub="everyone your content pulled in" />
+            {/* 07 — Orbit finds: the real people pulled from the client's orbit scans. Honest
+                one-liners + caveats; nothing queued or sent. No pipeline steppers here. */}
+            {o.orbit_finds && (o.orbit_finds.people || []).length > 0 && (<>
+              <LeadsBlockHead n="07" label="orbit finds" sub="pending your review" />
+              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                {o.orbit_finds.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.orbit_finds.note}</p>}
+                <div className="mt-3">
+                  {o.orbit_finds.people.map((p) => (
+                    <div key={p.name + (p.company || '')} className="grid gap-x-4 gap-y-1 border-t py-3 sm:grid-cols-[210px_1fr]" style={{ borderColor: DIVIDE }}>
+                      <span className="min-w-0">
+                        {p.linkedin_url ? (
+                          <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="block truncate text-[13px] font-semibold underline-offset-2 hover:underline" style={{ color: INK }}>{p.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
+                        ) : (
+                          <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{p.name}</span>
+                        )}
+                        <span className="block truncate text-[12px]" style={{ color: DIM }}>
+                          {[p.role, p.company].filter(Boolean).join(' · ')}
+                          {p.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{p.domain}</span></>}
+                        </span>
+                      </span>
+                      <span className="min-w-0">
+                        {p.one_liner && <span className="block text-[12.5px] leading-snug" style={{ color: INK_SOFT }}>{p.one_liner}</span>}
+                        {p.caveat && (
+                          <span className="mt-1 inline-flex items-start gap-1.5 text-[11.5px] leading-snug" style={{ color: '#8a6d1a' }}>
+                            <span aria-hidden>⚑</span>{p.caveat}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Nothing queued or sent. Pulled for your review only.</p>
+              </div>
+            </>)}
+
+            {/* 08 — the pipeline ledger that follows. */}
+            <LeadsBlockHead n="08" label="pipeline" sub="everyone your content pulled in" />
           </section>
         );
       })()}
@@ -4465,7 +4607,7 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
               <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
                 <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>{live ? 'High-fit engagers' : 'ICP reactors'}</span>
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
-                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>{live ? 'engaged your post, first touch queued' : 'engaged your post, we reached out'}</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>{live ? 'engaged your post, pending your review' : 'engaged your post, we reached out'}</span>
               </div>
               {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} live={live} />)}
             </section>
@@ -5460,6 +5602,19 @@ export default function ClientBoardPage() {
   useEffect(() => {
     try { localStorage.setItem(skipsKey, JSON.stringify(weekSkips)); } catch { /* private mode */ }
   }, [weekSkips, skipsKey]);
+  // A freed slot the client filled from the pool. Keyed by the removed slot's id → the
+  // chosen replacement. Persisted client-side AND reconstructed from the action log on
+  // load (client_board_slot_state), so a replacement survives a hard refresh.
+  const replKey = `cb-repl-${slug || ''}`;
+  const [slotReplacements, setSlotReplacements] = useState<Record<string, SlotReplacement>>(() => {
+    try { const raw = localStorage.getItem(`cb-repl-${slug || ''}`); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(replKey, JSON.stringify(slotReplacements)); } catch { /* private mode */ }
+  }, [slotReplacements, replKey]);
+  // The pool of ready drafts (board_visible, not already on the queue) the client can pull
+  // into a freed slot. Fetched once per live load; the bench angles come from the slot itself.
+  const [replacementPool, setReplacementPool] = useState<PoolDraft[]>([]);
   const [flashId, setFlashId] = useState<string | null>(null);
   // Content view lives up here so the page can widen the container for the kanban.
   const [contentView, setContentViewState] = useState<ContentView>(() => {
@@ -5588,6 +5743,49 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token]);
 
+  // Slot state (live): a removed slot — and any replacement pulled into it — is
+  // reconstructed from the insert-only action log so it SURVIVES a hard refresh (and
+  // shows the same on any device). This is the server truth; localStorage is only a
+  // first-paint hint. Same token/session posture as the schedule read.
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let sResp: { data: unknown; error: { message: string } | null };
+        let pResp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          sResp = await supabase.rpc('client_board_slot_state', { p_slug: slug, p_token: token });
+          pResp = await supabase.rpc('client_board_replacement_pool', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          sResp = await supabase.rpc('client_board_slot_state_v2', { p_slug: slug, p_session: sess.token });
+          pResp = await supabase.rpc('client_board_replacement_pool_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled) return;
+        if (!sResp.error) {
+          const out = sResp.data as { ok?: boolean; removed?: string[]; replacements?: { ref: string; draft_id: string; title?: string; hook?: string }[] } | null;
+          if (out?.ok) {
+            const removed: Record<string, true> = {};
+            (out.removed || []).forEach((id) => { removed[id] = true; });
+            setWeekSkips(removed);
+            const repl: Record<string, SlotReplacement> = {};
+            (out.replacements || []).forEach((r) => { if (r.ref) repl[r.ref] = { draft_id: r.draft_id, title: r.title, hook: r.hook }; });
+            setSlotReplacements(repl);
+          }
+        }
+        if (!pResp.error) {
+          const out = pResp.data as { ok?: boolean; items?: PoolDraft[] } | null;
+          if (out?.ok && Array.isArray(out.items)) setReplacementPool(out.items);
+        }
+      } catch { /* progressive enhancement — the localStorage hint keeps the slot honest */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
   // History log (live): reads the insert-only client_board_actions audit for one draft.
   const fetchHistory = async (ref: string): Promise<HistoryEntry[]> => {
     if (!slug) return [];
@@ -5697,6 +5895,36 @@ export default function ClientBoardPage() {
   };
   const unskipDay = (id: string) => {
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+  };
+  // Open-slot: restore the original post. Clears the removal and any replacement, and
+  // records both so the log stays the source of truth across refreshes.
+  const restoreSlot = (id: string) => {
+    const wasReplaced = !!slotReplacements[id];
+    setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    setSlotReplacements((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    if (isLiveRef.current) {
+      void act('note', id, { event: 'post_restored' });
+      if (wasReplaced) void act('note', id, { event: 'slot_replace_undone' });
+    }
+  };
+  // Open-slot: pull a ready draft from the pool into the freed slot. The slot stays flagged
+  // removed (the original is vetoed) and now carries the replacement. Logged angle_swap-style.
+  const pickReplacement = (id: string, item: PoolDraft) => {
+    setSlotReplacements((s) => ({ ...s, [id]: { draft_id: item.id, title: item.title, body: item.body } }));
+    flash(id);
+    if (isLiveRef.current) { void act('note', id, { event: 'slot_replaced', draft_id: item.id, title: item.title ?? null, hook: (item.body || '').slice(0, 120) }); }
+  };
+  // Open-slot: fill the freed slot with one of the slot's own bench angles. This restores
+  // the slot and applies the angle swap (the existing same-slot swap path).
+  const pickReplacementAngle = (id: string, alt: AltAngle) => {
+    setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    setSlotReplacements((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    setAngleSwaps((s) => ({ ...s, [id]: alt }));
+    flash(id);
+    if (isLiveRef.current) {
+      void act('note', id, { event: 'post_restored' });
+      void act('note', id, { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook });
+    }
   };
   const undoApprove = () => {
     window.clearTimeout(undoTimer.current);
@@ -6195,7 +6423,7 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
