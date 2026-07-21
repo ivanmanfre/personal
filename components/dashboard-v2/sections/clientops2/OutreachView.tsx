@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import {
   useClientOutreach,
+  useClientPendingDrafts,
+  approveRiseDraft,
   fmtDate,
   ageLabel,
   GATE,
@@ -10,6 +12,7 @@ import {
   type OutreachProspect,
   type OutreachSeq,
   type OutreachSeqStep,
+  type PendingDraft,
 } from './shared';
 
 // Prospect icp_score is a 0-10 lane-fit scale (NOT the 0-100 content-idea scale),
@@ -40,7 +43,15 @@ function IcpChip({ score }: { score: number | null }) {
  * READ ONLY. Nothing on this surface sends. RPC is gated + client-scoped.
  */
 
-type Mode = 'list' | 'waiting';
+type Mode = 'list' | 'waiting' | 'drafts';
+
+// Human label + register for each draft kind the RISE machine produces.
+const KIND_META: Record<PendingDraft['kind'], { label: string; blurb: string }> = {
+  reply: { label: 'Reply draft', blurb: 'Drafted answer to their reply' },
+  dm2: { label: 'DM 2 · scan', blurb: 'Delivers their scan' },
+  dm1: { label: 'DM 1', blurb: 'Opening message' },
+  draft: { label: 'Draft', blurb: 'Queued message' },
+};
 
 const laneBadge = (c: OutreachCampaign): string => (c.is_active ? 'Live' : 'Sending paused');
 
@@ -54,6 +65,7 @@ const channelLabel = (p: OutreachProspect): string => {
 
 export function OutreachView({ clientId, company }: { clientId: string; company: string }) {
   const { data, error, reload } = useClientOutreach(clientId);
+  const { drafts: pendingDrafts, error: draftsError, reload: reloadDrafts } = useClientPendingDrafts(clientId);
   const [mode, setMode] = useState<Mode>('list');
 
   const seqByLane = useMemo(() => {
@@ -80,6 +92,7 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
   const prospects = data?.prospects || [];
   const totalProspects = prospects.length;
   const totalWaiting = needsReply.length + awaiting.length;
+  const totalDrafts = (pendingDrafts || []).length;
   const anyArmed = !!data?.armed;
 
   return (
@@ -97,7 +110,10 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
           <button role="tab" aria-selected={mode === 'waiting'} className={`co3-tab ${mode === 'waiting' ? 'co3-tab--on' : ''}`} onClick={() => setMode('waiting')}>
             Waiting on response{totalWaiting ? ` · ${totalWaiting}` : ''}
           </button>
-          <button className="ws-tool-icon" onClick={() => reload()} title="Refresh outreach">↻</button>
+          <button role="tab" aria-selected={mode === 'drafts'} className={`co3-tab ${mode === 'drafts' ? 'co3-tab--on' : ''} ${totalDrafts ? 'co3-tab--flag' : ''}`} onClick={() => setMode('drafts')}>
+            Drafts waiting on you{totalDrafts ? ` · ${totalDrafts}` : ''}
+          </button>
+          <button className="ws-tool-icon" onClick={() => { reload(); reloadDrafts(); }} title="Refresh outreach">↻</button>
         </div>
       </div>
 
@@ -111,14 +127,92 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
         </div>
       )}
 
+      {draftsError && mode === 'drafts' && <div className="co2-err">{draftsError}</div>}
+
       {data == null && !error ? (
         <div className="ws-loading">Loading outreach…</div>
       ) : mode === 'list' ? (
         <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} company={company} />
-      ) : (
+      ) : mode === 'waiting' ? (
         <WaitingView needsReply={needsReply} awaiting={awaiting} armed={anyArmed} />
+      ) : (
+        <DraftsView drafts={pendingDrafts} company={company} onApproved={reloadDrafts} />
       )}
     </section>
+  );
+}
+
+// ── Drafts waiting on you — pending DM1 / DM2 / reply drafts + the human send ──
+// Every draft the machine queued but has NOT sent (approved_at null). Each row
+// shows what triggered it (the inbound reply, for reply drafts), the draft text,
+// whether it carries the scan link, and a Send button. Send = approve the draft;
+// the Poll+Send dispatcher then sends from the client's seat. Server double-gates
+// (operator gate + risedtc_reply_send_armed), so nothing dispatches on a stray click.
+function DraftsView({ drafts, company, onApproved }: { drafts: PendingDraft[] | null; company: string; onApproved: () => void }) {
+  if (drafts == null) return <div className="ws-loading">Loading drafts…</div>;
+  if (drafts.length === 0) {
+    return (
+      <div className="co3-empty">
+        <div className="co3-empty-h">No drafts waiting on you.</div>
+        <div className="co3-empty-note">
+          When a prospect replies, the reply drafter writes an answer here (with their scan attached when they ask for it),
+          and scan-delivery DM 2s land here on their timer. Every draft waits for your approval — nothing sends on its own.
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="co3-drafts">
+      <div className="co3-drafts-note">
+        {drafts.length} draft{drafts.length === 1 ? '' : 's'} queued for {company}. Approve to send from {company}'s seat — nothing goes out until you do.
+      </div>
+      {drafts.map((d) => <DraftRow key={d.message_id} d={d} onApproved={onApproved} />)}
+    </div>
+  );
+}
+
+function DraftRow({ d, onApproved }: { d: PendingDraft; onApproved: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [done, setDone] = useState(false);
+  const meta = KIND_META[d.kind] || KIND_META.draft;
+  const send = async () => {
+    if (busy || done) return;
+    if (!window.confirm(`Approve and send this ${meta.label} to ${d.name || 'this lead'}? It sends from the client's seat.`)) return;
+    setBusy(true); setNote('');
+    const r = await approveRiseDraft(d.message_id);
+    setBusy(false);
+    if (r.ok) { setDone(true); setNote(r.note || 'Approved.'); setTimeout(onApproved, 1200); }
+    else setNote(r.note || r.error || 'Could not approve.');
+  };
+  return (
+    <div className="co3-draft">
+      <div className="co3-draft-top">
+        <IcpChip score={d.icp_score} />
+        <span className="co3-pident">
+          <span className="co3-pname">{d.name || '(unnamed)'}</span>
+          <span className="co3-pmeta">{d.company || '—'}</span>
+        </span>
+        <span className="co3-draft-tags">
+          <span className={`co3-kind co3-kind--${d.kind}`}>{meta.label}</span>
+          {d.has_link && <span className="co3-scanchip">scan link ✓</span>}
+        </span>
+      </div>
+      {d.kind === 'reply' && d.inbound?.text && (
+        <div className="co3-trigger">
+          <span className="co3-trigger-l">← they said</span>
+          <div className="co3-trigger-t">“{d.inbound.text}”</div>
+        </div>
+      )}
+      <div className="co3-draft-body">{d.text}</div>
+      <div className="co3-draft-row">
+        <button className="co3-send-btn" disabled={busy || done} onClick={send} title="Approve and send">
+          {done ? 'Approved ✓' : busy ? 'Approving…' : 'Approve & send'}
+        </button>
+        {!d.has_link && d.kind !== 'dm1' && <span className="co3-draft-warn">no scan link in this draft</span>}
+        {note && <span className="co3-send-note">{note}</span>}
+      </div>
+    </div>
   );
 }
 
@@ -429,6 +523,25 @@ const CSS = `
 .ec .co3-send-btn { font-family:var(--ec-sans); font-weight:700; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ec-paper); background:var(--ec-ink); border:1px solid var(--ec-ink); padding:0.32rem 0.9rem; cursor:pointer; }
 .ec .co3-send-btn:disabled { color:var(--ec-mutedc); background:var(--ec-paper); border:1px dashed var(--ec-rule-strong); cursor:not-allowed; }
 .ec .co3-send-note { font-family:var(--ec-clinical); font-style:italic; font-size:11.5px; color:var(--ec-mutedc); }
+
+/* Drafts waiting on you */
+.ec .co3-tab--flag { border-color:var(--ec-ink); }
+.ec .co3-tab--flag.co3-tab--on { background:var(--ec-red); border-color:var(--ec-red); }
+.ec .co3-drafts { display:flex; flex-direction:column; gap:1rem; }
+.ec .co3-drafts-note { font-family:var(--ec-sans); font-size:12px; line-height:1.5; color:var(--ec-body); background:rgba(19,18,16,0.04); border-left:3px solid var(--ec-ink); padding:0.6rem 0.8rem; }
+.ec .co3-draft { border:1px solid var(--ec-rule-strong); border-left:3px solid var(--ec-ink); padding:0.8rem 0.9rem; display:flex; flex-direction:column; gap:0.6rem; }
+.ec .co3-draft-top { display:flex; align-items:center; gap:0.8rem; }
+.ec .co3-draft-tags { display:flex; align-items:center; gap:0.4rem; flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end; }
+.ec .co3-kind { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; padding:0.14rem 0.42rem; color:var(--ec-paper); background:var(--ec-ink); }
+.ec .co3-kind--reply { background:var(--ec-red); }
+.ec .co3-kind--dm1 { color:var(--ec-mutedc); background:none; border:1px solid var(--ec-rule-strong); }
+.ec .co3-scanchip { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; padding:0.14rem 0.42rem; color:var(--ec-ink); border:1px solid var(--ec-ink); }
+.ec .co3-trigger { border-left:2px solid var(--ec-ink); padding:0.1rem 0 0.1rem 0.6rem; }
+.ec .co3-trigger-l { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
+.ec .co3-trigger-t { font-family:var(--ec-clinical); font-style:italic; font-size:12.5px; line-height:1.5; color:var(--ec-body); margin-top:0.15rem; }
+.ec .co3-draft-body { font-family:var(--ec-sans); font-size:13.5px; line-height:1.55; color:var(--ec-body); white-space:pre-wrap; background:var(--ec-paper); border:1px solid var(--ec-rule); padding:0.6rem 0.7rem; }
+.ec .co3-draft-row { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; }
+.ec .co3-draft-warn { font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
 
 /* Waiting */
 .ec .co3-empty { padding:2rem 0; }

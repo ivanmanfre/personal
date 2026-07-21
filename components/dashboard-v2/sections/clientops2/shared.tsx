@@ -308,6 +308,55 @@ export function useClientOutreach(clientId: string | null) {
   return { data, error, reload: load };
 }
 
+// ── Pending drafts (RISE "Drafts waiting on you") ────────────────────────────
+// Every outbound draft the machine has queued but NOT sent (approved_at null,
+// sent_at null): DM1 / DM2 (scan delivery) / reply drafts. Read-only + gated.
+// Approve flips approved_at via operator_approve_rise_draft; the Poll+Send
+// dispatcher then sends from the client's seat. Double-gated server-side
+// (operator_gate_ok + risedtc_reply_send_armed), so a stray click cannot dispatch.
+export interface PendingDraftInbound { text: string | null; at: string | null }
+export interface PendingDraft {
+  message_id: string;
+  prospect_id: string;
+  name: string | null;
+  company: string | null;
+  headline: string | null;
+  icp_score: number | null;
+  channel: string | null;
+  ai_model: string | null;
+  sequence_step: number | null;
+  kind: 'dm1' | 'dm2' | 'reply' | 'draft';
+  text: string | null;
+  has_link: boolean;
+  created_at: string | null;
+  inbound: PendingDraftInbound | null;
+}
+export function useClientPendingDrafts(clientId: string | null) {
+  const [drafts, setDrafts] = useState<PendingDraft[] | null>(null);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    if (!clientId) { setDrafts(null); return; }
+    setError('');
+    const { data, error: err } = await supabase.rpc('operator_client_pending_drafts', { p_gate: GATE, p_client_id: clientId });
+    if (err || (data && data.ok === false)) {
+      setError(err?.message || data?.error || 'drafts load failed');
+      setDrafts((prev) => prev ?? null);
+      return;
+    }
+    setDrafts((data?.drafts || []) as PendingDraft[]);
+  }, [clientId]);
+  useEffect(() => { load(); }, [load]);
+  return { drafts, error, reload: load };
+}
+/** Approve one pending RISE draft (sets approved_at → Poll+Send dispatches from
+ *  Mattan's seat). Returns the server note so the surface can show honest state. */
+export async function approveRiseDraft(messageId: string): Promise<{ ok: boolean; note?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('operator_approve_rise_draft', { p_gate: GATE, p_message_id: messageId });
+  if (error) return { ok: false, error: error.message };
+  const r = (data as { ok?: boolean; note?: string; error?: string }) || {};
+  return { ok: !!r.ok, note: r.note, error: r.error };
+}
+
 // ── Overview hook ────────────────────────────────────────────────────────────
 export function useClientsOverview() {
   const [clients, setClients] = useState<ClientOverview[] | null>(null);
