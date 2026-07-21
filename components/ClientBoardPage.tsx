@@ -376,6 +376,34 @@ function weekdayLA(scheduledAt?: string): string {
 function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boolean {
   return !!(q.scheduled_at || q.publish_date);
 }
+/** Weekend (Sat/Sun) in the client's timezone — the cadence is weekdays only, so a
+ *  weekend day is never a fillable slot. Uses a noon-UTC probe read in LA to avoid the
+ *  midnight-boundary date drift. */
+function isWeekendDay(iso?: string): boolean {
+  if (!iso) return false;
+  const wd = new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: CLIENT_TZ, weekday: 'short' });
+  return wd === 'Sat' || wd === 'Sun';
+}
+/** Resolve a lead-magnet launch post to its asset (cover + landing/resource link). Joins
+ *  by lm_ref (board id) first, then by the source_detail slug matched against a
+ *  lead_magnets url, then derives from the slug on the resources host (RRR has a live
+ *  landing but no board.lead_magnets row yet). The cover is rendered 404-safe (onError
+ *  hides it) so a missing cover still shows the link. */
+function resolveLaunchLm(q: Pick<QueueItem, 'lm_launch' | 'lm_ref' | 'source_detail' | 'title'>, board: Pick<Board, 'lead_magnets'>): { title: string; landing: string; cover?: string } | null {
+  const sd = q.source_detail;
+  const isLaunch = q.lm_launch || sd?.kind === 'lm_launch';
+  if (!isLaunch) return null;
+  const lms = board.lead_magnets || [];
+  const slug = (sd?.lm_ref || '').trim();
+  let lm = q.lm_ref ? lms.find((e) => e.id === q.lm_ref) : undefined;
+  if (!lm && slug) lm = lms.find((e) => (e.url || '').includes(slug));
+  if (lm && lm.url) return { title: lm.title, landing: lm.url, cover: (lm.covers && lm.covers[0]) || lm.cover_url };
+  if (slug && /^[a-z0-9-]+$/.test(slug)) {
+    const landing = `https://resources.ivanmanfredi.com/${slug}/`;
+    return { title: sd?.label || q.title || 'Lead magnet', landing, cover: `${landing}assets/cover.jpg` };
+  }
+  return null;
+}
 /** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
  *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
 function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
@@ -656,7 +684,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <span className="min-w-0">
           <span className="block truncate font-semibold" style={{ fontSize: size === 'lg' ? 13.5 : 12.5, color: '#111' }}>{name}</span>
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11.5 : 10.5, color: '#666' }}>{founder?.headline || `Founder, ${board.company_name}`} · 1st</span>
-          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !item.publish_date ? 'Draft · in the buffer' : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
+          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · in the buffer' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
       {item.body && (
@@ -1810,7 +1838,32 @@ function weekDayList(startIso: string): string[] {
 const KIND_SORT: Record<string, number> = { newsletter: 0, post: 1, carousel: 2, lm: 3, newsjack: 4 };
 interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
 
-function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
+/** Compact lead-magnet card for a launch post: cover thumbnail + landing/resource links,
+ *  so a launch post reads as ready (not "where is the page?"). Cover is 404-safe: it
+ *  self-hides on load error, and the links still show. Uses theme tokens, so it re-skins
+ *  in blackbox automatically. */
+function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; cover?: string }; accent: string }) {
+  const [coverOk, setCoverOk] = useState(true);
+  return (
+    <div className="mt-1 rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>The lead magnet it launches</div>
+      <div className="flex items-start gap-2.5">
+        {lm.cover && coverOk && (
+          <img src={lm.cover} alt="" loading="lazy" onError={() => setCoverOk(false)} className="rounded-md object-cover" style={{ width: 54, height: 54, flexShrink: 0, border: `1px solid ${LINE}` }} />
+        )}
+        <div className="min-w-0">
+          <div className="truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: INK }}>{lm.title}</div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Landing page →</a>
+            <a href={lm.landing} target="_blank" rel="noopener noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Resource →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   /** Live board: publishing runs from the buffer — no approve gate. The deck shows every
@@ -1826,6 +1879,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   onPickReplacement?: (id: string, item: PoolDraft) => void;
   /** Unschedule the focused post (clears its slot, returns it to the buffer bucket). */
   onBackToBuffer?: (id: string) => void;
+  /** Deliberately-empty slots (persist server-side, keyed by draft id OR day date). */
+  leftEmpty?: Record<string, true>;
+  onLeaveEmpty?: (ref: string) => void;
+  onRefillDay?: (ref: string) => void;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
   onOpenCal: (it: CalendarItem) => void;
   onApprove: (id: string) => void;
@@ -1965,26 +2022,27 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   const dayHasPending = (day: string) => actionable.some((q) => q.publish_date === day && pendingIds.includes(q.id));
   const weekdayName = (iso?: string) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' }) : '');
 
-  // Live: the day ticks are buttons. A day with a post focuses/opens it; an open day
-  // answers honestly instead of doing nothing.
-  const [dayNote, setDayNote] = useState<string | null>(null);
-  const dayNoteTimer = useRef<number | null>(null);
+  // Live: the day ticks are buttons. A day with a post focuses/opens it; a weekend says so
+  // (no weekend posting); an open weekday offers a direct "mark this day empty" so he can
+  // hold it to post manually. Empty days offer a reopen. The panel is interactive, not a
+  // fading toast.
+  const [dayPanel, setDayPanel] = useState<{ day: string; kind: 'weekend' | 'open' | 'empty' } | null>(null);
   const clickDay = (day: string) => {
+    // Weekend: never a fillable slot. The cadence is Monday to Friday.
+    if (isWeekendDay(day)) { setDayPanel({ day, kind: 'weekend' }); return; }
     const pendingHere = actionable.find((q) => q.publish_date === day && pendingIds.includes(q.id));
     if (pendingHere) {
-      setDayNote(null);
+      setDayPanel(null);
       setFocusId(pendingHere.id);
       cardRefs.current[pendingHere.id]?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
       return;
     }
     const slots = slotsByDay.get(day) || [];
     const qSlot = slots.find((s) => s.q);
-    if (qSlot?.q) { setDayNote(null); onOpen(qSlot.q); return; }
+    if (qSlot?.q) { setDayPanel(null); onOpen(qSlot.q); return; }
     const cSlot = slots.find((s) => s.cal);
-    if (cSlot?.cal) { setDayNote(null); onOpenCal(cSlot.cal); return; }
-    setDayNote(`${weekdayName(day)} is open. The buffer takes it automatically.`);
-    if (dayNoteTimer.current) window.clearTimeout(dayNoteTimer.current);
-    dayNoteTimer.current = window.setTimeout(() => setDayNote(null), 4500);
+    if (cSlot?.cal) { setDayPanel(null); onOpenCal(cSlot.cal); return; }
+    setDayPanel({ day, kind: leftEmpty[day] ? 'empty' : 'open' });
   };
   const upNext = (() => {
     const fi = focusId ? pendingIds.indexOf(focusId) : -1;
@@ -2002,10 +2060,11 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     const dayActionable = actionable.filter((q) => q.publish_date === d);
     const handledDay = dayActionable.length > 0 && dayActionable.every(handledOf);
     const isCurrent = !doneState && focused?.publish_date === d;
-    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent };
+    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d) };
   });
   const swapChip = focused && angleSwaps[focused.id];
   const focusedChip = focused && live ? sourceChip(focused) : null;
+  const focusedLm = focused && live ? resolveLaunchLm(focused, board) : null;
   const provenance = focused ? (focusedChip?.label || focused.promise || '') : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
@@ -2058,13 +2117,28 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 </div>
               </div>
               <div className="hidden shrink-0 items-center gap-2 sm:flex" aria-hidden={live ? undefined : true}>
-                {ticks.map((tk, i) => live ? (
-                  /* Live: each day is a real target — click focuses that day's post, or says
-                     plainly that the day is open. */
-                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
+                {ticks.map((tk, i) => tk.weekend ? (
+                  /* Weekend: non-posting. Dimmed, dashed, not an open slot. Live click just
+                     explains the weekday-only cadence. */
+                  live ? (
+                    <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)} — no posts on weekends`} title="No posts on weekends" className="cb-daytick flex items-center justify-center rounded-full" data-state="weekend" style={{
+                      width: 28, height: 28, padding: 0, fontFamily: MONO, fontSize: 10,
+                      border: `1.5px dashed ${LINE}`, background: 'transparent', color: FAINT,
+                      opacity: 0.55, transition: 'all .3s ease', cursor: 'pointer',
+                    }}>{tk.letter}</button>
+                  ) : (
+                    <span key={i} className="cb-daytick flex items-center justify-center rounded-full" data-state="weekend" style={{
+                      width: 28, height: 28, fontFamily: MONO, fontSize: 10,
+                      border: `1.5px dashed ${LINE}`, background: 'transparent', color: FAINT, opacity: 0.55,
+                    }}>{tk.letter}</span>
+                  )
+                ) : live ? (
+                  /* Live: each weekday is a real target — click focuses that day's post, or
+                     offers to mark the open day empty. */
+                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={leftEmpty[tk.day] ? 'empty' : tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28, padding: 0,
                     fontFamily: MONO, fontSize: 10,
-                    border: `1.5px solid ${tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
+                    border: `1.5px ${leftEmpty[tk.day] ? 'dashed' : 'solid'} ${tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
                     background: tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
                     color: tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
                     transition: 'all .3s ease', cursor: 'pointer',
@@ -2119,9 +2193,31 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                   {live ? 'Swipe left for a different idea · tap to read' : 'Swipe right to approve · left for a different idea · tap to read'}
                 </p>
               )}
-              {/* Day-click answer (live only): an open day says so instead of doing nothing. */}
-              {dayNote && (
-                <p className="mb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, color: INK_SOFT }}>{dayNote}</p>
+              {/* Day-click panel (live): weekend = no posting; an open weekday offers a
+                  direct "mark this day empty" (hold it to post manually); an empty day offers
+                  a reopen. */}
+              {dayPanel && (
+                <div className="mb-3 rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE_BOLD}` }}>
+                  {dayPanel.kind === 'weekend' ? (
+                    <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
+                      No posts on weekends. Your cadence is Monday to Friday.
+                    </p>
+                  ) : dayPanel.kind === 'empty' ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
+                        <b style={{ color: INK }}>{weekdayName(dayPanel.day)}</b> is marked empty. Nothing publishes, the slot is yours to post manually.
+                      </p>
+                      <button onClick={() => { onRefillDay?.(dayPanel.day); setDayPanel(null); }} className="shrink-0 rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}>Reopen this day</button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>
+                        <b style={{ color: INK }}>{weekdayName(dayPanel.day)}</b> is open. New drafts take it automatically, or hold it for something of your own.
+                      </p>
+                      <button onClick={() => { onLeaveEmpty?.(dayPanel.day); setDayPanel(null); }} className="shrink-0 rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Mark this day empty</button>
+                    </div>
+                  )}
+                </div>
               )}
               {/* The card deck: front card over two rotated ghosts; flings on approve. */}
               <div className="relative cb-hero-deck">
@@ -2164,6 +2260,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                             </span>
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
+                            {focusedLm && <LmLaunchCard lm={focusedLm} accent={accent} />}
                             {/* Bigger, clearly-labeled actions. Swap opens a LIST of alternatives. */}
                             <div className="mt-1 flex flex-wrap items-center gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
                               <button
@@ -6823,6 +6920,9 @@ export default function ClientBoardPage() {
         pool={replacementPool}
         onPickReplacement={pickReplacement}
         onBackToBuffer={backToBuffer}
+        leftEmpty={leftEmpty}
+        onLeaveEmpty={leaveEmpty}
+        onRefillDay={refillDay}
         onOpen={openDetail}
         onOpenCal={openCalendarItem}
         onApprove={approve}
