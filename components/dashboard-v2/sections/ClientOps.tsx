@@ -286,6 +286,10 @@ export function ClientOps() {
 
           {/* ── FOCUSED WORK LANE ─────────────────────────────────────────── */}
           {stage === 'ideas' && (
+            <>
+            <p className="co2-flowcap" style={{ marginTop: 0 }}>
+              How a staged idea moves: the Fathom cron mines the client's sales calls and stages the strongest lines as ideas here, ranked by client-ICP. You approve the ones worth writing. Approval fires generation (voice model, draft, quality gate, image), which lands a draft in review. Approved drafts go on the board with a publish date, and the client edits, reschedules, or removes from their own board. Reject anything off-voice before it generates.
+            </p>
             <IdeasLane
               ideas={ideaRows}
               loading={ideas == null}
@@ -296,6 +300,7 @@ export function ClientOps() {
               onDecide={handleDecide}
               onNote={reload}
             />
+            </>
           )}
 
           {stage === 'review' && (

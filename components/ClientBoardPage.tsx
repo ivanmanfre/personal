@@ -102,6 +102,17 @@ interface LeadMagnetEntry {
  *  no date and no metrics — it drafts when it reaches its calendar slot. Rendered as the
  *  IDEAS stage at the top of the All content ledger; opens a lightweight preview only. */
 interface Idea { id: string; title: string; pillar?: string; hook?: string; status?: 'idea' | string; kind?: string; source_label?: string }
+/** Honest, concrete post provenance (carousel_drafts.source_detail, plumbed onto the
+ *  queue item by the sync). Replaces the vague "Picked by Ivan" mapping: a call-grounded
+ *  post carries the real call title + the verbatim quote; launch/own-post/strategy posts
+ *  carry an honest specific label. */
+interface SourceDetail {
+  kind: 'call' | 'lm_launch' | 'own_posts' | 'strategy' | string;
+  label?: string;
+  call_title?: string | null;
+  quote?: string | null;
+  lm_ref?: string | null;
+}
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
@@ -114,6 +125,11 @@ interface QueueItem {
   promise?: string;
   cover_url?: string;
   publish_date?: string;
+  /** Full scheduled timestamp (carousel_drafts.scheduled_at), when the post has a real
+   *  slot. Rendered in Mattan's timezone (America/Los_Angeles) wherever a time shows. */
+  scheduled_at?: string;
+  /** Honest, concrete provenance for the source chip (see SourceDetail). */
+  source_detail?: SourceDetail;
   /** Where the idea came from (ideas pipeline: Hand-picked / call / subreddit / newsjack). */
   source_label?: string;
   /** A feed post whose job is to launch a lead magnet — labelled as such, not "Text post". */
@@ -327,6 +343,53 @@ function fmtDay(iso?: string): string {
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
+/** Mattan's timezone for every scheduled time on the board. Never browser-local. */
+const CLIENT_TZ = 'America/Los_Angeles';
+/** A scheduled timestamp as "Tue 21 Jul, 10:00 AM PT" in the client's timezone. Falls
+ *  back to a date-only string (from publish_date) when no full timestamp exists yet. */
+function fmtSchedLA(scheduledAt?: string, publishDate?: string): string {
+  if (scheduledAt) {
+    const d = new Date(scheduledAt);
+    if (!Number.isNaN(d.getTime())) {
+      const day = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
+      const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
+      return `${day}, ${time} PT`;
+    }
+  }
+  return fmtDay(publishDate);
+}
+/** Just the LA clock time ("10:00 AM PT") for compact chips. */
+function fmtTimeLA(scheduledAt?: string): string {
+  if (!scheduledAt) return '';
+  const d = new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' })} PT`;
+}
+/** Long weekday in LA tz for a full timestamp (e.g. "Tuesday"). */
+function weekdayLA(scheduledAt?: string): string {
+  if (!scheduledAt) return '';
+  const d = new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'long' });
+}
+/** True once a post has a real scheduled slot (not sitting undated in the buffer). */
+function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boolean {
+  return !!(q.scheduled_at || q.publish_date);
+}
+/** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
+ *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
+function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
+  const sd = q.source_detail;
+  if (sd) {
+    if (sd.kind === 'call') {
+      const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
+      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote };
+    }
+    return { label: sd.label || '', quote: null };
+  }
+  if (q.source_label) return { label: srcLabelClient(q.source_label), quote: null };
+  return null;
+}
 /** Hostname of a real recorded URL (no www), or '' when absent/unparseable. Live boards
  *  render only checkable hosts, never a synthesized vanity domain. */
 function realHostOf(url?: string): string {
@@ -369,7 +432,10 @@ function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch'>): strin
 /** Live boards: pipeline source labels rendered in client vocabulary. Labels not in the
  *  map pass through as-is; internal-only labels map to nothing rather than leak. */
 const SOURCE_LABEL_CLIENT: Record<string, string> = {
-  'Hand-picked': 'Picked by Ivan',
+  // Honest, concrete labels only — never a vague "Picked by Ivan". Call-grounded and
+  // launch/own-post posts carry richer provenance via source_detail (see sourceChip).
+  'Hand-picked': 'RISE DTC content strategy',
+  'From your sales calls': 'From your sales call',
   'Needs your client material': 'Needs a client story from you',
 };
 function srcLabelClient(label?: string): string {
@@ -1149,7 +1215,40 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
   );
 }
 
-function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
+/** Body preview that never forces long scrolling: clamps to a few lines, expands on tap.
+ *  Short posts show in full with no toggle. Used on the live content ledger rows. */
+function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const lines = text.split('\n').length;
+  const longEnough = text.length > 320 || lines > 6;
+  return (
+    <div style={{ maxWidth: '64ch' }}>
+      <div
+        onClick={onOpen}
+        className={onOpen ? 'cursor-pointer' : undefined}
+        style={{
+          fontFamily: BODY, fontSize: 13.5, lineHeight: 1.58, color: INK, whiteSpace: 'pre-line',
+          ...(longEnough && !expanded
+            ? { display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as React.CSSProperties
+            : {}),
+        }}
+      >
+        {text}
+      </div>
+      {longEnough && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          className="mt-1.5 uppercase"
+          style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: caText('var(--cb-accent)'), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
@@ -1159,6 +1258,12 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
   onApprove: (id: string) => void;
   /** Live board: "remove this post" — the client's veto on a buffered draft (recorded). */
   onRemove?: (id: string) => void;
+  /** Deliberately-empty slots (persist, no restore nag) + their toggles. */
+  leftEmpty?: Record<string, true>;
+  onLeaveEmpty?: (id: string) => void;
+  onRefillDay?: (id: string) => void;
+  /** Unschedule a post (clears its slot, returns it to the buffer bucket). */
+  onBackToBuffer?: (id: string) => void;
   flashId: string | null;
   view: ContentView;
   setView: (v: ContentView) => void;
@@ -1265,24 +1370,31 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays, live);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || (live && q.source_label ? `Source: ${srcLabelClient(q.source_label)}` : ''))
+    // Honest source chip (live): the concrete source_detail, never a vague "Picked by Ivan".
+    const chip = live ? sourceChip(q) : null;
+    const provenance = chip ? chip.label
+      : stage === 'review' ? q.promise || ''
       : q.generating ? 'reactive: drafting began after the news broke'
-      : (q.promise || (live && q.source_label ? `Source: ${srcLabelClient(q.source_label)}` : ''));
+      : q.promise || '';
+    // Compact live date: the scheduled slot in Mattan's timezone, or the buffer.
+    const dateCol = live
+      ? (isScheduled(q) ? fmtSchedLA(q.scheduled_at, q.publish_date) : 'in the buffer')
+      : (q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'date at sign-off');
     return (
       <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
         <div
           role="button" tabIndex={0}
           onClick={() => setOpenRow(isOpen ? null : q.id)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenRow(isOpen ? null : q.id); } }}
-          className="cb-ledger-row grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
+          className="cb-ledger-row grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[11px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[104px_minmax(0,1fr)_104px_150px_22px]"
           style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
         >
-          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : live ? 'in the buffer' : 'date at sign-off'}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.35, color: INK_SOFT }}>{dateCol}</span>
           <span className="min-w-0">
             {/* Live: the hook wraps — the reader can tell what the post is about from the row.
-                Preview keeps the single-line ledger look. */}
-            <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, lineHeight: live ? 1.35 : undefined, color: INK }}>{q.hook || q.title}</span>
-            {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
+                Preview keeps the single-line ledger look. Compact type for density. */}
+            <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: live ? 1.3 : undefined, color: INK }}>{q.hook || q.title}</span>
+            {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 11.5, color: INK_MUTE }}>{provenance}</span>}
           </span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: mark.color }}>
@@ -1303,11 +1415,11 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
             >
               <div className={live && q.body ? 'grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[minmax(0,1fr)_240px]' : 'grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]'}>
                 {live && q.body ? (
-                  /* Live: the copy is the reading surface — plain editorial text, no mockup
-                     chrome, nothing cut. The feed frame lives one click away in the modal. */
-                  <div onClick={() => onOpen(q)} className="cursor-pointer" style={{ maxWidth: '64ch' }}>
-                    <div style={{ fontFamily: BODY, fontSize: 14.5, lineHeight: 1.62, color: INK, whiteSpace: 'pre-line' }}>{q.body}</div>
-                    {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 220, border: `1px solid ${LINE}` }} />}
+                  /* Live: the copy is the reading surface. Long posts collapse to a 4-line
+                     preview (expand on tap) so the ledger never forces a long scroll. */
+                  <div style={{ maxWidth: '64ch' }}>
+                    <CollapsibleBody text={q.body} onOpen={() => onOpen(q)} />
+                    {q.media_url && <img src={q.media_url} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} />}
                   </div>
                 ) : (
                 <div style={{ maxWidth: 430 }}>
@@ -1321,12 +1433,34 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                 <div className="flex flex-col gap-3 pt-1.5">
                   {stage === 'review' && !skipped && live ? (
                     <>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <button onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>edit the post…</button>
-                        <button onClick={(e) => { e.stopPropagation(); onRemove?.(q.id); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>remove this post…</button>
+                      {/* Two big, clearly-labeled actions — Edit and Remove — instead of a row
+                          of tiny verbose links. Source line names the honest provenance. */}
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onOpen(q, { editing: true }); }}
+                          className="inline-flex min-h-[40px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
+                          style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                        >Edit</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onRemove?.(q.id); }}
+                          className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                          style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                        >Remove</button>
+                        {isScheduled(q) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onBackToBuffer?.(q.id); }}
+                            className="text-[13px] font-medium"
+                            style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}
+                          >Back to buffer</button>
+                        )}
                       </div>
+                      {chip?.quote && (
+                        <p className="mt-0.5" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.55, color: INK_MUTE, maxWidth: '52ch' }}>
+                          “{chip.quote}”
+                        </p>
+                      )}
                       <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
-                        {q.publish_date ? `Scheduled for ${weekdayLong(q.publish_date)}.` : 'In the buffer · takes the next open slot.'}
+                        {isScheduled(q) ? `Scheduled for ${fmtSchedLA(q.scheduled_at, q.publish_date)}. Yours to change until it publishes.` : 'In the buffer, takes the next open slot.'}
                       </div>
                     </>
                   ) : stage === 'review' && !skipped ? (
@@ -1350,6 +1484,17 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                       const repl = replacements[q.id];
                       const bench = benchFor ? benchFor(q.id) : [];
                       const showPicker = pickerRow === q.id;
+                      // Deliberately left empty: quiet, persistent, no restore nag. The only
+                      // way back is reopening the day on purpose.
+                      if (leftEmpty[q.id]) {
+                        return (
+                          <div className="rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE}` }}>
+                            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>this day is left empty</div>
+                            <p className="mt-1.5" style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>Nothing publishes here. It stays clear until you reopen the day.</p>
+                            <button onClick={(e) => { e.stopPropagation(); onRefillDay?.(q.id); }} className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>reopen this day</button>
+                          </div>
+                        );
+                      }
                       if (repl) {
                         return (
                           <div className="rounded-lg p-3.5" style={{ background: caWash(accent, 5), border: `1px solid ${caBorder(accent, 30)}` }}>
@@ -1367,6 +1512,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                           <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
                             <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}>Restore this post</button>
                             <button onClick={(e) => { e.stopPropagation(); setPickerRow(showPicker ? null : q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>{showPicker ? 'Close' : 'Pick a replacement'}</button>
+                            <button onClick={(e) => { e.stopPropagation(); onLeaveEmpty?.(q.id); }} className="px-2.5 py-2 text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Leave this day empty</button>
                           </div>
                           {showPicker && (
                             <div className="mt-3 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1486,6 +1632,29 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         const stageSections = listSections.map(({ stage, label, blurb }) => {
           const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
           if (rows.length === 0) return null;
+          // Live "Up next" = ONLY posts with a real scheduled slot. Buffer drafts (no
+          // scheduled_at) NEVER appear here — they live in their own clearly-labeled bucket
+          // below, so "Up next" is always an honest forward calendar.
+          if (live && stage === 'review') {
+            const scheduledRows = rows.filter(isScheduled);
+            const bufferRows = rows.filter((q) => !isScheduled(q));
+            return (
+              <React.Fragment key={stage}>
+                {scheduledRows.length > 0 && (
+                  <section>
+                    <LedgerSectionHead eyebrow="Up next" count={scheduledRows.length} blurb="" accent={accent} />
+                    {scheduledRows.map(renderLedgerRow)}
+                  </section>
+                )}
+                {bufferRows.length > 0 && (
+                  <section>
+                    <LedgerSectionHead eyebrow="In the buffer" count={bufferRows.length} blurb="Written and waiting. Each takes the next open slot unless you schedule or remove it." accent={accent} />
+                    {bufferRows.map(renderLedgerRow)}
+                  </section>
+                )}
+              </React.Fragment>
+            );
+          }
           return (
             <section key={stage}>
               <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
@@ -1641,7 +1810,7 @@ function weekDayList(startIso: string): string[] {
 const KIND_SORT: Record<string, number> = { newsletter: 0, post: 1, carousel: 2, lm: 3, newsjack: 4 };
 interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
 
-function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
+function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   /** Live board: publishing runs from the buffer — no approve gate. The deck shows every
@@ -1652,6 +1821,11 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   angleSwaps: Record<string, AltAngle>;
   skips: Record<string, true>;
   benchFor: (id: string) => AltAngle[];
+  /** Ready drafts (pool) offered alongside bench angles in the swap list picker. */
+  pool?: PoolDraft[];
+  onPickReplacement?: (id: string, item: PoolDraft) => void;
+  /** Unschedule the focused post (clears its slot, returns it to the buffer bucket). */
+  onBackToBuffer?: (id: string) => void;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean }) => void;
   onOpenCal: (it: CalendarItem) => void;
   onApprove: (id: string) => void;
@@ -1705,12 +1879,17 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
 
   // The flow ledger: total = review-stage pieces this week; handled = approved,
   // re-angled or skipped. d1 joins the count the moment the intro lands it.
-  // Live: the deck is the BUFFER — every review-stage draft, dated or not (undated
-  // drafts take the next open slot, so tying the deck to the calendar week hides them).
+  // THIS WEEK holds ONLY scheduled posts, on their day slots — a buffer/unscheduled draft
+  // NEVER occupies a week/day slot (it lives in the "In the buffer" bucket below). This is
+  // the same rule live and preview: the week grid is a real calendar, never the buffer.
   const weekQ = board.queue.filter((q) => daySet.has(q.publish_date || '') && q.stage !== 'published');
-  const actionable = live
-    ? [...board.queue.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '9999').localeCompare(b.publish_date || '9999'))
-    : [...weekQ.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+  const actionable = [...weekQ.filter((q) => q.stage === 'review' && isScheduled(q))]
+    .sort((a, b) => (a.publish_date || '9999').localeCompare(b.publish_date || '9999'));
+  // The buffer bucket (live): review-stage drafts written but with no scheduled slot yet.
+  // Rendered as its own clearly-labeled block, never mixed into the week grid.
+  const bufferItems = live
+    ? board.queue.filter((q) => q.stage === 'review' && !isScheduled(q) && !skips[q.id]).sort((a, b) => (a.hook || '').localeCompare(b.hook || ''))
+    : [];
   const handledOf = (q: QueueItem) => approvedIds.has(q.id) || !!angleSwaps[q.id] || !!skips[q.id];
   const total = actionable.length;
   const done = actionable.filter(handledOf).length;
@@ -1750,17 +1929,16 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     onApprove(id);
   };
 
-  // Different-idea bench: N (or swipe left) serves the next seeded angle for the slot.
-  const [angle, setAngle] = useState<{ id: string; alt?: AltAngle; none?: boolean } | null>(null);
-  const servedRef = useRef<Record<string, number>>({});
+  // Swap the idea: opens a LIST of the alternatives (this slot's bench angles + ready
+  // drafts from the pool) so the client chooses from a list — never a blind cycle.
+  const [angle, setAngle] = useState<{ id: string; none?: boolean; list?: boolean } | null>(null);
   const serveAngle = (id: string) => {
     const bench = benchFor(id);
-    if (!bench.length) { setAngle({ id, none: true }); return; }
-    const idx = servedRef.current[id] || 0;
-    servedRef.current[id] = idx + 1;
-    setAngle({ id, alt: bench[idx % bench.length] });
+    if (!bench.length && !pool.length) { setAngle({ id, none: true }); return; }
+    setAngle({ id, list: true });
   };
   const pickAngle = (id: string, alt: AltAngle) => { setAngle(null); advanceFrom(id); onPickAngle(id, alt); };
+  const pickPool = (id: string, item: PoolDraft) => { setAngle(null); advanceFrom(id); onPickReplacement?.(id, item); };
 
   useEffect(() => {
     if (modalOpen) return;
@@ -1810,7 +1988,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   };
   const upNext = (() => {
     const fi = focusId ? pendingIds.indexOf(focusId) : -1;
-    return pendingIds.slice(fi + 1, fi + 3).map((id) => board.queue.find((q) => q.id === id)).filter(Boolean) as QueueItem[];
+    const next = pendingIds.slice(fi + 1).map((id) => board.queue.find((q) => q.id === id)).filter(Boolean) as QueueItem[];
+    // "Up next" shows only posts with a real scheduled slot — a buffer item never appears
+    // here (it lives in the buffer bucket on All content, not this forward strip).
+    return (live ? next.filter(isScheduled) : next).slice(0, 2);
   })();
   const pipelineCount = board.queue.filter((q) => q.stage !== 'published').length;
 
@@ -1824,7 +2005,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || (live && focused.source_label ? `Source: ${srcLabelClient(focused.source_label)}` : '')) : '';
+  const focusedChip = focused && live ? sourceChip(focused) : null;
+  const provenance = focused ? (focusedChip?.label || focused.promise || '') : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -1835,7 +2017,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       )}
       {upNext.map((q) => (
         <button key={q.id} onClick={() => setFocusId(q.id)} className="rounded-[10px] px-4 py-3.5 text-left transition-opacity hover:opacity-100" style={{ background: PAPER_RAISE, border: `1px solid ${LINE}`, opacity: 0.85 }}>
-          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>{weekdayName(q.publish_date)} · {kickerOf(q)}</div>
+          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>{live && isScheduled(q) ? `${fmtSchedLA(q.scheduled_at, q.publish_date)} · ${kickerOf(q)}` : `${weekdayName(q.publish_date)} · ${kickerOf(q)}`}</div>
           <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: INK }}>{q.hook || q.title}</div>
         </button>
       ))}
@@ -1857,10 +2039,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {doneState || total === 0 ? (
             <div className="mb-2">
               <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
-                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : live ? <>Week of {fmtDay(days[0])} · the buffer</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
+                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : live ? <>Week of {fmtDay(days[0])} · nothing scheduled</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
               </div>
               <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
-                {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : live ? <>The buffer <Accent>is clear.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
+                {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : live ? <>Nothing scheduled <Accent>this week.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
               </div>
             </div>
           ) : (
@@ -1868,7 +2050,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
               <div>
                 <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
                   {live
-                    ? <>Week of {fmtDay(days[0])} · {total} in the buffer</>
+                    ? <>Week of {fmtDay(days[0])} · {total} scheduled this week</>
                     : <>Week of {fmtDay(days[0])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go</>}
                 </div>
                 <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK, whiteSpace: 'nowrap' }}>
@@ -1978,23 +2160,35 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           <div className="flex flex-col gap-2.5 pt-1">
                             <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
                             <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
-                              {focused.publish_date ? `Scheduled for ${weekdayName(focused.publish_date)}` : 'In the buffer · takes the next open slot'}
+                              {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'In the buffer, takes the next open slot'}
                             </span>
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
-                            <div className="mt-1 flex flex-col items-start gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                            {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
+                            {/* Bigger, clearly-labeled actions. Swap opens a LIST of alternatives. */}
+                            <div className="mt-1 flex flex-wrap items-center gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onOpen(focused, { editing: true }); }}
+                                className="inline-flex min-h-[40px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
+                                style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                              >Edit</button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
+                                className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                              >Remove</button>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                               <button
                                 onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
                                 className="uppercase transition-colors duration-150"
-                                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK, border: `1px solid ${LINE_BOLD}`, borderRadius: 8, padding: '11px 16px', cursor: 'pointer' }}
+                                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 4 }}
                               >⟲ swap the idea</button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onOpen(focused, { editing: true }); }}
-                                style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}
-                              >edit a line…</button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onSkip(focused.id); }}
-                                style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}
-                              >remove this post…</button>
+                              {isScheduled(focused) && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onBackToBuffer?.(focused.id); }}
+                                  style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}
+                                >back to buffer</button>
+                              )}
                             </div>
                             <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>yours to change until it publishes</span>
                           </div>
@@ -2070,19 +2264,39 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                   <button onClick={() => setAngle(null)} className="px-3 py-2 text-[12.5px]" style={{ color: INK_MUTE }}>Close</button>
                                 </div>
                               </div>
-                            ) : curPanel.alt ? (
+                            ) : curPanel.list ? (
+                              /* List picker: every alternative for this slot (bench angles +
+                                 ready drafts) shown at once — the client chooses from a list,
+                                 never a blind cycle. */
                               <div className="mt-4 rounded-lg p-3.5" style={{ background: caWash(accent, 4), border: `1px dashed ${caBorder(accent, 30)}` }}>
-                                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Different idea for this slot</div>
-                                <div className="mt-1.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14.5, color: INK }}>{curPanel.alt.title}</div>
-                                <p className="mt-0.5" style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{curPanel.alt.hook}</p>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={{ color: INK_MUTE }}>
-                                  {curPanel.alt.pillar && <span className="inline-flex items-center gap-1.5 capitalize"><span className="h-[5px] w-[5px] rounded-full" style={{ background: accent }} aria-hidden />{curPanel.alt.pillar}</span>}
-                                  {curPanel.alt.drafts_by && <span className="tabular-nums">Drafts {fmtDay(curPanel.alt.drafts_by)} if you pick it</span>}
+                                <div className="flex items-center justify-between">
+                                  <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Pick a different idea for this slot</div>
+                                  <button onClick={() => setAngle(null)} className="text-[12px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Keep current</button>
                                 </div>
-                                <div className="mt-3 flex flex-wrap items-center gap-2">
-                                  <button onClick={() => pickAngle(focused.id, curPanel.alt!)} className="rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent) }}>Use this angle</button>
-                                  <button onClick={() => serveAngle(focused.id)} className="rounded-[6px] px-3 py-2 text-[12.5px] font-medium" style={{ border: `1px solid ${LINE}`, color: INK_SOFT, background: '#fff' }}>Show another</button>
-                                  <button onClick={() => setAngle(null)} className="px-2.5 py-2 text-[12.5px] font-medium" style={{ color: INK_MUTE }}>Keep current</button>
+                                <div className="mt-2.5 flex flex-col gap-2">
+                                  {benchFor(focused.id).map((alt) => (
+                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                      <span className="min-w-0">
+                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{alt.title}</span>
+                                        <span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span>
+                                        {alt.drafts_by && <span className="block text-[11px] tabular-nums" style={{ color: FAINT }}>Drafts {fmtDay(alt.drafts_by)} if you pick it</span>}
+                                      </span>
+                                      <button onClick={() => pickAngle(focused.id, alt)} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
+                                    </div>
+                                  ))}
+                                  {pool.length > 0 && <div className="mt-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from your ready drafts</div>}
+                                  {pool.map((it) => (
+                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                      <span className="min-w-0">
+                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{it.title || 'Ready draft'}</span>
+                                        {it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}
+                                      </span>
+                                      <button onClick={() => pickPool(focused.id, it)} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
+                                    </div>
+                                  ))}
+                                  {benchFor(focused.id).length === 0 && pool.length === 0 && (
+                                    <p style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>No other ready ideas to pull in yet. Edit this post, or remove it.</p>
+                                  )}
                                 </div>
                               </div>
                             ) : null}
@@ -2094,6 +2308,26 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 </AnimatePresence>
               </div>
             </>
+          )}
+
+          {/* In the buffer: written drafts with no scheduled slot. Clearly separated from
+              the week grid — a buffer post never sits on a day. Each opens for scheduling. */}
+          {live && bufferItems.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-baseline gap-2.5">
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>In the buffer</div>
+                <span className="rounded-full px-1.5 text-[11px] font-semibold tabular-nums" style={{ background: PAPER_SUNK, color: INK_MUTE }}>{bufferItems.length}</span>
+              </div>
+              <p className="mt-1.5 text-[13px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>Written and waiting. Not on the calendar yet. Open one to give it a date, or leave it here.</p>
+              <div className="mt-3 flex flex-col gap-2">
+                {bufferItems.map((q) => (
+                  <button key={q.id} onClick={() => onOpen(q)} className={`rounded-[10px] px-4 py-3 text-left ${LIFT}`} style={{ background: PAPER_RAISE, border: `1px dashed ${LINE_BOLD}` }}>
+                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 4 }}>{kickerOf(q)} · in the buffer</div>
+                    <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.35, color: INK }}>{q.hook || q.title}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
         {rightRail}
@@ -2171,7 +2405,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, slug, fetchHistory }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
   /** Live board: "remove this post" veto (recorded). */
@@ -2183,6 +2417,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: attach/replace/clear a lifestyle photo on this post. */
   setMedia?: (draftId: string, url: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live board: change this post's date/time (writes carousel_drafts.scheduled_at). */
+  setSchedule?: (draftId: string, scheduledAt: string | null) => Promise<{ ok: boolean; error?: string }>;
   slug?: string;
 }) {
   const reduce = useReducedMotion();
@@ -2229,6 +2465,51 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review';
 
+  // Reschedule (live): the client picks a new date + LA time; setSchedule writes
+  // carousel_drafts.scheduled_at server-side. The date/time inputs are entered as LA wall
+  // time, then converted to a real UTC instant so the stored slot matches what he saw.
+  const [schedOpen, setSchedOpen] = useState(false);
+  const [schedDate, setSchedDate] = useState('');
+  const [schedTime, setSchedTime] = useState('09:00');
+  const [schedBusy, setSchedBusy] = useState(false);
+  const [schedErr, setSchedErr] = useState('');
+  const [schedLabel, setSchedLabel] = useState<string | null>(null);
+  // Build a UTC ISO instant from LA wall-clock date+time. July is PDT (UTC-7); the offset
+  // is read from the zone so it stays correct across DST.
+  const laOffsetMinutes = (dateStr: string): number => {
+    const probe = new Date(`${dateStr}T12:00:00Z`);
+    const asLA = new Date(probe.toLocaleString('en-US', { timeZone: CLIENT_TZ }));
+    const asUTC = new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' }));
+    return Math.round((asUTC.getTime() - asLA.getTime()) / 60000); // +420 for PDT
+  };
+  const applySchedule = async () => {
+    if (!setSchedule || !schedDate) return;
+    setSchedBusy(true); setSchedErr('');
+    const off = laOffsetMinutes(schedDate);
+    const [hh, mm] = schedTime.split(':').map((n) => parseInt(n, 10));
+    const base = new Date(`${schedDate}T00:00:00Z`).getTime();
+    const utcMs = base + (hh * 60 + mm + off) * 60000;
+    const iso = new Date(utcMs).toISOString();
+    const r = await setSchedule(item.id, iso);
+    setSchedBusy(false);
+    if (!r.ok) { setSchedErr(r.error === 'bad_date' ? 'Pick a date within the next year.' : (r.error || 'Could not save that. Try again.')); return; }
+    item.scheduled_at = iso;
+    item.publish_date = iso.slice(0, 10);
+    setSchedLabel(fmtSchedLA(iso));
+    setSchedOpen(false);
+  };
+  const clearSchedule = async () => {
+    if (!setSchedule) return;
+    setSchedBusy(true); setSchedErr('');
+    const r = await setSchedule(item.id, null);
+    setSchedBusy(false);
+    if (!r.ok) { setSchedErr(r.error || 'Could not clear that. Try again.'); return; }
+    item.scheduled_at = undefined;
+    item.publish_date = undefined;
+    setSchedLabel('moved to the buffer');
+    setSchedOpen(false);
+  };
+
   // History (live): every edit / swap / remove this draft has seen, latest first.
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   useEffect(() => {
@@ -2261,10 +2542,12 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
-  const statusLabel = stage === 'review' ? (isLive ? (item.publish_date ? `Scheduled for ${weekdayLong(item.publish_date)}` : 'In the buffer') : 'In your review')
+  const statusLabel = stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'In the buffer') : 'In your review')
     : stage === 'scheduled' ? (isLive ? 'Scheduled' : 'Approved')
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? (isLive ? 'Published' : 'Example') : 'Planned';
+  // Honest source chip for the modal (call quote included).
+  const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = stage === 'review' ? (isLive
       ? 'It publishes from the buffer on its slot. Edit it, swap the idea, or remove it any time before then — every change is logged for your operator.'
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
@@ -2518,19 +2801,56 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Status</div>
                 <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{statusLabel}</div>
               </div>
-              {item.publish_date && (
+              {(item.scheduled_at || item.publish_date) && (
                 <div>
                   <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>{stage === 'scheduled' || stage === 'published' ? 'Date' : 'Scheduled for'}</div>
-                  <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{fmtDay(item.publish_date)}</div>
+                  <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{isLive ? fmtSchedLA(item.scheduled_at, item.publish_date) : fmtDay(item.publish_date)}</div>
                 </div>
               )}
-              {isLive && item.source_label && (
-                <div>
+              {(detailChip?.label || (isLive && item.source_label)) && (
+                <div className="col-span-2">
                   <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
-                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{srcLabelClient(item.source_label)}</div>
+                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{detailChip?.label || srcLabelClient(item.source_label!)}</div>
+                  {detailChip?.quote && <p className="mt-1" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.55, color: INK_SOFT }}>“{detailChip.quote}”</p>}
                 </div>
               )}
             </div>
+            {/* Reschedule (live): change this post's date/time, shown + entered in LA time. */}
+            {isLive && canAct && setSchedule && (
+              <div className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}` }}>
+                {!schedOpen ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => {
+                        const src = item.scheduled_at;
+                        if (src) {
+                          const d = new Date(src);
+                          const parts = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+                          const t = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+                          setSchedDate(parts); setSchedTime(t);
+                        }
+                        setSchedErr(''); setSchedOpen(true);
+                      }}
+                      className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                    >Change date &amp; time</button>
+                    {schedLabel && <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>Now {schedLabel}.</span>}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>New date &amp; time (LA / PT)</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2.5">
+                      <input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+                      <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+                      <button onClick={applySchedule} disabled={schedBusy || !schedDate} className="inline-flex min-h-[38px] items-center rounded-[6px] px-4 text-[13px] font-semibold" style={{ background: accent, color: ctaInk, opacity: schedBusy || !schedDate ? 0.6 : 1 }}>{schedBusy ? 'Saving…' : 'Save time'}</button>
+                      <button onClick={clearSchedule} disabled={schedBusy} className="text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Move to buffer</button>
+                      <button onClick={() => setSchedOpen(false)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                    {schedErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{schedErr}</div>}
+                  </div>
+                )}
+              </div>
+            )}
             <p className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}`, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{nextLine}</p>
           </div>
 
@@ -2562,20 +2882,20 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             <div className="flex flex-wrap items-center gap-2.5">
               <button
                 onClick={() => { setEditSaved(false); setEditing(true); }}
-                className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
+                className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 text-[14px] font-semibold"
                 style={{ background: INK, color: PAPER }}
               >
-                Edit the post
+                Edit
               </button>
               <button
                 onClick={() => { onRemove?.(item.id); onClose(); }}
-                className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
+                className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
                 style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
               >
-                Remove this post
+                Remove
               </button>
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {item.publish_date ? `Publishes ${weekdayLong(item.publish_date)} unless you change it.` : 'Takes the next open slot unless you change it.'}
+                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it.` : 'Takes the next open slot unless you change it.'}
               </span>
             </div>
           </div>
@@ -5612,6 +5932,17 @@ export default function ClientBoardPage() {
   useEffect(() => {
     try { localStorage.setItem(replKey, JSON.stringify(slotReplacements)); } catch { /* private mode */ }
   }, [slotReplacements, replKey]);
+  // "Leave this day empty": a deliberate, first-class clear that PERSISTS across reloads
+  // (server-side via the day_left_empty action) and never nags to restore. Distinct from
+  // weekSkips (remove-with-nag): a left-empty slot renders quiet, no restore prompt unless
+  // the client reopens it. localStorage is only a first-paint hint; slot_state is truth.
+  const emptyKey = `cb-empty-${slug || ''}`;
+  const [leftEmpty, setLeftEmpty] = useState<Record<string, true>>(() => {
+    try { const raw = localStorage.getItem(`cb-empty-${slug || ''}`); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(emptyKey, JSON.stringify(leftEmpty)); } catch { /* private mode */ }
+  }, [leftEmpty, emptyKey]);
   // The pool of ready drafts (board_visible, not already on the queue) the client can pull
   // into a freed slot. Fetched once per live load; the bench angles come from the slot itself.
   const [replacementPool, setReplacementPool] = useState<PoolDraft[]>([]);
@@ -5766,7 +6097,7 @@ export default function ClientBoardPage() {
         }
         if (cancelled) return;
         if (!sResp.error) {
-          const out = sResp.data as { ok?: boolean; removed?: string[]; replacements?: { ref: string; draft_id: string; title?: string; hook?: string }[] } | null;
+          const out = sResp.data as { ok?: boolean; removed?: string[]; replacements?: { ref: string; draft_id: string; title?: string; hook?: string }[]; left_empty?: string[] } | null;
           if (out?.ok) {
             const removed: Record<string, true> = {};
             (out.removed || []).forEach((id) => { removed[id] = true; });
@@ -5774,6 +6105,9 @@ export default function ClientBoardPage() {
             const repl: Record<string, SlotReplacement> = {};
             (out.replacements || []).forEach((r) => { if (r.ref) repl[r.ref] = { draft_id: r.draft_id, title: r.title, hook: r.hook }; });
             setSlotReplacements(repl);
+            const empty: Record<string, true> = {};
+            (out.left_empty || []).forEach((id) => { empty[id] = true; });
+            setLeftEmpty(empty);
           }
         }
         if (!pResp.error) {
@@ -5855,6 +6189,32 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Change a post's date/time from the board (live). Writes carousel_drafts.scheduled_at +
+  // logs a set_schedule action + refreshes the board queue publish_date, via the
+  // SECURITY DEFINER RPC (same token/session posture as editDraft). Passing null clears the
+  // slot (back to the buffer). Updates the local schedule map so the change shows at once.
+  const setScheduleRPC = async (draftId: string, scheduledAt: string | null): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_set_schedule', { p_slug: slug, p_token: token, p_draft_id: draftId, p_scheduled_at: scheduledAt });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_set_schedule_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_scheduled_at: scheduledAt });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+      if (out.ok) {
+        setSchedule((m) => ({ ...m, [draftId]: { status: m[draftId]?.status || 'review', scheduled_at: scheduledAt } }));
+      }
+      return out;
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
   // Remove one photo from the client's lifestyle library (live). storage.objects has a
   // protect_delete() trigger, so the delete runs in the client-photo-delete edge fn under
   // the service role, gated by the same token/session as every other board write.
@@ -5895,6 +6255,25 @@ export default function ClientBoardPage() {
   };
   const unskipDay = (id: string) => {
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+  };
+  // "Put back in the buffer": unschedule the post (clears carousel_drafts.scheduled_at via
+  // the schedule RPC + logs a set_schedule row). The day becomes an open slot; the post
+  // rejoins the buffer bucket. Distinct from Remove (which vetoes the post off the queue).
+  const backToBuffer = async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    const r = await setScheduleRPC(id, null);
+    if (r.ok) flash(id);
+    return r;
+  };
+  // "Leave this day empty": deliberate + persistent, no restore nag. Records day_left_empty
+  // so it survives reload on any device (slot_state reconstructs it). Distinct from skipDay.
+  const leaveEmpty = (id: string) => {
+    setLeftEmpty((s) => ({ ...s, [id]: true as const }));
+    if (isLiveRef.current) { void act('note', id, { event: 'day_left_empty' }); }
+  };
+  // Reopen a deliberately-empty day (the only path back — never an automatic prompt).
+  const refillDay = (id: string) => {
+    setLeftEmpty((s) => { const { [id]: _drop, ...rest } = s; return rest; });
+    if (isLiveRef.current) { void act('note', id, { event: 'day_refilled' }); }
   };
   // Open-slot: restore the original post. Clears the removal and any replacement, and
   // records both so the log stays the source of truth across refreshes.
@@ -6209,14 +6588,44 @@ export default function ClientBoardPage() {
   // the Scheduled stage). Applied before angle-swap resolution so swaps stay honest.
   const withSchedule = (q: QueueItem): QueueItem => {
     const s = schedule[q.id];
-    if (!s || s.status !== 'scheduled' || !s.scheduled_at) return q;
-    return { ...q, stage: q.stage === 'published' ? q.stage : ('scheduled' as Stage), publish_date: s.scheduled_at.slice(0, 10) };
+    if (!s) return q;
+    // Explicitly unscheduled (client put it back in the buffer): strip the slot so it
+    // drops off the week grid + up-next and rejoins the buffer bucket. The board jsonb may
+    // still carry a stale publish_date; this overlay is the live truth.
+    if (!s.scheduled_at) {
+      const { publish_date: _pd, scheduled_at: _sa, ...rest } = q;
+      return rest as QueueItem;
+    }
+    // Always carry the full scheduled_at (so every surface can render the time in the
+    // client's timezone) and refresh publish_date from it. Only a draft the operator moved
+    // to the 'scheduled' status flips stage; a review-stage buffer draft with a slot keeps
+    // its stage (it is scheduled-for-display, still yours to change).
+    const flip = s.status === 'scheduled' && q.stage !== 'published';
+    return { ...q, scheduled_at: s.scheduled_at, publish_date: s.scheduled_at.slice(0, 10), ...(flip ? { stage: 'scheduled' as Stage } : {}) };
   };
   const viewBoard = useMemo(
     () => (board ? { ...board, queue: board.queue.map((q) => resolveItem(withSchedule(q))) } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [board, angleSwaps, schedule],
   );
+  // Deep-link: /client/:slug?token=...&post=<draft-id> (or #post-<id>) opens that post's
+  // detail. The week-1 brief links each scheduled post this way. Harmless on any board:
+  // an unknown id simply no-ops. Runs once the board is ready and clears the param so a
+  // manual close does not re-open it. Only opens a real queue item that has a body.
+  const deepLinkedRef = useRef(false);
+  useEffect(() => {
+    if (state !== 'ready' || !viewBoard || deepLinkedRef.current) return;
+    let postId = params.get('post') || '';
+    if (!postId && typeof window !== 'undefined') {
+      const m = /(?:^|#)post-([0-9a-fA-F-]{6,})/.exec(window.location.hash || '');
+      if (m) postId = m[1];
+    }
+    if (!postId) return;
+    const hit = viewBoard.queue.find((q) => q.id === postId || q.id.slice(0, postId.length) === postId);
+    deepLinkedRef.current = true;
+    if (hit) setDetail(hit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, viewBoard]);
   // The bench for a slot: its seeded alternates; once an angle is picked, the ORIGINAL
   // topic joins the bench (the rejected angle is benched, never lost).
   const benchFor = (id: string): AltAngle[] => {
@@ -6411,6 +6820,9 @@ export default function ClientBoardPage() {
         angleSwaps={angleSwaps}
         skips={weekSkips}
         benchFor={benchFor}
+        pool={replacementPool}
+        onPickReplacement={pickReplacement}
+        onBackToBuffer={backToBuffer}
         onOpen={openDetail}
         onOpenCal={openCalendarItem}
         onApprove={approve}
@@ -6423,7 +6835,7 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
@@ -6443,6 +6855,8 @@ export default function ClientBoardPage() {
 
   // Badge = pieces actually awaiting an action: generating, swapped and skipped excluded.
   const reviewCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id]).length;
+  const scheduledCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id] && isScheduled(q)).length;
+  const bufferCount = reviewCount - scheduledCount;
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
@@ -6626,7 +7040,7 @@ export default function ClientBoardPage() {
           </div>
           )}
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
-            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in the buffer` : 'live') : 'engine running'}
+            <PulseDot color={accent} size={7} /> {isLive ? (scheduledCount > 0 ? `${scheduledCount} scheduled${bufferCount > 0 ? ` · ${bufferCount} in buffer` : ''}` : bufferCount > 0 ? `${bufferCount} in buffer` : 'live') : 'engine running'}
           </div>
           {isPreview && (
             <div className="flex items-center gap-2 text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>
@@ -6754,6 +7168,7 @@ export default function ClientBoardPage() {
           act={act}
           editDraft={editDraft}
           setMedia={isLive ? setMedia : undefined}
+          setSchedule={isLive ? setScheduleRPC : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
         />
