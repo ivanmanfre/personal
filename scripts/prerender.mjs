@@ -352,14 +352,30 @@ process.on('SIGTERM', () => shutdown(143));
       // Strip the SPA-redirect script and module preload hints? No — leave the
       // <script type="module"> entry so the real browser hydrates.
       // Also strip transient/runtime-only attributes Playwright might add.
-      const html = await page.evaluate(() => {
+      const html = await page.evaluate((riseMirror) => {
         // Inject a marker so we can confirm this file came from prerender.
         const m = document.createElement('meta');
         m.name = 'x-prerendered';
         m.content = new Date().toISOString();
         document.head.appendChild(m);
+        if (riseMirror) {
+          // White-label scrub for Rise's domain: the SPA shell's static JSON-LD
+          // (Person/Service schema: Ivan's name, portrait, offer URLs) and the Ivan
+          // favicon must never ship on resources.risedtc.com. Crawler-visible even
+          // though invisible to humans.
+          document.querySelectorAll('script[type="application/ld+json"]').forEach((s) => s.remove());
+          document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"], link[rel="mask-icon"]').forEach((l) => l.remove());
+          const mk = (rel, href, sizes) => {
+            const l = document.createElement('link');
+            l.rel = rel; l.href = href; if (sizes) l.setAttribute('sizes', sizes);
+            document.head.appendChild(l);
+          };
+          mk('icon', 'https://risedtc.com/wp-content/uploads/2025/04/cropped-Rise-DTC-favicon-blk-32x32.png', '32x32');
+          mk('icon', 'https://risedtc.com/wp-content/uploads/2025/04/cropped-Rise-DTC-favicon-blk-192x192.png', '192x192');
+          mk('apple-touch-icon', 'https://risedtc.com/wp-content/uploads/2025/04/cropped-Rise-DTC-favicon-blk-180x180.png');
+        }
         return '<!doctype html>\n' + document.documentElement.outerHTML;
-      });
+      }, RISE_SCAN_MIRROR);
 
       // Strip any query string (e.g. /client/:slug?k=<token>) from the on-disk path:
       // GitHub Pages resolves the file by path only, so this maps to
