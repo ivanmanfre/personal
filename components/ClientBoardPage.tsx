@@ -2408,48 +2408,35 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           </div>
                           <div className="flex flex-col gap-2.5 pt-1">
                             <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
-                            {timeEditId === focused.id ? (
-                              <ScheduleTimeEditor
-                                scheduledAt={focused.scheduled_at}
-                                accent={accent}
-                                onSave={(iso) => onSetSchedule ? onSetSchedule(focused.id, iso) : Promise.resolve({ ok: false })}
-                                onCancel={() => setTimeEditId(null)}
-                              />
-                            ) : (
-                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
-                                  {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'Not on the calendar yet'}
-                                </span>
-                                {isScheduled(focused) && (
-                                  <button onClick={(e) => { e.stopPropagation(); setTimeEditId(focused.id); }} className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0 }}>Edit time</button>
-                                )}
-                              </div>
-                            )}
+                            <span style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5, color: INK_SOFT }}>
+                              {isScheduled(focused) ? fmtSchedLA(focused.scheduled_at, focused.publish_date) : 'Not on the calendar yet'}
+                            </span>
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
                             {focusedLm && <LmLaunchCard lm={focusedLm} accent={accent} />}
-                            {/* One clean set of choices — no buffer jargon. Edit the words, change
-                                the time, clear the day, or swap the idea. */}
+                            {/* Exactly three choices: Edit (copy, time + photo live inside),
+                                Swap (a different post for this slot), Clear day (post goes back
+                                to your ready posts, nothing is deleted). */}
                             <div className="mt-1 flex flex-wrap items-center gap-2.5" style={{ borderTop: `1px solid ${LINE}`, paddingTop: 14 }}>
                               <button
                                 onClick={(e) => { e.stopPropagation(); onOpen(focused, { editing: true }); }}
                                 className="inline-flex min-h-[40px] items-center rounded-[7px] px-5 text-[14px] font-semibold"
                                 style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
                               >Edit</button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
+                                className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                                style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}
+                              >Swap</button>
                               {isScheduled(focused) && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); onClearDay?.(focused.id, focused.publish_date); }}
                                   className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
                                   style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
-                                >Clear this day</button>
+                                >Clear day</button>
                               )}
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
-                              className="self-start uppercase transition-colors duration-150"
-                              style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: 'none', color: INK_MUTE, border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 4 }}
-                            >⟲ swap the idea</button>
-                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>Clear this day puts the post back with your ready posts and opens the day.</span>
+                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>Edit changes the words, time, or photo. Clear day sends the post back to your ready posts.</span>
                           </div>
                         </div>
                       ) : (
@@ -3146,25 +3133,17 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               >
                 Edit
               </button>
-              {isScheduled(item) ? (
+              {isScheduled(item) && (
                 <button
                   onClick={async () => { if (setSchedule) { await setSchedule(item.id, null); } item.scheduled_at = undefined; item.publish_date = undefined; onClose(); }}
                   className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
                   style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
                 >
-                  Clear this day
-                </button>
-              ) : (
-                <button
-                  onClick={() => { onRemove?.(item.id); onClose(); }}
-                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
-                >
-                  Remove
+                  Clear day
                 </button>
               )}
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Use Change date & time above to move it.` : 'Add it to a day with Change date & time above.'}
+                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above. Nothing is ever deleted.'}
               </span>
             </div>
           </div>
