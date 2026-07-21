@@ -433,10 +433,35 @@ function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { lab
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
       return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote };
     }
+    // 'strategy' is an editorial category, NOT a provenance — never render it as a source
+    // chip (it would read like "this came from X" next to the real call / own-post chips).
+    if (sd.kind === 'strategy') return null;
     return { label: sd.label || '', quote: null };
   }
   if (q.source_label) return { label: srcLabelClient(q.source_label), quote: null };
   return null;
+}
+/** Render a plain-text email body the way an inbox would: line breaks preserved and any
+ *  URL turned into a clickable link. The stored/edited copy stays plain text — this is a
+ *  preview-only transform (no HTML is persisted, and no dangerouslySetInnerHTML). */
+const EMAIL_URL_SPLIT = /(https?:\/\/[^\s]+)/g;
+const isEmailUrl = (s: string) => /^https?:\/\/[^\s]+$/.test(s);
+function EmailBodyPreview({ body, accent }: { body: string; accent: string }) {
+  const lines = body.split('\n');
+  return (
+    <>
+      {lines.map((line, li) => (
+        <React.Fragment key={li}>
+          {li > 0 && <br />}
+          {line.split(EMAIL_URL_SPLIT).map((part, pi) =>
+            isEmailUrl(part)
+              ? <a key={pi} href={part} target="_blank" rel="noopener noreferrer" style={{ color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-word' }}>{part}</a>
+              : <React.Fragment key={pi}>{part}</React.Fragment>
+          )}
+        </React.Fragment>
+      ))}
+    </>
+  );
 }
 /** Hostname of a real recorded URL (no www), or '' when absent/unparseable. Live boards
  *  render only checkable hosts, never a synthesized vanity domain. */
@@ -2651,11 +2676,13 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
+  /** Live board: remove an unscheduled buffer post — reversible hide (board_visible=false). */
+  onHideBuffer?: (id: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: draft history from the insert-only actions audit. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
   isLive: boolean;
@@ -2677,6 +2704,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [poolLoading, setPoolLoading] = useState(false);
   const [mediaBusy, setMediaBusy] = useState('');
   const [mediaErr, setMediaErr] = useState('');
+  // Remove-from-buffer (live): busy + error state for the reversible hide.
+  const [hideBusy, setHideBusy] = useState(false);
+  const [hideErr, setHideErr] = useState('');
   const loadPool = async () => {
     if (!slug) return;
     setPoolLoading(true);
@@ -3053,7 +3083,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{isLive ? fmtSchedLA(item.scheduled_at, item.publish_date) : fmtDay(item.publish_date)}</div>
                 </div>
               )}
-              {(detailChip?.label || (isLive && item.source_label)) && (
+              {(detailChip?.label || (isLive && item.source_label && item.source_detail?.kind !== 'strategy')) && (
                 <div className="col-span-2">
                   <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
                   <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{detailChip?.label || srcLabelClient(item.source_label!)}</div>
@@ -3142,8 +3172,19 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   Clear day
                 </button>
               )}
+              {!isScheduled(item) && onHideBuffer && (
+                <button
+                  onClick={async () => { setHideBusy(true); const r = await onHideBuffer(item.id); if (r.ok) { onClose(); } else { setHideBusy(false); setHideErr(r.error || 'Could not remove that. Try again.'); } }}
+                  disabled={hideBusy}
+                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', opacity: hideBusy ? 0.6 : 1 }}
+                >
+                  {hideBusy ? 'Removing…' : 'Remove'}
+                </button>
+              )}
+              {hideErr && <span className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above. Nothing is ever deleted.'}
+                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
               </span>
             </div>
           </div>
@@ -3707,7 +3748,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                         )}
                       </div>
                       {entry.promo?.email?.body
-                        ? <p className="whitespace-pre-line px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}>{entry.promo.email.body}</p>
+                        ? <p className="px-4 py-4 text-[13.5px]" style={{ fontFamily: BODY, lineHeight: 1.6, color: INK_SOFT }}><EmailBodyPreview body={entry.promo.email.body} accent={accent} /></p>
                         : <p className="px-4 py-4 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>No delivery email yet. Edit to write the email that sends your lead magnet.</p>}
                       <div className="px-4 pb-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>
                         Sent after they open your landing page. Saved as your delivery template — edit it any time.
@@ -6562,6 +6603,39 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Remove a buffer (unscheduled) post from the board (live). Sets carousel_drafts
+  // .board_visible=false through the SECURITY DEFINER RPC (a reversible hide, never a hard
+  // delete) + drops it from the board queue jsonb so it stays gone on reload. Optimistically
+  // pulls the card from the local queue so it vanishes at once; on failure it restores.
+  const hideDraftRPC = async (draftId: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_hide_draft', { p_slug: slug, p_token: token, p_draft_id: draftId });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_hide_draft_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      return (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+  // "Remove" on a buffer post: hide it from the board (reversible), optimistically pull it
+  // from the local queue, then reconcile with the server. If the hide fails, put it back.
+  const removeBufferPost = async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    const snapshot = board?.queue.find((q) => q.id === id) || null;
+    setBoard((b) => b ? { ...b, queue: b.queue.filter((q) => q.id !== id) } : b);
+    const r = await hideDraftRPC(id);
+    if (!r.ok && snapshot) {
+      setBoard((b) => b && !b.queue.some((q) => q.id === id) ? { ...b, queue: [...b.queue, snapshot] } : b);
+    }
+    return r;
+  };
+
   // Remove one photo from the client's lifestyle library (live). storage.objects has a
   // protect_delete() trigger, so the delete runs in the client-photo-delete edge fn under
   // the service role, gated by the same token/session as every other board write.
@@ -7581,6 +7655,7 @@ export default function ClientBoardPage() {
           onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); }}
           onApprove={approve}
           onRemove={skipDay}
+          onHideBuffer={isLive ? removeBufferPost : undefined}
           isLive={isLive}
           act={act}
           editDraft={editDraft}
