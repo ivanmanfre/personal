@@ -121,6 +121,11 @@ interface QueueItem {
   hook?: string;
   body?: string;
   media_url?: string | null;
+  /** Post image(s) as stored on carousel_drafts.image_urls, plumbed by the sync. The board
+   *  reads image_urls[0] as the card image so an attached image is always VISIBLE for review
+   *  before it publishes (media_url/cover_url are the older single-image fields). */
+  image_urls?: string[] | null;
+  image?: string | null;
   title?: string;
   promise?: string;
   cover_url?: string;
@@ -516,6 +521,11 @@ function resolveLaunchLm(q: Pick<QueueItem, 'lm_launch' | 'lm_ref' | 'source_det
  *  is why an LM card shows its cover just like a normal post shows its image. */
 function cardImageUrl(q: QueueItem, board?: Pick<Board, 'lead_magnets'>): string | undefined {
   if (q.media_url) return q.media_url;
+  // The post's own attached image lives on image_urls (carousel_drafts.image_urls). Read it
+  // BEFORE cover fallbacks so every post with an image shows it on the board — this is what
+  // makes an attached image reviewable before publish instead of rendering blank.
+  if (q.image_urls && q.image_urls.length && q.image_urls[0]) return q.image_urls[0];
+  if (q.image) return q.image;
   if (q.cover_url) return q.cover_url;
   const lms = board?.lead_magnets || [];
   const isLaunch = q.lm_launch || q.source_detail?.kind === 'lm_launch';
