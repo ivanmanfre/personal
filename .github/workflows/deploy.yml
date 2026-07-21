@@ -202,10 +202,27 @@ jobs:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
         run: |
           git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/rise-dtc-resources.git" /tmp/rise-site
-          rsync -a --delete --exclude CNAME dist/ /tmp/rise-site/scan/
+          # White-label: keep Ivan-branded standalone pages + orphan assets OUT of Rise's
+          # scan dir (rsync --delete would otherwise drag the whole vite dist across).
+          rsync -a --delete --exclude CNAME \
+            --exclude 'effektify-flow-diagram' --exclude 'share' --exclude 'content-system' \
+            --exclude 'content-system-walkthrough.md' --exclude 'cases' --exclude 'film' \
+            --exclude 'ivan-*' --exclude 'profile.jpg' --exclude 'og-scorecard.png' --exclude 'callbrief-*' \
+            dist/ /tmp/rise-site/scan/
           # Bare /scan/ would serve the SPA shell (Ivan-branded default OG) on Rise's
-          # white-label domain — replace it with a redirect to Rise's resources home.
+          # white-label domain, so replace it with a redirect to Rise's resources home.
           printf '%s\n' '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>RISE DTC</title></head><body><script>location.replace("/")</script></body></html>' > /tmp/rise-site/scan/index.html
+          # Force Rise's own robots + sitemap so crawlers never see ivanmanfredi.com URLs.
+          printf 'User-agent: *\nAllow: /\n\nSitemap: https://resources.risedtc.com/scan/sitemap.xml\n' > /tmp/rise-site/scan/robots.txt
+          {
+            printf '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            for d in /tmp/rise-site/scan/*/; do
+              slug=$(basename "$d")
+              [ "$slug" = "assets" ] && continue
+              printf '  <url><loc>https://resources.risedtc.com/scan/%s/</loc></url>\n' "$slug"
+            done
+            printf '</urlset>\n'
+          } > /tmp/rise-site/scan/sitemap.xml
           cd /tmp/rise-site
           git add scan/
           if git diff --cached --quiet; then echo "rise scan mirror unchanged"; exit 0; fi
