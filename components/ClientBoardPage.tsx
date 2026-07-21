@@ -2095,7 +2095,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, fetchHistory }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, initialChanging = false, initialEditing = false, isLive, act, editDraft, setMedia, slug, fetchHistory }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean;
   /** Live board: "remove this post" veto (recorded). */
@@ -2105,10 +2105,45 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live board: attach/replace/clear a lifestyle photo on this post. */
+  setMedia?: (draftId: string, url: string) => Promise<{ ok: boolean; error?: string }>;
+  slug?: string;
 }) {
   const reduce = useReducedMotion();
   const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
+  // Photo attach (live): the chosen lifestyle image for this post, plus the pool picker.
+  const [mediaUrl, setMediaUrlState] = useState(item.media_url || '');
+  const [poolOpen, setPoolOpen] = useState(false);
+  const [pool, setPool] = useState<PhotoItem[]>([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState('');
+  const [mediaErr, setMediaErr] = useState('');
+  const loadPool = async () => {
+    if (!slug) return;
+    setPoolLoading(true);
+    const { data, error } = await supabase.storage
+      .from('client-photos')
+      .list(slug, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+    if (!error && data) {
+      setPool(data.filter((f) => f.id !== null && !/^\./.test(f.name)).map((f) => ({
+        name: f.name,
+        url: supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl,
+        createdAt: f.created_at || f.updated_at || '',
+      })));
+    }
+    setPoolLoading(false);
+  };
+  const chooseMedia = async (url: string) => {
+    if (!setMedia || mediaBusy) return;
+    setMediaErr(''); setMediaBusy(url || 'clear');
+    const r = await setMedia(item.id, url);
+    setMediaBusy('');
+    if (!r.ok) { setMediaErr(r.error || 'Could not attach that. Try again.'); return; }
+    item.media_url = url || null;
+    setMediaUrlState(url);
+    setPoolOpen(false);
+  };
   const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
@@ -2287,6 +2322,75 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </span>
                 </div>
                 {err && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
+
+                {/* Photo attach (live): pick a lifestyle picture for this post, or remove it. */}
+                {isLive && setMedia && (
+                  <div className="mt-4 border-t pt-4" style={{ borderColor: DIVIDE }}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {mediaUrl ? (
+                        <>
+                          <img src={mediaUrl} alt="" className="h-12 w-12 rounded-md object-cover" style={{ border: `1px solid ${LINE}` }} />
+                          <button
+                            onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
+                            className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
+                            style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                          >
+                            Change photo
+                          </button>
+                          <button
+                            onClick={() => void chooseMedia('')}
+                            disabled={!!mediaBusy}
+                            className="inline-flex min-h-[38px] items-center rounded-[6px] px-3 text-[13px] font-medium"
+                            style={{ color: DIM, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, opacity: mediaBusy ? 0.6 : 1 }}
+                          >
+                            {mediaBusy === 'clear' ? 'Removing…' : 'Remove photo'}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
+                          className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
+                          style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+                          </svg>
+                          Add a photo
+                        </button>
+                      )}
+                      <span className="text-[12px]" style={{ color: FAINT }}>From your lifestyle library.</span>
+                    </div>
+                    {mediaErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{mediaErr}</div>}
+                    {poolOpen && (
+                      <div className="mt-3 rounded-lg p-3" style={{ border: `1px solid ${LINE}`, background: PAPER_SUNK }}>
+                        {poolLoading ? (
+                          <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>Loading your photos…</div>
+                        ) : pool.length === 0 ? (
+                          <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>No photos yet. Add some in the Photos section below.</div>
+                        ) : (
+                          <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
+                            {pool.map((p) => {
+                              const chosen = p.url === mediaUrl;
+                              return (
+                                <button
+                                  key={p.name}
+                                  onClick={() => void chooseMedia(p.url)}
+                                  disabled={!!mediaBusy}
+                                  className="relative aspect-square overflow-hidden rounded-md"
+                                  style={{ border: chosen ? `2px solid ${accent}` : `1px solid ${LINE}`, cursor: mediaBusy ? 'default' : 'pointer' }}
+                                  aria-label="Use this photo"
+                                >
+                                  <img src={p.url} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }} />
+                                  {mediaBusy === p.url && <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white" style={{ background: 'rgba(19,18,16,0.55)' }}>…</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="cb-linkedin-preview">
@@ -2296,7 +2400,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     author={board.founder?.name || board.company_name}
                     headline={board.founder?.headline || ''}
                     avatarUrl={board.founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
-                    mediaUrl={item.media_url || undefined}
+                    mediaUrl={mediaUrl || item.media_url || undefined}
                     stats={{ reactions: 0, comments: 0 }}
                     timeLabel="Preview" /* future/example posts: no "1d · Edited" chrome */
                     showFold={false}
@@ -4661,13 +4765,25 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
 type PhotoItem = { name: string; url: string; createdAt: string };
 type PhotoUpload = { key: string; name: string; status: 'uploading' | 'done' | 'error'; error?: string };
 
-function PhotosSurface({ board: _board, accent, slug, compact = false }: { board: Board; accent: string; slug: string; compact?: boolean }) {
+function PhotosSurface({ board: _board, accent, slug, compact = false, onDeletePhoto }: { board: Board; accent: string; slug: string; compact?: boolean; onDeletePhoto?: (name: string) => Promise<{ ok: boolean; error?: string }> }) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploads, setUploads] = useState<PhotoUpload[]>([]);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const clearTimer = useRef<number>(0);
+  // Delete: first tap arms a per-tile confirm; second tap removes (edge fn), then drop locally.
+  const [pendingDel, setPendingDel] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [delErr, setDelErr] = useState('');
+  const removePhoto = async (name: string) => {
+    if (!onDeletePhoto || deleting) return;
+    setDelErr(''); setDeleting(name);
+    const r = await onDeletePhoto(name);
+    setDeleting(null); setPendingDel(null);
+    if (!r.ok) { setDelErr(r.error || 'Could not delete that. Try again.'); return; }
+    setPhotos((prev) => prev.filter((p) => p.name !== name));
+  };
 
   const loadPhotos = async () => {
     if (!slug) { setLoading(false); return; }
@@ -4797,27 +4913,66 @@ function PhotosSurface({ board: _board, accent, slug, compact = false }: { board
           </div>
         </div>
       ) : (
+        <>
+        {delErr && <div className="mb-3 text-[12.5px]" style={{ color: '#c0392b' }}>{delErr}</div>}
         <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
           {photos.map((p) => (
-            <a
+            <div
               key={p.name}
-              href={p.url}
-              target="_blank"
-              rel="noreferrer"
               className="group relative block aspect-square overflow-hidden rounded-lg"
               style={{ border: `1px solid ${LINE}`, background: PAPER_SUNK }}
             >
-              <img
-                src={p.url}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover"
-                style={{ display: 'block' }}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
-              />
-            </a>
+              <a href={p.url} target="_blank" rel="noreferrer" className="block h-full w-full">
+                <img
+                  src={p.url}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                  style={{ display: 'block' }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
+                />
+              </a>
+              {onDeletePhoto && pendingDel !== p.name && (
+                <button
+                  type="button"
+                  aria-label="Remove photo"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDelErr(''); setPendingDel(p.name); }}
+                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                  style={{ background: 'rgba(19,18,16,0.72)', color: '#fff', backdropFilter: 'blur(2px)' }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                  </svg>
+                </button>
+              )}
+              {onDeletePhoto && pendingDel === p.name && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2 text-center" style={{ background: 'rgba(19,18,16,0.82)' }}>
+                  <span className="text-[11.5px] font-semibold text-white">Remove this photo?</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); void removePhoto(p.name); }}
+                      disabled={deleting === p.name}
+                      className="rounded-[5px] px-2.5 py-1 text-[11px] font-semibold"
+                      style={{ background: '#c0392b', color: '#fff', opacity: deleting === p.name ? 0.6 : 1 }}
+                    >
+                      {deleting === p.name ? 'Removing…' : 'Remove'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPendingDel(null); }}
+                      className="rounded-[5px] px-2.5 py-1 text-[11px] font-medium"
+                      style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
+        </>
       )}
     </div>
   );
@@ -5475,6 +5630,50 @@ export default function ClientBoardPage() {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
   };
+
+  // Attach / replace / clear a post's image with a chosen lifestyle photo (live).
+  // Sets carousel_drafts.image_urls + the board queue item's media_url in one RPC,
+  // and logs a set_media action for the operator. Same token/session routing as editDraft.
+  // Passing '' clears the image. Local queue state updates so it survives navigation.
+  const setMedia = async (draftId: string, url: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_set_media', { p_slug: slug, p_token: token, p_draft_id: draftId, p_media_url: url });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_set_media_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_media_url: url });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+      if (out.ok) {
+        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, media_url: url || null } : q) } : b);
+      }
+      return out;
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
+  // Remove one photo from the client's lifestyle library (live). storage.objects has a
+  // protect_delete() trigger, so the delete runs in the client-photo-delete edge fn under
+  // the service role, gated by the same token/session as every other board write.
+  const deletePhoto = async (name: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    const sessTok = sessionRef.current?.token;
+    if (!token && !sessTok) return { ok: false, error: 'missing session' };
+    try {
+      const auth = token ? { token } : { session: sessTok };
+      const { data, error } = await supabase.functions.invoke('client-photo-delete', { body: { slug, name, ...auth } });
+      if (error) return { ok: false, error: error.message };
+      const out = data as { ok?: boolean; error?: string } | null;
+      return out?.ok ? { ok: true } : { ok: false, error: out?.error || 'Could not delete that. Try again.' };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
   const approve = (id: string) => {
     setStageOverride((s) => ({ ...s, [id]: 'scheduled' }));
     flash(id);
@@ -5996,7 +6195,7 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
@@ -6326,6 +6525,8 @@ export default function ClientBoardPage() {
           isLive={isLive}
           act={act}
           editDraft={editDraft}
+          setMedia={isLive ? setMedia : undefined}
+          slug={slug || ''}
           fetchHistory={fetchHistory}
         />
       )}
