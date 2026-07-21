@@ -334,7 +334,7 @@ process.on('SIGTERM', () => shutdown(143));
         // a visitor with a blocker/slow network sees a blank page. Every other route
         // already bakes its body (they render synchronously); this aligns scans.
         await page
-          .waitForFunction(() => ((document.getElementById('root') || {}).innerText || '').length > 1500, { timeout: 20000 })
+          .waitForFunction(() => ((document.getElementById('root') || {}).innerText || '').length > 1000, { timeout: 20000 })
           .catch(() => console.error(`[prerender][${route}] scan body under threshold — baking whatever rendered`));
         await page.waitForTimeout(600);
       }

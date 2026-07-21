@@ -16,7 +16,7 @@
 import React, { useState } from 'react';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
-import type { ReportJson, Scan, DtcSignalStatus } from '../lib/scanTypes';
+import type { ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
   paid_media: 'Paid media',
@@ -25,25 +25,15 @@ const LEVER_LABEL: Record<string, string> = {
   cro: 'Conversion',
 };
 
-const SIGNAL_LABEL: Record<string, string> = {
-  shopify: 'Shopify catalog',
-  'ads.meta': 'Meta ads',
-  tech_stack: 'Tech stack',
-  reviews: 'Reviews',
-  pagespeed: 'Page speed',
-  signup: 'Email capture',
-};
-
-// Grafted from the Dossier candidate: a short, number-free descriptor of WHAT was read for
-// each source. Never a store-fact, so it can never introduce a fabricated numeral.
-const READ_FROM: Record<string, string> = {
-  shopify: 'products.json',
-  'ads.meta': 'Meta ad library',
-  tech_stack: 'homepage source',
-  reviews: 'product page',
-  pagespeed: 'field data',
-  signup: 'homepage',
-};
+// The credibility line names ONLY sources actually read (status present or empty). Fixed order,
+// number-free labels: a source WAS read means it can be named, never a store-fact or a numeral.
+const READ_SOURCE_LABELS: Array<[string, string]> = [
+  ['signup', 'your storefront'],
+  ['reviews', 'your product pages'],
+  ['shopify', 'your public catalog'],
+  ['ads.meta', 'the Meta Ad Library'],
+  ['tech_stack', 'your homepage source'],
+];
 
 // Every rendered data string passes through this. It strips em/en dashes (Rise copy rule:
 // zero em-dashes anywhere on the page) WITHOUT touching numerals, so grounded numbers stay
@@ -56,68 +46,6 @@ function clean(s: string | null | undefined): string {
 function fmtMoney(n: number): string {
   const sign = n < 0 ? '-' : '';
   return `${sign}$${Math.abs(n).toFixed(2)}`;
-}
-
-function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
-
-// Provenance marker — one per signal. Three honest states: present (real read), empty
-// (we looked and found genuinely nothing), and not-readable (blocked/absent/error — never
-// implies zero). This is what makes degradation read as honest, not apologetic. The small
-// secondary small-caps line names WHERE the read came from (grafted from the Dossier's
-// source log); it is number-free and never asserts a store-fact.
-function ProvenanceMarker({ signal, status, readFrom, accent, ink }: { signal: string; status: DtcSignalStatus; readFrom: string; accent: string; ink: string }) {
-  const label = SIGNAL_LABEL[signal] || signal;
-  if (status === 'present') {
-    return (
-      <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
-        <span className="w-2 h-2 rounded-full flex-none" style={{ background: accent }} />
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] font-semibold leading-tight" style={{ color: ink }}>{label}</span>
-          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.5 }}>read from {readFrom}</span>
-        </span>
-        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.55 }}>read</span>
-      </div>
-    );
-  }
-  if (status === 'empty') {
-    return (
-      <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
-        <span className="w-2 h-2 rounded-full flex-none border" style={{ borderColor: ink }} />
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.85 }}>{label}</span>
-          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.45 }}>read from {readFrom}</span>
-        </span>
-        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.5 }}>none found</span>
-      </div>
-    );
-  }
-  if (status === 'absent') {
-    // key-gated source (Meta Ad Library / PageSpeed field data): not a failure to read the
-    // store, a read that unlocks on the live look. Distinct from blocked, still no number.
-    return (
-      <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
-        <span className="w-2 h-2 rounded-full flex-none" style={{ border: `1.5px solid ${accent}`, background: 'transparent' }} />
-        <span className="flex flex-col">
-          <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.75 }}>{label}</span>
-          <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.45 }}>read from {readFrom}</span>
-        </span>
-        <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.6 }}>on the live look</span>
-      </div>
-    );
-  }
-  // blocked / error — honest "could not read", NEVER a zero.
-  return (
-    <div className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: `1px solid ${ink}14` }}>
-      <span className="w-2 h-2 rounded-full flex-none" style={{ border: `1px solid ${ink}55`, background: 'transparent' }} />
-      <span className="flex flex-col">
-        <span className="text-[0.95rem] leading-tight" style={{ color: ink, opacity: 0.5 }}>{label}</span>
-        <span className="text-[0.72rem] uppercase tracking-[0.18em] mt-0.5" style={{ color: ink, opacity: 0.35 }}>read from {readFrom}</span>
-      </span>
-      <span className="ml-auto text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.4 }}>not readable</span>
-    </div>
-  );
 }
 
 // The climactic spread. Formula lifted verbatim from the floor / True Profit X-Ray. Seeded
@@ -170,7 +98,7 @@ function ProfitGapSpread({
       <div className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-20 sm:py-28">
         <div className="flex items-center gap-3 mb-8">
           <span className="h-px w-10" style={{ background: accent }} />
-          <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: accent }}>The climax</span>
+          <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: accent }}>Profit per order</span>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-y-12 lg:gap-x-12 items-end">
@@ -282,24 +210,47 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     noindex: true,
   });
 
-  const signalEntries = Object.entries(d.completeness?.signals || {}) as [string, DtcSignalStatus][];
-  const presentCount = d.completeness?.present_count ?? 0;
-  const scoredOf = d.completeness?.scored_of ?? 0;
-  const tier = d.completeness?.tier;
-
-  const hasScorecard = d.growth_score != null;
-  const breakdownEntries = Object.entries(d.score_breakdown || {});
-
   const findings = d.findings || [];
   const pg = d.profit_gap;
 
-  // Tech stack ledger — an extra editorial exhibit that gives thin fixtures real substance.
-  const stack = d.tech_stack;
-  const stackConfirmed = stack?.status === 'present' ? (stack.data?.confirmed || []) : [];
-  const stackMissing = stack?.status === 'present' && stack.data?.is_shopify ? (stack.data?.missing_critical || []) : [];
-  const showStack = stackConfirmed.length > 0;
+  // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
+  // honest negative, the source WAS reached). Fixed order, deduped, pagespeed skipped entirely.
+  const readSignals = d.completeness?.signals || {};
+  const readLabels: string[] = [];
+  for (const [key, label] of READ_SOURCE_LABELS) {
+    const st = readSignals[key];
+    if ((st === 'present' || st === 'empty') && !readLabels.includes(label)) readLabels.push(label);
+  }
+  let credibilityLine = '';
+  if (readLabels.length === 1) credibilityLine = `Read from ${readLabels[0]}.`;
+  else if (readLabels.length > 1) {
+    credibilityLine = `Read from ${readLabels.slice(0, -1).join(', ')} and ${readLabels[readLabels.length - 1]}.`;
+  }
 
-  const thinRead = !hasScorecard && findings.length === 0;
+  // Stat band: proof-of-work numerals, each source-gated on status === 'present' and a real
+  // value. Blocked/absent/error contributes nothing. Renders ONLY when >= 2 stats qualify.
+  const statBand: { value: string; label: string }[] = [];
+  const adsMeta = d.ads?.meta;
+  if (adsMeta?.status === 'present' && adsMeta.data) {
+    const a = adsMeta.data;
+    if (typeof a.active_ad_count === 'number' && a.active_ad_count > 0)
+      statBand.push({ value: a.active_ad_count.toLocaleString('en-US'), label: 'active Meta ads' });
+    if (typeof a.oldest_active_run_days === 'number' && a.oldest_active_run_days > 0)
+      statBand.push({ value: a.oldest_active_run_days.toLocaleString('en-US'), label: 'days your oldest ad has been running' });
+    if (typeof a.distinct_angles === 'number' && a.distinct_angles > 1)
+      statBand.push({ value: a.distinct_angles.toLocaleString('en-US'), label: 'creative angles live' });
+  }
+  const shop = d.shopify;
+  if (shop?.status === 'present' && shop.data) {
+    const s = shop.data;
+    if (typeof s.catalog_size === 'number' && s.catalog_size > 0)
+      statBand.push({ value: s.catalog_size.toLocaleString('en-US'), label: 'products in the catalog' });
+    if (typeof s.oos_pct === 'number' && s.oos_pct > 0)
+      statBand.push({ value: `${s.oos_pct}%`, label: 'of variants out of stock' });
+  }
+  const showStatBand = statBand.length >= 2;
+
+  const thinRead = findings.length === 0;
 
   const findingVariant = (i: number): 'lead' | 'split' | 'offset' => (['lead', 'split', 'offset'] as const)[i % 3];
 
@@ -355,114 +306,39 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="lg:col-span-3">
             <div className="text-[0.95rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
               <div className="font-bold" style={{ color: ink, opacity: 1 }}>Prepared by {wordmark}</div>
-              <div className="mt-1">A read of {companyName}'s public store data, laddered to the levers that move growth.</div>
-              {tier ? (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5" style={{ border: `1px solid ${ink}22` }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
-                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: ink, opacity: 0.75 }}>{capitalize(tier)} read</span>
-                </div>
+              <div className="mt-1">A growth read of {companyName}'s store and the levers that move it.</div>
+              {credibilityLine ? (
+                <div className="mt-3 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.55 }}>{credibilityLine}</div>
               ) : null}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Chapter — What we could read (provenance ledger) */}
-      <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pb-16">
-        <div className="grid lg:grid-cols-12 gap-y-6 lg:gap-x-12">
-          <div className="lg:col-span-4">
-            <h2 className="font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.4rem, 2.4vw, 1.9rem)', color: ink }}>
-              What we could read
-            </h2>
-            <p className="mt-3 text-[1rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
-              A public-data scan, nothing private. Where a source is blocked we say so, and we never
-              read a blocked source as a zero.
-            </p>
-            <p className="mt-4 text-[0.85rem] uppercase tracking-[0.16em]" style={{ color: ink, opacity: 0.6 }}>
-              {presentCount} of {scoredOf} signals read
-            </p>
+      {/* Chapter — The store, in numbers (proof-of-work stat band; renders only with >= 2 stats) */}
+      {showStatBand ? (
+        <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pb-16">
+          <div className="flex items-center gap-3 mb-10">
+            <span className="h-px w-10" style={{ background: accent }} />
+            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
+              The store, in numbers
+            </span>
           </div>
-          <div className="lg:col-span-8">
-            <div className="grid sm:grid-cols-2 sm:gap-x-10" style={{ borderTop: `1px solid ${ink}14` }}>
-              {signalEntries.map(([signal, status]) => (
-                <ProvenanceMarker key={signal} signal={signal} status={status} readFrom={READ_FROM[signal] || 'public data'} accent={accent} ink={ink} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Chapter — The scorecard (collapses when growth_score is null) */}
-      {hasScorecard ? (
-        <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14` }}>
-          <div className="grid lg:grid-cols-12 gap-y-10 lg:gap-x-14 items-center">
-            <div className="lg:col-span-5">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="h-px w-8" style={{ background: accent }} />
-                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.26em]" style={{ color: ink, opacity: 0.65 }}>Growth score</span>
-              </div>
-              <div
-                className="font-extrabold tabular-nums leading-none tracking-[-0.03em]"
-                style={{ fontFamily: headingFont, fontSize: 'clamp(4.5rem, 16vw, 9rem)', color: ink }}
-              >
-                {d.growth_score}
-              </div>
-              <p className="mt-5 max-w-sm text-[1.0625rem] leading-relaxed" style={{ color: ink, opacity: 0.75 }}>
-                A partial score across only the levers we could read from the outside. The full picture
-                comes off a live look together.
-              </p>
-            </div>
-            <div className="lg:col-span-7 space-y-7">
-              {breakdownEntries.map(([lever, b]) => (
-                <div key={lever}>
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className="font-bold text-[1.0625rem]" style={{ fontFamily: headingFont, color: ink }}>{LEVER_LABEL[lever] || lever}</span>
-                    <span className="tabular-nums text-[0.95rem] font-semibold" style={{ color: ink, opacity: 0.7 }}>{b.value}/{b.max}</span>
-                  </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: `${ink}12` }}>
-                    <div className="cedt-anim h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(100, (b.value / b.max) * 100))}%`, background: accent }} />
-                  </div>
-                  <p className="mt-2 text-[0.95rem]" style={{ color: ink, opacity: 0.65 }}>{clean(b.rationale)}</p>
+          <div className="flex flex-wrap gap-x-10 gap-y-12">
+            {statBand.map((s, i) => (
+              <div key={i} className="basis-[calc(50%-1.25rem)] sm:basis-auto sm:flex-1 sm:min-w-[150px] sm:max-w-[240px]">
+                <div
+                  className="font-extrabold tabular-nums leading-none tracking-[-0.03em]"
+                  style={{ fontFamily: headingFont, fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', color: ink }}
+                >
+                  {s.value}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {/* Chapter — The stack ledger (renders only when we confirmed installed tools) */}
-      {showStack ? (
-        <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14` }}>
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-            <h2 className="font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: ink }}>
-              The stack we could see
-            </h2>
-            {stack?.source_url ? (
-              <a href={stack.source_url} target="_blank" rel="noopener noreferrer" className="text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.6 }}>
-                read from your store
-              </a>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            {stackConfirmed.map((t) => (
-              <span key={t} className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.95rem] font-semibold" style={{ border: `1px solid ${ink}22`, color: ink }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
-                {t}
-              </span>
+                <div className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.16em] leading-snug" style={{ color: ink, opacity: 0.55 }}>
+                  {s.label}
+                </div>
+              </div>
             ))}
           </div>
-          {stackMissing.length > 0 ? (
-            <div className="mt-8">
-              <p className="text-[0.85rem] uppercase tracking-[0.16em] mb-3" style={{ color: ink, opacity: 0.55 }}>Not detected in your stack</p>
-              <div className="flex flex-wrap gap-2.5">
-                {stackMissing.map((t) => (
-                  <span key={t} className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[0.95rem]" style={{ border: `1px dashed ${ink}33`, color: ink, opacity: 0.65 }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </section>
       ) : null}
 
@@ -471,7 +347,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14` }}>
           <div className="flex items-center gap-3 mb-3">
             <span className="h-px w-10" style={{ background: accent }} />
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The feature</span>
+            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>What we found</span>
           </div>
           <h2 className="font-extrabold tracking-[-0.02em] mb-12" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: ink, lineHeight: 1.03 }}>
             Where the growth is
@@ -566,12 +442,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The read</span>
             </div>
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', color: ink, lineHeight: 1.05 }}>
-              A public read only surfaced the basics
+              The public read gave us the basics
             </h2>
             <p className="mt-5 text-[1.2rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
-              Some of your sources were not readable from the outside, so we are not going to invent a
-              number. The full teardown, catalog economics, discount exposure, and the Profit Gap comes
-              off a live look together.
+              The public surfaces we read gave us the basics. The full teardown, catalog economics and
+              the Profit Gap, comes off a live look together.
             </p>
             <a
               href={bookingUrl}
@@ -605,7 +480,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="lg:col-span-8">
             <div className="flex items-center gap-3 mb-6">
               <span className="h-px w-10" style={{ background: accent }} />
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The close</span>
+              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The next step</span>
             </div>
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 4.6vw, 3.25rem)', color: ink, lineHeight: 1.03 }}>
               How RISE runs growth
@@ -638,7 +513,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <span className="font-bold" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>{wordmark}</span>
           )}
           <p className="text-[0.85rem]" style={{ color: ink, opacity: 0.55 }}>
-            Prepared for {companyName} · public-data scan · confidential
+            Prepared for {companyName} · confidential
           </p>
         </div>
       </footer>
