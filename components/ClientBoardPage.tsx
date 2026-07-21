@@ -163,6 +163,13 @@ interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreac
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
 interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number }
+/** A lane is dead (retired / no ratified sequence) when its status says retired or its
+ *  name is the retired Network Activation lane. Dead lanes carry no message set, so they
+ *  never render on the client-facing Leads view — the data stays, the empty lane hides. */
+function isDeadLane(name?: string, status?: string, arms?: string): boolean {
+  const hay = `${name || ''} ${status || ''} ${arms || ''}`.toLowerCase();
+  return /retired|no ratified sequence|network activation/.test(hay);
+}
 /** Live monthly send-log usage for the Leads panel. Counts + caps both come from the
  *  server (client_board_outreach_usage RPC); the component never hardcodes a cap. */
 interface OutreachUsage {
@@ -172,6 +179,15 @@ interface OutreachUsage {
   dm_sent: number;
   connect_sent: number;
   connect_cap: number;
+}
+/** One outbound message on a lead's live send log (client_board_outreach_log RPC). */
+interface OutreachLogMessage { direction: 'outbound' | 'inbound'; channel: string | null; type: string | null; sent_at: string | null; text: string | null }
+/** Per-lead live send log: real sends only (sent_at not null) + reply status. Sourced
+ *  from outreach_messages via RPC, never baked board JSON. Empty until a lane sends. */
+interface OutreachLogEntry {
+  prospect_id: string; name: string | null; company: string | null; lane: string | null;
+  reply_count: number; replied: boolean; last_sent_at: string | null; last_reply_at: string | null;
+  messages: OutreachLogMessage[];
 }
 interface OutreachSpec {
   note?: string;
@@ -332,6 +348,12 @@ function noDash(s?: string): string {
 function cleanHex(hex?: string, fallback = '#4f46e5'): string {
   const h = (hex || '').replace(/[^0-9a-fA-F]/g, '');
   return h.length === 6 ? `#${h}` : fallback;
+}
+/** White-label label for a live/client board: the client's OWN brand, never the operator
+ *  agency name. Reads brand.wordmark → company_name → domain. Live boards render this in
+ *  place of the hardcoded "InboundOnSteroids"; preview/demo boards keep the product name. */
+function clientBrand(board?: { brand?: BoardBrand; company_name?: string; domain?: string } | null): string {
+  return (board?.brand?.wordmark || board?.company_name || board?.domain || 'RISE DTC').trim();
 }
 function inkOn(hex: string): string {
   const h = hex.replace('#', '');
@@ -4355,7 +4377,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in.{isLive ? '' : ' We review the weights together every month.'}
         </p>
-        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids</p>
+        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>{isLive ? clientBrand(board) : 'InboundOnSteroids'}</p>
       </div>
 
       {/* Your plan: the preview-only deliverables card (a live production tool never shows
@@ -4869,7 +4891,7 @@ function LeadsBlockHead({ n, label, sub }: { n: string; label: string; sub?: Rea
   );
 }
 
-function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = null }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void; live?: boolean; usage?: OutreachUsage | null }) {
+function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = null, log = null }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void; live?: boolean; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null }) {
   const real = board.lead_pipeline && board.lead_pipeline.length > 0 ? board.lead_pipeline : null;
   const usingSample = !real && preview;
   const leads: PipelineLead[] = real ?? (usingSample ? SAMPLE_LEAD_PIPELINE : []);
@@ -4910,7 +4932,11 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
           counts only; every lane names what arms it. Renders above the pipeline. */}
       {live && board.outreach && (() => {
         const o = board.outreach!;
-        const lanes = o.lanes || [];
+        // Hide any retired / no-ratified-sequence lane (e.g. the dead Network Activation
+        // lane) from the client view. Same filter on the message sequences so a dead lane
+        // never surfaces a message-less shell.
+        const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
+        const seqChannels = (o.sequences?.channels || []).filter((ch) => !isDeadLane(ch.name));
         return (
           <section className="mb-10">
             <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
@@ -5004,12 +5030,12 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
             </>)}
 
             {/* 03 — Per-channel sequences: the actual messages each lane sends, cold vs warm. */}
-            {o.sequences && (o.sequences.channels || []).length > 0 && (<>
+            {o.sequences && seqChannels.length > 0 && (<>
               <LeadsBlockHead n="03" label="the sequences" sub="message by message" />
               <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
                 {o.sequences.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.sequences.note}</p>}
                 <div className="mt-4 space-y-2.5">
-                  {o.sequences.channels.map((ch) => (
+                  {seqChannels.map((ch) => (
                     <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                         <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
@@ -5231,8 +5257,52 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
               </div>
             </>)}
 
-            {/* 08 — the pipeline ledger that follows. */}
-            <LeadsBlockHead n="08" label="pipeline" sub="everyone your content pulled in" />
+            {/* 08 — Send log: the real per-lead outbound trail + reply status, read live
+                from outreach_messages (never baked JSON). Honest empty until a lane sends. */}
+            <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
+            <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+              {(!log || log.length === 0) ? (
+                <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
+                  Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment a lane arms, with the date it went out and whether they replied. This reads the live send record, not a sample.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {log.map((entry) => {
+                    const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
+                    return (
+                      <details key={entry.prospect_id} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
+                          <span className="text-[13px] font-semibold" style={{ color: INK }}>{entry.name || '(unnamed)'}</span>
+                          {entry.company && <span className="text-[12px]" style={{ color: DIM }}>{entry.company}</span>}
+                          {entry.lane && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{entry.lane}</span>}
+                          {entry.replied && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent), padding: '2px 6px' }}>replied</span>}
+                          <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{sent.length} sent <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
+                        </summary>
+                        <div className="space-y-2 px-3.5 pb-3.5">
+                          {sent.map((m, i) => (
+                            <div key={i} className="rounded-lg bg-white p-3" style={{ border: `1px solid ${LINE}` }}>
+                              <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: caText(accent) }}>→ sent</span>
+                                <span style={{ fontFamily: MONO, fontSize: 9.5, color: FAINT }}>{[m.type, m.channel].filter(Boolean).join(' · ')}{m.sent_at ? ` · ${fmtSchedLA(m.sent_at)}` : ''}</span>
+                              </div>
+                              {m.text && <p className="whitespace-pre-line text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{m.text}</p>}
+                            </div>
+                          ))}
+                          {entry.replied && (
+                            <div className="text-[11.5px]" style={{ fontFamily: MONO, color: caText(accent) }}>
+                              Replied{entry.last_reply_at ? ` · ${fmtSchedLA(entry.last_reply_at)}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 09 — the pipeline ledger that follows. */}
+            <LeadsBlockHead n="09" label="pipeline" sub="everyone your content pulled in" />
           </section>
         );
       })()}
@@ -5937,6 +6007,25 @@ function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSess
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const codeValid = code.replace(/\D/g, '').length === 6;
 
+  // White-label the pre-auth screen: resolve the client's OWN brand by slug (public,
+  // non-sensitive) so a live board never prints the operator agency name. Falls back
+  // to the product name for demo/unknown boards.
+  const [brandLabel, setBrandLabel] = useState('InboundOnSteroids');
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('client_board_public_brand', { p_slug: slug });
+        const b = data as { ok?: boolean; mode?: string; wordmark?: string; company_name?: string } | null;
+        if (!cancelled && b?.ok && b.mode === 'live') {
+          const label = (b.wordmark || b.company_name || '').trim();
+          if (label) setBrandLabel(label);
+        }
+      } catch { /* keep product-name fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [slug]);
+
   // Load Schibsted Grotesk for the pre-board screen (the skin's font map only
   // spreads once the board renders).
   useEffect(() => {
@@ -6037,7 +6126,7 @@ function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSess
         )}
 
         {err && <p className="mt-3" style={{ fontFamily: GK, fontSize: 12.5, lineHeight: 1.5, color: RED }}>{err}</p>}
-        <div className="mt-9 uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 9.5, letterSpacing: '0.2em', color: '#a5a29a' }}>InboundOnSteroids</div>
+        <div className="mt-9 uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 9.5, letterSpacing: '0.2em', color: '#a5a29a' }}>{brandLabel}</div>
       </div>
     </div>
   );
@@ -6437,6 +6526,34 @@ export default function ClientBoardPage() {
         if (!out?.ok || !out.usage) return;
         setOutreachUsage(out.usage);
       } catch { /* usage strip is progressive enhancement — absent = simply not shown */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
+  // Live send log (live): the real per-lead outbound trail + reply status, from
+  // outreach_messages via RPC (never baked board JSON). Honest empty until a lane sends.
+  // Same token/session posture as the usage read.
+  const [outreachLog, setOutreachLog] = useState<OutreachLogEntry[] | null>(null);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_outreach_log', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_outreach_log_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; log?: OutreachLogEntry[] | null } | null;
+        if (!out?.ok || !Array.isArray(out.log)) return;
+        setOutreachLog(out.log);
+      } catch { /* send log is progressive enhancement — absent = simply not shown */ }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -7337,7 +7454,7 @@ export default function ClientBoardPage() {
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} />,
+    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
@@ -7548,7 +7665,7 @@ export default function ClientBoardPage() {
             <span className="mt-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(founderName)}</span>
             <span className="mt-2.5 min-w-0">
               <span className="block truncate text-[12.5px] font-semibold" style={{ color: INK }}>{founderName}</span>
-              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>{isLive ? (board.domain || 'InboundOnSteroids') : 'Run by InboundOnSteroids'}</span>
+              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>{isLive ? (board.domain || clientBrand(board)) : 'Run by InboundOnSteroids'}</span>
             </span>
           </div>
         </div>
@@ -7580,7 +7697,7 @@ export default function ClientBoardPage() {
           </span>
           <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
             <span className="cb-operator-on flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
-            OPERATED BY INBOUNDONSTEROIDS
+            {isLive ? `OPERATED BY ${clientBrand(board).toUpperCase()}` : 'OPERATED BY INBOUNDONSTEROIDS'}
           </span>
         </div>
 

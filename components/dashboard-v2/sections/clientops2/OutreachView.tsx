@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { supabase } from '../../../../lib/supabase';
 import {
   useClientOutreach,
   fmtDate,
   ageLabel,
+  GATE,
   type OutreachPayload,
   type OutreachCampaign,
   type OutreachProspect,
@@ -112,7 +114,7 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
       {data == null && !error ? (
         <div className="ws-loading">Loading outreach…</div>
       ) : mode === 'list' ? (
-        <ListView data={data!} seqByLane={seqByLane} />
+        <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} />
       ) : (
         <WaitingView needsReply={needsReply} awaiting={awaiting} armed={anyArmed} />
       )}
@@ -121,7 +123,7 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 }
 
 // ── Simple list — lane-grouped: sequence copy + the people in that lane ────────
-function ListView({ data, seqByLane }: { data: OutreachPayload; seqByLane: Record<string, OutreachSeq> }) {
+function ListView({ data, seqByLane, armed, clientId }: { data: OutreachPayload; seqByLane: Record<string, OutreachSeq>; armed: boolean; clientId: string }) {
   const byCampaign = useMemo(() => {
     const m: Record<string, OutreachProspect[]> = {};
     data.prospects.forEach((p) => { (m[p.campaign_id] ||= []).push(p); });
@@ -166,7 +168,7 @@ function ListView({ data, seqByLane }: { data: OutreachPayload; seqByLane: Recor
               <div className="co2-emptyline" style={{ padding: '0.8rem 0' }}>No one staged in this lane.</div>
             ) : (
               <div className="co3-people">
-                {rows.map((p) => <ProspectRow key={p.id} p={p} />)}
+                {rows.map((p) => <ProspectRow key={p.id} p={p} armed={armed} clientId={clientId} />)}
               </div>
             )}
           </div>
@@ -189,7 +191,7 @@ function SeqStep({ step }: { step: OutreachSeqStep }) {
   );
 }
 
-function ProspectRow({ p }: { p: OutreachProspect }) {
+function ProspectRow({ p, armed, clientId }: { p: OutreachProspect; armed: boolean; clientId: string }) {
   const [open, setOpen] = useState(false);
   const hasCopy = !!(p.connection_note || p.offer_angle || (p.messages && p.messages.length));
   const gated = !!p.gate?.gated;
@@ -238,8 +240,66 @@ function ProspectRow({ p }: { p: OutreachProspect }) {
           ) : (
             <div className="co3-copy-none">No per-person copy generated yet. This person gets the lane sequence above, filled from their real store and profile at send.</div>
           )}
+          <SendComposer p={p} armed={armed} clientId={clientId} />
         </div>
       )}
+    </div>
+  );
+}
+
+// Operator send from the panel — GATED + INERT. The button renders so the seat is
+// visibly wired, but it is disabled until the send lane is armed
+// (integration_config.operator_send_armed = true, read server-side by
+// operator_send_to_lead). Nothing can fire from here in this build: the arm flag is
+// false and, even armed, the RPC connects to no dispatch pipeline. Safe by construction.
+function SendComposer({ p, armed, clientId }: { p: OutreachProspect; armed: boolean; clientId: string }) {
+  const [text, setText] = useState('');
+  const [result, setResult] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const channel = (p.preferred_channel || 'linkedin').toLowerCase().includes('inmail') ? 'inmail' : 'linkedin';
+
+  // Only reachable when armed (the button is otherwise disabled). Even then, the RPC is
+  // designed to refuse: it returns disabled_until_armed / send_pipeline_not_connected and
+  // never dispatches. This handler exists so the wiring is real, not so a send can happen.
+  const attempt = async () => {
+    if (!armed || busy) return;
+    setBusy(true); setResult('');
+    try {
+      const { data, error } = await supabase.rpc('operator_send_to_lead', {
+        p_gate: GATE, p_client_id: clientId, p_prospect_id: p.id, p_channel: channel, p_text: text,
+      });
+      const r = (data as { note?: string; error?: string }) || null;
+      setResult(error?.message || r?.note || r?.error || 'No response.');
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : String(e));
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="co3-send">
+      <div className="co3-send-head">
+        <span className="co3-send-l">Send from {clientId}'s seat</span>
+        <span className={`co3-send-state ${armed ? 'co3-send-state--armed' : ''}`}>
+          {armed ? 'ARMED' : 'DISABLED — lane not armed'}
+        </span>
+      </div>
+      <textarea
+        className="co3-send-ta"
+        placeholder={`Message to ${p.name || 'this lead'} (${channel === 'inmail' ? 'InMail' : 'LinkedIn DM'})…`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={2}
+      />
+      <div className="co3-send-row">
+        <button className="co3-send-btn" disabled={!armed || busy} onClick={attempt} title={armed ? 'Send' : 'Disabled until you arm this lane'}>
+          {busy ? 'Sending…' : 'Send'}
+        </button>
+        {!armed && (
+          <span className="co3-send-note">Disabled until you arm this lane. Nothing sends from here.</span>
+        )}
+        {result && <span className="co3-send-note">{result}</span>}
+      </div>
     </div>
   );
 }
@@ -363,6 +423,18 @@ const CSS = `
 .ec .co3-msg--inbound { border-left-color:var(--ec-ink); }
 .ec .co3-msg-top { display:flex; justify-content:space-between; gap:0.8rem; font-family:var(--ec-sans); font-size:10px; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; color:var(--ec-mutedc); }
 .ec .co3-msg-text { font-family:var(--ec-sans); font-size:13px; line-height:1.5; color:var(--ec-body); white-space:pre-wrap; margin-top:0.2rem; }
+
+/* Operator send composer — gated + inert */
+.ec .co3-send { margin-top:0.4rem; border-top:1px dashed var(--ec-rule-strong); padding-top:0.7rem; display:flex; flex-direction:column; gap:0.5rem; }
+.ec .co3-send-head { display:flex; align-items:center; justify-content:space-between; gap:0.8rem; }
+.ec .co3-send-l { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
+.ec .co3-send-state { font-family:var(--ec-sans); font-weight:800; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ec-mutedc); border:1px dashed var(--ec-rule-strong); padding:0.12rem 0.4rem; }
+.ec .co3-send-state--armed { color:var(--ec-paper); background:var(--ec-ink); border-style:solid; border-color:var(--ec-ink); }
+.ec .co3-send-ta { width:100%; font-family:var(--ec-sans); font-size:12.5px; line-height:1.5; color:var(--ec-body); background:var(--ec-paper); border:1px solid var(--ec-rule-strong); padding:0.5rem 0.6rem; resize:vertical; }
+.ec .co3-send-row { display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap; }
+.ec .co3-send-btn { font-family:var(--ec-sans); font-weight:700; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ec-paper); background:var(--ec-ink); border:1px solid var(--ec-ink); padding:0.32rem 0.9rem; cursor:pointer; }
+.ec .co3-send-btn:disabled { color:var(--ec-mutedc); background:var(--ec-paper); border:1px dashed var(--ec-rule-strong); cursor:not-allowed; }
+.ec .co3-send-note { font-family:var(--ec-clinical); font-style:italic; font-size:11.5px; color:var(--ec-mutedc); }
 
 /* Waiting */
 .ec .co3-empty { padding:2rem 0; }
