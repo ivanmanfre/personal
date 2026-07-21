@@ -2480,6 +2480,13 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                 className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
                                 style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}
                               >Swap</button>
+                              {live && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onOpen(focused, { scheduling: true }); }}
+                                  className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
+                                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}
+                                >Edit time</button>
+                              )}
                               {isScheduled(focused) && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); onClearDay?.(focused.id, focused.publish_date); }}
@@ -2488,7 +2495,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                 >Clear day</button>
                               )}
                             </div>
-                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>Edit changes the words, time, or photo. Clear day sends the post back to your ready posts.</span>
+                            <span className="mt-auto pt-3" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>Edit time changes the date and time. Edit changes the words or photo. Clear day sends the post back to your ready posts.</span>
                           </div>
                         </div>
                       ) : (
