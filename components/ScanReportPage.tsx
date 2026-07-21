@@ -3572,8 +3572,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
             </div>
             <div>
-              <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets, on autopilot.</div>
-              <p className="op-b">It&rsquo;s an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I&rsquo;d build for you.</p>
+              <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets in their own voice, and bring the right buyers in.</div>
+              <p className="op-b">It&rsquo;s an inbound engine that writes your posts and lead magnets in your voice, gets them out every week, and turns the readers into a list you own. I run my own LinkedIn on the same setup I&rsquo;d build for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
@@ -3587,7 +3587,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="sqbig" aria-hidden />
               <span className="lbl">Next step</span>
             </div>
-            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space, every week.</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
             <div className="cta-fine">Or just reply to the message this arrived in, {who}. The same operator answers.</div>
