@@ -217,6 +217,97 @@ export function computeAggregates(
   };
 }
 
+// ── Outreach view (W2) — per-client DM/InMail list + priority waiting view ────
+// Everything reads through operator_client_outreach (gated, read-only). The
+// priority buckets read the SAME columns the Conversation Monitor already
+// stamps; no new polling. Nothing here sends.
+export interface OutreachGate { gated?: boolean; note?: string; anchor_client?: string; status?: string }
+export interface OutreachMessage {
+  direction: 'outbound' | 'inbound';
+  channel: string | null;
+  type: string;
+  step: number | null;
+  sent_at: string | null;
+  is_reaction: boolean;
+  text: string | null;
+}
+export interface OutreachProspect {
+  id: string;
+  campaign_id: string;
+  name: string | null;
+  company: string | null;
+  headline: string | null;
+  icp_score: number | null;
+  stage: string | null;
+  preferred_channel: string | null;
+  note_variant: string | null;
+  send_priority: number | null;
+  blacklisted: boolean;
+  skip_reason: string | null;
+  connection_note: string | null;
+  offer_angle: string | null;
+  gate: OutreachGate | null;
+  anchor_client: string | null;
+  last_dm_sent_at: string | null;
+  connection_sent_at: string | null;
+  connected_at: string | null;
+  last_reply_at: string | null;
+  reply_count: number;
+  dm_count: number;
+  needs_manual_reply: boolean;
+  next_touch_after: string | null;
+  messaged: boolean;
+  awaiting_reply: boolean;
+  messages: OutreachMessage[];
+}
+export interface OutreachSeqStep { label?: string; when?: string; text?: string; flag?: string }
+export interface OutreachSeq {
+  key: string;
+  name: string;
+  note?: string;
+  gate?: string;
+  armed?: boolean;
+  badge?: string;
+  steps: OutreachSeqStep[];
+}
+export interface OutreachSequences { note?: string; title?: string; channels: OutreachSeq[] }
+export interface OutreachCampaignCounts {
+  total: number; messaged: number; awaiting_reply: number; needs_reply: number; replied: number; gated: number;
+}
+export interface OutreachCampaign {
+  id: string;
+  name: string;
+  is_active: boolean;
+  lane_key: string | null;
+  counts: OutreachCampaignCounts;
+}
+export interface OutreachPayload {
+  ok: boolean;
+  armed: boolean;
+  sequences: OutreachSequences | null;
+  lanes_meta: any;
+  campaigns: OutreachCampaign[];
+  prospects: OutreachProspect[];
+}
+
+export function useClientOutreach(clientId: string | null) {
+  const [data, setData] = useState<OutreachPayload | null>(null);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    if (!clientId) { setData(null); return; }
+    setError('');
+    const { data: d, error: err } = await supabase.rpc('operator_client_outreach', { p_gate: GATE, p_client_id: clientId });
+    if (err || (d && d.ok === false)) {
+      setError(err?.message || d?.error || 'outreach load failed');
+      setData((prev) => prev ?? null);
+      return;
+    }
+    setData(d as OutreachPayload);
+  }, [clientId]);
+  useEffect(() => { load(); }, [load]);
+  return { data, error, reload: load };
+}
+
 // ── Overview hook ────────────────────────────────────────────────────────────
 export function useClientsOverview() {
   const [clients, setClients] = useState<ClientOverview[] | null>(null);

@@ -21,6 +21,7 @@ import {
   type BoardLm,
   type BoardIdentity,
 } from './clientops2/shared';
+import { OutreachView } from './clientops2/OutreachView';
 
 /**
  * Client Ops — FINAL cockpit (round-2 tournament winner).
@@ -336,6 +337,9 @@ export function ClientOps() {
               loading={drafts == null}
             />
           )}
+
+          {/* ── OUTREACH (W2): per-client DM/InMail list + waiting-on-response ── */}
+          <OutreachView clientId={client.client_id} company={client.company} />
 
           {/* ── PARALLEL: lead-magnet line (graft 2 rollup + per-LM cards) ──── */}
           <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} onSwapCover={onSwapCover} onNote={reload} />
