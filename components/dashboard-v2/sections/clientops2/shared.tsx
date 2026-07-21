@@ -330,6 +330,7 @@ export interface PendingDraft {
   has_link: boolean;
   created_at: string | null;
   inbound: PendingDraftInbound | null;
+  thread?: { direction: string; text: string | null; at: string | null }[] | null;
 }
 export function useClientPendingDrafts(clientId: string | null) {
   const [drafts, setDrafts] = useState<PendingDraft[] | null>(null);

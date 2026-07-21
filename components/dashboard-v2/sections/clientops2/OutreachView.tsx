@@ -161,17 +161,24 @@ function DraftsView({ drafts, company, onApproved }: { drafts: PendingDraft[] | 
       </div>
     );
   }
+  // Pending responses from real people come first (they replied, you owe them),
+  // then scan deliveries (dm2), openers (dm1), everything else — newest within each.
+  const rank = (k: string) => (k === 'reply' ? 0 : k === 'dm2' ? 1 : k === 'dm1' ? 2 : 3);
+  const ordered = [...drafts].sort(
+    (a, b) => rank(a.kind) - rank(b.kind) ||
+      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
+  );
   return (
     <div className="co3-drafts">
       <div className="co3-drafts-note">
         {drafts.length} draft{drafts.length === 1 ? '' : 's'} queued for {company}. Approve to send from {company}'s seat — nothing goes out until you do.
       </div>
-      {drafts.map((d) => <DraftRow key={d.message_id} d={d} onApproved={onApproved} />)}
+      {ordered.map((d) => <DraftRow key={d.message_id} d={d} company={company} onApproved={onApproved} />)}
     </div>
   );
 }
 
-function DraftRow({ d, onApproved }: { d: PendingDraft; onApproved: () => void }) {
+function DraftRow({ d, company, onApproved }: { d: PendingDraft; company: string; onApproved: () => void }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [done, setDone] = useState(false);
@@ -198,13 +205,22 @@ function DraftRow({ d, onApproved }: { d: PendingDraft; onApproved: () => void }
           {d.has_link && <span className="co3-scanchip">scan link ✓</span>}
         </span>
       </div>
-      {d.kind === 'reply' && d.inbound?.text && (
+      {d.thread && d.thread.length > 0 ? (
+        <div className="co3-thread" aria-label="conversation so far">
+          {d.thread.map((t, i) => (
+            <div key={i} className={`co3-bubble co3-bubble--${t.direction === 'inbound' ? 'in' : 'out'}`}>
+              <span className="co3-bubble-who">{t.direction === 'inbound' ? (d.name?.split(' ')[0] || 'them') : company}</span>
+              <div className="co3-bubble-t">{t.text}</div>
+            </div>
+          ))}
+        </div>
+      ) : (d.kind === 'reply' && d.inbound?.text && (
         <div className="co3-trigger">
           <span className="co3-trigger-l">← they said</span>
           <div className="co3-trigger-t">“{d.inbound.text}”</div>
         </div>
-      )}
-      <div className="co3-draft-body">{d.text}</div>
+      ))}
+      <div className="co3-draft-body co3-draft-body--reply">{d.text}</div>
       <div className="co3-draft-row">
         <button className="co3-send-btn" disabled={busy || done} onClick={send} title="Approve and send">
           {done ? 'Approved ✓' : busy ? 'Approving…' : 'Approve & send'}
@@ -539,7 +555,14 @@ const CSS = `
 .ec .co3-trigger { border-left:2px solid var(--ec-ink); padding:0.1rem 0 0.1rem 0.6rem; }
 .ec .co3-trigger-l { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
 .ec .co3-trigger-t { font-family:var(--ec-clinical); font-style:italic; font-size:12.5px; line-height:1.5; color:var(--ec-body); margin-top:0.15rem; }
+.ec .co3-thread { display:flex; flex-direction:column; gap:0.4rem; }
+.ec .co3-bubble { max-width:88%; padding:0.4rem 0.6rem; border-radius:9px; }
+.ec .co3-bubble--in { align-self:flex-start; background:rgba(19,18,16,0.05); border:1px solid var(--ec-rule); border-bottom-left-radius:2px; }
+.ec .co3-bubble--out { align-self:flex-end; background:var(--ec-paper); border:1px solid var(--ec-rule-strong); border-bottom-right-radius:2px; }
+.ec .co3-bubble-who { display:block; font-family:var(--ec-sans); font-weight:700; font-size:9px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ec-mutedc); margin-bottom:0.12rem; }
+.ec .co3-bubble-t { font-family:var(--ec-clinical); font-size:12.5px; line-height:1.5; color:var(--ec-body); white-space:pre-wrap; }
 .ec .co3-draft-body { font-family:var(--ec-sans); font-size:13.5px; line-height:1.55; color:var(--ec-body); white-space:pre-wrap; background:var(--ec-paper); border:1px solid var(--ec-rule); padding:0.6rem 0.7rem; }
+.ec .co3-draft-body--reply { border-left:3px solid var(--ec-ink); }
 .ec .co3-draft-row { display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap; }
 .ec .co3-draft-warn { font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
 
