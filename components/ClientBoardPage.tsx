@@ -340,7 +340,12 @@ function inkOn(hex: string): string {
 }
 function fmtDay(iso?: string): string {
   if (!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
+  // Accepts both bare dates ('2026-07-20') and full ISO timestamps
+  // ('2026-07-20T19:46:41Z'). Bare dates get local midnight so the day never rolls
+  // backward across a UTC parse; timestamps parse as-is. Anything unparseable renders
+  // nothing rather than a raw "Invalid Date".
+  const d = /[T ]/.test(iso) ? new Date(iso) : new Date(iso + 'T00:00:00');
+  if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 /** Mattan's timezone for every scheduled time on the board. Never browser-local. */
@@ -1582,7 +1587,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                             <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>now running in this slot</div>
                             <div className="mt-1.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14.5, color: INK }}>{repl.title || 'A ready draft'}</div>
                             {(repl.body || repl.hook) && <p className="mt-0.5" style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.55, color: INK_SOFT }}>{repl.body || repl.hook}</p>}
-                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="mt-2.5" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>undo — bring the original back</button>
+                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="mt-2.5" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>undo and bring the original back</button>
                           </div>
                         );
                       }
@@ -2825,7 +2830,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Honest source chip for the modal (call quote included).
   const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = stage === 'review' ? (isLive
-      ? 'It publishes from the buffer on its slot. Edit it, swap the idea, or remove it any time before then — every change is logged for your operator.'
+      ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change is logged for your operator.'
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
     : stage === 'scheduled' ? (isLive ? 'Scheduled. It publishes on its date.' : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'

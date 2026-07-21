@@ -436,7 +436,7 @@ function IdeasLane({ ideas, loading, err, selId, onSelect, decideBusy, onDecide,
                   </div>
                   {current.score_breakdown.why && <p className="co2-body" style={{ marginTop: '0.7rem', marginBottom: 0 }}>{current.score_breakdown.why}</p>}
                   <div className="co2-rubric">
-                    rubric: {current.score_breakdown.rubric_version || 'unversioned'} (provisional — pending client criteria)
+                    rubric: {current.score_breakdown.rubric_version || 'unversioned'} (provisional, pending client criteria)
                   </div>
                 </div>
               ) : (
