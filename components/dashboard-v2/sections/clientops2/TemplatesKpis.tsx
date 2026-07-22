@@ -41,7 +41,63 @@ interface Template {
 const pctFmt = (r: number | null | undefined) => (r == null ? '—' : `${Math.round(r * 100)}%`);
 const STEP_LABEL: Record<string, string> = {
   connection_note: 'Connection note', dm1: 'DM 1', dm2: 'DM 2', dm3: 'DM 3', inmail: 'InMail',
+  email1: 'Email 1', email2: 'Email 2 (+3d)',
 };
+
+// ── Email lane status (Ivan scope only) ──────────────────────────────────────
+// The Smartlead lane's send counts live in Smartlead (key can't ship in the
+// bundle), so this card renders only what Supabase actually knows: leads loaded
+// into the v2 campaign, Apollo supply counters, mirrored replies, and the
+// feeder's latest all-skipped log line — the honest "is it moving" signal.
+interface EmailStatus {
+  campaign_id: string | null;
+  loaded_ever: number; loaded_v2: number; loaded_7d: number;
+  unlocks_today: { date: string; count: number } | null;
+  imports_today: { date: string; count: number } | null;
+  replies_30d: number;
+  last_feeder_skip_at: string | null;
+  last_feeder_skip: string;
+}
+export function EmailLaneCard() {
+  const [st, setSt] = useState<EmailStatus | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    (async () => {
+      const { data, error: err } = await supabase.rpc('operator_email_lane_status', { p_gate: GATE });
+      if (err || (data && data.ok === false)) { setError(err?.message || data?.error || 'email status load failed'); return; }
+      setSt(data as EmailStatus);
+    })();
+  }, []);
+  if (error) return <div className="co2-err">{error}</div>;
+  if (st == null) return <div className="ws-loading">Reading email lane…</div>;
+  const skipErr = (st.last_feeder_skip.match(/"err":"([^"]+)"/) || [])[1];
+  const stalled = st.loaded_7d === 0;
+  return (
+    <div className="co4-lane">
+      <div className="co4-lane-head">
+        <span className="co4-lane-name">Email — Cold (Agencies) · Smartlead {st.campaign_id || '?'}</span>
+        <span className="co3-badge co3-badge--on">Armed</span>
+      </div>
+      <div className="co4-stats">
+        <Stat label="In v2 campaign" v={st.loaded_v2} red={st.loaded_v2 === 0} />
+        <Stat label="Loaded, 7d" v={st.loaded_7d} />
+        <Stat label="Loaded ever" v={st.loaded_ever} sub="incl. old campaign" />
+        <Stat label="Apollo unlocks today" v={st.unlocks_today?.count ?? 0} />
+        <Stat label="Imports today" v={st.imports_today?.count ?? 0} />
+        <Stat label="Email replies, 30d" v={st.replies_30d} sub="mostly autoresponders" />
+      </div>
+      {stalled && (
+        <div className="co3-armbanner" style={{ marginTop: '0.4rem', marginBottom: 0 }}>
+          <span className="co3-armdot" aria-hidden />
+          Campaign is armed but the feeder has loaded 0 leads: every run skips all its candidates
+          {skipErr ? ` (latest skip reason: ${skipErr}` : ''}
+          {st.last_feeder_skip_at ? `${skipErr ? ', ' : ' ('}${fmtDate(st.last_feeder_skip_at)})` : skipErr ? ')' : ''}.
+          Supply keeps arriving from Apollo; personalization keeps rejecting it, so nothing sends.
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Lane KPIs ────────────────────────────────────────────────────────────────
 export function LaneKpisPanel({ clientId }: { clientId: string | null }) {
@@ -231,6 +287,11 @@ export function TemplatesKpisView({ clientId }: { clientId: string | null }) {
       <style>{CSS}</style>
       <div className="ec-kicker" style={{ marginBottom: '0.7rem' }}>How each lane is doing — real prospect rows, all-time</div>
       <LaneKpisPanel clientId={clientId} />
+      {clientId == null && (
+        <div style={{ marginTop: '1.1rem' }}>
+          <EmailLaneCard />
+        </div>
+      )}
       <div className="ec-kicker" style={{ margin: '1.8rem 0 0.7rem' }}>The copy each lane sends</div>
       <TemplatesPanel clientId={clientId} />
     </div>
