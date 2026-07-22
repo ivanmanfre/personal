@@ -144,26 +144,41 @@ export function isVideoExt(name: string): boolean {
 }
 
 export async function listPostStills(limit = 200): Promise<PostStill[]> {
-  const { supabase } = await import('./supabase');
-  // 1) List top-level folders (each is a draft_id)
-  const { data: folders, error: foldersErr } = await supabase.storage
-    .from('post-stills').list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
-  if (foldersErr) throw new Error(`list bucket failed: ${foldersErr.message}`);
-  // 2) For each folder fetch its files in parallel.
-  //    Personal image library = Ivan's selfie pool ONLY. Other post-stills
-  //    folders (rise-quote = RISE client images, _livetest, the mixed `library`
-  //    dump) must not surface in the picker. Whitelist selfie-pool-* so client
-  //    photos can never bleed into Ivan's own image library.
-  const folderNames = (folders || [])
+  // post-stills is a PUBLIC bucket. The SDK client carries the logged-in user's
+  // JWT (role=authenticated), and after the 2026-07-19 RLS lockdown that role has
+  // no SELECT policy on storage.objects for this bucket, so supabase.storage.list()
+  // returns EMPTY for an authed operator (the anon role still can). List via the
+  // public storage REST endpoint as anon so the library is not hostage to that
+  // policy gap. Images are already public (getPublicUrl), so anon listing is fine.
+  const BASE = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
+  const ANON = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  const H = { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' };
+  const listAt = async (prefix: string): Promise<any[]> => {
+    const r = await fetch(`${BASE}/storage/v1/object/list/post-stills`, {
+      method: 'POST', headers: H,
+      body: JSON.stringify({ prefix, limit: 1000, sortBy: { column: 'created_at', order: 'desc' } }),
+    });
+    if (!r.ok) throw new Error(`list bucket failed: ${r.status}`);
+    const j = await r.json();
+    return Array.isArray(j) ? j : [];
+  };
+  const publicUrl = (path: string) =>
+    `${BASE}/storage/v1/object/public/post-stills/${path.split('/').map(encodeURIComponent).join('/')}`;
+
+  // 1) Top-level folders, then 2) files per folder.
+  //    Personal image library = Ivan's selfie pool ONLY. Other post-stills folders
+  //    (rise-quote = RISE client images, _livetest, the mixed `library` dump) must
+  //    not surface — whitelist selfie-pool-* so client photos never bleed in.
+  const folders = await listAt('');
+  const folderNames = folders
     .filter((f) => f.id === null && /^selfie-pool/i.test(f.name))
     .map((f) => f.name).slice(0, limit);
   const fileLists = await Promise.all(folderNames.map(async (folder) => {
-    const { data: files } = await supabase.storage
-      .from('post-stills').list(folder, { limit: 20, sortBy: { column: 'created_at', order: 'desc' } });
-    return (files || []).filter((f) => f.id !== null).map((f) => ({
+    const files = await listAt(`${folder}/`);
+    return files.filter((f) => f.id !== null).map((f) => ({
       name: f.name,
       path: `${folder}/${f.name}`,
-      url: supabase.storage.from('post-stills').getPublicUrl(`${folder}/${f.name}`).data.publicUrl,
+      url: publicUrl(`${folder}/${f.name}`),
       createdAt: f.created_at || f.updated_at || '',
       sizeBytes: (f.metadata as any)?.size || 0,
       fromDraftId: folder,
