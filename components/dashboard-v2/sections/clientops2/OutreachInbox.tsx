@@ -344,9 +344,17 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
     const ev: ThreadEvent[] = [];
     if (p.connection_sent_at) ev.push({ t: ms(p.connection_sent_at), kind: 'sys', text: `Connection request sent · ${fmtDate(p.connection_sent_at)}` });
     if (p.connected_at) ev.push({ t: ms(p.connected_at), kind: 'sys', text: `Connected · ${fmtDate(p.connected_at)}` });
-    (p.messages || []).forEach((m) => ev.push({ t: ms(m.sent_at), kind: 'msg', m }));
+    // NEVER render a pending draft as a sent bubble. The read RPC coalesces sent_at to
+    // created_at and includes unsent outbound draft rows in messages[], so a draft can
+    // look sent. Drop the outbound row that matches the pending draft — it belongs only
+    // in the approve box below, not in the conversation as if it already went out.
+    const draftText = (draft?.text || '').trim();
+    (p.messages || []).forEach((m) => {
+      if (m.direction === 'outbound' && draftText && (m.text || '').trim() === draftText) return;
+      ev.push({ t: ms(m.sent_at), kind: 'msg', m });
+    });
     return ev.sort((a, b) => a.t - b.t);
-  }, [p]);
+  }, [p, draft]);
 
   const statusLine = useMemo(() => {
     const parts: string[] = [];
