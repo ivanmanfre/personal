@@ -1,19 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
+import { OutreachInbox } from './OutreachInbox';
 import {
   useClientOutreach,
   useClientPendingDrafts,
-  approveRiseDraft,
-  editRiseDraft,
   fmtDate,
-  ageLabel,
   GATE,
   type OutreachPayload,
   type OutreachCampaign,
   type OutreachProspect,
   type OutreachSeq,
   type OutreachSeqStep,
-  type PendingDraft,
 } from './shared';
 
 // Prospect icp_score is a 0-10 lane-fit scale (NOT the 0-100 content-idea scale),
@@ -44,15 +41,7 @@ function IcpChip({ score }: { score: number | null }) {
  * READ ONLY. Nothing on this surface sends. RPC is gated + client-scoped.
  */
 
-type Mode = 'list' | 'waiting' | 'drafts';
-
-// Human label + register for each draft kind the RISE machine produces.
-const KIND_META: Record<PendingDraft['kind'], { label: string; blurb: string }> = {
-  reply: { label: 'Reply draft', blurb: 'Drafted answer to their reply' },
-  dm2: { label: 'DM 2 · scan', blurb: 'Delivers their scan' },
-  dm1: { label: 'DM 1', blurb: 'Opening message' },
-  draft: { label: 'Draft', blurb: 'Queued message' },
-};
+type Mode = 'inbox' | 'lanes';
 
 const laneBadge = (c: OutreachCampaign): string => (c.is_active ? 'Live' : 'Sending paused');
 
@@ -66,8 +55,8 @@ const channelLabel = (p: OutreachProspect): string => {
 
 export function OutreachView({ clientId, company }: { clientId: string; company: string }) {
   const { data, error, reload } = useClientOutreach(clientId);
-  const { drafts: pendingDrafts, error: draftsError, reload: reloadDrafts } = useClientPendingDrafts(clientId);
-  const [mode, setMode] = useState<Mode>('list');
+  const { drafts: pendingDrafts, reload: reloadDrafts } = useClientPendingDrafts(clientId);
+  const [mode, setMode] = useState<Mode>('inbox');
 
   const seqByLane = useMemo(() => {
     const m: Record<string, OutreachSeq> = {};
@@ -75,35 +64,9 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
     return m;
   }, [data]);
 
-  // Priority buckets — read straight off the reply infra the monitor maintains.
-  const needsReply = useMemo(
-    () => (data?.prospects || [])
-      .filter((p) => p.needs_manual_reply)
-      .sort((a, b) => new Date(b.last_reply_at || 0).getTime() - new Date(a.last_reply_at || 0).getTime()),
-    [data],
-  );
-  const awaiting = useMemo(
-    () => (data?.prospects || [])
-      .filter((p) => p.awaiting_reply && !p.needs_manual_reply)
-      .sort((a, b) => new Date(b.last_dm_sent_at || 0).getTime() - new Date(a.last_dm_sent_at || 0).getTime()),
-    [data],
-  );
-
-  const campaigns = data?.campaigns || [];
-  const prospects = data?.prospects || [];
-  const totalProspects = prospects.length;
-  const totalWaiting = needsReply.length + awaiting.length;
+  const totalProspects = (data?.prospects || []).length;
   const totalDrafts = (pendingDrafts || []).length;
-  const replyDrafts = (pendingDrafts || []).filter((d) => d.kind === 'reply').length;
   const anyArmed = !!data?.armed;
-
-  // Drafts waiting on you come first: land on the Drafts view the moment ANY draft is
-  // waiting (Ivan: "I want first to see the draft waiting on me"). Fires once, never fights nav.
-  const didAutoLand = useRef(false);
-  useEffect(() => {
-    if (didAutoLand.current || pendingDrafts == null) return;
-    if (totalDrafts > 0) { setMode('drafts'); didAutoLand.current = true; }
-  }, [pendingDrafts, totalDrafts]);
 
   return (
     <section className="co2-laneblock co3-root">
@@ -111,17 +74,14 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 
       <div className="co3-head">
         <div className="ec-kicker" style={{ margin: 0 }}>
-          Outreach — every DM and InMail the system will send for {company}, with replies pulled in
+          Outreach — every LinkedIn chat and sent connection for {company}, in one inbox
         </div>
         <div className="co3-tabs" role="tablist" aria-label="Outreach views">
-          <button role="tab" aria-selected={mode === 'drafts'} className={`co3-tab ${mode === 'drafts' ? 'co3-tab--on' : ''} ${totalDrafts ? 'co3-tab--flag' : ''}`} onClick={() => setMode('drafts')}>
-            {replyDrafts ? 'Pending responses' : 'Drafts waiting on you'}{totalDrafts ? ` · ${totalDrafts}` : ''}
+          <button role="tab" aria-selected={mode === 'inbox'} className={`co3-tab ${mode === 'inbox' ? 'co3-tab--on' : ''} ${totalDrafts ? 'co3-tab--flag' : ''}`} onClick={() => setMode('inbox')}>
+            Inbox{totalDrafts ? ` · ${totalDrafts}` : ''}
           </button>
-          <button role="tab" aria-selected={mode === 'waiting'} className={`co3-tab ${mode === 'waiting' ? 'co3-tab--on' : ''}`} onClick={() => setMode('waiting')}>
-            Waiting on response{totalWaiting ? ` · ${totalWaiting}` : ''}
-          </button>
-          <button role="tab" aria-selected={mode === 'list'} className={`co3-tab ${mode === 'list' ? 'co3-tab--on' : ''}`} onClick={() => setMode('list')}>
-            All outreach{totalProspects ? ` · ${totalProspects}` : ''}
+          <button role="tab" aria-selected={mode === 'lanes'} className={`co3-tab ${mode === 'lanes' ? 'co3-tab--on' : ''}`} onClick={() => setMode('lanes')}>
+            Lanes & sequences{totalProspects ? ` · ${totalProspects}` : ''}
           </button>
           <button className="ws-tool-icon" onClick={() => { reload(); reloadDrafts(); }} title="Refresh outreach">↻</button>
         </div>
@@ -129,160 +89,31 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 
       {error && <div className="co2-err">{error}</div>}
 
-      {/* Sending-paused truth banner — reads the campaigns' real is_active state. */}
-      {!anyArmed && (
-        <div className="co3-armbanner">
-          <span className="co3-armdot" aria-hidden />
-          Sending is paused, so nothing has gone out. This is the copy queued to go out and the people it would reach the moment sending goes live.
-        </div>
-      )}
-
-      {draftsError && mode === 'drafts' && <div className="co2-err">{draftsError}</div>}
-
       {data == null && !error ? (
         <div className="ws-loading">Loading outreach…</div>
-      ) : mode === 'list' ? (
-        <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} company={company} />
-      ) : mode === 'waiting' ? (
-        <WaitingView needsReply={needsReply} awaiting={awaiting} armed={anyArmed} />
+      ) : mode === 'inbox' ? (
+        <OutreachInbox
+          clientId={clientId}
+          company={company}
+          data={data!}
+          pendingDrafts={pendingDrafts}
+          reload={reload}
+          reloadDrafts={reloadDrafts}
+        />
       ) : (
-        <DraftsView drafts={pendingDrafts} company={company} onApproved={reloadDrafts} />
+        <>
+          {!anyArmed && (
+            <div className="co3-armbanner">
+              <span className="co3-armdot" aria-hidden />
+              Sending is paused, so nothing has gone out. This is the copy queued to go out and the people it would reach the moment sending goes live.
+            </div>
+          )}
+          <ListView data={data!} seqByLane={seqByLane} armed={anyArmed} clientId={clientId} company={company} />
+        </>
       )}
     </section>
   );
 }
-
-// ── Drafts waiting on you — pending DM1 / DM2 / reply drafts + the human send ──
-// Every draft the machine queued but has NOT sent (approved_at null). Each row
-// shows what triggered it (the inbound reply, for reply drafts), the draft text,
-// whether it carries the scan link, and a Send button. Send = approve the draft;
-// the Poll+Send dispatcher then sends from the client's seat. Server double-gates
-// (operator gate + risedtc_reply_send_armed), so nothing dispatches on a stray click.
-function DraftsView({ drafts, company, onApproved }: { drafts: PendingDraft[] | null; company: string; onApproved: () => void }) {
-  if (drafts == null) return <div className="ws-loading">Loading drafts…</div>;
-  if (drafts.length === 0) {
-    return (
-      <div className="co3-empty">
-        <div className="co3-empty-h">No drafts waiting on you.</div>
-        <div className="co3-empty-note">
-          When a prospect replies, the reply drafter writes an answer here (with their scan attached when they ask for it),
-          and scan-delivery DM 2s land here on their timer. Every draft waits for your approval — nothing sends on its own.
-        </div>
-      </div>
-    );
-  }
-  // Pending responses from real people come first (they replied, you owe them),
-  // then scan deliveries (dm2), openers (dm1), everything else — newest within each.
-  const rank = (k: string) => (k === 'reply' ? 0 : k === 'dm2' ? 1 : k === 'dm1' ? 2 : 3);
-  const ordered = [...drafts].sort(
-    (a, b) => rank(a.kind) - rank(b.kind) ||
-      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
-  );
-  return (
-    <div className="co3-drafts">
-      <div className="co3-drafts-note">
-        {drafts.length} draft{drafts.length === 1 ? '' : 's'} queued for {company}. Approve to send from {company}'s seat — nothing goes out until you do.
-      </div>
-      {ordered.map((d) => <DraftRow key={d.message_id} d={d} company={company} onApproved={onApproved} />)}
-    </div>
-  );
-}
-
-function DraftRow({ d, company, onApproved }: { d: PendingDraft; company: string; onApproved: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState('');
-  const [done, setDone] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(d.text || '');
-  const [draft, setDraft] = useState(d.text || '');   // the persisted, displayed body
-  const meta = KIND_META[d.kind] || KIND_META.draft;
-  const send = async () => {
-    if (busy || done || editing) return;
-    if (!window.confirm(`Approve and send this ${meta.label} to ${d.name || 'this lead'}? It sends from the client's seat.`)) return;
-    setBusy(true); setNote('');
-    const r = await approveRiseDraft(d.message_id);
-    setBusy(false);
-    if (r.ok) { setDone(true); setNote(r.note || 'Approved.'); setTimeout(onApproved, 1200); }
-    else {
-      setNote(r.note || r.error || 'Could not approve.');
-      // thread was handled manually since this draft was written -> it was discarded; drop it.
-      if (r.error === 'conversation_moved_on') { setDone(true); setTimeout(onApproved, 1600); }
-    }
-  };
-  const saveEdit = async () => {
-    if (busy) return;
-    const t = text.trim();
-    if (t.length < 3) { setNote('Draft is too short.'); return; }
-    setBusy(true); setNote('');
-    const r = await editRiseDraft(d.message_id, t);
-    setBusy(false);
-    if (r.ok) { setDraft(t); setEditing(false); setNote('Saved.'); }
-    else setNote(r.error === 'not_a_pending_draft' ? 'Already sent, can’t edit.' : (r.error || 'Could not save.'));
-  };
-  return (
-    <div className="co3-draft">
-      <div className="co3-draft-top">
-        <IcpChip score={d.icp_score} />
-        <span className="co3-pident">
-          <span className="co3-pname">{d.name || '(unnamed)'}</span>
-          <span className="co3-pmeta">{d.company || '—'}</span>
-        </span>
-        <span className="co3-draft-tags">
-          <span className={`co3-kind co3-kind--${d.kind}`}>{meta.label}</span>
-          {d.has_link && <span className="co3-scanchip">scan link ✓</span>}
-        </span>
-      </div>
-      {d.thread && d.thread.length > 0 ? (
-        <div className="co3-thread" aria-label="conversation so far">
-          {d.thread.map((t, i) => (
-            <div key={i} className={`co3-bubble co3-bubble--${t.direction === 'inbound' ? 'in' : 'out'}`}>
-              <span className="co3-bubble-who">{t.direction === 'inbound' ? (d.name?.split(' ')[0] || 'them') : company}</span>
-              <div className="co3-bubble-t">{t.text}</div>
-            </div>
-          ))}
-        </div>
-      ) : (d.kind === 'reply' && d.inbound?.text && (
-        <div className="co3-trigger">
-          <span className="co3-trigger-l">← they said</span>
-          <div className="co3-trigger-t">“{d.inbound.text}”</div>
-        </div>
-      ))}
-      {editing ? (
-        <textarea
-          className="co3-draft-edit"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={Math.max(3, Math.min(12, text.split('\n').length + 1))}
-          autoFocus
-        />
-      ) : (
-        <div className="co3-draft-body co3-draft-body--reply">{draft}</div>
-      )}
-      <div className="co3-draft-row">
-        {editing ? (
-          <>
-            <button className="co3-send-btn" disabled={busy} onClick={saveEdit} title="Save edits">
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-            <button className="co3-edit-btn" disabled={busy} onClick={() => { setText(draft); setEditing(false); setNote(''); }}>
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <button className="co3-send-btn" disabled={busy || done} onClick={send} title="Approve and send">
-              {done ? 'Approved ✓' : busy ? 'Approving…' : 'Approve & send'}
-            </button>
-            {!done && <button className="co3-edit-btn" onClick={() => { setText(draft); setEditing(true); setNote(''); }} title="Edit before sending">Edit</button>}
-          </>
-        )}
-        {!d.has_link && d.kind !== 'dm1' && <span className="co3-draft-warn">no scan link in this draft</span>}
-        {note && <span className="co3-send-note">{note}</span>}
-      </div>
-    </div>
-  );
-}
-
 // ── Simple list — lane-grouped: sequence copy + the people in that lane ────────
 function ListView({ data, seqByLane, armed, clientId, company }: { data: OutreachPayload; seqByLane: Record<string, OutreachSeq>; armed: boolean; clientId: string; company: string }) {
   const byCampaign = useMemo(() => {
@@ -458,63 +289,6 @@ function SendComposer({ p, clientId, company }: { p: OutreachProspect; clientId:
     </div>
   );
 }
-
-// ── Priority "waiting on response" ─────────────────────────────────────────────
-function WaitingView({ needsReply, awaiting, armed }: {
-  needsReply: OutreachProspect[]; awaiting: OutreachProspect[]; armed: boolean;
-}) {
-  if (needsReply.length === 0 && awaiting.length === 0) {
-    return (
-      <div className="co3-empty">
-        <div className="co3-empty-h">Nothing waiting on a response.</div>
-        <div className="co3-empty-note">
-          {armed
-            ? 'Every messaged lead has been answered. New sends land here the moment someone is messaged and has not replied.'
-            : 'No sends have gone out yet. This queue fills once sending goes live: a lead shows here once a DM or InMail is sent and no reply has come back. Leads who reply jump to the top for your answer.'}
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="co3-waiting">
-      {needsReply.length > 0 && (
-        <div className="co3-wgroup">
-          <div className="co3-wgroup-h co3-wgroup-h--red">They replied · you owe them a reply ({needsReply.length})</div>
-          {needsReply.map((p) => <WaitRow key={p.id} p={p} kind="reply" />)}
-        </div>
-      )}
-      {awaiting.length > 0 && (
-        <div className="co3-wgroup">
-          <div className="co3-wgroup-h">Messaged · no reply yet ({awaiting.length}) · most recent first</div>
-          {awaiting.map((p) => <WaitRow key={p.id} p={p} kind="await" />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WaitRow({ p, kind }: { p: OutreachProspect; kind: 'reply' | 'await' }) {
-  const touch = kind === 'reply' ? p.last_reply_at : p.last_dm_sent_at;
-  const lastInbound = kind === 'reply'
-    ? [...(p.messages || [])].reverse().find((m) => m.direction === 'inbound' && !m.is_reaction)
-    : undefined;
-  return (
-    <div className={`co3-wrow ${kind === 'reply' ? 'co3-wrow--reply' : ''}`}>
-      <IcpChip score={p.icp_score} />
-      <span className="co3-pident">
-        <span className="co3-pname">{p.name || '(unnamed)'}</span>
-        <span className="co3-pmeta">{p.company || '—'}</span>
-      </span>
-      {lastInbound?.text && <span className="co3-wreply" title={lastInbound.text}>“{lastInbound.text}”</span>}
-      <span className="co3-wtouch">
-        {kind === 'reply'
-          ? `replied ${touch ? ageLabel(touch) + ' ago' : ''}`
-          : `sent ${touch ? ageLabel(touch) + ' ago' : ''} · ${p.dm_count || 0} DM${p.dm_count === 1 ? '' : 's'}`}
-      </span>
-    </div>
-  );
-}
-
 // ── Scoped styles (co3- prefix; Black Box v4 register under .ec) ──────────────
 const CSS = `
 .ec .co3-root { border-top:1px solid var(--ec-rule); padding-top:1.6rem; }
