@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { OutreachInbox } from './OutreachInbox';
+import { TemplatesKpisView } from './TemplatesKpis';
 import {
   useClientOutreach,
   useClientPendingDrafts,
@@ -42,7 +43,7 @@ function IcpChip({ score }: { score: number | null }) {
  * READ ONLY. Nothing on this surface sends. RPC is gated + client-scoped.
  */
 
-type Mode = 'inbox' | 'lanes';
+type Mode = 'inbox' | 'lanes' | 'templates';
 
 const laneBadge = (c: OutreachCampaign): string => (c.is_active ? 'Live' : 'Sending paused');
 
@@ -84,6 +85,9 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
           <button role="tab" aria-selected={mode === 'lanes'} className={`co3-tab ${mode === 'lanes' ? 'co3-tab--on' : ''}`} onClick={() => setMode('lanes')}>
             Lanes & sequences{totalProspects ? ` · ${totalProspects}` : ''}
           </button>
+          <button role="tab" aria-selected={mode === 'templates'} className={`co3-tab ${mode === 'templates' ? 'co3-tab--on' : ''}`} onClick={() => setMode('templates')}>
+            KPIs & templates
+          </button>
           <button className="ws-tool-icon" onClick={() => { reload(); reloadDrafts(); }} title="Refresh outreach">↻</button>
         </div>
       </div>
@@ -92,6 +96,8 @@ export function OutreachView({ clientId, company }: { clientId: string; company:
 
       {data == null && !error ? (
         <div className="ws-loading">Loading outreach…</div>
+      ) : mode === 'templates' ? (
+        <TemplatesKpisView clientId={clientId} />
       ) : mode === 'inbox' ? (
         <OutreachInbox
           clientId={clientId}
