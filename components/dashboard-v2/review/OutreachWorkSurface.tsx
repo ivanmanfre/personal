@@ -105,11 +105,22 @@ function useRepliesDesk() {
     let alive = true;
     (async () => {
       const sevenAgo = new Date(Date.now() - 7 * DAY).toISOString();
+
+      // This is IVAN's own outreach desk. Client-owned campaigns (client_id set, e.g.
+      // RISE DTC) live in Client Ops and must never surface here — otherwise a client's
+      // prospect (a replied RISE lead) shows up as one of Ivan's owed replies. Scope every
+      // prospect read to campaigns with no client_id. Future clients get a client_id, so
+      // they auto-drop from this desk without a code change.
+      const { data: ownCamps } = await supabase
+        .from('outreach_campaigns').select('id').is('client_id', null);
+      const ownIds = (ownCamps ?? []).map((c: any) => c.id);
+
       const [pRes, mRes, aRes, sent7d, connected7d, email7d] = await Promise.all([
         // Candidates for the owed rule all satisfy reply_count > 0 — pre-filter.
         supabase
           .from('outreach_prospects')
           .select('id,name,company,stage,reply_count,last_reply_at,last_dm_sent_at,needs_manual_reply,icp_score')
+          .in('campaign_id', ownIds)
           .neq('stage', 'archived')
           .gt('reply_count', 0)
           .order('last_reply_at', { ascending: false })
@@ -129,8 +140,8 @@ function useRepliesDesk() {
           .select('prospect_name,verdict,audited_at')
           .order('audited_at', { ascending: false })
           .limit(80),
-        headCount((q) => q.not('connection_sent_at', 'is', null).gte('connection_sent_at', sevenAgo)),
-        headCount((q) => q.not('connected_at', 'is', null).gte('connected_at', sevenAgo)),
+        headCount((q) => q.in('campaign_id', ownIds).not('connection_sent_at', 'is', null).gte('connection_sent_at', sevenAgo)),
+        headCount((q) => q.in('campaign_id', ownIds).not('connected_at', 'is', null).gte('connected_at', sevenAgo)),
         headCount((q) => q.eq('direction', 'inbound').eq('channel', 'email').gte('sent_at', sevenAgo), 'outreach_messages'),
       ]);
       if (!alive) return;
@@ -148,13 +159,16 @@ function useRepliesDesk() {
       }));
 
       // Latest genuine inbound per prospect (first hit wins — rows arrive sent_at DESC).
+      // Only Ivan's own prospects — the inbound query is not campaign-scoped, so gate it
+      // on the scoped prospect set here so a client's reply can't headline this desk.
+      const ownProspectIds = new Set((pRes.data ?? []).map((r: any) => r.id));
       const inbound: Record<string, Inbound> = {};
       let latest: (Inbound & { prospectId: string }) | null = null;
       (mRes.data ?? []).forEach((m: any) => {
         const text = typeof m.message_text === 'string' ? m.message_text : '';
         if (!text || /^\s*\[/.test(text)) return; // skip system/auto-reply tags
         const pid = m.prospect_id as string | null;
-        if (!pid) return;
+        if (!pid || !ownProspectIds.has(pid)) return;
         const clean = text.replace(/\s+/g, ' ').trim();
         if (!inbound[pid]) inbound[pid] = { text: clean, sentAt: m.sent_at ?? null };
         if (!latest) latest = { prospectId: pid, text: clean, sentAt: m.sent_at ?? null };

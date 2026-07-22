@@ -183,11 +183,18 @@ export function useWarmPipeline(): WarmData {
   useEffect(() => {
     let alive = true;
     (async () => {
+      // Ivan's own cockpit — client-owned campaigns (client_id set, e.g. RISE DTC) live in
+      // Client Ops and must not inflate these counts or headline the reply card. Scope
+      // every prospect read to no-client campaigns.
+      const { data: ownCamps } = await supabase
+        .from('outreach_campaigns').select('id').is('client_id', null);
+      const ownIds = (ownCamps ?? []).map((c: any) => c.id);
+
       const [connSent, connected, dmd, replied, calls] = await Promise.all([
-        headCount('outreach_prospects', (q) => q.not('connection_sent_at', 'is', null)),
-        headCount('outreach_prospects', (q) => q.not('connected_at', 'is', null)),
-        headCount('outreach_prospects', (q) => q.not('last_dm_sent_at', 'is', null)),
-        headCount('outreach_prospects', (q) => q.gt('reply_count', 0)),
+        headCount('outreach_prospects', (q) => q.in('campaign_id', ownIds).not('connection_sent_at', 'is', null)),
+        headCount('outreach_prospects', (q) => q.in('campaign_id', ownIds).not('connected_at', 'is', null)),
+        headCount('outreach_prospects', (q) => q.in('campaign_id', ownIds).not('last_dm_sent_at', 'is', null)),
+        headCount('outreach_prospects', (q) => q.in('campaign_id', ownIds).gt('reply_count', 0)),
         headCount('call_reports', (q) => q),
       ]);
 
@@ -207,25 +214,31 @@ export function useWarmPipeline(): WarmData {
         if (error) {
           reply = { state: 'offline', text: '', name: '', company: '', at: null, error: error.message };
         } else {
-          const pick = (msgs ?? []).find(
-            (m: any) => typeof m.message_text === 'string' && !/^\s*\[/.test(m.message_text),
+          const candidates = (msgs ?? []).filter(
+            (m: any) => typeof m.message_text === 'string' && !/^\s*\[/.test(m.message_text) && m.prospect_id,
           );
-          if (pick) {
-            let name = '';
-            let company = '';
+          // Resolve the candidates' prospects WITH campaign, so a client reply (RISE) can
+          // never headline Ivan's card. Keep only no-client (own) prospects, newest first.
+          const ids = Array.from(new Set(candidates.map((m: any) => m.prospect_id)));
+          const ownById: Record<string, { name: string; company: string }> = {};
+          if (ids.length) {
             try {
               const { data: pr } = await supabase
                 .from('outreach_prospects')
-                .select('name, company')
-                .eq('id', pick.prospect_id)
-                .limit(1);
-              if (pr && pr[0]) { name = pr[0].name ?? ''; company = pr[0].company ?? ''; }
+                .select('id, name, company, campaign_id')
+                .in('id', ids)
+                .in('campaign_id', ownIds);
+              (pr ?? []).forEach((r: any) => { ownById[r.id] = { name: r.name ?? '', company: r.company ?? '' }; });
             } catch { /* attribution optional */ }
+          }
+          const pick = candidates.find((m: any) => ownById[m.prospect_id]);
+          if (pick) {
+            const who = ownById[pick.prospect_id];
             reply = {
               state: 'ok',
               text: String(pick.message_text).replace(/\s+/g, ' ').trim(),
-              name,
-              company,
+              name: who.name,
+              company: who.company,
               at: pick.created_at ?? null,
             };
           } else {
