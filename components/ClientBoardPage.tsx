@@ -162,7 +162,7 @@ interface NewsletterSpec {
   issues?: NewsletterIssue[];
   nurture?: NurtureStep[];
 }
-interface PerfIndicator { key: string; label: string; source?: string }
+interface PerfIndicator { key: string; label: string; source?: string; value?: number | null; captured_at?: string }
 interface PerfPost { url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null; comments?: number | null; captured_at?: string }
 interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
@@ -5748,6 +5748,22 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
       {expectation && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{expectation}</p>}
     </div>
   );
+  // Live card: renders ONLY when a feeder stamped captured_at — a seeded value with no
+  // stamp stays a ghost, so a placeholder zero can never masquerade as measured data.
+  const liveCard = (ind: PerfIndicator) => (
+    <div key={ind.key} className="rounded-xl bg-white p-4 sm:p-5" style={{ boxShadow: CARD_SHADOW }}>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
+        {ind.source && <div className="shrink-0 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
+      </div>
+      <div className="mt-3 cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 34, lineHeight: 1, color: INK }}>{fmtNum(ind.value)}</div>
+      {ind.captured_at && (
+        <div className="mt-2 text-[11px] tabular-nums" style={{ color: FAINT }}>updated {fmtDay(ind.captured_at)}</div>
+      )}
+    </div>
+  );
+  const indicatorCard = (ind: PerfIndicator, i: number, expectation?: string) =>
+    ind.captured_at ? liveCard(ind) : ghostCard(ind, i, expectation);
   return (
     <div>
       <SectionHead
@@ -5757,7 +5773,7 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {indicators.map((ind, i) => ghostCard(ind, i, expectationFor(ind)))}
+        {indicators.map((ind, i) => indicatorCard(ind, i, expectationFor(ind)))}
       </div>
 
       {/* Outreach indicators (live boards): same awaiting-first-data treatment, tied to
@@ -5766,10 +5782,12 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
         <div className="mt-8">
           <div className="mb-1 flex items-baseline gap-3">
             <CardHead>Outreach</CardHead>
-            <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>Counts start the day your lanes arm.</span>
+            {!outreachInds.some((o) => o.captured_at) && (
+              <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>Counts start the day your lanes arm.</span>
+            )}
           </div>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {outreachInds.map((ind, i) => ghostCard(ind, i + 1))}
+            {outreachInds.map((ind, i) => indicatorCard(ind, i + 1))}
           </div>
         </div>
       )}
