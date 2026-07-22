@@ -222,6 +222,12 @@ export function computeAggregates(
 // priority buckets read the SAME columns the Conversation Monitor already
 // stamps; no new polling. Nothing here sends.
 export interface OutreachGate { gated?: boolean; note?: string; anchor_client?: string; status?: string }
+/** A name-gate only BLOCKS while it is still open. Once the operator clears it
+ *  (status starts with "cleared"), the sender has already been let through, so the
+ *  UI must stop showing "blocked" — otherwise a sent+connected prospect keeps a
+ *  stale red banner. Reads the same status field the operator stamps on approval. */
+export const gateBlocking = (g: OutreachGate | null | undefined): boolean =>
+  !!g?.gated && !String(g?.status || '').startsWith('cleared');
 export interface OutreachMessage {
   direction: 'outbound' | 'inbound';
   channel: string | null;

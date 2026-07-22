@@ -3,6 +3,7 @@ import { supabase } from '../../../../lib/supabase';
 import {
   approveRiseDraft,
   editRiseDraft,
+  gateBlocking,
   fmtDate,
   ageLabel,
   GATE,
@@ -296,7 +297,7 @@ function ConvoRow({ c, selected, onClick }: { c: Conversation; selected: boolean
           <IcpChip score={p.icp_score} />
           {draft && <span className="co4-tag co4-tag--draft">● {DRAFT_KIND_LABEL[draft.kind]}</span>}
           {draft?.has_link && <span className="co4-tag">scan ✓</span>}
-          {p.gate?.gated && <span className="co4-tag co4-tag--gate">name-gated</span>}
+          {gateBlocking(p.gate) && <span className="co4-tag co4-tag--gate">name-gated</span>}
           {p.blacklisted && <span className="co4-tag co4-tag--mute">blacklisted</span>}
         </span>
       </span>
@@ -316,7 +317,7 @@ function StagedRow({ p, selected, onClick }: { p: OutreachProspect; selected: bo
         <span className="co4-row-snip">Not contacted yet</span>
         <span className="co4-row-tags">
           <IcpChip score={p.icp_score} />
-          {p.gate?.gated && <span className="co4-tag co4-tag--gate">name-gated</span>}
+          {gateBlocking(p.gate) && <span className="co4-tag co4-tag--gate">name-gated</span>}
         </span>
       </span>
     </button>
@@ -374,9 +375,9 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
       </div>
 
       <div className="co4-th-body">
-        {p.gate?.gated && (
+        {gateBlocking(p.gate) && (
           <div className="co3-flag">
-            Blocked until you OK the anchor name{p.gate.anchor_client ? ` (${p.gate.anchor_client})` : ''}. {p.gate.note}
+            Blocked until you OK the anchor name{p.gate?.anchor_client ? ` (${p.gate.anchor_client})` : ''}. {p.gate?.note}
           </div>
         )}
         {events.length === 0 ? (

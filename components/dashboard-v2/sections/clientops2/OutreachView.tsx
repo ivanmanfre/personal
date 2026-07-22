@@ -4,6 +4,7 @@ import { OutreachInbox } from './OutreachInbox';
 import {
   useClientOutreach,
   useClientPendingDrafts,
+  gateBlocking,
   fmtDate,
   GATE,
   type OutreachPayload,
@@ -131,6 +132,9 @@ function ListView({ data, seqByLane, armed, clientId, company }: { data: Outreac
       {data.campaigns.map((c) => {
         const seq = c.lane_key ? seqByLane[c.lane_key] : undefined;
         const rows = byCampaign[c.id] || [];
+        // Count only gates still OPEN (the RPC counts the raw flag, which keeps
+        // counting a gate after the operator cleared it).
+        const gatedOpen = rows.filter((p) => gateBlocking(p.gate)).length;
         return (
           <div key={c.id} className="co3-lane">
             <div className="co3-lane-head">
@@ -138,7 +142,7 @@ function ListView({ data, seqByLane, armed, clientId, company }: { data: Outreac
               <div className="co3-lane-meta">
                 <span className={`co3-badge ${c.is_active ? 'co3-badge--on' : ''}`}>{laneBadge(c)}</span>
                 <span>{c.counts.total} {c.counts.total === 1 ? 'person' : 'people'}</span>
-                {c.counts.gated > 0 && <span className="co3-gatecount">{c.counts.gated} name-gated</span>}
+                {gatedOpen > 0 && <span className="co3-gatecount">{gatedOpen} name-gated</span>}
                 {c.counts.messaged > 0 && <span>{c.counts.messaged} messaged</span>}
                 {c.counts.awaiting_reply > 0 && <span>{c.counts.awaiting_reply} awaiting reply</span>}
               </div>
@@ -186,7 +190,7 @@ function SeqStep({ step }: { step: OutreachSeqStep }) {
 function ProspectRow({ p, armed, clientId, company }: { p: OutreachProspect; armed: boolean; clientId: string; company: string }) {
   const [open, setOpen] = useState(false);
   const hasCopy = !!(p.connection_note || p.offer_angle || (p.messages && p.messages.length));
-  const gated = !!p.gate?.gated;
+  const gated = gateBlocking(p.gate);
   return (
     <div className={`co3-prow ${open ? 'co3-prow--open' : ''}`}>
       <button className="co3-prow-main" onClick={() => setOpen((v) => !v)}>
