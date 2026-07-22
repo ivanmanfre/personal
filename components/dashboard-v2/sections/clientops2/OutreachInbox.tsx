@@ -56,6 +56,20 @@ function msgChannel(m: OutreachMessage): { label: string; kind: string } {
   return { label: 'DM', kind: 'dm' };
 }
 
+// The conversation's OUTBOUND channel for the list row — how we're actually reaching this
+// person. InMail and DM are separated so the panel reads at a glance. A connection-note-only
+// thread has no message channel yet (the status chip already says "invite sent").
+function convoChannel(p: OutreachProspect): { label: string; kind: string } | null {
+  const out = (p.messages || []).filter((m) => m.direction === 'outbound' && !m.is_reaction);
+  if (out.some((m) => (m.type || '').toLowerCase() === 'inmail' || (m.channel || '').toLowerCase().includes('inmail')))
+    return { label: 'InMail', kind: 'inmail' };
+  if (out.some((m) => (m.channel || '').toLowerCase() === 'email' || (m.type || '').toLowerCase() === 'email'))
+    return { label: 'Email', kind: 'email' };
+  if (out.some((m) => { const t = (m.type || '').toLowerCase(); return t === 'dm' || (m.channel || '').toLowerCase() === 'linkedin'; }))
+    return { label: 'DM', kind: 'dm' };
+  return null;
+}
+
 const DRAFT_KIND_LABEL: Record<PendingDraft['kind'], string> = {
   reply: 'Reply draft', dm2: 'DM 2 · scan', dm1: 'DM 1', draft: 'Draft',
 };
@@ -307,6 +321,7 @@ function ConvoRow({ c, selected, onClick }: { c: Conversation; selected: boolean
         <span className={`co4-row-snip ${inbound ? 'co4-row-snip--in' : ''}`}>{c.snippet}</span>
         <span className="co4-row-tags">
           <IcpChip score={p.icp_score} />
+          {(() => { const ch = convoChannel(p); return ch ? <span className={`co4-tag co4-tag--chan-${ch.kind}`}>{ch.label}</span> : null; })()}
           {draft && <span className="co4-tag co4-tag--draft">● {DRAFT_KIND_LABEL[draft.kind]}</span>}
           {draft?.has_link && <span className="co4-tag">scan ✓</span>}
           {gateBlocking(p.gate) && <span className="co4-tag co4-tag--gate">name-gated</span>}
@@ -588,6 +603,9 @@ const CSS = `
 .ec .co4-row-tags { display:flex; flex-wrap:wrap; align-items:center; gap:0.3rem; margin-top:0.14rem; }
 .ec .co4-tag { font-family:var(--ec-sans); font-size:9px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; padding:0.1rem 0.34rem; color:var(--ec-mutedc); border:1px solid var(--ec-rule-strong); }
 .ec .co4-tag--draft { color:var(--ec-paper); background:var(--ec-red); border-color:var(--ec-red); }
+.ec .co4-tag--chan-inmail { color:var(--ec-paper); background:var(--ec-ink); border-color:var(--ec-ink); }
+.ec .co4-tag--chan-dm { color:var(--ec-ink); border-color:var(--ec-ink); }
+.ec .co4-tag--chan-email { color:var(--ec-mutedc); border-color:var(--ec-rule-strong); }
 .ec .co4-tag--gate { color:var(--ec-paper); background:var(--ec-ink); border-color:var(--ec-ink); }
 .ec .co4-tag--mute { border-style:dashed; }
 
