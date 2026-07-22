@@ -44,6 +44,18 @@ const channelLabel = (p: OutreachProspect): string => {
   return 'LinkedIn DM';
 };
 
+// Per-message channel/kind for a thread bubble, read off the row's real channel +
+// message_type. An InMail and the note on a connection request are NOT plain DMs, so
+// each carries its own tag (InMail highlighted) and the operator always knows what went out.
+function msgChannel(m: OutreachMessage): { label: string; kind: string } {
+  const t = (m.type || '').toLowerCase();
+  const ch = (m.channel || '').toLowerCase();
+  if (t === 'connection_note' || t === 'connection_request') return { label: 'Connection note', kind: 'conn' };
+  if (t === 'inmail' || ch.includes('inmail')) return { label: 'InMail', kind: 'inmail' };
+  if (ch === 'email' || t === 'email') return { label: 'Email', kind: 'email' };
+  return { label: 'DM', kind: 'dm' };
+}
+
 const DRAFT_KIND_LABEL: Record<PendingDraft['kind'], string> = {
   reply: 'Reply draft', dm2: 'DM 2 · scan', dm1: 'DM 1', draft: 'Draft',
 };
@@ -398,15 +410,19 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
               <div key={i} className="co4-react">
                 {(e.m.direction === 'inbound' ? firstName : company)} reacted {e.m.text || '·'}
               </div>
-            ) : (
-              <div key={i} className={`co3-bubble co4-bubble co3-bubble--${e.m.direction === 'inbound' ? 'in' : 'out'}`}>
-                <span className="co3-bubble-who">
-                  {e.m.direction === 'inbound' ? firstName : company}
-                  {e.m.sent_at ? ` · ${fmtDate(e.m.sent_at)}` : ''}
-                </span>
-                <div className="co3-bubble-t">{e.m.text}</div>
-              </div>
-            ))}
+            ) : (() => {
+              const chan = msgChannel(e.m);
+              return (
+                <div key={i} className={`co3-bubble co4-bubble co3-bubble--${e.m.direction === 'inbound' ? 'in' : 'out'}`}>
+                  <span className="co3-bubble-who">
+                    {e.m.direction === 'inbound' ? firstName : company}
+                    <span className={`co4-mchan co4-mchan--${chan.kind}`}>{chan.label}</span>
+                    {e.m.sent_at ? ` · ${fmtDate(e.m.sent_at)}` : ''}
+                  </span>
+                  <div className="co3-bubble-t">{e.m.text}</div>
+                </div>
+              );
+            })())}
           </div>
         )}
       </div>
@@ -595,6 +611,13 @@ const CSS = `
 .ec .co4-th-stream { display:flex; flex-direction:column; gap:0.45rem; }
 .ec .co4-bubble { max-width:82%; }
 .ec .co4-sys { align-self:center; font-family:var(--ec-sans); font-size:10px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); padding:0.2rem 0; }
+.ec .co4-mchan { display:inline-block; margin:0 0.4rem; font-family:var(--ec-sans); font-weight:800; font-size:8.5px; letter-spacing:0.05em; text-transform:uppercase; padding:0.04rem 0.32rem; vertical-align:middle; }
+.ec .co4-mchan--dm { color:var(--ec-mutedc); border:1px solid var(--ec-rule-strong); }
+.ec .co4-mchan--inmail { color:var(--ec-paper); background:var(--ec-ink); border:1px solid var(--ec-ink); }
+.ec .co4-mchan--conn { color:var(--ec-mutedc); border:1px dashed var(--ec-rule-strong); }
+.ec .co4-mchan--email { color:var(--ec-mutedc); border:1px solid var(--ec-rule-strong); }
+/* An InMail bubble also gets a solid left accent so it reads apart from a DM at a glance. */
+.ec .co4-bubble.co3-bubble--out:has(.co4-mchan--inmail) { border-left:3px solid var(--ec-ink); }
 .ec .co4-react { align-self:center; font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
 
 .ec .co4-th-foot { border-top:1px solid var(--ec-rule-strong); background:var(--ec-paper); padding:0.7rem 0.9rem; display:flex; flex-direction:column; gap:0.7rem; max-height:52%; overflow-y:auto; }
