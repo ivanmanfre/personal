@@ -105,6 +105,7 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
+        .select(SELECT_COLS)
         // This is Ivan's OWN content library. Client-owned drafts (client_id set,
         // e.g. RISE) live on their own Client Ops surface and must never surface
         // here — otherwise a client's pool photos (e.g. Mattan's lifestyle pics)
