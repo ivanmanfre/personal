@@ -27,6 +27,12 @@ export function useNavBadges(): NavBadges {
   useEffect(() => {
     let alive = true;
     const load = async () => {
+      // The outreach badge counts replies OWED TO IVAN. Client-owned campaigns (RISE) live
+      // in Client Ops, so scope to no-client campaigns — else a client's replied lead inflates
+      // Ivan's badge. (outreach_prospects has no client_id column; scope via campaign.)
+      const { data: ownCamps } = await supabase
+        .from('outreach_campaigns').select('id').is('client_id', null);
+      const ownIds = (ownCamps ?? []).map((c: any) => c.id);
       const [rev, owedCand, errs] = await Promise.all([
         supabase
           .from('carousel_drafts')
@@ -36,6 +42,7 @@ export function useNavBadges(): NavBadges {
         supabase
           .from('outreach_prospects')
           .select('id,stage,reply_count,last_reply_at,last_dm_sent_at,needs_manual_reply')
+          .in('campaign_id', ownIds)
           .neq('stage', 'archived')
           .gt('reply_count', 0)
           .order('last_reply_at', { ascending: false })
