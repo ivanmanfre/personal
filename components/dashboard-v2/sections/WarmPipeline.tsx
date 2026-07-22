@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../editorial-cockpit.css';
 import { useWarmPipeline } from '../../../lib/useCockpitData';
-import { TemplatesKpisView } from './clientops2/TemplatesKpis';
 
 /**
  * Warm Pipeline — the born surface (Direction A, Black Box v4 register).
@@ -13,7 +12,7 @@ import { TemplatesKpisView } from './clientops2/TemplatesKpis';
  * call-booked figure: the one number the whole funnel exists to move.
  */
 
-type Mode = 'funnel' | 'queue' | 'templates';
+type Mode = 'funnel' | 'queue';
 
 function fmt(n: number | null): string {
   return n === null ? '-' : n.toLocaleString();
@@ -48,13 +47,9 @@ export function WarmPipeline() {
       <div className="ec-tabs" role="tablist">
         <button role="tab" aria-selected={mode === 'funnel'} className="ec-tab" onClick={() => setMode('funnel')}>The funnel</button>
         <button role="tab" aria-selected={mode === 'queue'} className="ec-tab" onClick={() => setMode('queue')}>Approval queue</button>
-        <button role="tab" aria-selected={mode === 'templates'} className="ec-tab" onClick={() => setMode('templates')}>Lane KPIs & templates</button>
       </div>
 
-      {mode === 'templates' ? (
-        /* Ivan's own lanes: clientId=null scopes the RPCs to campaigns with no client_id */
-        <TemplatesKpisView clientId={null} />
-      ) : mode === 'funnel' ? (
+      {mode === 'funnel' ? (
         <div className="ec-cols">
           {/* Funnel data-spread */}
           <div className="ec-col-lead">

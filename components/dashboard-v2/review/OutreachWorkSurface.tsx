@@ -26,6 +26,7 @@ import './outreachsurface.css';
  */
 
 const OutreachPanel = lazy(() => import('../../dashboard/OutreachPanel'));
+const TemplatesKpisView = lazy(() => import('../sections/clientops2/TemplatesKpis'));
 
 const DAY = 86_400_000;
 const ts = (s: string | null | undefined): number => (s ? new Date(s).getTime() : 0);
@@ -52,10 +53,11 @@ function verdictTone(v: string | null): string {
 }
 
 const MODE_KEY = 'outreach-desk-mode';
-type Mode = 'desk' | 'classic';
+type Mode = 'desk' | 'classic' | 'lanes';
 function readMode(): Mode {
   if (typeof window === 'undefined') return 'desk';
-  return window.localStorage.getItem(MODE_KEY) === 'classic' ? 'classic' : 'desk';
+  const m = window.localStorage.getItem(MODE_KEY);
+  return m === 'classic' || m === 'lanes' ? m : 'desk';
 }
 
 // ── Desk data ───────────────────────────────────────────────────────────────
@@ -251,13 +253,19 @@ const OutreachWorkSurface: React.FC = () => {
         <div className="ws-tools">
           <button className="ws-tool" aria-pressed={mode === 'desk'} onClick={() => setMode('desk')}>Desk</button>
           <button className="ws-tool" aria-pressed={mode === 'classic'} onClick={() => setMode('classic')}>Classic</button>
+          <button className="ws-tool" aria-pressed={mode === 'lanes'} onClick={() => setMode('lanes')}>Lanes & copy</button>
           <button className="ws-tool-icon" onClick={refresh} title="Refresh">
             <RefreshCw className={`w-4 h-4 ${data.loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {mode === 'classic' ? (
+      {mode === 'lanes' ? (
+        /* Per-lane KPIs + the sendable copy (templates editor), Ivan scope. */
+        <Suspense fallback={<div className="ws-loading">Loading lanes…</div>}>
+          <TemplatesKpisView clientId={null} />
+        </Suspense>
+      ) : mode === 'classic' ? (
         <Suspense fallback={<div className="ws-loading">Loading classic outreach…</div>}>
           <OutreachPanel />
         </Suspense>

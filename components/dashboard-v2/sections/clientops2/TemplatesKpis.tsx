@@ -5,7 +5,7 @@ import { GATE, fmtDate } from './shared';
 /**
  * Outreach templates + lane KPIs (W3) — one shared surface, two scopes:
  *
- *   clientId = null   → Ivan's own lanes (mounted in Warm Pipeline)
+ *   clientId = null   → Ivan's own lanes (mounted in Outreach → Lanes & copy)
  *   clientId = 'x'    → that client's lanes (mounted in Client Ops → Outreach)
  *
  * TEMPLATES read/write the new `outreach_templates` table — the canonical copy
