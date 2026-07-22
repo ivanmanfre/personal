@@ -105,7 +105,12 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select(SELECT_COLS)
+        // This is Ivan's OWN content library. Client-owned drafts (client_id set,
+        // e.g. RISE) live on their own Client Ops surface and must never surface
+        // here — otherwise a client's pool photos (e.g. Mattan's lifestyle pics)
+        // bleed onto the personal board/calendar. Same scoping the personal
+        // outreach desk uses (OutreachWorkSurface: .is('client_id', null)).
+        .is('client_id', null)
         .order('updated_at', { ascending: false });
       if (error) throw error;
       tombstonesRef.current.clear();
@@ -162,6 +167,13 @@ export function useContentLibrary() {
           }
           const row = payload.new as any;
           if (!row?.id) return;
+          // Personal library only — ignore client-owned rows (client_id set) so
+          // a RISE insert/update never re-adds a client draft the initial query
+          // scoped out. If a row flips to client-owned, drop it from local state.
+          if (row.client_id != null) {
+            setDrafts((prev) => prev.filter((d) => d.id !== row.id));
+            return;
+          }
           // Drop any stale tombstone for the same id (server resurrected it)
           tombstonesRef.current.delete(row.id);
           const next = mapDraft(row);
