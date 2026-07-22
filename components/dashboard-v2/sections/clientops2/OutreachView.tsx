@@ -203,7 +203,11 @@ function DraftRow({ d, company, onApproved }: { d: PendingDraft; company: string
     const r = await approveRiseDraft(d.message_id);
     setBusy(false);
     if (r.ok) { setDone(true); setNote(r.note || 'Approved.'); setTimeout(onApproved, 1200); }
-    else setNote(r.note || r.error || 'Could not approve.');
+    else {
+      setNote(r.note || r.error || 'Could not approve.');
+      // thread was handled manually since this draft was written -> it was discarded; drop it.
+      if (r.error === 'conversation_moved_on') { setDone(true); setTimeout(onApproved, 1600); }
+    }
   };
   const saveEdit = async () => {
     if (busy) return;
