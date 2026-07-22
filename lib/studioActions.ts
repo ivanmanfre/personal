@@ -149,8 +149,14 @@ export async function listPostStills(limit = 200): Promise<PostStill[]> {
   const { data: folders, error: foldersErr } = await supabase.storage
     .from('post-stills').list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
   if (foldersErr) throw new Error(`list bucket failed: ${foldersErr.message}`);
-  // 2) For each folder fetch its files in parallel
-  const folderNames = (folders || []).filter((f) => f.id === null).map((f) => f.name).slice(0, limit);
+  // 2) For each folder fetch its files in parallel.
+  //    Personal image library = Ivan's selfie pool ONLY. Other post-stills
+  //    folders (rise-quote = RISE client images, _livetest, the mixed `library`
+  //    dump) must not surface in the picker. Whitelist selfie-pool-* so client
+  //    photos can never bleed into Ivan's own image library.
+  const folderNames = (folders || [])
+    .filter((f) => f.id === null && /^selfie-pool/i.test(f.name))
+    .map((f) => f.name).slice(0, limit);
   const fileLists = await Promise.all(folderNames.map(async (folder) => {
     const { data: files } = await supabase.storage
       .from('post-stills').list(folder, { limit: 20, sortBy: { column: 'created_at', order: 'desc' } });
