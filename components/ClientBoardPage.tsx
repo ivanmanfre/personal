@@ -2179,7 +2179,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   const slotsByDay = useMemo(() => {
     const map = new Map<string, WeekSlot[]>();
     days.forEach((day) => {
-      const qItems = board.queue.filter((q) => q.publish_date === day && q.stage !== 'published');
+      const qItems = board.queue.filter((q) => q.publish_date === day);
       const calItems = (cal?.items || []).filter((it) => it.date === day);
       const have = new Set(qItems.map((q) => q.id));
       const spare: Record<string, number> = {};
@@ -2190,7 +2190,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           if (have.has(it.ref)) return;
           const linked = board.queue.find((qq) => qq.id === it.ref);
           if (linked) {
-            if (linked.stage !== 'published') { slots.push({ key: linked.id, q: linked }); have.add(linked.id); }
+            slots.push({ key: linked.id, q: linked }); have.add(linked.id);
             return;
           }
         }
@@ -2350,7 +2350,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     const handledDay = dayActionable.length > 0 && dayActionable.every(handledOf);
     const isCurrent = !doneState && focused?.publish_date === d;
     const held = dayActionable.some((q) => leftEmpty[q.id]) || !!leftEmpty[d];
-    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d), held };
+    const published = board.queue.some((q) => q.publish_date === d && q.stage === 'published');
+    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d), held, published };
   });
   const swapChip = focused && angleSwaps[focused.id];
   const focusedChip = focused && live ? sourceChip(focused) : null;
@@ -2428,14 +2429,14 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 ) : live ? (
                   /* Live: each weekday is a real target — click focuses that day's post, or
                      offers to mark the open day empty. */
-                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}`} title={weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.held ? 'empty' : tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
+                  <button key={i} onClick={() => clickDay(tk.day)} aria-label={`${weekdayName(tk.day)}, ${fmtDay(tk.day)}${tk.published ? ' — published' : ''}`} title={tk.published ? `${weekdayName(tk.day)} — published` : weekdayName(tk.day)} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.held ? 'empty' : tk.published ? 'published' : tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28, padding: 0,
                     fontFamily: MONO, fontSize: 10,
-                    border: `1.5px ${tk.held ? 'dashed' : 'solid'} ${tk.held ? LINE_BOLD : tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
-                    background: tk.held ? 'transparent' : tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
-                    color: tk.held ? INK_MUTE : tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
+                    border: `1.5px ${tk.held ? 'dashed' : 'solid'} ${tk.held ? LINE_BOLD : tk.published ? 'var(--cb-mint)' : tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
+                    background: tk.held ? 'transparent' : tk.published ? 'var(--cb-mint)' : tk.done ? accent : tk.current ? PAPER_RAISE : 'transparent',
+                    color: tk.held ? INK_MUTE : tk.published ? '#fff' : tk.done ? '#fff' : tk.current ? caText(accent) : INK_MUTE,
                     transition: 'all .3s ease', cursor: 'pointer',
-                  }}>{tk.letter}</button>
+                  }}>{tk.published ? '✓' : tk.letter}</button>
                 ) : (
                   <span key={i} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28,
