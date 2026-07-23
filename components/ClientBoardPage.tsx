@@ -1564,7 +1564,11 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
 
   // One unfolding ledger row, reused across every stage section in the list view.
   const renderLedgerRow = (q: QueueItem) => {
-    const stage = stageOf(q);
+    // Live: a signed-off "scheduled" post is just an Up-next post with a locked date —
+    // there is no separate scheduled tier on a live board (publishing isn't gated). Fold it
+    // to 'review' so it renders and behaves exactly like the other Up-next rows (editable,
+    // reschedulable). Preview keeps the real stage.
+    const stage = live && stageOf(q) === 'scheduled' ? 'review' : stageOf(q);
     const skipped = stage === 'review' && !!skips[q.id];
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays, live);
@@ -1832,20 +1836,26 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         ) : null;
         /* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */
         const stageSections = listSections.map(({ stage, label, blurb }) => {
+          // Live: the standalone "Scheduled" section is gone — signed-off posts fold into
+          // Up next (below), so there is one honest forward calendar instead of two buckets
+          // wearing the same word. Preview keeps the real stage-grouped pipeline.
+          if (live && stage === 'scheduled') return null;
           const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
           if (rows.length === 0) return null;
-          // Live "Up next" = ONLY posts with a real scheduled slot. Buffer drafts (no
-          // scheduled_at) NEVER appear here — they live in their own clearly-labeled bucket
-          // below, so "Up next" is always an honest forward calendar.
+          // Live "Up next" = every dated post, whether it's a review-stage draft that's been
+          // slotted OR a signed-off "scheduled" post. Both are just posts about to publish, so
+          // they merge into one date-sorted list. Buffer drafts (no slot) drop to their own
+          // clearly-labeled bucket below, so "Up next" is always an honest forward calendar.
           if (live && stage === 'review') {
-            const scheduledRows = rows.filter(isScheduled);
+            const scheduledStageRows = (groups.find((g) => g.stage === 'scheduled')?.items || []).slice();
+            const upNextRows = [...rows.filter(isScheduled), ...scheduledStageRows].sort(byDate);
             const bufferRows = rows.filter((q) => !isScheduled(q));
             return (
               <React.Fragment key={stage}>
-                {scheduledRows.length > 0 && (
+                {upNextRows.length > 0 && (
                   <section>
-                    <LedgerSectionHead eyebrow="Up next" count={scheduledRows.length} blurb="" accent={accent} />
-                    {scheduledRows.map(renderLedgerRow)}
+                    <LedgerSectionHead eyebrow="Up next" count={upNextRows.length} blurb="" accent={accent} />
+                    {upNextRows.map(renderLedgerRow)}
                   </section>
                 )}
                 {bufferRows.length > 0 && (
@@ -8038,7 +8048,7 @@ export default function ClientBoardPage() {
           item={detail}
           board={board}
           accent={accent}
-          stage={stageOf(detail)}
+          stage={isLive && stageOf(detail) === 'scheduled' ? 'review' : stageOf(detail)}
           initialChanging={detailChanging}
           initialEditing={detailEditing}
           initialSchedOpen={detailScheduling}
