@@ -1564,11 +1564,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
 
   // One unfolding ledger row, reused across every stage section in the list view.
   const renderLedgerRow = (q: QueueItem) => {
-    // Live: a signed-off "scheduled" post is just an Up-next post with a locked date —
-    // there is no separate scheduled tier on a live board (publishing isn't gated). Fold it
-    // to 'review' so it renders and behaves exactly like the other Up-next rows (editable,
-    // reschedulable). Preview keeps the real stage.
-    const stage = live && stageOf(q) === 'scheduled' ? 'review' : stageOf(q);
+    const stage = stageOf(q);
     const skipped = stage === 'review' && !!skips[q.id];
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays, live);
@@ -1841,15 +1837,17 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
           // wearing the same word. Preview keeps the real stage-grouped pipeline.
           if (live && stage === 'scheduled') return null;
           const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
-          if (rows.length === 0) return null;
           // Live "Up next" = every dated post, whether it's a review-stage draft that's been
           // slotted OR a signed-off "scheduled" post. Both are just posts about to publish, so
           // they merge into one date-sorted list. Buffer drafts (no slot) drop to their own
           // clearly-labeled bucket below, so "Up next" is always an honest forward calendar.
+          // NOTE: this branch runs even when the review group is empty, so scheduled-stage
+          // posts still surface in Up next (they'd otherwise vanish behind an empty-rows guard).
           if (live && stage === 'review') {
             const scheduledStageRows = (groups.find((g) => g.stage === 'scheduled')?.items || []).slice();
             const upNextRows = [...rows.filter(isScheduled), ...scheduledStageRows].sort(byDate);
             const bufferRows = rows.filter((q) => !isScheduled(q));
+            if (upNextRows.length === 0 && bufferRows.length === 0) return null;
             return (
               <React.Fragment key={stage}>
                 {upNextRows.length > 0 && (
@@ -1867,6 +1865,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
               </React.Fragment>
             );
           }
+          if (rows.length === 0) return null;
           return (
             <section key={stage}>
               <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
@@ -1887,11 +1886,21 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         );
       })()}
 
-      {view === 'board' && (
+      {view === 'board' && (() => {
+        // Live: no standalone "Scheduled" column — signed-off posts fold into the Up next
+        // (review) column, date-sorted, so Board matches the List. Preview keeps every stage.
+        const boardGroups = live
+          ? groups
+              .filter((g) => g.stage !== 'scheduled')
+              .map((g) => g.stage === 'review'
+                ? { ...g, items: [...g.items, ...(groups.find((x) => x.stage === 'scheduled')?.items || [])].slice().sort(byDate) }
+                : g)
+          : groups;
+        return (
         <LayoutGroup id="cb-board">
           <div className="overflow-x-auto pb-2">
             <div className="flex items-start gap-3" style={{ minWidth: 'max-content' }}>
-              {groups.map(({ stage, items }) => (
+              {boardGroups.map(({ stage, items }) => (
                 <div key={stage} className="w-[248px] shrink-0 rounded-xl p-2" style={{ background: 'rgba(2,49,47,0.03)' }}>
                   <div className="flex items-center gap-2 px-1.5 pb-2 pt-1">
                     <span className="h-[6px] w-[6px] rounded-full" style={{ background: stageDot(stage) }} aria-hidden />
@@ -1932,7 +1941,8 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
             </div>
           </div>
         </LayoutGroup>
-      )}
+        );
+      })()}
 
       {view === 'feed' && (
         <div className="max-w-[880px] rounded-xl px-3 py-6 sm:px-6" style={{ background: '#f3f2ef', border: `1px solid ${LINE}` }}>
@@ -8048,7 +8058,7 @@ export default function ClientBoardPage() {
           item={detail}
           board={board}
           accent={accent}
-          stage={isLive && stageOf(detail) === 'scheduled' ? 'review' : stageOf(detail)}
+          stage={stageOf(detail)}
           initialChanging={detailChanging}
           initialEditing={detailEditing}
           initialSchedOpen={detailScheduling}
