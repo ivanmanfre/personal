@@ -2977,6 +2977,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const brand = cs.sample_output?.lm?.brand;
   const prospectAccent = brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
   const prospectLogo = brand?.logo_url || undefined;
+  // Site-header mimicry for the LM embed: the lead's REAL nav menu, button shape/color, and type,
+  // so the wrapping browser chrome reads as their site, not our template. All optional — absent
+  // fields fall back to neutral defaults inside LiveAssessmentEmbed.
+  const brandNav: any = brand || {};
+  const embedNavLinks = Array.isArray(brandNav.nav_links) && brandNav.nav_links.length ? brandNav.nav_links.slice(0, 6) : undefined;
+  const embedNavFont = brandNav.font_body || brandNav.font_heading || undefined;
+  const embedHeaderBg = brandNav.header_bg || brandNav.surface_hex || undefined;
+  const embedCtaLabel = brandNav.cta_label || undefined;
+  const embedLoginLabel = brandNav.login_label || undefined;
+  const embedNavCtaBg = brandNav.nav_cta_bg || brandNav.ink_hex || undefined;
+  const embedCtaRadius = typeof brandNav.radius_px === 'number' ? Math.min(24, Math.max(0, brandNav.radius_px)) : undefined;
 
   // Attention budget: ONE post runs full-size in the feed — the first visual one
   // (image/carousel) — and every other full post renders as a compact clamped card
@@ -3437,7 +3448,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
                   caption={<>Live and working, in your brand. Every completion lands a named email on your list.</>}
                 >
-                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} navLinks={embedNavLinks} fontFamily={embedNavFont} headerBg={embedHeaderBg} ctaText={embedCtaLabel} loginLabel={embedLoginLabel} navCtaBg={embedNavCtaBg} ctaRadius={embedCtaRadius} />
                 </Exhibit>
               </div>
               <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
