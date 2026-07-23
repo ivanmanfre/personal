@@ -4,6 +4,7 @@ import { useStrategyMap } from '../../hooks/useStrategyMap';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import { ContentStrategySection } from './strategy/ContentStrategySection';
+import { ReachFormatPlaybookSection } from './strategy/ReachFormatPlaybookSection';
 import { ICPCampaignsSection } from './strategy/ICPCampaignsSection';
 import { LeadMagnetInventorySection } from './strategy/LeadMagnetInventorySection';
 import { OfferLadderSection } from './strategy/OfferLadderSection';
@@ -32,6 +33,7 @@ const StrategyPanel: React.FC = () => {
       </div>
 
       <ContentStrategySection />
+      <ReachFormatPlaybookSection />
       <ICPCampaignsSection campaigns={campaigns} campaignsWithoutLM={campaignsWithoutLM} />
       <LeadMagnetInventorySection leadMagnets={leadMagnets} campaignsWithoutLM={campaignsWithoutLM} />
       <OfferLadderSection

@@ -385,3 +385,71 @@ export const positioningLoopBreak: LoopBreakItem[] = [
     body: 'Does getting value require their work? If leads, content, and booked calls arrive whether or not they log in, it is a service. The dashboard is a bonus on top.',
   },
 ];
+
+// ─── 2026 Reach & Format Playbook (research 2026-07-23) ───
+// Decision-grade findings from the 10-lane reach/format research workflow
+// (115 findings deduped + adversarially date-checked). Full ledger:
+// research/linkedin-reach-format-2026-07-23.md. Anchor dataset = Metricool
+// 2026 Study (673,658 posts, genuinely-fresh Jan-Feb 2026, personal-profile
+// specific). Static until telemetry can score our own posts by format.
+
+export type ReachGrade = 'CONFIRMED' | 'PLAUSIBLE' | 'VENDOR-ONLY';
+
+export interface ReachVerdict { q: string; a: string }
+export interface ReachFormatRow { format: string; impressions: string; engagement: string; best?: 'reach' | 'engagement' }
+export interface ReachLever { lever: string; grade: ReachGrade; detail: string }
+
+export const reachFormatMeta = {
+  updated: '2026-07-23',
+  source: 'Metricool 2026 Study (673,658 posts, Jan-Feb 2026) + van der Blom 2026 + LinkedIn official',
+  docPath: '/Users/ivanmanfredi/Desktop/Ivan - Content System/research/linkedin-reach-format-2026-07-23.md',
+};
+
+// The two decisions this playbook exists to settle.
+export const reachFormatVerdicts: ReachVerdict[] = [
+  {
+    q: 'Pay to boost a post?',
+    a: 'No, not yet. Paid does not compound organic on LinkedIn (CONFIRMED, primary). A personal-post boost can’t run a conversion objective or build a retargeting pool. Boost only a post that already proved it lands organically.',
+  },
+  {
+    q: 'Post video for the algorithm?',
+    a: 'Not for impressions. On fresh 2026 personal-profile data, carousels roughly double video on reach. Video holds engagement RATE but trails on impressions. Keep 1 video/wk as a test, lead with carousels.',
+  },
+];
+
+// Personal-profile format table — Metricool 2026 (impressions/post, engagement rate).
+export const reachFormatTable: ReachFormatRow[] = [
+  { format: 'Carousel (document)', impressions: '~1,451', engagement: '1.44%', best: 'reach' },
+  { format: 'Image',               impressions: '~1,187', engagement: '1.81%' },
+  { format: 'Text',                impressions: '~1,045', engagement: '1.06%' },
+  { format: 'Video',              impressions: '~606',   engagement: '1.80%' },
+  { format: 'Multi-image',         impressions: 'lower',  engagement: '3.71%', best: 'engagement' },
+];
+
+// Ranked reach levers, graded by evidence strength.
+export const reachLevers: ReachLever[] = [
+  { lever: 'Carousels/documents lead on impressions', grade: 'CONFIRMED', detail: 'Direction replicates across 5 studies; deliver lead magnets as native carousels, no link.' },
+  { lever: 'Paid does not lift organic', grade: 'CONFIRMED', detail: 'Boost/TLA are amplification wrappers on an already-published post. No persistent post-flight lift on LinkedIn, Meta, or TikTok.' },
+  { lever: 'Dial cadence to 2-4x/week', grade: 'CONFIRMED', detail: 'van der Blom 2026 (1.3M posts) lowered the optimum from 5-6x. Fewer, stronger posts.' },
+  { lever: 'Win the golden hour', grade: 'CONFIRMED', detail: '~50% of lifetime impressions land in 48h, ~40% of interactions on day 1. Reply in the first 60-90 min.' },
+  { lever: 'No external links in body (personal profile)', grade: 'PLAUSIBLE', detail: 'Metricool 2026: -27% impressions on personal profiles (+51% on company pages). Route via DM/native doc.' },
+  { lever: 'Comment-for-keyword lead magnets are safe', grade: 'PLAUSIBLE', detail: 'Only literal reaction-bait ("Comment YES") is suppressed. Keyword-for-value delivery survives; don’t bulk-bot the DM.' },
+  { lever: 'Video is not dead', grade: 'PLAUSIBLE', detail: 'Buffer 2026: video has the highest engagement RATE of any format. It loses reach, holds engagement.' },
+  { lever: 'Format-independent boosts', grade: 'CONFIRMED', detail: 'End on a question +77% comments; explicit comment-CTA +80%; ≥1 hashtag +85% impressions (Metricool 2026).' },
+  { lever: 'Copy must not read AI-templated', grade: 'CONFIRMED', detail: 'May 2026 AI-slop crackdown demotes generic/templated posts from non-connection reach. Anti-slop is now a reach lever.' },
+];
+
+// The weekly mix this playbook prescribes.
+export const reachFormatWeeklyMix: string[] = [
+  '2 document carousels (one = lead magnet, comment-for-keyword, no link)',
+  '1 video (test against the carousels on our own numbers)',
+  '1 image post (2nd-best reach; multi-image if the goal is comments)',
+];
+
+// Traps that get people caught citing stale/fake data.
+export const reachFormatHygiene: string[] = [
+  'SocialInsider + Buffer "2026" benchmarks are self-disclosed relabeled 2024-25 data.',
+  'van der Blom has two editions; blogs cite the old 2025 one as "2026".',
+  '"360Brew" is NOT the confirmed live ranker (real Mar-2026 rebuild names no formats).',
+  'All specific dwell breakpoints / "video 5x reach" / "comments 15x likes" are uncited blogspam.',
+];
