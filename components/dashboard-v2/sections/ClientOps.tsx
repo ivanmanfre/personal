@@ -91,14 +91,32 @@ export function ClientOps() {
   const [decideBusy, setDecideBusy] = useState<string | null>(null);
 
   // ── Derived lane arrays (guard nulls) ──────────────────────────────────────
+  // LM launch drafts live on their lead magnet's card (Leads tab), matched by
+  // title. Unmatched launches fall back to the review rail so nothing hides.
+  const launchByLm = useMemo(() => {
+    const launches = (drafts || []).filter((d) => d.status === 'review' && isLmLaunch(d));
+    const key = (t: string) => stripPrefix(t || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const map = new Map<string, Draft>();
+    const matched = new Set<string>();
+    (lms || []).forEach((lm) => {
+      const topicKey = key(lm.topic);
+      const hit = launches.find((d) => {
+        if (matched.has(d.id)) return false;
+        const core = key(d.title).replace(/ launch post$/, '').replace(/^the /, '');
+        return !!core && (topicKey.includes(core) || core.includes(topicKey));
+      });
+      if (hit) { map.set(lm.id, hit); matched.add(hit.id); }
+    });
+    return { map, matched };
+  }, [drafts, lms]);
   const reviewDrafts = useMemo(
-    () => (drafts || []).filter((d) => d.status === 'review')
+    () => (drafts || []).filter((d) => d.status === 'review' && !launchByLm.matched.has(d.id))
       .sort((a, b) => {
         const la = isLmLaunch(a) ? 1 : 0, lb = isLmLaunch(b) ? 1 : 0;
-        if (la !== lb) return la - lb; // posts first, LM launches grouped after
+        if (la !== lb) return la - lb; // any unmatched launch still groups last
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }),
-    [drafts],
+    [drafts, launchByLm],
   );
   const scheduledDrafts = useMemo(() => (drafts || []).filter((d) => d.status === 'scheduled'), [drafts]);
   const liveDrafts = useMemo(() => (drafts || []).filter((d) => d.board_visible), [drafts]);
@@ -340,6 +358,7 @@ export function ClientOps() {
               onSchedule={handleSchedule}
               onToggle={handleToggle}
               onEditBody={onEditBody}
+              launchCount={launchByLm.matched.size}
               onNote={reload}
             />
           )}
@@ -369,7 +388,7 @@ export function ClientOps() {
 
           {opsTab === 'leads' && (
             /* ── LEADS: the lead-magnet line + capture funnel (graft 2 rollup + per-LM cards) ── */
-            <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} onSwapCover={onSwapCover} onNote={reload} />
+            <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} launchByLm={launchByLm.map} identity={identity} schedBusy={schedBusy} toggleBusyId={toggleBusyId} onSchedule={handleSchedule} onToggle={handleToggle} onEditBody={onEditBody} onSwapCover={onSwapCover} onNote={reload} />
           )}
         </>
       )}
@@ -477,12 +496,12 @@ function IdeasLane({ ideas, loading, err, selId, onSelect, decideBusy, onDecide,
 }
 
 // ── Review lane: grouped rail + client-faithful reader + edit + inspect ───────
-function ReviewLane({ drafts, loading, err, disqualified, cursor, current, identity, onCursor, schedBusy, schedNote, toggleBusyId, onSchedule, onToggle, onEditBody, onNote }: {
+function ReviewLane({ drafts, loading, err, disqualified, cursor, current, identity, onCursor, schedBusy, schedNote, toggleBusyId, onSchedule, onToggle, onEditBody, launchCount, onNote }: {
   drafts: Draft[]; loading: boolean; err?: string; disqualified: number; cursor: number; current: Draft | null;
   identity: BoardIdentity | null;
   onCursor: (i: number) => void; schedBusy: boolean; schedNote: string; toggleBusyId: string | null;
   onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void;
-  onEditBody: (d: Draft, body: string) => Promise<boolean>; onNote: () => void;
+  onEditBody: (d: Draft, body: string) => Promise<boolean>; launchCount: number; onNote: () => void;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [editText, setEditText] = React.useState('');
@@ -512,6 +531,7 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
       <div className="ec-kicker">In review — read each draft as the client's post · edit, schedule to buffer, or flip it live on the board</div>
       {err && <div className="co2-err">{err}</div>}
       {disqualified > 0 && <div className="co2-note">{disqualified} disqualified · hidden from the line</div>}
+      {launchCount > 0 && <div className="co2-note">{launchCount} LM launch post{launchCount === 1 ? '' : 's'} on the Leads tab, with their lead magnets</div>}
       {loading ? (
         <div className="ws-loading">Loading drafts…</div>
       ) : drafts.length === 0 ? (
@@ -780,14 +800,90 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
 }
 
 // ── Lead-magnet line: funnel silhouette rollup (graft 2) + per-LM cards ───────
-function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
+// One LM launch post, living on its lead magnet's card: preview + judge + act.
+function LaunchBlock({ d, identity, schedBusy, toggleBusyId, onSchedule, onToggle, onEditBody, onNote }: {
+  d: Draft; identity: BoardIdentity | null; schedBusy: boolean; toggleBusyId: string | null;
+  onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void;
+  onEditBody: (d: Draft, body: string) => Promise<boolean>; onNote: () => void;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [text, setText] = React.useState(d.post_body || '');
+  const [saving, setSaving] = React.useState(false);
+  React.useEffect(() => { setEditing(false); setText(d.post_body || ''); }, [d.id]);
+  const image = d.type === 'single_image' && isUrl(d.image_urls?.[0]) ? d.image_urls![0] : null;
+  const canSchedule = d.status === 'review' && d.has_media !== false;
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try { if (await onEditBody(d, text)) { setEditing(false); onNote(); } }
+    finally { setSaving(false); }
+  };
+  return (
+    <div className="co2-launch">
+      <div className="co2-block-lbl">Launch post</div>
+      <div className="co2-note" style={{ marginBottom: '0.55rem' }}>
+        {d.status}{d.qa_score != null ? ` · QA ${d.qa_score}` : ''}{d.board_visible ? ' · on board' : ''} · {ageLabel(d.created_at)} old
+      </div>
+      {editing ? (
+        <div>
+          <textarea autoFocus className="ws-edit" rows={12} value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="ws-actions" style={{ marginTop: '0.6rem' }}>
+            <button className="ws-key ws-key--primary" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save copy'}</button>
+            <button className="ws-key" onClick={() => { setEditing(false); setText(d.post_body || ''); }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <ClientPost text={d.post_body || ''} identity={identity} image={image} />
+          <div className="ws-actions" style={{ marginTop: '0.8rem' }}>
+            {canSchedule ? (
+              <button className="ws-key ws-key--primary" disabled={schedBusy} onClick={() => onSchedule(d)}>
+                {schedBusy ? 'Scheduling…' : 'Schedule to buffer'}
+              </button>
+            ) : d.status === 'review' ? (
+              <span className="co2-await">◷ waiting on image</span>
+            ) : (
+              <span className="co2-note">{d.status}</span>
+            )}
+            <button className="ws-key" onClick={() => { setText(d.post_body || ''); setEditing(true); }}>Edit copy</button>
+            <label className="co2-toggle" title={d.status === 'review' ? 'Show on the client board' : 'Only review drafts can be shown'}>
+              <span>On board</span>
+              <button
+                role="switch"
+                aria-checked={d.board_visible}
+                aria-label="On board"
+                disabled={d.status !== 'review' || toggleBusyId === d.id}
+                className={`co2-switch ${d.board_visible ? 'co2-switch--on' : ''}`}
+                onClick={() => onToggle(d, !d.board_visible)}
+              />
+            </label>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LmLine({ lms, err, funnel, boardLms, launchByLm, identity, schedBusy, toggleBusyId, onSchedule, onToggle, onEditBody, onSwapCover, onNote }: {
   lms: Lm[] | null; err?: string; funnel: { views: number; captures: number; completes: number; cta_clicks: number };
-  boardLms: BoardLm[] | null; onSwapCover: (lmId: string, url: string) => void; onNote: () => void;
+  boardLms: BoardLm[] | null; launchByLm: Map<string, Draft>; identity: BoardIdentity | null;
+  schedBusy: boolean; toggleBusyId: string | null;
+  onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void;
+  onEditBody: (d: Draft, body: string) => Promise<boolean>;
+  onSwapCover: (lmId: string, url: string) => void; onNote: () => void;
 }) {
   const funMax = Math.max(1, funnel.views, funnel.captures, funnel.completes, funnel.cta_clicks);
   const bars: [string, number][] = [
     ['Views', funnel.views], ['Captures', funnel.captures], ['Completes', funnel.completes], ['CTA', funnel.cta_clicks],
   ];
+  // Board cover entry for an LM row, matched by title (no shared id exists).
+  const boardEntryFor = (lm: Lm): BoardLm | null => {
+    const t = stripPrefix(lm.topic).toLowerCase();
+    return (boardLms || []).find((b) => {
+      const bt = (b.title || '').toLowerCase();
+      return !!bt && (t.includes(bt) || bt.includes(t));
+    }) || null;
+  };
   return (
     <section className="co2-laneblock co2-lm-section">
       <div className="ec-kicker">Lead-magnet line — the parallel pipeline: draft → live → capturing</div>
@@ -796,15 +892,18 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
       {/* graft 2 (A): funnel bar silhouette as the line's rollup */}
       {lms != null && (
         funnel.views > 0 ? (
-          <div className="co2-funbar">
-            {bars.map(([label, n]) => (
-              <div className="co2-funbar-row" key={label}>
-                <span className="co2-funbar-lbl">{label}</span>
-                <span className="co2-funbar-track"><span className="co2-funbar-fill" style={{ width: `${Math.max(2, (n / funMax) * 100)}%` }} /></span>
-                <span className="co2-funbar-num">{n}</span>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="co2-funbar">
+              {bars.map(([label, n]) => (
+                <div className="co2-funbar-row" key={label}>
+                  <span className="co2-funbar-lbl">{label}</span>
+                  <span className="co2-funbar-track"><span className="co2-funbar-fill" style={{ width: `${Math.max(2, (n / funMax) * 100)}%` }} /></span>
+                  <span className="co2-funbar-num">{n}</span>
+                </div>
+              ))}
+            </div>
+            <div className="co2-note" style={{ margin: '-1rem 0 1.4rem' }}>test traffic excluded · untagged visits still count, yours included</div>
+          </>
         ) : (
           <div className="co2-note" style={{ margin: '0.6rem 0 1.2rem' }}>No lead-magnet traffic yet.</div>
         )
@@ -819,6 +918,12 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
           {lms.map((lm) => {
             const f = lm.funnel || { views: 0, captures: 0, completes: 0, cta_clicks: 0 };
             const hasLog = (lm.agent_log?.length ?? 0) > 0;
+            const board = boardEntryFor(lm);
+            const covers = board
+              ? (Array.isArray(board.covers) && board.covers.length > 0 ? board.covers : (board.cover_url ? [board.cover_url] : []))
+              : (lm.cover_url ? [lm.cover_url] : []);
+            const hasPair = !!board && covers.length > 1;
+            const launch = launchByLm.get(lm.id) || null;
             return (
               <div key={lm.id} className="co2-lm">
                 <div className="co2-lm-head">
@@ -826,11 +931,30 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
                   <span className={`co2-pill ${lm.status === 'live' ? 'co2-pill--live' : ''}`}>{lm.status}</span>
                 </div>
                 {lm.format && <div className="co2-note">{lm.format}</div>}
-                {lm.cover_url ? (
-                  <img className="co2-cover" src={lm.cover_url} alt="" loading="lazy" />
+
+                {/* Cover options live ON the card: pair pickable, gaps named. */}
+                {covers.length > 0 ? (
+                  <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap', margin: '0.6rem 0' }}>
+                    {covers.map((url) => {
+                      const active = board ? url === board.cover_url : true;
+                      return (
+                        <button
+                          key={url}
+                          onClick={() => { if (board && hasPair && !active) onSwapCover(board.id, url); }}
+                          title={!hasPair ? 'The only cover generated' : active ? 'Live on the board' : 'Set as the board cover'}
+                          className={`co2-coverpick ${active ? 'co2-coverpick--on' : ''}`}
+                          style={!hasPair ? { cursor: 'default' } : undefined}
+                        >
+                          <img src={url} alt="" loading="lazy" />
+                        </button>
+                      );
+                    })}
+                    {!hasPair && <span className="co2-miss">second option not generated yet</span>}
+                  </div>
                 ) : (
-                  <div className="co2-miss" style={{ margin: '0.6rem 0' }}>No cover on this draft yet.</div>
+                  <div className="co2-miss" style={{ margin: '0.6rem 0' }}>No covers generated yet.</div>
                 )}
+
                 <div className="co2-funnel">
                   <span className="co2-fig"><span className="co2-fig-n">{f.views}</span><span className="co2-fig-l">Views</span></span>
                   <span className="co2-fig"><span className="co2-fig-n">{f.captures}</span><span className="co2-fig-l">Captures</span></span>
@@ -841,14 +965,28 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
                   {isUrl(lm.resource_url) ? <a className="co2-link" href={lm.resource_url!} target="_blank" rel="noreferrer">resource ↗</a> : <span className="co2-miss">no resource</span>}
                   {isUrl(lm.landing_url) ? <a className="co2-link" href={lm.landing_url!} target="_blank" rel="noreferrer">landing ↗</a> : <span className="co2-miss">no landing</span>}
                 </div>
-                {hasLog && (
+
+                {/* The LM's launch post, with judge/act controls, right here. */}
+                {launch && (
+                  <LaunchBlock
+                    d={launch}
+                    identity={identity}
+                    schedBusy={schedBusy}
+                    toggleBusyId={toggleBusyId}
+                    onSchedule={onSchedule}
+                    onToggle={onToggle}
+                    onEditBody={onEditBody}
+                    onNote={onNote}
+                  />
+                )}
+
+                {hasLog ? (
                   <div style={{ marginTop: '0.7rem' }}>
                     <QAVerdictPanel entries={lm.agent_log} />
                     <div style={{ height: '0.6rem' }} />
                     <AgentLogFeed entries={lm.agent_log} table="lm_drafts_v2" rowId={lm.id} onNoteAdded={onNote} />
                   </div>
-                )}
-                {!hasLog && (
+                ) : (
                   <div style={{ marginTop: '0.7rem' }}>
                     <AgentLogFeed entries={[]} table="lm_drafts_v2" rowId={lm.id} onNoteAdded={onNote} />
                   </div>
@@ -856,53 +994,6 @@ function LmLine({ lms, err, funnel, boardLms, onSwapCover, onNote }: {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* LM covers — one row per lead magnet: pairs are pickable, gaps are named */}
-      {(boardLms != null || lms != null) && (
-        <div style={{ marginTop: '1.4rem' }}>
-          <div className="ec-kicker">LM covers — the standard is a pair per lead magnet · pick the one the board runs</div>
-          {(boardLms || []).map((lm) => {
-            const covers = Array.isArray(lm.covers) ? lm.covers : (lm.cover_url ? [lm.cover_url] : []);
-            const hasPair = covers.length > 1;
-            return (
-              <div key={lm.id} className="co2-lrow" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '0.5rem' }}>
-                <span className="co2-ltitle">{lm.title}</span>
-                <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {covers.map((url) => {
-                    const active = url === lm.cover_url;
-                    return (
-                      <button
-                        key={url}
-                        onClick={() => { if (hasPair && !active) onSwapCover(lm.id, url); }}
-                        title={!hasPair ? 'The only cover generated' : active ? 'Live on the board' : 'Set as the board cover'}
-                        className={`co2-coverpick ${active ? 'co2-coverpick--on' : ''}`}
-                        style={!hasPair ? { cursor: 'default' } : undefined}
-                      >
-                        <img src={url} alt="" loading="lazy" />
-                      </button>
-                    );
-                  })}
-                  {!hasPair && <span className="co2-miss">second option not generated yet</span>}
-                </div>
-              </div>
-            );
-          })}
-          {(lms || [])
-            .filter((row) => {
-              const t = stripPrefix(row.topic).toLowerCase();
-              return !(boardLms || []).some((b) => {
-                const bt = (b.title || '').toLowerCase();
-                return bt && (t.includes(bt) || bt.includes(t));
-              });
-            })
-            .map((row) => (
-              <div key={row.id} className="co2-lrow" style={{ alignItems: 'baseline', gap: '0.8rem' }}>
-                <span className="co2-ltitle">{stripPrefix(row.topic)}</span>
-                <span className="co2-miss">no covers generated yet</span>
-              </div>
-            ))}
         </div>
       )}
     </section>
@@ -1109,6 +1200,9 @@ const CSS = `
 .ec .co2-pill--live { color:var(--ec-paper); background:var(--ec-ink); border-color:var(--ec-ink); }
 .ec .co2-cover { width:100%; max-width:220px; border:1px solid var(--ec-rule); background:rgba(19,18,16,0.04); display:block; margin:0.6rem 0; }
 .ec .co2-lm-links { display:flex; gap:1.1rem; margin:0.4rem 0 0.2rem; font-family:var(--ec-sans); font-size:11.5px; }
+
+/* Launch post block on the LM card */
+.ec .co2-launch { border-top:1px solid var(--ec-rule-strong); margin-top:1rem; padding-top:0.8rem; }
 
 /* Cover pick */
 .ec .co2-coverpick { padding:0; background:none; cursor:pointer; border:1px solid var(--ec-rule); line-height:0; opacity:0.72; }
