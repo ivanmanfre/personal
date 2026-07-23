@@ -4494,7 +4494,8 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in.{isLive ? '' : ' We review the weights together every month.'}
         </p>
-        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>{isLive ? clientBrand(board) : 'InboundOnSteroids'}</p>
+        {/* Signed by the operator (Ivan's agency), never by the client's own brand. */}
+        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>{'InboundOnSteroids'}</p>
       </div>
 
       {/* Your plan: the preview-only deliverables card (a live production tool never shows
@@ -7962,7 +7963,8 @@ export default function ClientBoardPage() {
           </span>
           <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
             <span className="cb-operator-on flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
-            {isLive ? `OPERATED BY ${clientBrand(board).toUpperCase()}` : 'OPERATED BY INBOUNDONSTEROIDS'}
+            {/* The operator is always Ivan's agency — never the client's own brand. */}
+            {'OPERATED BY INBOUNDONSTEROIDS'}
           </span>
         </div>
 
