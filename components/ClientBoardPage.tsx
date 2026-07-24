@@ -7350,6 +7350,39 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, token]);
 
+  // Live refresh: the board payload is otherwise fetched exactly once per page load, so
+  // copy/schedule edits landing server-side stayed invisible until a manual reload.
+  // Refetch when the tab regains focus, plus every 5 minutes while visible. Read-only:
+  // same RPC path as the initial load; never touches session state. Skips boards still
+  // running the d1 intro choreography (q.generating) so the intro is never disturbed.
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    let busy = false;
+    const refetch = async () => {
+      if (busy || document.visibilityState !== 'visible') return;
+      busy = true;
+      try {
+        const sess = sessionRef.current ?? loadBoardSession(slug);
+        const resp = token
+          ? await supabase.rpc('get_client_board', { p_slug: slug, p_token: token })
+          : sess?.token
+            ? await supabase.rpc('get_client_board_by_session', { p_slug: slug, p_session: sess.token })
+            : null;
+        if (!resp || resp.error || !resp.data) return;
+        const d = resp.data as any;
+        if (d.mode === 'generating' || d.mode === 'failed') return;
+        const b = d.board as Board;
+        if (b?.queue && !b.queue.some((q) => q.generating)) setBoard(b);
+      } finally { busy = false; }
+    };
+    const onVis = () => { if (document.visibilityState === 'visible') void refetch(); };
+    window.addEventListener('focus', onVis);
+    document.addEventListener('visibilitychange', onVis);
+    const iv = setInterval(() => { void refetch(); }, 300000);
+    return () => { window.removeEventListener('focus', onVis); document.removeEventListener('visibilitychange', onVis); clearInterval(iv); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, slug, token]);
+
   // While the board is still generating, poll the row every 15s. When it flips to a
   // renderable mode, reload once so the full loader (intro choreography included) runs
   // cleanly; if it fails, drop to the failed screen.
