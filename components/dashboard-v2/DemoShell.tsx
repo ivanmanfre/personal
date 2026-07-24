@@ -59,6 +59,7 @@ const host = (node: React.ReactNode) => () => <Suspense fallback={<PanelLoading 
 const PostWorkSurface = lazy(() => import('./review/PostWorkSurface'));
 const LmWorkSurface = lazy(() => import('./review/LmWorkSurface'));
 const OutreachWorkSurface = lazy(() => import('./review/OutreachWorkSurface'));
+const ScanVideoReview = lazy(() => import('./review/ScanVideoReview'));
 
 // ── Nav model: [group] → visible subsection entries. Every one of the 11
 // legacy section ids resolves here (see notes.md mapping table). ────────────
@@ -84,6 +85,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     items: [
       { id: 'outreach', name: 'Outreach', render: host(<OutreachWorkSurface />) },
       { id: 'scans', name: 'Scans', render: host(<AudienceAuditsPanel />) },
+      { id: 'scanvideos', name: 'Scan videos', render: host(<ScanVideoReview />) },
       { id: 'calls', name: 'Calls', render: host(<MeetingsPanel />) },
     ],
   },
@@ -133,7 +135,7 @@ function ShellInner() {
   // erroring workflows). Everything else stays a quiet neutral count.
   const badges = useNavBadges();
   const badgeFor = (id: SectionId): NavItem['badge'] => {
-    const count = id === 'posts' ? badges.posts : id === 'outreach' ? badges.outreach : id === 'health' ? badges.health : null;
+    const count = id === 'posts' ? badges.posts : id === 'outreach' ? badges.outreach : id === 'health' ? badges.health : id === 'scanvideos' ? badges.scanvideos : null;
     if (!count || count <= 0) return undefined;
     const urgentId = (badges.outreach ?? 0) > 0 ? 'outreach' : (badges.health ?? 0) > 0 ? 'health' : null;
     return { count, severity: id === urgentId ? 'bad' : 'neutral' };

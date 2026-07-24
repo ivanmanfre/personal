@@ -8,6 +8,7 @@ export interface NavBadges {
   posts: number | null;
   outreach: number | null;
   health: number | null;
+  scanvideos: number | null;
 }
 
 /**
@@ -22,7 +23,7 @@ export interface NavBadges {
  * - health   = workflows whose last execution errored.
  */
 export function useNavBadges(): NavBadges {
-  const [b, setB] = useState<NavBadges>({ posts: null, outreach: null, health: null });
+  const [b, setB] = useState<NavBadges>({ posts: null, outreach: null, health: null, scanvideos: null });
 
   useEffect(() => {
     let alive = true;
@@ -33,7 +34,7 @@ export function useNavBadges(): NavBadges {
       const { data: ownCamps } = await supabase
         .from('outreach_campaigns').select('id').is('client_id', null);
       const ownIds = (ownCamps ?? []).map((c: any) => c.id);
-      const [rev, owedCand, errs] = await Promise.all([
+      const [rev, owedCand, errs, scanVids] = await Promise.all([
         supabase
           .from('carousel_drafts')
           .select('id', { count: 'exact', head: true })
@@ -51,6 +52,13 @@ export function useNavBadges(): NavBadges {
           .from('dashboard_workflow_stats')
           .select('id', { count: 'exact', head: true })
           .eq('last_execution_status', 'error'),
+        // Walkthrough videos awaiting operator review (draft). Authenticated
+        // session sees every status; the badge mirrors the ScanVideoReview
+        // actionable queue exactly.
+        supabase
+          .from('scan_videos')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'draft'),
       ]);
       if (!alive) return;
       const owed = (owedCand.data ?? []).filter(
@@ -63,6 +71,7 @@ export function useNavBadges(): NavBadges {
         posts: rev.error ? null : rev.count ?? 0,
         outreach: owedCand.error ? null : owed,
         health: errs.error ? null : errs.count ?? 0,
+        scanvideos: scanVids.error ? null : scanVids.count ?? 0,
       });
     };
     load();
