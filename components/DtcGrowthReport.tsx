@@ -489,6 +489,17 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               Paid media and performance creative that compound, plus a Financial Health view that tracks
               contribution profit on every order. A live look picks up what a public scan cannot reach.
             </p>
+
+            {/* How RISE charges: $0 base fee, pure performance basis. Sub-strip near the CTA. */}
+            <div className="mt-8 inline-flex max-w-xl flex-col gap-2 rounded-2xl px-5 py-4" style={{ border: `1px solid ${ink}1f` }}>
+              <div className="flex items-center gap-2.5">
+                <span className="h-px w-8" style={{ background: accent }} />
+                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: ink, opacity: 0.7 }}>How RISE charges</span>
+              </div>
+              <p className="text-[1.0625rem] font-semibold leading-snug" style={{ color: ink }}>
+                $0 base fee. We work on a pure performance basis, so a growth read costs you nothing.
+              </p>
+            </div>
           </div>
           <div className="lg:col-span-4 lg:text-right">
             <a
