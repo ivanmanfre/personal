@@ -430,3 +430,24 @@ export interface WebhookResponse {
   is_cached: boolean;
   status: string;
 }
+
+// A recorded personal walkthrough of a scan report, keyed to the company_slug.
+// Public reads (anon RLS) only ever return status='approved' rows; the operator
+// dashboard (authenticated) sees every status. `script`/`keyframe_plan`/etc are
+// mostly used operator-side; the public embed only needs the playable video +
+// duration.
+export interface ScanVideo {
+  id: string;
+  company_slug: string;
+  status: 'rendering' | 'draft' | 'approved' | 'rejected' | 'failed';
+  video_url: string | null;
+  storage_path: string | null;
+  duration_seconds: number | null;
+  script: { full_text?: string; [k: string]: any } | null;
+  keyframe_plan: any | null;
+  render_meta: any | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string | null;
+  approved_at: string | null;
+}
