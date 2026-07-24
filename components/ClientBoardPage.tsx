@@ -2190,7 +2190,12 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   const onOpenBehind = onGoContent;
   const autoDays = board.auto_publish_days ?? 3;
   const cal = board.calendar;
-  const days = cal ? weekDayList(cal.start) : [];
+  // Rolling "next 7 days": the sync writes calendar.start as a static Monday, which goes
+  // stale by the weekend (a Friday visit showed an empty week while next week's scheduled
+  // posts sat invisible). Start the window at today (client wall clock, LA) unless the
+  // synced start is still in the future (first-week preview boards keep their preview week).
+  const todayLA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+  const days = cal ? weekDayList(cal.start > todayLA ? cal.start : todayLA) : [];
   const daySet = new Set(days);
 
   // One slot per piece: queue items own their day; calendar entries fill the rest.
@@ -2362,16 +2367,17 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   })();
   const pipelineCount = board.queue.filter((q) => q.stage !== 'published').length;
 
-  // Day-tick row (M T W T F S S): filled accent when that day's piece is handled,
-  // white + accent border for the current focused day, transparent otherwise.
-  const TICK_LETTER = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  // Day-tick row: filled accent when that day's piece is handled, white + accent border
+  // for the current focused day, transparent otherwise. Letters derive from each real
+  // date (the rolling window can start on any weekday, so a fixed M-T-W row would lie).
+  const tickLetter = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'narrow' });
   const ticks = days.map((d, i) => {
     const dayActionable = actionable.filter((q) => q.publish_date === d);
     const handledDay = dayActionable.length > 0 && dayActionable.every(handledOf);
     const isCurrent = !doneState && focused?.publish_date === d;
     const held = dayActionable.some((q) => leftEmpty[q.id]) || !!leftEmpty[d];
     const published = board.queue.some((q) => q.publish_date === d && q.stage === 'published');
-    return { letter: TICK_LETTER[i], day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d), held, published };
+    return { letter: tickLetter(d), day: d, done: handledDay, current: isCurrent, weekend: isWeekendDay(d), held, published };
   });
   const swapChip = focused && angleSwaps[focused.id];
   const focusedChip = focused && live ? sourceChip(focused) : null;
@@ -2412,7 +2418,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {doneState || total === 0 ? (
             <div className="mb-2">
               <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
-                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : live ? <>Week of {fmtDay(days[0])} · nothing scheduled</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
+                {total === 0 && waitingElsewhere > 0 ? <>{fmtDay(days[0])} → {fmtDay(days[6])} · {waitingElsewhere} in review</> : live ? <>{fmtDay(days[0])} → {fmtDay(days[6])} · nothing scheduled</> : <>{fmtDay(days[0])} → {fmtDay(days[6])} · {total} of {total}</>}
               </div>
               <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
                 {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : live ? <>Nothing scheduled <Accent>this week.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
@@ -2423,8 +2429,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
               <div>
                 <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
                   {live
-                    ? <>Week of {fmtDay(days[0])} · {total} scheduled this week</>
-                    : <>Week of {fmtDay(days[0])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go</>}
+                    ? <>{fmtDay(days[0])} → {fmtDay(days[6])} · {total} scheduled</>
+                    : <>{fmtDay(days[0])} → {fmtDay(days[6])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go</>}
                 </div>
                 <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK, whiteSpace: 'nowrap' }}>
                   {live && !focused?.publish_date ? 'Up next' : weekdayName(focused?.publish_date)}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
