@@ -2029,7 +2029,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         >
           <span className="min-w-0">
             <span className="block uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.1em', color: INK_MUTE }}>Video scripts</span>
-            <span className="mt-1 block" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>Your talking-head scripts, sourced from your calls. Teleprompter included.</span>
+            <span className="mt-1 block" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>Your talking-head video scripts, teleprompter included.</span>
           </span>
           <span aria-hidden style={{ fontFamily: MONO, fontSize: 14, color: INK_MUTE }}>→</span>
         </a>
