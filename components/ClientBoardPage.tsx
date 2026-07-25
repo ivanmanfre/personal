@@ -2017,6 +2017,24 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         </div>
       )}
 
+      {/* RISE only: founder video scripts library (rise-dtc-resources /video-scripts/).
+          Plain in-flow card at the very bottom of All content, per Ivan 2026-07-24. */}
+      {live && ((board.domain || '').includes('risedtc') || board.company_name?.toUpperCase().includes('RISE')) && (
+        <a
+          href="https://resources.risedtc.com/video-scripts/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 flex max-w-[880px] items-center justify-between gap-4 rounded-xl bg-white p-4 transition-colors hover:bg-[#fffdf3] sm:p-5"
+          style={{ border: `1px solid ${LINE}` }}
+        >
+          <span className="min-w-0">
+            <span className="block uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.1em', color: INK_MUTE }}>Video scripts</span>
+            <span className="mt-1 block" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>Your talking-head scripts, sourced from your calls. Teleprompter included.</span>
+          </span>
+          <span aria-hidden style={{ fontFamily: MONO, fontSize: 14, color: INK_MUTE }}>→</span>
+        </a>
+      )}
+
       {lmDetail && (
         <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} onEditPromo={live ? onEditPromo : undefined} />
       )}
