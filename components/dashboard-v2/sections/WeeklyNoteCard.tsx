@@ -1,50 +1,31 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  approveWeeklyNote,
   fetchWeeklyNotePending,
   weeklyNoteReportUrl,
   type WeeklyNotePending,
 } from '../../../lib/weeklyNoteActions';
-import { toastError, toastSuccess } from '../../../lib/dashboardActions';
 
 /**
- * RISE weekly note — ops inbox card on Today ("Needs you" surface).
- * Shows the Sunday-drafted weekly note awaiting Ivan: draft text, link to
- * the full HTML report, Approve, and an override box. Actions hit the
- * k-gated n8n webhook; approving here does the same write as replying
- * "ok" on WhatsApp (which stays the second path). Card renders nothing
- * when no draft is pending, so the surface stays active-only.
+ * RISE weekly note — informational card on Today (Ivan 2026-07-26: no approve
+ * gate, the note is a report). The Sunday draft auto-applies to the board;
+ * this card just shows what went out, with the full-report link. Replacing
+ * the text happens by WhatsApp reply before Monday 12:30 UTC. Renders
+ * nothing outside the Sunday-to-Monday window (pending doubles as the
+ * override window marker).
  */
 export function WeeklyNoteCard() {
   const [pending, setPending] = useState<WeeklyNotePending | null>(null);
-  const [override, setOverride] = useState('');
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
     fetchWeeklyNotePending().then(setPending).catch(() => setPending(null));
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const act = async () => {
-    setBusy(true);
-    try {
-      const r = await approveWeeklyNote(override);
-      if (!r.ok) throw new Error(r.error || 'approve failed');
-      toastSuccess(override.trim() ? 'Weekly note replaced with your text.' : 'Weekly note approved.');
-      setPending(null);
-      setOverride('');
-    } catch (e) {
-      toastError('approve weekly note', e);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (!pending) return null;
 
   return (
     <div className="ec-box" style={{ marginBottom: '1.4rem' }}>
-      <div className="ec-box-head">RISE weekly note awaits you</div>
+      <div className="ec-box-head">RISE weekly note · on the board for Monday</div>
       <div className="ec-data" style={{ marginTop: '0.4rem' }}>
         week of {pending.week_start || '?'} · drafted {pending.sent_at ? new Date(pending.sent_at).toLocaleString() : '?'}
         {pending.week_start ? (
@@ -57,18 +38,8 @@ export function WeeklyNoteCard() {
         ) : null}
       </div>
       <p className="ec-note" style={{ marginTop: '0.6rem', whiteSpace: 'pre-wrap' }}>{pending.draft_text}</p>
-      <textarea
-        value={override}
-        onChange={(e) => setOverride(e.target.value)}
-        placeholder="Optional: your replacement text (sent verbatim instead of the draft)"
-        rows={3}
-        style={{ width: '100%', marginTop: '0.6rem', font: 'inherit', fontSize: 13, padding: '0.5rem', boxSizing: 'border-box' }}
-      />
-      <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-        <button type="button" className="ec-btn ec-btn--primary" disabled={busy} onClick={act}>
-          {busy ? 'Working…' : override.trim() ? 'Send my text' : 'Approve'}
-        </button>
-        <span className="ec-data">WhatsApp reply “ok” still works as a second path.</span>
+      <div className="ec-data" style={{ marginTop: '0.6rem' }}>
+        To replace it, send your text on WhatsApp before Mon 12:30 UTC.
       </div>
     </div>
   );
