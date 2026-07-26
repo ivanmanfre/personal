@@ -150,6 +150,9 @@ interface QueueItem {
   /** Post style label (text, quote_image, selfie, carousel, newsjack) — drives the
    *  style chip so the deck shows the range of formats, not one look. */
   style?: string;
+  /** Audience aim for the post (reach / trust / buyers), plumbed from
+   *  carousel_drafts.funnel_stage by the queue sync. Absent on older items. */
+  funnel_stage?: string;
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string; time?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
@@ -760,6 +763,34 @@ function KindChip({ q }: { q: Pick<QueueItem, 'kind' | 'media_url'>; accent?: st
       style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
     >
       {kickerOf(q)}
+    </span>
+  );
+}
+
+/** Audience-aim metadata for the funnel chip. The visible label stays plain English
+ *  (Reach / Trust / Buyers); the funnel translation lives ONLY in the hover tooltip. */
+const FUNNEL_META: Record<string, { label: string; tip: string }> = {
+  reach: { label: 'Reach', tip: "Top of funnel: for people who don't know the brand yet" },
+  trust: { label: 'Trust', tip: 'Middle of funnel: for followers who know the problem' },
+  buyers: { label: 'Buyers', tip: 'Bottom of funnel: for brands close to reaching out' },
+};
+/** Dot tint per stage: the client accent at stepped strengths (same grammar as
+ *  TINT_STEPS — one brand family, never a rainbow), deepening as the audience
+ *  gets closer to reaching out. */
+const FUNNEL_DOT: Record<string, number> = { reach: 30, trust: 55, buyers: 85 };
+/** Small audience chip on a content card. Metadata weight, not a status: quiet
+ *  neutral wash + a tinted dot. Renders nothing when the item carries no stage. */
+function FunnelChip({ stage, accent }: { stage?: string; accent: string }) {
+  const meta = stage ? FUNNEL_META[stage] : undefined;
+  if (!meta) return null;
+  return (
+    <span
+      title={meta.tip}
+      className="inline-flex shrink-0 cursor-default items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-medium"
+      style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
+    >
+      <span className="h-[5px] w-[5px] shrink-0 rounded-full" style={{ background: `color-mix(in srgb, ${accent} ${FUNNEL_DOT[stage!] ?? 55}%, white)` }} aria-hidden />
+      {meta.label}
     </span>
   );
 }
@@ -1599,7 +1630,12 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
               {/* Live: the hook wraps — the reader can tell what the post is about from the row.
                   Preview keeps the single-line ledger look. Compact type for density. */}
               <span className={live ? 'block' : 'block truncate'} style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: live ? 1.3 : undefined, color: INK }}>{q.hook || q.title}</span>
-              {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 11.5, color: INK_MUTE }}>{provenance}</span>}
+              {(provenance || q.funnel_stage) && (
+                <span className="mt-0.5 flex min-w-0 items-center gap-2">
+                  <FunnelChip stage={q.funnel_stage} accent={accent} />
+                  {provenance && <span className="block min-w-0 truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 11.5, color: INK_MUTE }}>{provenance}</span>}
+                </span>
+              )}
             </span>
           </span>
           <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
@@ -1924,7 +1960,10 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                         {/* Text posts skip the typographic thumb here — the card already
                             leads with the title, so the tile would say it twice. */}
                         {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} large board={board} />}
-                        <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+                          <FunnelChip stage={q.funnel_stage} accent={accent} />
+                        </span>
                         <span className="text-[13px] font-medium leading-snug" style={{ color: INK, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {q.hook || q.title}
                         </span>
@@ -2411,7 +2450,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       )}
       {upNext.map((q) => (
         <button key={q.id} onClick={() => setFocusId(q.id)} className="rounded-[10px] px-4 py-3.5 text-left transition-opacity hover:opacity-100" style={{ background: PAPER_RAISE, border: `1px solid ${LINE}`, opacity: 0.85 }}>
-          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>{live && isScheduled(q) ? `${fmtSchedLA(q.scheduled_at, q.publish_date)} · ${kickerOf(q)}` : `${weekdayName(q.publish_date)} · ${kickerOf(q)}`}</div>
+          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>{live && isScheduled(q) ? `${fmtSchedLA(q.scheduled_at, q.publish_date)} · ${kickerOf(q)}` : `${weekdayName(q.publish_date)} · ${kickerOf(q)}`}</div>
+            <FunnelChip stage={q.funnel_stage} accent={accent} />
+          </div>
           <div className="flex items-start gap-2.5">
             {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-0.5 shrink-0 rounded-md object-cover" style={{ width: 38, height: 38, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
             <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: INK }}>{q.hook || q.title}</div>
@@ -2598,7 +2640,10 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                             </div>
                           </div>
                           <div className="flex flex-col gap-2.5 pt-1">
-                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
+                            <span className="flex items-center gap-2">
+                              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>{kickerOf(focused)}</span>
+                              <FunnelChip stage={focused.funnel_stage} accent={accent} />
+                            </span>
                             <SchedChip scheduledAt={focused.scheduled_at} publishDate={focused.publish_date} scheduled={isScheduled(focused)} accent={accent} />
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
@@ -2638,10 +2683,13 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       ) : (
                       <>
                       <div className="mb-3.5 flex items-baseline justify-between gap-3">
-                        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>
-                          {kickerOf(focused)} · {live
-                            ? (focused.publish_date ? `Scheduled for ${weekdayName(focused.publish_date)}` : 'in the buffer · takes the next open slot')
-                            : `goes out ${weekdayName(focused.publish_date)}`}
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: caText(accent) }}>
+                            {kickerOf(focused)} · {live
+                              ? (focused.publish_date ? `Scheduled for ${weekdayName(focused.publish_date)}` : 'in the buffer · takes the next open slot')
+                              : `goes out ${weekdayName(focused.publish_date)}`}
+                          </span>
+                          <FunnelChip stage={focused.funnel_stage} accent={accent} />
                         </span>
                         <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, color: INK_MUTE }}>{provenance}</span>
                       </div>
@@ -3073,6 +3121,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         {/* Header */}
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           <KindChip q={item} accent={accent} />
+          <FunnelChip stage={item.funnel_stage} accent={accent} />
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
           <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start, isLive)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
@@ -4421,6 +4470,23 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         })()}
 
       </div>
+
+      {/* How posts are aimed: the audience split behind the Reach / Trust / Buyers card
+          tags. Renders only when the queue actually carries funnel tags (the copy is
+          board-specific), so untagged boards never show it. */}
+      {board.queue.some((q) => q.funnel_stage) && (
+        <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+          <CardHead>How we aim each post</CardHead>
+          <p className="mt-2 max-w-[68ch] text-[14px] leading-relaxed" style={{ color: DIM }}>
+            Every post on this board is aimed at one of three audiences. Reach posts are for people who don't know RISE yet: trends, stances, category math. Trust posts are for followers who already know the problem: how we work and what we watch. Buyers posts are for brands close to reaching out: case studies and proof. The weekly mix balances all three, and the tag on each card shows who that post is for.
+          </p>
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            <FunnelChip stage="reach" accent={accent} />
+            <FunnelChip stage="trust" accent={accent} />
+            <FunnelChip stage="buyers" accent={accent} />
+          </div>
+        </div>
+      )}
 
       {/* Posting cadence: the rhythm commitment, data-driven per client (strategy.cadence). */}
       {strat.cadence && (
