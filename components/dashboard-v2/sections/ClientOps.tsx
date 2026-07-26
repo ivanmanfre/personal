@@ -75,7 +75,7 @@ export function ClientOps() {
 
   const {
     drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates,
-    reload, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen,
+    reload, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onSaveCover, onEditBody, onMarkActionsSeen,
   } = useClientDetail(client);
 
   const [stage, setStage] = useState<StageKey>('review');
@@ -388,7 +388,7 @@ export function ClientOps() {
 
           {opsTab === 'leads' && (
             /* ── LEADS: the lead-magnet line + capture funnel (graft 2 rollup + per-LM cards) ── */
-            <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} launchByLm={launchByLm.map} identity={identity} schedBusy={schedBusy} toggleBusyId={toggleBusyId} onSchedule={handleSchedule} onToggle={handleToggle} onEditBody={onEditBody} onSwapCover={onSwapCover} onNote={reload} />
+            <LmLine lms={lms} err={errors.lms} funnel={A.funnel} boardLms={boardLms} launchByLm={launchByLm.map} identity={identity} schedBusy={schedBusy} toggleBusyId={toggleBusyId} onSchedule={handleSchedule} onToggle={handleToggle} onEditBody={onEditBody} onSwapCover={onSwapCover} onSaveCover={onSaveCover} onNote={reload} />
           )}
         </>
       )}
@@ -864,13 +864,14 @@ function LaunchBlock({ d, identity, schedBusy, toggleBusyId, onSchedule, onToggl
   );
 }
 
-function LmLine({ lms, err, funnel, boardLms, launchByLm, identity, schedBusy, toggleBusyId, onSchedule, onToggle, onEditBody, onSwapCover, onNote }: {
+function LmLine({ lms, err, funnel, boardLms, launchByLm, identity, schedBusy, toggleBusyId, onSchedule, onToggle, onEditBody, onSwapCover, onSaveCover, onNote }: {
   lms: Lm[] | null; err?: string; funnel: { views: number; captures: number; completes: number; cta_clicks: number };
   boardLms: BoardLm[] | null; launchByLm: Map<string, Draft>; identity: BoardIdentity | null;
   schedBusy: boolean; toggleBusyId: string | null;
   onSchedule: (d: Draft) => void; onToggle: (d: Draft, next: boolean) => void;
   onEditBody: (d: Draft, body: string) => Promise<boolean>;
-  onSwapCover: (lmId: string, url: string) => void; onNote: () => void;
+  onSwapCover: (lmId: string, url: string) => void;
+  onSaveCover: (lmId: string, url: string) => void; onNote: () => void;
 }) {
   const funMax = Math.max(1, funnel.views, funnel.captures, funnel.completes, funnel.cta_clicks);
   const bars: [string, number][] = [
@@ -919,10 +920,17 @@ function LmLine({ lms, err, funnel, boardLms, launchByLm, identity, schedBusy, t
             const f = lm.funnel || { views: 0, captures: 0, completes: 0, cta_clicks: 0 };
             const hasLog = (lm.agent_log?.length ?? 0) > 0;
             const board = boardEntryFor(lm);
-            const covers = board
+            // Two cover stores: the LM ROW (lm_drafts_v2.covers, canonical since the
+            // two-styles build) and the older board JSON. Prefer whichever actually
+            // offers a choice, and save through the matching path.
+            const rowCovers = (lm.covers || []).filter((c) => c && c.url).map((c) => c.url);
+            const boardCovers = board
               ? (Array.isArray(board.covers) && board.covers.length > 0 ? board.covers : (board.cover_url ? [board.cover_url] : []))
-              : (lm.cover_url ? [lm.cover_url] : []);
-            const hasPair = !!board && covers.length > 1;
+              : [];
+            const fromRow = rowCovers.length > 1;
+            const covers = fromRow ? rowCovers : (boardCovers.length ? boardCovers : (lm.cover_url ? [lm.cover_url] : []));
+            const activeCover = fromRow ? lm.cover_url : (board ? board.cover_url : lm.cover_url);
+            const hasPair = covers.length > 1;
             const launch = launchByLm.get(lm.id) || null;
             return (
               <div key={lm.id} className="co2-lm">
@@ -936,11 +944,14 @@ function LmLine({ lms, err, funnel, boardLms, launchByLm, identity, schedBusy, t
                 {covers.length > 0 ? (
                   <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap', margin: '0.6rem 0' }}>
                     {covers.map((url) => {
-                      const active = board ? url === board.cover_url : true;
+                      const active = url === activeCover;
                       return (
                         <button
                           key={url}
-                          onClick={() => { if (board && hasPair && !active) onSwapCover(board.id, url); }}
+                          onClick={() => {
+                            if (!hasPair || active) return;
+                            if (fromRow) onSaveCover(lm.id, url); else if (board) onSwapCover(board.id, url);
+                          }}
                           title={!hasPair ? 'The only cover generated' : active ? 'Live on the board' : 'Set as the board cover'}
                           className={`co2-coverpick ${active ? 'co2-coverpick--on' : ''}`}
                           style={!hasPair ? { cursor: 'default' } : undefined}

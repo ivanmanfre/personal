@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useStat
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../../hooks/useLeadMagnets';
-import { saveLMDraft, buildLMAssets, generateLMContent } from '../../../lib/studioActions';
+import { saveLMDraft, buildLMAssets, generateLMContent, setLmActiveCover } from '../../../lib/studioActions';
 import { toastError } from '../../../lib/dashboardActions';
 import { supabase } from '../../../lib/supabase';
 import { driveThumbUrl, versionedAssetUrl } from '../../../lib/driveThumb';
@@ -231,6 +231,43 @@ const LmWorkSurface: React.FC = () => {
   }, [mode, editing, detailId, queue.length, current, approveBuild, reject, skip]);
 
   const cover = current ? driveThumbUrl(versionedAssetUrl(current.coverUrl, current.updatedAt), 900) : null;
+
+  // Cover styles: the row can carry more than one rendered variant (mockup /
+  // contents). coverUrl is whichever is ACTIVE; the rest are pickable here.
+  const coverOptions = useMemo(() => {
+    if (!current) return [];
+    const opts = (current.covers || []).filter((c) => c && c.url);
+    // A row whose active cover predates covers[] still shows something.
+    if (!opts.some((c) => c.url === current.coverUrl) && current.coverUrl) {
+      return [{ url: current.coverUrl, style: 'current' }, ...opts];
+    }
+    return opts;
+  }, [current]);
+  const [coverIdx, setCoverIdx] = useState(0);
+  const [coverSaving, setCoverSaving] = useState(false);
+  // Land on the live cover whenever the queue moves, so the strip opens on
+  // what is actually published rather than on whatever index was left over.
+  useEffect(() => {
+    const i = coverOptions.findIndex((c) => c.url === current?.coverUrl);
+    setCoverIdx(i >= 0 ? i : 0);
+  }, [current?.id, current?.coverUrl, coverOptions]);
+  const shownCover = coverOptions.length
+    ? driveThumbUrl(versionedAssetUrl(coverOptions[coverIdx]?.url ?? null, current?.updatedAt), 900)
+    : cover;
+  const saveCover = useCallback(async () => {
+    const pick = coverOptions[coverIdx];
+    if (!current || !pick || pick.url === current.coverUrl) return;
+    setCoverSaving(true);
+    try {
+      await setLmActiveCover(current.id, pick.url);
+      toast.success(`Cover set to ${pick.style || 'this one'}`);
+      await refresh();
+    } catch (err) {
+      toastError('save cover', err);
+    } finally {
+      setCoverSaving(false);
+    }
+  }, [current, coverOptions, coverIdx, refresh]);
   const detailDraft = detailId ? drafts.find((d) => d.id === detailId) || null : null;
   const now = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
 
@@ -371,10 +408,29 @@ const LmWorkSurface: React.FC = () => {
                     <div className="ws-lm-col">
                       <div className="ws-lm-block">
                         <div className="ws-lm-lbl">Cover</div>
-                        {cover ? (
-                          <img className="ws-lm-cover" src={cover} alt="" loading="lazy" style={{ maxHeight: 320 }} />
+                        {shownCover ? (
+                          <img className="ws-lm-cover" src={shownCover} alt="" loading="lazy" style={{ maxHeight: 320 }} />
                         ) : (
                           <p className="ws-lm-missing">No cover generated yet.</p>
+                        )}
+                        {/* Two styles rendered -> flip between them and save the pick.
+                            One style -> nothing to choose, so no controls. */}
+                        {coverOptions.length > 1 && (
+                          <div className="ws-lm-covernav">
+                            <button className="ws-tool" onClick={() => setCoverIdx((i) => (i - 1 + coverOptions.length) % coverOptions.length)} aria-label="Previous cover">‹</button>
+                            <span className="ws-lm-covermeta">
+                              {coverOptions[coverIdx]?.style || 'cover'} · {coverIdx + 1}/{coverOptions.length}
+                              {coverOptions[coverIdx]?.url === current.coverUrl ? ' · live' : ''}
+                            </span>
+                            <button className="ws-tool" onClick={() => setCoverIdx((i) => (i + 1) % coverOptions.length)} aria-label="Next cover">›</button>
+                            <button
+                              className="ws-tool"
+                              disabled={coverSaving || coverOptions[coverIdx]?.url === current.coverUrl}
+                              onClick={saveCover}
+                            >
+                              {coverSaving ? 'Saving…' : coverOptions[coverIdx]?.url === current.coverUrl ? 'Saved' : 'Use this one'}
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="ws-lm-block">

@@ -50,6 +50,7 @@ export function candidateToLmIdeaDraft(c: IdeaCandidate): LeadMagnetDraft {
     resourceUrl: null,
     emailCopy: null,
     coverUrl: null,
+    covers: [],
     videoUrl: null,
     ogUrl: null,
     slug: null,

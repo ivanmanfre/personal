@@ -504,3 +504,25 @@ export async function revertImageEdit(a: {
   if (error) throw new Error(error.message);
   return next;
 }
+
+/** Cover variant on an LM row (lm_drafts_v2.covers / lead_magnets.covers). */
+export interface LmCover { url: string; style?: string | null; created_at?: string | null }
+
+// Same operator gate the Client Ops surfaces use (clientops2/shared.tsx GATE).
+// Kept here so the LM Studio surface and the client panel share ONE save path.
+const OPERATOR_GATE = 'clientops';
+
+/**
+ * Set which rendered cover is the ACTIVE one for an LM. Variant-constrained
+ * server-side: the RPC rejects any URL that is not already in that row's
+ * covers[], and updates lm_drafts_v2 + the promoted lead_magnets row together
+ * so the studio and the board never disagree.
+ */
+export async function setLmActiveCover(lmId: string, url: string): Promise<void> {
+  const { supabase } = await import('./supabase');
+  const res = await supabase.rpc('operator_set_lm_active_cover', {
+    p_gate: OPERATOR_GATE, p_lm_id: lmId, p_url: url,
+  });
+  if (res.error) throw new Error(res.error.message);
+  if (res.data && res.data.ok === false) throw new Error(res.data.error || 'cover save failed');
+}

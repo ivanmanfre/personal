@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
 import type { AgentLogEntry } from './useContentLibrary';
+import type { LmCover } from '../lib/studioActions';
 
 export interface LeadMagnetDraft {
   id: string;
@@ -16,6 +17,8 @@ export interface LeadMagnetDraft {
   resourceUrl: string | null;
   emailCopy: string | null;
   coverUrl: string | null;
+  /** Rendered cover variants (mockup / contents). coverUrl is the ACTIVE one. */
+  covers: LmCover[];
   videoUrl: string | null;
   ogUrl: string | null;
   slug: string | null;
@@ -70,6 +73,7 @@ function mapDraft(row: any): LeadMagnetDraft {
     resourceUrl: row.resource_url,
     emailCopy: row.email_copy,
     coverUrl: row.cover_url,
+    covers: Array.isArray(row.covers) ? (row.covers as LmCover[]).filter((c) => c && c.url) : [],
     videoUrl: row.video_url,
     ogUrl: row.og_url,
     slug: row.slug,
@@ -93,7 +97,7 @@ export function useLeadMagnets() {
     try {
       const { data, error } = await supabase
         .from('lm_drafts_v2')
-        .select('id, topic, format, status, client_id, post_body, resource_html, resource_url, email_copy, cover_url, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
+        .select('id, topic, format, status, client_id, post_body, resource_html, resource_url, email_copy, cover_url, covers, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
         // hypertarget prospect-demo LMs are traceability rows, not Ivan's ideas, so keep them off the board
         .or('source.is.null,source.neq.hypertarget_demo')
         .order('updated_at', { ascending: false });

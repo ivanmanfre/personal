@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
+import { setLmActiveCover, type LmCover } from '../../../../lib/studioActions';
 import { strengthBand } from '../../../../lib/ideaProjection';
 import type { AgentLogEntry } from '../../../../hooks/useContentLibrary';
 import type { Severity } from '../../types';
@@ -84,6 +85,8 @@ export interface Lm {
   resource_url: string | null;
   landing_url: string | null;
   cover_url: string | null;
+  /** Rendered cover variants (mockup / contents); cover_url is the ACTIVE one. */
+  covers?: LmCover[];
   qa: any;
   agent_log: AgentLogEntry[];
   source: string | null;
@@ -517,6 +520,19 @@ export function useClientDetail(client: ClientOverview | null) {
     }
   }, [client?.board.slug, load]);
 
+  // Cover pick on the LM ROW (lm_drafts_v2.covers) rather than board JSON. Used
+  // for LMs whose variants were rendered after the board was built, so the panel
+  // and the LM Studio surface save through the SAME server-side path.
+  const onSaveCover = useCallback(async (lmId: string, url: string) => {
+    setLms((prev) => prev?.map((x) => (x.id === lmId ? { ...x, cover_url: url } : x)) ?? prev);
+    try {
+      await setLmActiveCover(lmId, url);
+    } catch (e) {
+      setErrors((err) => ({ ...err, lms: e instanceof Error ? e.message : 'cover save failed' }));
+      load();
+    }
+  }, [load]);
+
   // Mark every unseen client action for this board as read (per-row seen_at stamp —
   // reuses the client_board_actions.seen_at column the WhatsApp notifier already keys
   // off, so there is no second source of truth). Optimistic: zero the badge, then persist.
@@ -538,7 +554,7 @@ export function useClientDetail(client: ClientOverview | null) {
     [drafts, ideas, lms, queue],
   );
 
-  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onEditBody, onMarkActionsSeen };
+  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onSaveCover, onEditBody, onMarkActionsSeen };
 }
 
 // ── Client-faithful LinkedIn preview ─────────────────────────────────────────
