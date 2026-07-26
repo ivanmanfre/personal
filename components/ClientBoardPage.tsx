@@ -295,7 +295,15 @@ interface Board {
   strategy?: { total: number; period?: string; pillars: Pillar[]; cadence?: { headline: string; detail?: string; note?: string } };
   /** Monday plan note, written by the Weekly Plan Note workflow. Deterministic text
    *  built from the week's scheduled queue; absent until the first Monday run. */
-  week_plan?: { week_start?: string; text?: string; mix?: { reach?: number; trust?: number; buyers?: number }; generated_at?: string };
+  week_plan?: {
+    week_start?: string;
+    text?: string;
+    mix?: { reach?: number; trust?: number; buyers?: number };
+    /** Per-post plan rows: scheduled drafts plus planned-but-not-drafted extras
+     *  (from week_plan_focus.extra_items) — extras render identically, no link. */
+    items?: { day_label?: string; format?: string; stage?: string | null; title?: string }[];
+    generated_at?: string;
+  };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
   performance?: PerformanceSpec;
@@ -4484,6 +4492,22 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
               <p key={i} className="max-w-[68ch] text-[14px] leading-relaxed" style={{ color: i === 0 ? INK : DIM }}>{line}</p>
             ))}
           </div>
+          {/* Per-post rows: day, format kicker, audience chip, title. Extras planned
+              but not drafted yet render identically — they are plans, no link. */}
+          {(board.week_plan.items?.length ?? 0) > 0 && (
+            <div className="mt-3.5">
+              {board.week_plan.items!.map((it, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 py-2.5" style={{ borderTop: `1px solid ${DIVIDE}` }}>
+                  <span className="w-[86px] shrink-0 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: FAINT }}>{it.day_label}</span>
+                  {it.format && (
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: FAINT }}>{it.format}</span>
+                  )}
+                  <FunnelChip stage={it.stage ?? undefined} accent={accent} />
+                  <span className="min-w-0 flex-1 text-[13.5px] font-medium leading-snug" style={{ color: INK }}>{it.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
           {board.week_plan.week_start && (
             <p className="mt-2.5 text-[12px]" style={{ color: FAINT }}>week starting {fmtDay(board.week_plan.week_start)}</p>
           )}
