@@ -490,14 +490,24 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               contribution profit on every order. A live look picks up what a public scan cannot reach.
             </p>
 
-            {/* How RISE charges: $0 base fee, pure performance basis. Sub-strip near the CTA. */}
+            {/* How RISE charges. Sub-strip near the CTA.
+                2026-07-26: was "$0 base fee. We work on a pure performance basis." That stated
+                the Performance Model as universal. risedtc.com/solutions publishes TWO models:
+                Growth Model at "base fees starting at $2,000/mth plus % of ad spend", and the
+                Performance Model badged "FOR QUALIFYING BRANDS ONLY" with "lower base fees or
+                even $0 for qualifying brands" and a fee that is "a percentage of the net growth
+                (typically 20%)" above an agreed baseline. Every cold scan prospect is unqualified
+                by definition, so the flat $0 claim was wrong for most readers. Copy below mirrors
+                the client's own pricing page, gate included. Same story as the DM2 nudge in
+                n8n `Outreach - DM Sequence`. See content_prompts `rise-company-facts`. */}
             <div className="mt-8 inline-flex max-w-xl flex-col gap-2 rounded-2xl px-5 py-4" style={{ border: `1px solid ${ink}1f` }}>
               <div className="flex items-center gap-2.5">
                 <span className="h-px w-8" style={{ background: accent }} />
                 <span className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: ink, opacity: 0.7 }}>How RISE charges</span>
               </div>
               <p className="text-[1.0625rem] font-semibold leading-snug" style={{ color: ink }}>
-                $0 base fee. We work on a pure performance basis, so a growth read costs you nothing.
+                For qualifying brands we run a Performance Model: lower or $0 base, with our fee a share
+                of net growth above an agreed baseline. Everyone else runs the Growth Model.
               </p>
             </div>
           </div>
