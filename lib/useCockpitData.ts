@@ -127,6 +127,51 @@ export function useTodayFeeds(): TodayFeeds {
   return feeds;
 }
 
+// ── Week mix (funnel lens) ─────────────────────────────────────────────────
+// Advisory-only view of this ISO week's promoted-idea mix, served by the
+// lm-curator-feed edge fn (week_mix block, stage mapping in lib/funnelStage.ts).
+// Plain-English labels on the surface: Reach / Trust / Buyers.
+
+export interface WeekMix {
+  state: FeedState;
+  reach: number;
+  trust: number;
+  buyers: number;
+  error?: string;
+}
+
+export function useWeekMix(): WeekMix {
+  const [mix, setMix] = useState<WeekMix>({ state: 'loading', reach: 0, trust: 0, buyers: 0 });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const url = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
+        const key = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+        const r = await fetch(`${url}/functions/v1/lm-curator-feed`, {
+          headers: { apikey: key, Authorization: `Bearer ${key}` },
+        });
+        if (!r.ok) throw new Error(`feed:${r.status}`);
+        const body = await r.json();
+        const wm = body?.week_mix;
+        if (!alive) return;
+        if (wm && typeof wm.reach === 'number') {
+          setMix({ state: 'ok', reach: wm.reach, trust: wm.trust ?? 0, buyers: wm.buyers ?? 0 });
+        } else {
+          setMix({ state: 'offline', reach: 0, trust: 0, buyers: 0, error: 'week_mix missing' });
+        }
+      } catch (e) {
+        if (!alive) return;
+        setMix({ state: 'offline', reach: 0, trust: 0, buyers: 0, error: e instanceof Error ? e.message : String(e) });
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  return mix;
+}
+
 // ── Warm Pipeline ──────────────────────────────────────────────────────────
 
 export interface FunnelStage {

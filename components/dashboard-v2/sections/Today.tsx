@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import '../editorial-cockpit.css';
-import { useTodayFeeds, type TriageFeed } from '../../../lib/useCockpitData';
+import { useTodayFeeds, useWeekMix, type TriageFeed } from '../../../lib/useCockpitData';
 import { usePulse } from '../../../lib/usePulse';
 import { useChangelog, type ChangelogItem } from '../../../lib/useChangelog';
 import { useCountUp } from '../primitives/useCountUp';
@@ -101,6 +101,7 @@ function ChangelogStrip({ items, firstVisit, loading, onNavigate }: {
 
 export function Today({ onNavigate }: { onNavigate?: NavFn }) {
   const feeds = useTodayFeeds();
+  const weekMix = useWeekMix();
   const { results: pulse, probedAt } = usePulse();
   const changelog = useChangelog();
 
@@ -264,6 +265,32 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
                   ))}
                 </div>
                 <div className="ec-data" style={{ marginTop: '0.6rem' }}>{pulse.length} sources probed</div>
+              </>
+            )}
+          </div>
+
+          {/* Funnel lens — advisory view of this week's promoted-idea mix.
+              Plain labels only (Reach / Trust / Buyers). The format mix stays
+              the strategy axis; this card just reports balance. */}
+          <div className="ec-card">
+            <div className="ec-card-lbl">This week's mix</div>
+            {weekMix.state === 'loading' ? (
+              <div className="ec-note">reading promoted ideas…</div>
+            ) : weekMix.state === 'offline' ? (
+              <span className="ec-offline" title={weekMix.error || undefined}>source offline</span>
+            ) : (
+              <>
+                <div className="ec-card-headline">
+                  {weekMix.reach} Reach · {weekMix.trust} Trust · {weekMix.buyers} Buyers
+                </div>
+                <div className="ec-data" style={{ marginTop: '0.4rem' }}>
+                  promoted ideas this week, by who they speak to
+                </div>
+                {weekMix.buyers === 0 && (
+                  <p className="ec-note" style={{ marginTop: '0.4rem' }}>
+                    Nothing this week speaks to people ready to buy.
+                  </p>
+                )}
               </>
             )}
           </div>
