@@ -7880,16 +7880,19 @@ export default function ClientBoardPage() {
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
   // fold into the content surface). Team (self-serve invites) is live-only — preview
   // boards are demo funnels with no allow-list to manage.
-  // Outreach is a first-class tab, but it only carries a live send program — preview
-  // demo boards and boards with no outreach package don't show it.
-  const outreachAvailable = isLive && !!viewBoard.outreach;
+  // Outreach is a first-class tab. It renders wherever the board actually carries an
+  // outreach package, which is now the gate on its own: a preview board being used to sell
+  // the outreach tier needs to SHOW the program, and a board without the package still
+  // hides the tab exactly as before. No behaviour change for live boards, which already
+  // required the package.
+  const outreachAvailable = !!viewBoard.outreach;
   const visibleTabs = (isLive
     ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
     : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable);
   const activeTab: TabId = isLive
     ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
-    : (tab === 'team' || tab === 'outreach' ? 'week' : tab);
+    : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
 
   return (
     <MotionConfig reducedMotion="user">
