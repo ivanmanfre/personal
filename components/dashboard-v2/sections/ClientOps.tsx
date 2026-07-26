@@ -56,6 +56,26 @@ const pct = (r: number | null | undefined) => (r == null ? '—' : `${Math.round
 // LM launch posts: structural flag stamped on the row, title fallback for legacy.
 const isLmLaunch = (d: Draft) => d.taxonomy?.lm_launch === true || /launch post/i.test(d.title || '');
 
+// ── Audience-aim tag (mirrors the client board's Reach / Trust / Buyers chips) ─
+// Plain-English labels; the funnel translation lives ONLY in the hover tooltip.
+// Ink dot deepens as the audience gets closer to reaching out. Renders nothing
+// on untagged rows.
+const FUNNEL_META: Record<string, { label: string; tip: string; depth: number }> = {
+  reach: { label: 'Reach', tip: "Top of funnel: for people who don't know the brand yet", depth: 0.35 },
+  trust: { label: 'Trust', tip: 'Middle of funnel: for followers who know the problem', depth: 0.6 },
+  buyers: { label: 'Buyers', tip: 'Bottom of funnel: for brands close to reaching out', depth: 0.95 },
+};
+function FunnelTag({ stage }: { stage?: string | null }) {
+  const meta = stage ? FUNNEL_META[stage] : undefined;
+  if (!meta) return null;
+  return (
+    <span className="co2-funtag" title={meta.tip}>
+      <span className="co2-funtag-dot" style={{ opacity: meta.depth }} aria-hidden />
+      {meta.label}
+    </span>
+  );
+}
+
 // ── Section root ─────────────────────────────────────────────────────────────
 export function ClientOps() {
   const { clients, error: overviewError, reload: reloadOverview } = useClientsOverview();
@@ -555,6 +575,7 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
                     {d.qa_score != null ? ` · QA ${d.qa_score}` : ''}
                     {d.board_visible ? ' · on board' : ''}
                     {` · ${ageLabel(d.created_at)} old`}
+                    {d.funnel_stage && <> <FunnelTag stage={d.funnel_stage} /></>}
                   </div>
                 </button>
               </React.Fragment>
@@ -568,6 +589,7 @@ function ReviewLane({ drafts, loading, err, disqualified, cursor, current, ident
                   <b>{currentIsLaunch ? 'Lead magnet launch' : 'In review'}</b>
                   <span>· {current.type.replace('_', ' ')}</span>
                   {current.qa_score != null && <span>· QA {current.qa_score}</span>}
+                  <FunnelTag stage={current.funnel_stage} />
                   <span className="ws-read-pos">{cursor + 1} of {drafts.length}</span>
                 </div>
 
@@ -726,6 +748,7 @@ function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading, onRes
           {entries.map((q: any, i: number) => (
             <div key={q.id || i} className="co2-lrow">
               <span className="co2-ltitle">{stripPrefix(q.title || q.hook || '(untitled)')}</span>
+              <FunnelTag stage={q.funnel_stage} />
               <span className="co2-lmeta">
                 {q.status ? `${q.status} · ` : ''}
                 {q.publish_date ? `publishes ${fmtDate(q.publish_date)}` : 'no date yet'}
@@ -735,6 +758,7 @@ function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading, onRes
           {scheduled.filter((d) => !entries.some((q: any) => q.id === d.id)).map((d) => (
             <div key={d.id} className="co2-lrow">
               <span className="co2-ltitle">{stripPrefix(d.title) || '(untitled)'}</span>
+              <FunnelTag stage={d.funnel_stage} />
               <span className="co2-lmeta">scheduled{d.scheduled_at ? ` · publishes ${fmtDate(d.scheduled_at)}` : ''} · syncing to queue</span>
             </div>
           ))}
@@ -768,6 +792,7 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
             return (
               <div key={d.id} className="co2-lrow">
                 <span className="co2-ltitle">{stripPrefix(d.title) || '(untitled)'}</span>
+                <FunnelTag stage={d.funnel_stage} />
                 <span className="co2-lmeta">
                   {d.type === 'text' ? 'Text' : d.type === 'single_image' ? 'Image' : 'Carousel'}
                   {d.qa_score != null ? ` · QA ${d.qa_score}` : ''}
@@ -788,6 +813,7 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
           {published.map((d) => (
             <div key={d.id} className="co2-lrow">
               <span className="co2-ltitle">{stripPrefix(d.title) || '(untitled)'}</span>
+              <FunnelTag stage={d.funnel_stage} />
               <span className="co2-lmeta">
                 {d.type === 'text' ? 'Text' : d.type === 'single_image' ? 'Image' : 'Carousel'} · published{d.published_at ? ` ${fmtDate(d.published_at)}` : ''}
               </span>
@@ -823,6 +849,7 @@ function LaunchBlock({ d, identity, schedBusy, toggleBusyId, onSchedule, onToggl
       <div className="co2-block-lbl">Launch post</div>
       <div className="co2-note" style={{ marginBottom: '0.55rem' }}>
         {d.status}{d.qa_score != null ? ` · QA ${d.qa_score}` : ''}{d.board_visible ? ' · on board' : ''} · {ageLabel(d.created_at)} old
+        {d.funnel_stage && <> <FunnelTag stage={d.funnel_stage} /></>}
       </div>
       {editing ? (
         <div>
@@ -1129,6 +1156,10 @@ const CSS = `
 .ec .co2-stage-label { font-family:var(--ec-sans); font-weight:700; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-ink); }
 .ec .co2-stage-rider { font-family:var(--ec-sans); font-size:11px; color:var(--ec-mutedc); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ec .co2-flowcap { font-family:var(--ec-sans); font-size:11.5px; color:var(--ec-mutedc); letter-spacing:0.01em; margin:0 0 1.8rem; }
+
+/* Audience-aim tag (Reach / Trust / Buyers) — metadata weight, co2-pill grammar */
+.ec .co2-funtag { display:inline-flex; align-items:center; gap:0.34rem; font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); border:1px solid var(--ec-rule-strong); padding:0.14rem 0.42rem; flex:0 0 auto; cursor:default; }
+.ec .co2-funtag-dot { width:6px; height:6px; border-radius:9999px; background:var(--ec-ink); flex:0 0 auto; }
 
 /* Lane blocks */
 .ec .co2-laneblock { margin-bottom:2.4rem; }

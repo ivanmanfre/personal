@@ -54,6 +54,8 @@ export interface Draft {
   has_media: boolean;
   image_urls?: string[];
   scheduled_at: string | null;
+  /** Audience aim (reach / trust / buyers) from carousel_drafts.funnel_stage; null on untagged rows. */
+  funnel_stage?: string | null;
 }
 export interface ScoreBreakdown {
   icp_fit?: number;
@@ -116,7 +118,7 @@ export interface BoardIdentity {
   logoUrl: string | null;
   companyName: string | null;
 }
-export interface QueueEntry { status?: string | null; publish_date?: string | null; }
+export interface QueueEntry { status?: string | null; publish_date?: string | null; funnel_stage?: string | null; }
 
 export const stripPrefix = (t: string) => (t || '').replace(/^\[[^\]]+\]\s*/, '');
 export const fmtDate = (iso: string | null | undefined) => {

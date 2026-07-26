@@ -293,6 +293,9 @@ interface Board {
   outreach?: OutreachSpec;
   lm_ideas?: LmIdea[];
   strategy?: { total: number; period?: string; pillars: Pillar[]; cadence?: { headline: string; detail?: string; note?: string } };
+  /** Monday plan note, written by the Weekly Plan Note workflow. Deterministic text
+   *  built from the week's scheduled queue; absent until the first Monday run. */
+  week_plan?: { week_start?: string; text?: string; mix?: { reach?: number; trust?: number; buyers?: number }; generated_at?: string };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
   performance?: PerformanceSpec;
@@ -4470,6 +4473,22 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         })()}
 
       </div>
+
+      {/* This week's plan: the Monday note from the Weekly Plan Note workflow. Renders
+          only when the workflow has written real text for the week; never fabricated. */}
+      {board.week_plan?.text && (
+        <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+          <CardHead>This week's plan</CardHead>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {board.week_plan.text.split('\n').filter((l) => l.trim()).map((line, i) => (
+              <p key={i} className="max-w-[68ch] text-[14px] leading-relaxed" style={{ color: i === 0 ? INK : DIM }}>{line}</p>
+            ))}
+          </div>
+          {board.week_plan.week_start && (
+            <p className="mt-2.5 text-[12px]" style={{ color: FAINT }}>week starting {fmtDay(board.week_plan.week_start)}</p>
+          )}
+        </div>
+      )}
 
       {/* How posts are aimed: the audience split behind the Reach / Trust / Buyers card
           tags. Renders only when the queue actually carries funnel tags (the copy is
