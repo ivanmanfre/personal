@@ -4392,7 +4392,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
 
   return (
     <div>
-      <SectionHead eyebrow="This month's mix" title={<>One plan, <Accent>divided on purpose.</Accent></>} sub="Reviewed monthly. Request a shift anytime." />
+      <SectionHead eyebrow="This month's mix" title={<>One plan, <Accent>divided on purpose.</Accent></>} />
 
       <div className="rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
