@@ -4,6 +4,7 @@ import { useTodayFeeds, useWeekMix, type TriageFeed } from '../../../lib/useCock
 import { usePulse } from '../../../lib/usePulse';
 import { useChangelog, type ChangelogItem } from '../../../lib/useChangelog';
 import { useCountUp } from '../primitives/useCountUp';
+import { WeeklyNoteCard } from './WeeklyNoteCard';
 import type { SectionId } from '../types';
 
 /**
@@ -172,6 +173,9 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
             (title), not a caption under every row (feedback #4). */}
         <div className="ec-col-lead">
           <div className="ec-kicker">Needs you</div>
+          {/* RISE weekly note ops inbox card — renders only while a Sunday
+              draft is pending (k-gated n8n status webhook). */}
+          <WeeklyNoteCard />
           {feeds.loading ? (
             <p className="ec-note">Reading the pipeline…</p>
           ) : lead.length === 0 ? (
