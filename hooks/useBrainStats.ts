@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-const QUERY_WEBHOOK = 'https://n8n.ivanmanfredi.com/webhook/claude-memory-query';
+// Search goes straight to the claude-brain-query edge function (same hybrid
+// retrieval the old n8n webhook proxied). The webhook now requires a header
+// token (2026-07-25) and is no longer used from the browser; the edge function
+// accepts the anon key and has open CORS.
+const BRAIN_QUERY_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co'}/functions/v1/claude-brain-query`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export interface TierCount {
   client_id: string;
@@ -183,14 +188,31 @@ export function useBrainStats() {
     setSearching(true);
     setSearchError(null);
     try {
-      const res = await fetch(QUERY_WEBHOOK, {
+      const res = await fetch(BRAIN_QUERY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim(), client_id: clientId || undefined, limit }),
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: ANON_KEY,
+          Authorization: `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          mode: 'recall',
+          query: query.trim(),
+          client_ids: clientId ? [clientId] : undefined,
+          match_count: limit,
+        }),
       });
       if (!res.ok) throw new Error(`Search failed: ${res.status}`);
       const data = await res.json();
-      setSearchResults(data.results ?? []);
+      // Edge fn rows: {client_id, file_path, summary, rrf, vec, bm25} — map to
+      // the SearchResult shape the panel renders (snippet + updated_at).
+      const results: SearchResult[] = (data.results ?? []).map((r: any) => ({
+        client_id: r.client_id,
+        file_path: r.file_path,
+        snippet: r.snippet ?? r.summary ?? '',
+        updated_at: r.updated_at ?? '',
+      }));
+      setSearchResults(results);
     } catch (e: any) {
       setSearchError(e?.message || 'Search failed');
       setSearchResults([]);
