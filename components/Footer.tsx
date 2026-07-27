@@ -232,14 +232,6 @@ const Footer: React.FC = () => {
             >
               Store
             </Link>
-            <Link
-              to="/scorecard"
-              style={{ color: 'rgba(26,26,26,0.55)', transition: 'color 0.15s' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
-            >
-              Scorecard
-            </Link>
             <a
               href="mailto:im@ivanmanfredi.com"
               style={{ color: 'rgba(26,26,26,0.55)', transition: 'color 0.15s' }}
