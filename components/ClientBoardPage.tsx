@@ -154,7 +154,7 @@ interface QueueItem {
    *  carousel_drafts.funnel_stage by the queue sync. Absent on older items. */
   funnel_stage?: string;
 }
-interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string; time?: string }
+interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string; time?: string; stage?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
 interface NewsletterIssue { id: string; ref?: string; date: string; stage: 'scheduled' | 'planned' | string; title: string; body?: string }
 interface NurtureStep { step: string; detail?: string }
@@ -3509,6 +3509,24 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
     const linked = it.ref ? board.queue.find((q) => q.id === it.ref) : null;
     return linked?.hook || linked?.title || it.label;
   };
+  // Audience aim for the chip's mini-tag: queue-built items carry it directly,
+  // committed calendar entries resolve it through their linked queue item.
+  const stageOf = (it: CalendarItem): string | undefined => {
+    if (it.stage) return it.stage;
+    const linked = it.ref ? board.queue.find((q) => q.id === it.ref) : null;
+    return linked?.funnel_stage;
+  };
+  const stageTag = (it: CalendarItem, size: 'grid' | 'agenda') => {
+    const st = stageOf(it);
+    const meta = st ? FUNNEL_META[st] : undefined;
+    if (!meta) return null;
+    return (
+      <span className={`flex items-center gap-1 font-semibold uppercase ${size === 'grid' ? 'mb-0.5 text-[8px] tracking-[0.08em]' : 'mb-1 text-[9px] tracking-[0.09em]'}`} style={{ color: DIM }}>
+        <span className="h-[4px] w-[4px] shrink-0 rounded-full" style={{ background: `color-mix(in srgb, ${accent} ${FUNNEL_DOT[st!] ?? 55}%, white)` }} aria-hidden />
+        {meta.label}
+      </span>
+    );
+  };
   const byDate = new Map<string, CalendarItem[]>();
   cal.items.forEach((it) => {
     const arr = byDate.get(it.date) || [];
@@ -3527,10 +3545,13 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
     .filter((q) => q.publish_date && !linkedRefs.has(q.id) && (live ? q.stage !== 'published' : q.stage === 'scheduled'))
     .map((q) => ({
       date: q.publish_date!,
-      kind: q.kind === 'carousel' ? 'carousel' : q.kind === 'lm' ? 'lm' : 'post',
+      // An LM launch post renders in the lead-magnet color: its job on the calendar
+      // is the launch, so it should read as one at a glance.
+      kind: q.lm_launch ? 'lm' : q.kind === 'carousel' ? 'carousel' : q.kind === 'lm' ? 'lm' : 'post',
       label: q.hook || q.title || 'Scheduled post',
       ref: q.id,
       time: q.scheduled_at ? fmtTimeLA(q.scheduled_at) : undefined,
+      stage: q.funnel_stage,
     }));
   queueItems.forEach((it) => {
     const arr = byDate.get(it.date) || [];
@@ -3633,12 +3654,15 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                   <button
                     key={i}
                     onClick={() => onOpen(it)}
-                    className="cb-cal-chip flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-[12px] font-medium"
+                    className="cb-cal-chip w-full rounded-[6px] px-2.5 py-2 text-left text-[12px] font-medium"
                     style={chipStyle(it.kind)}
                   >
-                    {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
-                    <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
-                    {approvedMark(it)}
+                    {stageTag(it, 'agenda')}
+                    <span className="flex w-full items-center gap-2">
+                      {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
+                      <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
+                      {approvedMark(it)}
+                    </span>
                   </button>
                 );
               })}
@@ -3699,12 +3723,15 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                             key={i}
                             title={tip}
                             onClick={() => onOpen(it)}
-                            className="cb-cal-chip flex w-full items-center gap-1 truncate rounded-[4px] px-1.5 py-1 text-left text-[10.5px] font-medium"
+                            className="cb-cal-chip w-full rounded-[4px] px-1.5 py-1 text-left text-[10.5px] font-medium"
                             style={chipStyle(it.kind)}
                           >
-                            {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
-                            <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
-                            {approvedMark(it)}
+                            {stageTag(it, 'grid')}
+                            <span className="flex w-full items-center gap-1">
+                              {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
+                              <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
+                              {approvedMark(it)}
+                            </span>
                           </button>
                         );
                       })}
