@@ -557,6 +557,23 @@ function cardImageUrl(q: QueueItem, board?: Pick<Board, 'lead_magnets'>): string
   if (isLaunch && slug && /^[a-z0-9-]+$/.test(slug)) return `https://resources.risedtc.com/${slug}/assets/cover.jpg`;
   return undefined;
 }
+/** Every slide of a multi-slide post, as a scrollable numbered strip (tap opens the
+ *  full-size slide). A carousel is only reviewable if ALL its slides are visible on the
+ *  board — the main card image shows just the cover. Single-image posts render nothing. */
+function SlideStrip({ item }: { item: QueueItem }) {
+  const slides = (item.image_urls || []).filter(Boolean);
+  if (slides.length < 2) return null;
+  return (
+    <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+      {slides.map((u, i) => (
+        <a key={u} href={u} target="_blank" rel="noreferrer" className="relative shrink-0" title={`Slide ${i + 1} of ${slides.length}`}>
+          <img src={u} alt={`Slide ${i + 1}`} loading="lazy" className="rounded-md object-cover" style={{ width: 72, height: 72, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <span className="absolute bottom-0.5 right-1 rounded px-1 text-[9px] font-semibold tabular-nums" style={{ background: 'rgba(255,255,255,.85)', color: '#555' }}>{i + 1}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
 
 /** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
  *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
@@ -898,7 +915,10 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', marginBottom: 12, whiteSpace: 'pre-line' }}>{item.body}</div>
       )}
       {(item.media_url || cardImageUrl(item, board)) ? (
-        <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        <>
+          <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <SlideStrip item={item} />
+        </>
       ) : showRender ? (
         <div className="flex items-center justify-center gap-2.5" style={{ aspectRatio: '1200/500', borderRadius: 6, border: `1px dashed ${caBorder(accent, 45)}` }}>
           <PulseDot color={accent} size={8} />
@@ -1673,6 +1693,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                   <div style={{ maxWidth: '64ch' }}>
                     <CollapsibleBody text={q.body} onOpen={() => onOpen(q)} />
                     {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                    <SlideStrip item={q} />
                   </div>
                 ) : (
                 <div style={{ maxWidth: 430 }}>
