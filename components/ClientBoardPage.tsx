@@ -575,6 +575,77 @@ function SlideStrip({ item }: { item: QueueItem }) {
   );
 }
 
+/** Chevron glyph for the document pager (inline so the board keeps its zero-icon-dep imports). */
+function PagerChevron({ dir }: { dir: 'l' | 'r' }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points={dir === 'l' ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
+    </svg>
+  );
+}
+
+/** A carousel publishes as a LinkedIn DOCUMENT post: a multi-page PDF that the reader
+ *  swipes one page at a time. This renders that behaviour so the board shows what the
+ *  client will actually see in feed, instead of a cover plus thumbnails.
+ *
+ *  Pages come from carousel_drafts.image_urls (plumbed by the queue sync); board.queue
+ *  carries no pdf_url, so the preview is built from the slide images. The 4:5 frame matches
+ *  the deck geometry that publishes (810x1013pt).
+ *
+ *  Caveat kept honest: `title` is the DRAFT title. LinkedIn takes the document label from
+ *  the uploaded filename, so the live post can read differently. */
+export function DocCarousel({ slides, title, accent }: { slides: string[]; title?: string; accent: string }) {
+  const [i, setI] = useState(0);
+  const total = slides.length;
+  const idx = Math.min(i, total - 1);
+  const go = (n: number) => setI(Math.max(0, Math.min(total - 1, n)));
+  return (
+    <div
+      tabIndex={0}
+      aria-label={`Document preview, page ${idx + 1} of ${total}. Use arrow keys to page.`}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); go(idx + 1); }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(idx - 1); }
+      }}
+      style={{ border: `1px solid ${LINE}`, borderRadius: 6, overflow: 'hidden', background: '#F0F2F5', outlineColor: accent }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
+        {slides.map((u, n) => (
+          <img
+            key={u}
+            src={u}
+            alt={`Page ${n + 1} of ${total}`}
+            loading={n === 0 ? 'eager' : 'lazy'}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', display: n === idx ? 'block' : 'none' }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+          />
+        ))}
+        <span className="absolute rounded-full px-2 py-0.5 text-[10.5px] font-semibold tabular-nums" style={{ top: 8, right: 8, background: 'rgba(0,0,0,.55)', color: '#fff', backdropFilter: 'blur(2px)' }}>
+          {idx + 1} / {total}
+        </span>
+        {idx > 0 && (
+          <button onClick={() => go(idx - 1)} aria-label="Previous page" className="absolute flex items-center justify-center rounded-full" style={{ left: 8, top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, background: 'rgba(255,255,255,.92)', color: '#1d2226', boxShadow: '0 1px 5px rgba(0,0,0,.22)' }}>
+            <PagerChevron dir="l" />
+          </button>
+        )}
+        {idx < total - 1 && (
+          <button onClick={() => go(idx + 1)} aria-label="Next page" className="absolute flex items-center justify-center rounded-full" style={{ right: 8, top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, background: 'rgba(255,255,255,.92)', color: '#1d2226', boxShadow: '0 1px 5px rgba(0,0,0,.22)' }}>
+            <PagerChevron dir="r" />
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-2" style={{ padding: '9px 11px', background: PAPER_RAISE, borderTop: `1px solid ${LINE}` }}>
+        <span className="min-w-0 flex-1 truncate" style={{ fontSize: 11.5, fontWeight: 600, color: '#111' }}>{title || 'Document'}</span>
+        <span className="flex shrink-0 items-center gap-1">
+          {slides.map((_, n) => (
+            <button key={n} onClick={() => go(n)} aria-label={`Page ${n + 1}`} className="rounded-full" style={{ width: n === idx ? 7 : 5, height: n === idx ? 7 : 5, background: n === idx ? accent : '#B0B8C1' }} />
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
  *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
 function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
@@ -899,6 +970,11 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   const showCover = !live && cover !== 'none' && (item.kind === 'post' || item.kind === 'carousel' || cover === 'render');
   // Live: the drafting placeholder only renders when an image is really being generated.
   const showRender = cover === 'render' && (!live || (!!item.generating && item.style !== 'text'));
+  // A carousel publishes as a swipeable document, so preview it that way (cover-plus-thumbs
+  // hid the deck). Non-carousel multi-image posts keep the numbered strip.
+  const docPages = (item.kind === 'carousel' || item.style === 'carousel')
+    ? (item.image_urls || []).filter(Boolean)
+    : [];
   return (
     <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
@@ -914,7 +990,9 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
       {item.body && (
         <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', marginBottom: 12, whiteSpace: 'pre-line' }}>{item.body}</div>
       )}
-      {(item.media_url || cardImageUrl(item, board)) ? (
+      {docPages.length >= 2 ? (
+        <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
+      ) : (item.media_url || cardImageUrl(item, board)) ? (
         <>
           <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <SlideStrip item={item} />
