@@ -615,7 +615,12 @@ export function DocCarousel({ slides, title, accent }: { slides: string[]; title
             key={u}
             src={u}
             alt={`Page ${n + 1} of ${total}`}
-            loading={n === 0 ? 'eager' : 'lazy'}
+            /* Eager on every page, not just the cover. The inactive pages are display:none, and a
+               lazy hidden image is never fetched until it is revealed — measured 1 of 6 loaded on
+               the real board — so each swipe landed on an empty frame while that page downloaded.
+               A deck is six modest PNGs on a review surface; paying for them up front is the
+               whole point of previewing it as a document. */
+            loading="eager"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', display: n === idx ? 'block' : 'none' }}
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
           />
@@ -950,6 +955,18 @@ function PulseDot({ color, size = 7 }: { color: string; size?: number }) {
   );
 }
 
+/** Pages of a deck, or [] for anything that is not a carousel.
+ *
+ *  A carousel publishes as a LinkedIn DOCUMENT post: one multi-page PDF the reader swipes a
+ *  page at a time. A cover plus a strip of 72px thumbnails hid the deck, which is what made
+ *  the published decks read wrong. Shared by the feed preview and the expanded ledger row so
+ *  both agree on what counts as a deck; a non-carousel multi-image post keeps the strip. */
+export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'>): string[] {
+  return (item.kind === 'carousel' || item.style === 'carousel')
+    ? (item.image_urls || []).filter(Boolean)
+    : [];
+}
+
 /** The true LinkedIn feed preview from the brief: Instrument Sans interior, initials
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
@@ -970,11 +987,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   const showCover = !live && cover !== 'none' && (item.kind === 'post' || item.kind === 'carousel' || cover === 'render');
   // Live: the drafting placeholder only renders when an image is really being generated.
   const showRender = cover === 'render' && (!live || (!!item.generating && item.style !== 'text'));
-  // A carousel publishes as a swipeable document, so preview it that way (cover-plus-thumbs
-  // hid the deck). Non-carousel multi-image posts keep the numbered strip.
-  const docPages = (item.kind === 'carousel' || item.style === 'carousel')
-    ? (item.image_urls || []).filter(Boolean)
-    : [];
+  const docPages = docPagesOf(item);
   return (
     <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
@@ -1770,8 +1783,20 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                      preview (expand on tap) so the ledger never forces a long scroll. */
                   <div style={{ maxWidth: '64ch' }}>
                     <CollapsibleBody text={q.body} onOpen={() => onOpen(q)} />
-                    {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
-                    <SlideStrip item={q} />
+                    {/* A carousel publishes as a swipeable document, and this expanded row is
+                        where a live client actually reviews it (This Week sends them here). A
+                        200px cover plus a thumbnail strip hid the deck, so page it properly.
+                        Non-carousel posts keep the cover-plus-strip treatment. */}
+                    {docPagesOf(q).length >= 2 ? (
+                      <div className="mt-4">
+                        <DocCarousel slides={docPagesOf(q)} title={q.title || q.hook} accent={accent} />
+                      </div>
+                    ) : (
+                      <>
+                        {cardImageUrl(q, board) && <img src={cardImageUrl(q, board)} alt="" loading="lazy" className="mt-4 rounded-lg" style={{ maxHeight: 200, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                        <SlideStrip item={q} />
+                      </>
+                    )}
                   </div>
                 ) : (
                 <div style={{ maxWidth: 430 }}>

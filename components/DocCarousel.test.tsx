@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { DocCarousel } from './ClientBoardPage';
+import { DocCarousel, docPagesOf } from './ClientBoardPage';
 
 const SLIDES = Array.from({ length: 6 }, (_, i) => `https://example.test/slide-${i + 1}.png`);
 const html = renderToStaticMarkup(
@@ -60,6 +60,13 @@ describe('DocCarousel — LinkedIn document preview', () => {
     expect(html).toContain('Case study deck');
   });
 
+  it('loads every page eagerly, so a swipe never lands on a blank frame', () => {
+    // The inactive pages are display:none. A lazy hidden image is not fetched until revealed,
+    // which measured 1-of-6 loaded on the real board and blanked each swipe.
+    expect(html).not.toContain('loading="lazy"');
+    expect((html.match(/loading="eager"/g) || []).length).toBe(6);
+  });
+
   it('renders nothing paged when handed a single slide (cover-only decks stay simple)', () => {
     const one = renderToStaticMarkup(
       <DocCarousel slides={[SLIDES[0]]} title="One pager" accent="#ffc71d" />,
@@ -67,5 +74,37 @@ describe('DocCarousel — LinkedIn document preview', () => {
     expect(one).toContain('1 / 1');
     expect(one).not.toContain('aria-label="Next page"');
     expect(one).not.toContain('aria-label="Previous page"');
+  });
+});
+
+// docPagesOf decides whether a row is a deck at all. Both the feed preview and the expanded
+// ledger row branch on it, so a wrong answer here silently reverts one surface to thumbnails.
+describe('docPagesOf — what counts as a deck', () => {
+  const item = (o: Record<string, unknown>) => o as Parameters<typeof docPagesOf>[0];
+
+  it('returns every page of a carousel identified by kind', () => {
+    expect(docPagesOf(item({ kind: 'carousel', image_urls: SLIDES }))).toHaveLength(6);
+  });
+
+  it('also matches on style, because the queue sets both and they can disagree', () => {
+    expect(docPagesOf(item({ kind: 'post', style: 'carousel', image_urls: SLIDES }))).toHaveLength(6);
+  });
+
+  it('returns nothing for a plain post, so multi-image posts keep the numbered strip', () => {
+    expect(docPagesOf(item({ kind: 'post', style: 'single_image', image_urls: SLIDES }))).toEqual([]);
+  });
+
+  it('drops null and empty entries rather than paging to a broken image', () => {
+    expect(docPagesOf(item({ kind: 'carousel', image_urls: [SLIDES[0], null, '', SLIDES[1]] }))).toEqual([SLIDES[0], SLIDES[1]]);
+  });
+
+  it('survives a carousel row with no image_urls at all', () => {
+    expect(docPagesOf(item({ kind: 'carousel' }))).toEqual([]);
+    expect(docPagesOf(item({ kind: 'carousel', image_urls: null }))).toEqual([]);
+  });
+
+  it('leaves a one-page carousel below the pager threshold', () => {
+    // Callers gate on >= 2; a single page must not present as a swipeable deck.
+    expect(docPagesOf(item({ kind: 'carousel', image_urls: [SLIDES[0]] })).length < 2).toBe(true);
   });
 });
