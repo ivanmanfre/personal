@@ -643,7 +643,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const pageLines: ReceiptLine[] = [];
   const rev = d.reviews;
   if (rev?.status === 'present' && rev.data && rev.data.rating != null && rev.data.review_count != null && hasFinding('reviews')) {
-    pageLines.push({ signal: 'reviews', label: 'Product page rating', value: `${rev.data.rating} from ${rev.data.review_count}`, source: 'product page' });
+    // Ratings read "5.0", never "5": one decimal is how the PDP itself states them.
+    pageLines.push({ signal: 'reviews', label: 'Product page rating', value: `${rev.data.rating.toFixed(1)} from ${rev.data.review_count}`, source: 'product page' });
   } else if (rev?.status === 'empty' && hasFinding('reviews')) {
     pageLines.push({ signal: 'reviews', label: 'Product page reviews', value: 'none visible', source: 'product page', none: true });
   }
