@@ -279,6 +279,24 @@ interface OutreachSpec {
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
 /** One row of the client-visible draft history (client_board_draft_history RPC). */
 interface HistoryEntry { action: string; at: string; by?: string | null; event?: string | null; note?: string | null; before?: string | null; after?: string | null }
+/** Line-level LCS diff for the history's edit rows: only changed lines are shown. */
+function diffLines(before: string, after: string): { t: '-' | '+'; s: string }[] {
+  const a = before.split('\n'), b = after.split('\n');
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i--) for (let j = n - 1; j >= 0; j--)
+    dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const out: { t: '-' | '+'; s: string }[] = [];
+  let i = 0, j = 0;
+  while (i < m && j < n) {
+    if (a[i] === b[j]) { i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push({ t: '-', s: a[i++] }); }
+    else { out.push({ t: '+', s: b[j++] }); }
+  }
+  while (i < m) out.push({ t: '-', s: a[i++] });
+  while (j < n) out.push({ t: '+', s: b[j++] });
+  return out.filter((d) => d.s.trim() !== '');
+}
 interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
@@ -3228,6 +3246,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   // History (live): every edit / swap / remove this draft has seen, latest first.
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
+  const [openDiff, setOpenDiff] = useState<number | null>(null);
   useEffect(() => {
     if (!isLive || !fetchHistory) return;
     let gone = false;
@@ -3584,7 +3603,22 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     <span className="min-w-0">
                       <span className="block text-[13px] font-semibold" style={{ color: INK }}>{historyLabel(h)}{h.by ? <span style={{ fontWeight: 400, color: DIM }}> · {h.by}</span> : null}</span>
                       {h.note && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
-                      {h.action === 'edit_copy' && h.after && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>}
+                      {h.action === 'edit_copy' && h.after && (h.before ? (
+                        openDiff === i ? (
+                          <span className="block mt-1">
+                            {diffLines(h.before, h.after).map((d, k) => (
+                              <span key={k} className="block text-[12px]" style={{ fontFamily: BODY, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: d.t === '+' ? INK : FAINT, textDecoration: d.t === '-' ? 'line-through' : 'none' }}>
+                                {d.t === '+' ? '＋ ' : '－ '}{d.s}
+                              </span>
+                            ))}
+                            <button type="button" className="mt-1 underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(null)}>hide changes</button>
+                          </span>
+                        ) : (
+                          <button type="button" className="block underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(i)}>see what changed</button>
+                        )
+                      ) : (
+                        <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>
+                      ))}
                     </span>
                   </div>
                 ))}

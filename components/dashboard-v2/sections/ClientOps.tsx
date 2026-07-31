@@ -1065,6 +1065,24 @@ const diffSummary = (p: any): string | null => {
   const sign = delta > 0 ? `+${delta}` : `${delta}`;
   return `copy ${delta === 0 ? 'reworded' : `${sign} chars`}`;
 };
+/** Line-level LCS diff — changed lines only, so a client edit is identifiable at a glance. */
+const diffLines = (before: string, after: string): { t: '-' | '+'; s: string }[] => {
+  const a = before.split('\n'), b = after.split('\n');
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i--) for (let j = n - 1; j >= 0; j--)
+    dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const out: { t: '-' | '+'; s: string }[] = [];
+  let i = 0, j = 0;
+  while (i < m && j < n) {
+    if (a[i] === b[j]) { i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push({ t: '-', s: a[i++] }); }
+    else { out.push({ t: '+', s: b[j++] }); }
+  }
+  while (i < m) out.push({ t: '-', s: a[i++] });
+  while (j < n) out.push({ t: '+', s: b[j++] });
+  return out.filter((d) => d.s.trim() !== '');
+};
 
 function ActionsFeed({ actions, unseen, onMarkSeen, err }: {
   actions: ActionRow[] | null;
@@ -1072,6 +1090,7 @@ function ActionsFeed({ actions, unseen, onMarkSeen, err }: {
   onMarkSeen: () => void;
   err?: string;
 }) {
+  const [openDiff, setOpenDiff] = useState<string | null>(null);
   return (
     <section className="co2-laneblock">
       <div className="co2-feed-head">
@@ -1102,6 +1121,7 @@ function ActionsFeed({ actions, unseen, onMarkSeen, err }: {
               : diffSummary(p);
             const post = a.title ? stripPrefix(a.title) : (a.ref ? '' : null);
             const isNew = !a.seen_at;
+            const hasDiff = typeof p.before === 'string' && typeof p.after === 'string' && p.before !== p.after;
             return (
               <div key={a.id} className={`co2-feed-row${isNew ? ' co2-feed-row--new' : ''}`}>
                 <div className="co2-feed-lead">
@@ -1112,8 +1132,20 @@ function ActionsFeed({ actions, unseen, onMarkSeen, err }: {
                   {post && <span className="co2-feed-post" title={post}>{post}</span>}
                 </div>
                 {diff && <span className="co2-feed-meta">{diff}</span>}
+                {hasDiff && (
+                  <button type="button" className="co2-difftoggle" onClick={() => setOpenDiff(openDiff === a.id ? null : a.id)}>
+                    {openDiff === a.id ? 'hide diff' : 'diff ▸'}
+                  </button>
+                )}
                 {audioUrl && <a className="co2-play" href={audioUrl} target="_blank" rel="noreferrer">play ▸</a>}
                 <span className="co2-feed-date">{fmtDate(a.created_at)}</span>
+                {hasDiff && openDiff === a.id && (
+                  <div className="co2-diff">
+                    {diffLines(p.before, p.after).map((d, k) => (
+                      <div key={k} className={d.t === '+' ? 'co2-diff-add' : 'co2-diff-del'}>{d.t === '+' ? '＋ ' : '－ '}{d.s}</div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1259,7 +1291,7 @@ const CSS = `
 .ec .co2-markseen:hover:not(:disabled) { background:rgba(19,18,16,0.05); }
 .ec .co2-markseen:disabled { opacity:0.4; cursor:default; }
 .ec .co2-feed { border-top:1px solid var(--ec-rule); }
-.ec .co2-feed-row { display:flex; align-items:baseline; gap:0.8rem; padding:0.55rem 0.2rem; border-bottom:1px solid var(--ec-rule); }
+.ec .co2-feed-row { display:flex; flex-wrap:wrap; align-items:baseline; gap:0.8rem; padding:0.55rem 0.2rem; border-bottom:1px solid var(--ec-rule); }
 .ec .co2-feed-row--new { background:rgba(19,18,16,0.028); }
 .ec .co2-feed-lead { display:flex; flex-direction:column; gap:0.12rem; flex:0 0 auto; min-width:180px; max-width:46%; }
 .ec .co2-feed-act { font-family:var(--ec-sans); font-size:12px; color:var(--ec-mutedc); display:inline-flex; align-items:baseline; gap:0.35rem; }
@@ -1269,6 +1301,10 @@ const CSS = `
 .ec .co2-feed-meta { flex:1; min-width:0; font-family:var(--ec-sans); font-size:11.5px; color:var(--ec-mutedc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ec .co2-play { font-family:var(--ec-sans); font-size:11px; color:var(--ec-ink); text-decoration:underline; text-underline-offset:2px; flex:0 0 auto; }
 .ec .co2-feed-date { font-family:'Berkeley Mono', ui-monospace, Menlo, monospace; font-size:11px; color:var(--ec-mutedc); flex:0 0 auto; }
+.ec .co2-difftoggle { font-family:var(--ec-sans); font-size:11px; color:var(--ec-ink); text-decoration:underline; text-underline-offset:2px; flex:0 0 auto; background:none; border:0; padding:0; cursor:pointer; }
+.ec .co2-diff { flex:1 0 100%; margin:0.15rem 0 0.25rem; padding:0.4rem 0.6rem; border-left:2px solid var(--ec-rule-strong); font-family:var(--ec-sans); font-size:11.5px; line-height:1.55; }
+.ec .co2-diff-del { color:var(--ec-mutedc); text-decoration:line-through; white-space:pre-wrap; }
+.ec .co2-diff-add { color:var(--ec-ink); white-space:pre-wrap; }
 
 /* Responsive: stage strip wraps, never overflows */
 @media (max-width: 820px) {
