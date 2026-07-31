@@ -740,6 +740,18 @@ const OutreachPanel: React.FC = () => {
                   rows={Math.min(8, Math.max(3, draft.messageText.split('\n').length))}
                   className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
                 />
+                {(() => {
+                  const parts = draft.messageText.split(/^[ \t]*-{3,}[ \t\r]*$/m).map((s) => s.trim()).filter(Boolean);
+                  if (parts.length < 2) return null;
+                  return (
+                    <div className="mb-3 space-y-1.5">
+                      {parts.map((b, i) => (
+                        <div key={i} className="text-xs text-zinc-300 bg-zinc-800/60 border border-zinc-700/30 rounded-lg p-2 whitespace-pre-wrap">{b}</div>
+                      ))}
+                      <div className="text-[10px] text-zinc-500">a line of --- splits this into {parts.length} separate LinkedIn messages</div>
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={async (e) => {

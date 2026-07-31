@@ -117,6 +117,12 @@ const snippetOf = (p: OutreachProspect, status: StatusKey): string => {
 const rank: Record<StatusKey, number> = { needs_reply: 0, awaiting: 1, active: 2, connected: 3, invited: 4 };
 
 // Segments across the top of the list. Counts computed live off the full set.
+/** A line of 3+ dashes splits a draft into separate LinkedIn sends (multi-bubble, 2026-07-31). */
+const splitBubbles = (t: string): string[] => {
+  const parts = String(t || '').split(/^[ \t]*-{3,}[ \t\r]*$/m).map((s) => s.trim()).filter(Boolean);
+  return parts.length ? parts : [String(t || '')];
+};
+
 type Segment = 'all' | 'needs_reply' | 'awaiting' | 'connected' | 'invited' | 'drafts' | 'staged';
 const SEGMENTS: { key: Segment; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -434,7 +440,12 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
                     <span className={`co4-mchan co4-mchan--${chan.kind}`}>{chan.label}</span>
                     {e.m.sent_at ? ` · ${fmtDate(e.m.sent_at)}` : ''}
                   </span>
-                  <div className="co3-bubble-t">{e.m.text}</div>
+                  {(() => {
+                    const parts = splitBubbles(e.m.text || '');
+                    return parts.length > 1
+                      ? parts.map((t, j) => <div key={j} className="co3-bubble-t" style={j ? { marginTop: 6 } : undefined}>{t}</div>)
+                      : <div className="co3-bubble-t">{e.m.text}</div>;
+                  })()}
                 </div>
               );
             })())}
@@ -500,7 +511,17 @@ function InlineDraft({ draft, company, name, afterWrite }: {
           autoFocus
         />
       ) : (
-        <div className="co3-draft-body co3-draft-body--reply">{body}</div>
+        (() => {
+          const parts = splitBubbles(body);
+          return parts.length > 1 ? (
+            <div style={{ display: 'grid', gap: 6 }}>
+              {parts.map((b, i) => <div key={i} className="co3-draft-body co3-draft-body--reply">{b}</div>)}
+              <span className="co4-draft-l">sends as {parts.length} separate messages</span>
+            </div>
+          ) : (
+            <div className="co3-draft-body co3-draft-body--reply">{body}</div>
+          );
+        })()
       )}
       <div className="co3-draft-row">
         {editing ? (
