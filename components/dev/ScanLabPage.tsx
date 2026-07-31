@@ -10,8 +10,9 @@ import type { ReportJson, Scan } from '../../lib/scanTypes';
 import rodial from './scanlab/rodial-com.json';
 import apple from './scanlab/apple-com.json';
 import gopure from './scanlab/gopure-com.json';
+import truly from './scanlab/truly-office-branzio.json';
 
-const FIXTURES: Record<string, any> = { rodial, apple, gopure };
+const FIXTURES: Record<string, any> = { rodial, apple, gopure, truly };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';

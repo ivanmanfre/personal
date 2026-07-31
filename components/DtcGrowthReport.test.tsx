@@ -10,6 +10,15 @@
 //     Mattan photo, fee-card gate) renders, and the retired copy never reappears
 // The useMetadata OG-title side-effect writes to document.head via useEffect, which never
 // fires under renderToStaticMarkup, so it is not asserted here.
+//
+// Receipt elevation (2026-07-31) adds four instrument-grade suites on top:
+//   - GEOMETRY EQUALS DATA: the waterfall's segment widths are RECOMPUTED here from the
+//     fixture's seed and the seeded slider defaults, then matched against the rendered
+//     widths and ledger dollars. A drawing that drifts from its arithmetic fails.
+//   - RECEIPT GATING: a line only ships when its fact is bound to rendered prose or to the
+//     calculator seed, and under three bound lines the whole band collapses.
+//   - MARGIN TAGS: every figure beside a finding is a verbatim substring of that finding.
+//   - GOLD DISCIPLINE / STACK SILENCE: no eyebrow rule is gold, no tech_stack app name ships.
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
@@ -63,7 +72,22 @@ const FORBIDDEN_PATTERNS: Array<[string, RegExp]> = [
   // strip runs vertical descriptors only; a named brand or person here is a regression.
   ['client name leak in proof strip', /Dickies|Tenth Street|Gobi Heat|Carson Finkle|Josie Maran|BARUEAT/],
   ['aphorism shape "worth running"', /worth running/],
+  // Retired 07-31: the bare pull-stat band. A fact with no argument attached does not render.
+  ['retired stat band "The store, in numbers"', /The store, in numbers/],
 ];
+
+// Same money format the component ships, recomputed here so the test never imports it.
+function fmtMoney(n: number): string {
+  const sign = n < 0 ? '-' : '';
+  return `${sign}$${Math.abs(n).toFixed(2)}`;
+}
+
+// The close-band bio is shipped conversion copy that happens to name Klaviyo as one of the
+// publishers Mattan has written for. It is not a store fact read off the prospect, so the
+// tech_stack silence check runs against the page WITHOUT it.
+function stripConversionBio(html: string): string {
+  return html.replace(/RISE DTC is run by Mattan Danino[\s\S]*?onboarding\./, '');
+}
 
 function assertNoForbidden(html: string) {
   for (const [label, re] of FORBIDDEN_PATTERNS) {
@@ -155,6 +179,15 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('shows no active ads on your brand right now');
     expect(html).toContain('$0 of paid CAC');
     expect(html).not.toContain('CAC starts at $0:');
+    // The receipt gains its Paid media group: the $0 CAC seed rests on that empty read,
+    // which is what binds the line even with no ads finding in the payload.
+    expect(html).toContain('Paid media');
+    expect(html).toContain('Meta Ad Library');
+    expect(html).toContain('no active ads');
+    // And the ledger's CAC row explains the zero instead of leaving it bare.
+    // The CAC row's sub-line never restates the intro's ads-empty story (slop pass, 07-31).
+    expect(html).toContain('set this to what a new customer costs you');
+    expect(html).not.toContain('seed carries none');
   });
 
   it('apple (THIN): honest thin-read fallback, calculator absent, blocked signals emit nothing', () => {
@@ -188,6 +221,223 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).not.toContain('The store, in numbers');
     // profit_gap absent -> calculator collapses.
     expect(html).not.toContain('Profit per order, after CAC');
+  });
+
+  it('geometry equals data: waterfall widths, ledger dollars and the SVG labels all recompute from the fixture seed', () => {
+    const fixture = loadFixture('rodial-com.json');
+    const seed = fixture.dtc.profit_gap!.seed_aov!;
+    const { html } = renderFixture('rodial-com.json');
+
+    // Recomputed independently of the component, from the seeded slider defaults.
+    const aov = seed;
+    const returnsRate = 8 / 100;
+    const cogsRate = 35 / 100;
+    const procFrac = 2.9 / 100;
+    const shipping = 6;
+    const returnsSeg = returnsRate * aov;
+    const cogsSeg = (1 - returnsRate) * aov * cogsRate;
+    const procSeg = procFrac * aov + 0.3;
+    const contribution = (1 - returnsRate) * aov * (1 - cogsRate) - shipping - procSeg;
+    const profitSeg = contribution; // CAC seeds at 0 on this fixture
+    const expected: Array<[string, number]> = [
+      ['returns', returnsSeg],
+      ['cogs', cogsSeg],
+      ['shipping', shipping],
+      ['processing', procSeg],
+      ['profit', profitSeg],
+    ];
+    // The decomposition is exact: the segments sum back to AOV.
+    expect(expected.reduce((a, [, v]) => a + v, 0)).toBeCloseTo(aov, 8);
+
+    // Rendered mobile-strip widths equal the recomputed percentages.
+    const widths: Record<string, number> = {};
+    const rx = /data-wfseg="([a-z]+)" style="width:([0-9.]+)%/g;
+    let m: RegExpExecArray | null;
+    while ((m = rx.exec(html)) !== null) widths[m[1]] = Number(m[2]);
+    expect(Object.keys(widths).sort()).toEqual(['cogs', 'processing', 'profit', 'returns', 'shipping']);
+    for (const [key, v] of expected) {
+      expect(Math.abs(widths[key] - (v / aov) * 100), `width for ${key}`).toBeLessThan(0.05);
+    }
+    const sum = Object.values(widths).reduce((a, b) => a + b, 0);
+    expect(Math.abs(sum - 100), 'widths sum to 100').toBeLessThan(0.1);
+
+    // Ledger dollar strings are the same arithmetic, spelled out.
+    for (const [key, v] of expected) {
+      expect(html, `ledger dollar for ${key}`).toContain(fmtMoney(v));
+    }
+    expect(html).toContain(fmtMoney(0)); // the CAC row at its $0 seed
+
+    // The SVG carries the total and the gold answer, and never runs the two together.
+    expect(html).toContain(`AOV ${fmtMoney(aov)}`);
+    expect(html).toContain('100% of the order');
+    expect(html).toContain(`Contribution per order ${fmtMoney(contribution)}`);
+    expect(html).not.toContain(`${fmtMoney(aov).replace('$', '')}100`); // "42.00100" run-on
+    expect(html).not.toContain('49.99100');
+    // Every calculator numeral lives under the tagged svg / ledger.
+    expect(html).toMatch(/<svg class="cedt-wfsvg"[^>]*data-calc="1"/);
+    expect(html).toContain('Returns $');
+    expect(html).toMatch(/<text class="lb" [^>]*data-calc="1">Returns \$/);
+
+    // data-calc law across the whole Profit Gap band: no dollar amount is written by a node
+    // that does not declare itself calculator-derived.
+    const band = html.slice(html.indexOf('aria-label="The Profit Gap"'), html.indexOf('Work RISE has run'));
+    const moneyNodes = [...band.matchAll(/<([a-z]+)([^>]*)>(-?\$[\d,]+\.\d\d)</g)];
+    expect(moneyNodes.length).toBeGreaterThan(5);
+    for (const node of moneyNodes) {
+      expect(node[2], `"${node[3]}" must sit in a data-calc node`).toContain('data-calc="1"');
+    }
+  });
+
+  it('receipt: rodial renders the bound vitals lines, thin and blocked-heavy fixtures collapse the whole band', () => {
+    const rich = renderFixture('rodial-com.json');
+    expect(rich.html).toContain('Everything we read, and where');
+    expect(rich.html).toContain('Store vitals');
+    // One data-rcl marker per rendered line; the collapse floor is three.
+    const lineCount = (rich.html.match(/data-rcl="1"/g) || []).length;
+    expect(lineCount).toBeGreaterThanOrEqual(3);
+    // The fixture's lead finding cites "59 of your 180 ... averaging 42.7% off", which is
+    // what binds both the discount count line and the depth line.
+    expect(rich.html).toContain('On discount');
+    expect(rich.html).toContain('59 of 180');
+    expect(rich.html).toContain('Average discount depth');
+    expect(rich.html).toContain('42.7%');
+    // Its reviews finding cites 4.7 across 23, which binds the rating line.
+    expect(rich.html).toContain('Product page rating');
+    expect(rich.html).toContain('4.7 from 23');
+    // Nothing unbound leaks: no signup finding exists, so the capture markers never ship.
+    expect(rich.html).not.toContain('Email capture');
+    expect(rich.html).not.toContain('newsletter');
+    // has_subscription is false but no finding mentions subscriptions, so the line is unbound.
+    expect(rich.html).not.toContain('Subscription option');
+    expect(rich.html).toContain('backs a finding below');
+    // The single gold flag marks the number the LEAD finding argues with (the discount
+    // count), never a context line like "Products live".
+    const flagIdx = rich.html.indexOf('data-rcl-flag="1"');
+    expect(flagIdx).toBeGreaterThan(-1);
+    const flagChunk = rich.html.slice(flagIdx, flagIdx + 600);
+    expect(flagChunk).toContain('On discount');
+    expect((rich.html.match(/data-rcl-flag="1"/g) || []).length).toBe(1);
+
+    // apple: everything that matters is blocked, so there is no receipt at all.
+    const thin = renderFixture('apple-com.json');
+    expect(thin.html).not.toContain('Store vitals');
+    expect(thin.html).not.toContain('Everything we read, and where');
+    // gopure: exactly one bindable line (reviews-empty), under the floor of three.
+    const blocked = renderFixture('gopure-com.json');
+    expect(blocked.html).not.toContain('Store vitals');
+    expect((blocked.html.match(/data-rcl="1"/g) || []).length).toBe(0);
+  });
+
+  it('no stack chips: tech_stack app names never render, in any fixture', () => {
+    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+      const { fixture, html } = renderFixture(file);
+      // The close-band bio names Klaviyo as one of Mattan's publishers. That is shipped
+      // conversion copy, not a store fact, so it is excluded before the stack check.
+      const body = stripConversionBio(html);
+      const stack = (fixture.dtc as any).tech_stack?.data;
+      const names: string[] = [...(stack?.confirmed || []), ...(stack?.missing_critical || [])];
+      for (const name of names) {
+        expect(body.toLowerCase(), `${file} must not render stack app ${name}`).not.toContain(name.toLowerCase());
+      }
+      expect(html).not.toContain('Not found on your pages');
+    }
+  });
+
+  it('margin data tags: figures are verbatim substrings of their own finding, and a numeral-free finding renders an empty rail', () => {
+    const { fixture, html } = renderFixture('rodial-com.json');
+    const asides = [...html.matchAll(/<aside class="cedt-margin lg:col-span-3">(.*?)<\/aside>/gs)].map((m) => m[1]);
+    expect(asides.length).toBe(fixture.dtc.findings.length);
+    const figures = asides.map((a) => [...a.matchAll(/class="fig[^"]*"[^>]*>([^<]+)</g)].map((f) => f[1]));
+    expect(figures.some((f) => f.length > 0)).toBe(true);
+    // Every figure traces back verbatim to the prose of its own finding.
+    figures.forEach((figs, i) => {
+      const f = fixture.dtc.findings[i];
+      const prose = `${f.title} ${f.evidence}`;
+      for (const token of figs) expect(prose, `finding ${i} figure ${token}`).toContain(token);
+      expect(figs.length).toBeLessThanOrEqual(2);
+    });
+    expect(html).toContain('shopify products.json');
+
+    // A finding whose prose carries no whitelisted numeral renders NOTHING in the margin:
+    // a source label floating on an empty rail reads as a half-populated component
+    // (template-tell pass, 07-31). The under-finding source link carries the provenance.
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    dtc.findings = [
+      {
+        signal: 'shopify',
+        kind: 'gap',
+        lever: 'cro',
+        title: 'Your bundle path is doing the work of a landing page',
+        evidence: 'The path a paid click lands on carries no bundle offer, so the order value rides on a single unit.',
+        source_url: 'https://rodial.com/products.json',
+      },
+    ];
+    const mutated = renderDtc(dtc, fixture.company_name);
+    const aside = mutated.match(/<aside class="cedt-margin lg:col-span-3">(.*?)<\/aside>/s);
+    const asideInner = aside ? aside[1] : '';
+    expect(asideInner).not.toContain('class="fig');
+    expect(asideInner).not.toContain('shopify products.json');
+    expect(asideInner.trim()).toBe('');
+  });
+
+  it('gold discipline: no eyebrow rule is gold, the close-band label is not accent, chip borders go ink', () => {
+    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+      const { fixture, html } = renderFixture(file);
+      const accent = (fixture.dtc as any).brand.accent_hex as string;
+      const rules = [...html.matchAll(/<span class="h-px w-10" data-eyebrow-rule="1" style="([^"]*)"/g)].map((m) => m[1]);
+      expect(rules.length).toBeGreaterThan(0);
+      for (const style of rules) expect(style.toLowerCase()).not.toContain(accent.toLowerCase());
+      // "Ready when you are" no longer carries the accent color.
+      const readyLabel = html.match(/<div class="text-\[0\.72rem\][^"]*" style="([^"]*)">Ready when you are<\/div>/)![1];
+      expect(readyLabel.toLowerCase()).not.toContain(accent.toLowerCase());
+      const feeLabel = html.match(/<div class="text-\[0\.72rem\][^"]*" style="([^"]*)">How RISE charges<\/div>/)![1];
+      expect(feeLabel.toLowerCase()).not.toContain(accent.toLowerCase());
+    }
+    // The lever chip keeps its gold DOT but its border goes ink.
+    const { html } = renderFixture('rodial-com.json');
+    expect(html).toContain('border:1px solid #11111133');
+    expect(html).toContain('<span class="w-1.5 h-1.5 rounded-full" style="background:#ffc71d">');
+  });
+
+  it('sticky pill: dense panels are marked per rendered panel and the pill carries its hook class', () => {
+    const rich = renderFixture('rodial-com.json');
+    // receipt card + Profit Gap band.
+    expect((rich.html.match(/data-densepanel="1"/g) || []).length).toBe(2);
+    const thin = renderFixture('apple-com.json');
+    expect((thin.html.match(/data-densepanel="1"/g) || []).length).toBe(0);
+    const blocked = renderFixture('gopure-com.json');
+    expect((blocked.html.match(/data-densepanel="1"/g) || []).length).toBe(0);
+    // SSR renders the pill visible, with the effect's className hook in place.
+    expect(rich.html).toContain('cedt-sticky');
+    expect(rich.html).toMatch(/data-cta="sticky"[^>]*cedt-sticky/);
+    expect(rich.html).not.toMatch(/cedt-sticky[^>]*opacity:0[;"]/);
+  });
+
+  it('evidence plate: born-absent everywhere, renders once from a QA-passed capture, under the named finding', () => {
+    // No fixture carries evidence_capture -> the plate never renders, no placeholder either.
+    for (const f of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+      expect(renderFixture(f).html).not.toContain('data-evidence-plate');
+    }
+    // A QA-passed capture on the row lights exactly one plate, dated, on the attach signal.
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).evidence_capture = {
+      url: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/test.png',
+      captured_at: '2026-07-31T12:00:00Z',
+      attach_signal: 'reviews',
+    };
+    const html = renderDtc(dtc, fixture.company_name);
+    expect((html.match(/data-evidence-plate="1"/g) || []).length).toBe(1);
+    expect(html).toContain('scan-screenshots/test.png');
+    expect(html).toMatch(/Your storefront, captured July 3[01], 2026/);
+    // Attached under the reviews finding (rodial's 4th finding), not the lead.
+    const plateIdx = html.indexOf('data-evidence-plate');
+    const reviewsIdx = html.indexOf('4.7 rating');
+    expect(plateIdx).toBeGreaterThan(reviewsIdx);
+    // An unknown attach signal falls back to the lead finding rather than dropping the plate.
+    (dtc as any).evidence_capture.attach_signal = 'pagespeed';
+    const html2 = renderDtc(dtc, fixture.company_name);
+    expect((html2.match(/data-evidence-plate="1"/g) || []).length).toBe(1);
   });
 
   it('booking URL that already carries a query string gets &-joined UTMs', () => {

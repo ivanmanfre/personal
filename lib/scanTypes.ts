@@ -228,6 +228,14 @@ export interface DtcGrowth {
   } | null;
   hero_hook: string;         // real-fact hook (every numeral ∈ fact_table)
   og_image_url?: string | null;
+  // Dated storefront capture, written ONLY after a human QA pass (cookie-wall/popup/blank
+  // captures never ship). Absent -> the evidence plate does not render; the section is
+  // born-absent by design. `attach_signal` names the finding the exhibit argues for.
+  evidence_capture?: {
+    url: string;
+    captured_at: string;
+    attach_signal?: DtcFinding['signal'];
+  } | null;
   // The exact grounding set every rendered number is checked against (Phase 7 grep target).
   fact_table: string[];
 }
