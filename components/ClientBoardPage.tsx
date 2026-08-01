@@ -318,6 +318,10 @@ interface Board {
    *  A live board with no data shows a clean empty-state, never a staged sample. */
   lead_pipeline?: PipelineLead[];
   outreach?: OutreachSpec;
+  /** Tracked bookings from the LinkedIn booking page, newest first, written by the
+   *  booking watcher (n8n). brief_url = gated operator pre-call brief; scan_url =
+   *  their public growth scan. Absent until the first tracked booking lands. */
+  precall_briefs?: { id: string; name: string; company?: string; domain?: string; when_iso?: string; when_str?: string; booked_note?: string; brief_url?: string; scan_url?: string; added_at?: string }[];
   lm_ideas?: LmIdea[];
   strategy?: { total: number; period?: string; pillars: Pillar[]; cadence?: { headline: string; detail?: string; note?: string } };
   /** Monday plan note, written by the Weekly Plan Note workflow. Deterministic text
@@ -5923,9 +5927,39 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
           </div>
         </>)}
 
+        {/* 07 — Booked calls: bookings that arrived through the tracked LinkedIn booking
+            page, written by the booking watcher into board.precall_briefs. Each row carries
+            the operator pre-call brief (gated n8n viewer) and their public scan. Section is
+            absent until the first tracked booking lands — no sample rows, ever. */}
+        {(board.precall_briefs || []).length > 0 && (<>
+          <LeadsBlockHead n="07" label="booked calls" sub="from your LinkedIn booking link" />
+          <div className="space-y-2.5">
+            {(board.precall_briefs || []).map((b) => (
+              <div key={b.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{b.name}</span>
+                    {(b.company || b.domain) && <span className="text-[12px]" style={{ color: DIM }}>{b.company || b.domain}</span>}
+                  </div>
+                  {b.when_str && <div style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE, marginTop: 2 }}>{b.when_str}</div>}
+                  {b.booked_note && <div className="text-[11.5px]" style={{ fontFamily: BODY, color: FAINT, marginTop: 2 }}>{b.booked_note}</div>}
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-2">
+                  {b.scan_url && (
+                    <a href={b.scan_url} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase" style={{ fontFamily: MONO, letterSpacing: '0.1em', color: INK, border: `1px solid ${LINE_BOLD}` }}>Their scan</a>
+                  )}
+                  {b.brief_url && (
+                    <a href={b.brief_url} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase" style={{ fontFamily: MONO, letterSpacing: '0.1em', color: inkOn(accent), background: accent, border: `1px solid ${LINE_BOLD}` }}>Pre-call brief</a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
+
         {/* 08 — Send log: the real per-lead outbound trail + reply status, read live from
             outreach_messages (never baked JSON). Honest empty until sends go live. */}
-        <LeadsBlockHead n="07" label="send log" sub="every message actually sent, from the live record" />
+        <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
         <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
           {(!log || log.length === 0) ? (
             <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
