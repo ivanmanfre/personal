@@ -354,9 +354,11 @@ interface Board {
    *  selfie/lifestyle, carousel, reactive newsjack). Rendered on the Voice surface. */
   content_styles?: { key: string; label: string; blurb: string; needs_photo?: boolean }[];
   auto_publish_days?: number;
-  /** Visual skin. 'editorial' (default) = the warm-paper editorial look, unchanged.
-   *  'blackbox' = the InboundOnSteroids product look. Also togglable via ?skin=blackbox. */
-  skin?: 'editorial' | 'blackbox';
+  /** Visual skin. 'desk' (default) = the drawn content-desk look: white paper, the client's
+   *  own accent, dark proof plates, numbers big enough to read across a room.
+   *  'blackbox' = the InboundOnSteroids product look. 'editorial' = the original warm paper.
+   *  Any of the three can be forced for review with ?skin=. */
+  skin?: 'editorial' | 'blackbox' | 'desk';
 }
 
 // ---------- small utils ----------
@@ -1126,7 +1128,7 @@ function stageStatus(q: QueueItem, stage: Stage, startIso?: string, live = false
   return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Example · {fmtDay(q.publish_date)}</span>;
 }
 
-type ContentView = 'list' | 'board' | 'feed';
+type ContentView = 'list' | 'board' | 'feed' | 'calendar';
 const VIEWS: { id: ContentView; label: string }[] = [
   { id: 'list', label: 'List' },
   { id: 'board', label: 'Board' },
@@ -1629,7 +1631,7 @@ function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }
   );
 }
 
-function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, live = false }: {
+function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips, leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo, replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle, foldPhotos, foldCalendar, live = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
@@ -1668,8 +1670,20 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
   onPickReplacementAngle?: (id: string, alt: AltAngle) => void;
   /** Live mode folds the client photo pool in here (no standalone Photos tab). */
   foldPhotos?: React.ReactNode;
+  /** Desk skin folds the calendar in here as a view (no standalone Calendar tab). */
+  foldCalendar?: React.ReactNode;
 }) {
   const autoDays = board.auto_publish_days ?? 3;
+  // Desk headline: the pipeline stated as counts, not as an editorial couplet. Every number
+  // is read off the live queue, so it can never drift from the rows underneath it.
+  const deskPipelineTitle = (() => {
+    const q = board.queue;
+    const out = q.filter((x) => stageOf(x) === 'published').length;
+    const sched = q.filter((x) => stageOf(x) !== 'published' && isScheduled(x)).length;
+    const buffer = q.filter((x) => stageOf(x) !== 'published' && !isScheduled(x)).length;
+    const parts = [out ? `${out} out` : null, sched ? `${sched} scheduled` : null, buffer ? `${buffer} in the buffer` : null].filter(Boolean);
+    return <>{q.length} {q.length === 1 ? 'post' : 'posts'} in the pipeline{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}</>;
+  })();
   // Live overrides for the published stage: on a real board published rows are reports,
   // not demo examples. Preview keeps the module constants exactly.
   const stageLabelOf = (s: Stage) => (live && s === 'published' ? 'Published' : live && s === 'review' ? 'Up next' : STAGE_META[s].label);
@@ -2006,12 +2020,12 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         <div className="min-w-[240px] flex-1">
           <SectionHead
             eyebrow="All content"
-            title={live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>in your voice.</Accent></>}
+            title={foldCalendar ? deskPipelineTitle : (live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>in your voice.</Accent></>)}
             sub={live ? undefined : `Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
           />
         </div>
         <div className="inline-flex shrink-0 overflow-hidden rounded-[8px]" style={{ border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
-          {VIEWS.map((v, i) => (
+          {(foldCalendar ? ([{ id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }] as { id: ContentView; label: string }[]) : VIEWS).map((v, i) => (
             <button
               key={v.id}
               role="tab"
@@ -2025,6 +2039,8 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
           ))}
         </div>
       </div>
+
+      {view === 'calendar' && foldCalendar}
 
       {view === 'list' && (() => {
         /* IDEAS — the engine's upcoming idea bank, not yet drafted. Preview/demo only:
@@ -4455,7 +4471,8 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
   );
 }
 
-function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, onEditPromo }: {
+function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, desk = false, onEditPromo }: {
+  desk?: boolean;
   board: Board; accent: string; mint: string; fontStack: string; live?: boolean;
   onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
 }) {
@@ -4564,7 +4581,12 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, onEdi
     // open at their real URLs (no embed), and leads report on the Leads tab.
     return (
       <div>
-        <SectionHead eyebrow="Live assessments" title={<>Lead magnets.</>} />
+        <SectionHead
+          eyebrow="Live assessments"
+          title={desk
+            ? <>{liveN} lead {liveN === 1 ? 'magnet is' : 'magnets are'} <b>live on your site</b>{buildN ? <>, {buildN} more in progress.</> : '.'}</>
+            : <>Lead magnets.</>}
+        />
         {libraryGrid && (
           <div>
             <div className="mb-1 flex items-baseline gap-2.5">
@@ -4585,7 +4607,9 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, onEdi
     <div>
       <SectionHead
         eyebrow="Live on your domain"
-        title={<>Lead magnets, <Accent>working for you.</Accent></>}
+        title={desk
+          ? <>{liveN} lead {liveN === 1 ? 'magnet is' : 'magnets are'} <b>live on your site</b>{buildN ? <>, {buildN} more in progress.</> : '.'}</>
+          : <>Lead magnets, <Accent>working for you.</Accent></>}
         sub="The live one first, exactly what your leads see. It scores them, then captures their email. New capture assets ship on the calendar below it."
       />
       {embedBlock}
@@ -5662,7 +5686,7 @@ function UpNextBlock({ status, accent }: { status: OutreachStatus | null; accent
  *  up-next queue, this month's allowance, the bar, the sources, the message sequences,
  *  the first list, the inbox, the client-engager play, orbit finds, and the live send log.
  *  Reads usage + status + the per-lead send log from live RPCs; nothing here is baked. */
-function OutreachSurface({ board, accent, usage = null, log = null, status = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null }) {
+function OutreachSurface({ board, accent, usage = null, log = null, status = null, foldLeads = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null; foldLeads?: React.ReactNode }) {
   const o = board.outreach;
   if (!o) {
     return (
@@ -5927,6 +5951,10 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
           </div>
         </>)}
 
+        {/* Desk fold: the leads surface lives here, so sends and what came back read as
+            one story instead of two tabs. */}
+        {foldLeads}
+
         {/* 07 — Booked calls: bookings that arrived through the tracked LinkedIn booking
             page, written by the booking watcher into board.precall_briefs. Each row carries
             the operator pre-call brief (gated n8n viewer) and their public scan. Section is
@@ -6164,13 +6192,29 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
   );
 }
 
-function PerformanceSurface({ board, accent, live = false }: { board: Board; accent: string; live?: boolean }) {
+function PerformanceSurface({ board, accent, live = false, showAim = false }: { board: Board; accent: string; live?: boolean; showAim?: boolean }) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
   const indicators = perf?.indicators || [];
   const outreachInds = perf?.outreach_indicators || [];
   const posts = (perf?.posts || []).slice(0, 20);
   const fmtNum = (n?: number | null) => (n === null || n === undefined ? '—' : n.toLocaleString());
+  // Desk headline: what actually published, plus the one post that beat its own average.
+  // Falls back to the plain count when fewer than two posts carry reads — never invents a
+  // winner, and never compares a post against itself.
+  const deskPerfTitle = (() => {
+    const all = perf?.posts || [];
+    const withReads = all.filter((x) => typeof x.impressions === 'number' && (x.impressions as number) > 0);
+    const n = all.length;
+    const head = <>{n} {n === 1 ? 'post' : 'posts'} published.</>;
+    if (withReads.length < 2) return head;
+    const best = withReads.reduce((a, b) => ((b.impressions as number) > (a.impressions as number) ? b : a));
+    const rest = withReads.filter((x) => x !== best);
+    const avg = rest.reduce((t, x) => t + (x.impressions as number), 0) / (rest.length || 1);
+    const mult = avg > 0 ? (best.impressions as number) / avg : 0;
+    if (mult < 1.5) return head;
+    return <>{head} <b>The {fmtDay(best.published_at)} post did {(best.impressions as number).toLocaleString()} reads</b>, {mult.toFixed(1)}&times; the average.</>;
+  })();
   // Shared ghost card: awaiting-first-data treatment, identical for both groups. The
   // content group keeps its per-indicator expectation line; outreach carries one group note.
   const ghostCard = (ind: PerfIndicator, i: number, expectation?: string) => (
@@ -6212,13 +6256,56 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
     <div>
       <SectionHead
         eyebrow="What we track"
-        title={<>The numbers, <Accent>told straight.</Accent></>}
+        title={showAim ? deskPerfTitle : <>The numbers, <Accent>told straight.</Accent></>}
         sub={perf?.note || 'The leading indicators your retainer is measured on. No invented charts: real series appear the day the engine goes live.'}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {indicators.map((ind, i) => indicatorCard(ind, i, expectationFor(ind)))}
       </div>
+
+      {/* Desk: what the posts aim at. Moved here from the retired Strategy tab, and counted
+          from the real queue rather than a hand-authored plan — it renders only when the
+          queue actually carries funnel tags, so an untagged board never shows an empty
+          chart. Counts posts, not reads; the caption says so. */}
+      {showAim && (() => {
+        const aims = [
+          { key: 'reach', label: 'Reach', blurb: 'gets the brand seen' },
+          { key: 'trust', label: 'Trust', blurb: 'proves the thinking' },
+          { key: 'buyers', label: 'Buyers', blurb: 'speaks to the ready' },
+        ];
+        const counts = aims.map((a) => ({ ...a, n: board.queue.filter((q) => q.funnel_stage === a.key).length }));
+        const total = counts.reduce((t, c) => t + c.n, 0);
+        if (!total) return null;
+        const top = Math.max(...counts.map((c) => c.n)) || 1;
+        return (
+          <div className="mt-8 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+              <CardHead>What the posts aim at</CardHead>
+              <span className="rounded-full px-3 py-1 text-[12.5px] font-semibold" style={{ background: PAPER_SUNK, color: INK_MUTE }}>
+                {total} {total === 1 ? 'post' : 'posts'} in the pipeline
+              </span>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-5" style={{ alignItems: 'end', minHeight: 150 }}>
+              {counts.map((c, i) => (
+                <div key={c.key} className="flex h-full flex-col justify-end">
+                  <div className="cb-num-serif text-center" style={{ fontFamily: SERIF, fontSize: 20, color: i === 0 ? INK : INK_MUTE, marginBottom: 7 }}>{c.n}</div>
+                  <div style={{ height: `${Math.max(8, Math.round((c.n / top) * 100))}%`, minHeight: 8, background: i === 0 ? accent : '#D9D9D2', borderRadius: '6px 6px 0 0' }} aria-hidden />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-3 pt-2 sm:gap-5" style={{ borderTop: `1px solid ${LINE}` }}>
+              {counts.map((c, i) => (
+                <div key={c.key} className="text-center">
+                  <div className="text-[12.5px] font-extrabold" style={{ color: i === 0 ? INK : INK_MUTE }}>{c.label}</div>
+                  <div className="mt-0.5 text-[11.5px] font-semibold leading-snug" style={{ color: FAINT }}>{c.blurb}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-[12.5px] font-semibold" style={{ color: FAINT }}>The chart counts posts, not reads.</div>
+          </div>
+        );
+      })()}
 
       {/* Outreach indicators (live boards): same awaiting-first-data treatment, tied to
           the staged lanes on the Leads tab. */}
@@ -6535,7 +6622,7 @@ const TABS = [
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
   { id: 'voice', label: 'Voice', group: 'Content' },
   { id: 'photos', label: 'Photos', group: 'Content' },
-  { id: 'outreach', label: 'Outreach', group: 'Outreach' },
+  { id: 'outreach', label: 'Outreach & leads', group: 'Outreach' },
   { id: 'leads', label: 'Leads', group: 'Leads' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
@@ -6543,6 +6630,12 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 const NAV_GROUPS = ['Content', 'Outreach', 'Leads', 'Reports', 'Settings'] as const;
+/** The desk board is six tabs. Everything else folds into one of them rather than being
+ *  deleted: Calendar is a view inside All content, Leads sits under Outreach, Strategy's
+ *  aim mix moved to Performance, Photos fold into All content, Team lives in the sidebar
+ *  footer. The folded surfaces stay in the surfaces map and stay reachable by #hash, so an
+ *  old bookmark still resolves — they are just off the nav. */
+const DESK_NAV_TABS: TabId[] = ['week', 'review', 'lm', 'newsletter', 'outreach', 'performance'];
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
@@ -7844,15 +7937,38 @@ export default function ClientBoardPage() {
 
   const accent = cleanHex(board?.brand?.accent_hex);
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
-  // Visual skin. An explicit ?skin= param wins in BOTH directions (so a blackbox-default
-  // board can be forced back to editorial for review); else a board.skin / brand.skin
-  // field; else blackbox (site default — override per-client with skin:'editorial').
+  // Visual skin. An explicit ?skin= param wins in BOTH directions (so a desk-default board
+  // can be forced back to blackbox/editorial for side-by-side review); else a board.skin /
+  // brand.skin field; else desk (site default — override per-client with skin:'blackbox').
   const skinParam = params.get('skin');
-  const skin: 'editorial' | 'blackbox' =
+  const boardSkin = ((board as any)?.skin || (board?.brand as any)?.skin) as string | undefined;
+  const skin: 'editorial' | 'blackbox' | 'desk' =
     skinParam === 'blackbox' ? 'blackbox'
     : skinParam === 'editorial' ? 'editorial'
-    : (board as any)?.skin === 'editorial' || (board?.brand as any)?.skin === 'editorial' ? 'editorial'
-    : 'blackbox';
+    : skinParam === 'desk' ? 'desk'
+    : boardSkin === 'editorial' ? 'editorial'
+    : boardSkin === 'blackbox' ? 'blackbox'
+    : 'desk';
+  // Desk pulls its display + body faces from the client's own brand record, so every board
+  // reads in its own type instead of a house font. Falls back to the blackbox grotesk.
+  const deskHeadFont = (board?.brand as any)?.font_heading || 'Schibsted Grotesk';
+  const deskBodyFont = (board?.brand as any)?.font_body || 'Schibsted Grotesk';
+  useEffect(() => {
+    if (skin !== 'desk') return;
+    const id = 'client-board-desk-font';
+    const fams = Array.from(new Set([deskHeadFont, deskBodyFont]))
+      .map((f) => `family=${String(f).trim().replace(/\s+/g, '+')}:wght@300;400;500;600;700;800`)
+      .join('&');
+    const href = `https://fonts.googleapis.com/css2?${fams}&display=swap`;
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    if (link.href !== href) link.href = href;
+  }, [skin, deskHeadFont, deskBodyFont]);
   // Blackbox loads Schibsted Grotesk (display/labels/body) + Source Serif 4 italic (clinical
   // asides only). Courier Prime is NOT loaded; it is dispensed-label-artifact only, never UI.
   useEffect(() => {
@@ -7877,6 +7993,21 @@ export default function ClientBoardPage() {
     '--cb-mono': '"Schibsted Grotesk", system-ui, sans-serif',
     '--cb-clinical': '"Source Serif 4", Georgia, serif',
     '--cb-card-shadow': 'none', '--cb-hero-shadow': 'none', '--cb-lift': 'none',
+  } : skin === 'desk' ? {
+    // Desk: white paper, near-black ink, hairline rules, no shadows. Display face carries
+    // the headlines AND every number (numerals are the point); body face carries the rest.
+    '--cb-ink': '#111111', '--cb-paper': '#FFFFFF', '--cb-paper-raise': '#FFFFFF',
+    '--cb-paper-sunk': '#F5F5F5', '--cb-desk': '#FFFFFF',
+    '--cb-ink-soft': '#333333', '--cb-ink-mute': '#5F5F59',
+    '--cb-line': '#E0E0E0', '--cb-line-bold': 'rgba(17,17,17,0.26)', '--cb-divide': 'rgba(17,17,17,0.08)',
+    '--cb-serif': `"${deskHeadFont}", system-ui, sans-serif`,
+    '--cb-body': `"${deskBodyFont}", system-ui, sans-serif`,
+    '--cb-mono': `"${deskBodyFont}", system-ui, sans-serif`,
+    '--cb-clinical': `"${deskBodyFont}", system-ui, sans-serif`,
+    '--cb-card-shadow': 'none', '--cb-hero-shadow': 'none', '--cb-lift': 'none',
+    // The one dark proof plate every panel gets exactly one of.
+    '--cb-plate': '#333333', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': '#96968F',
+    '--cb-plate-line': 'rgba(255,255,255,0.14)',
   } : {};
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
   // regardless of its stored stage, and never counts toward the review badge. An item
@@ -8185,15 +8316,17 @@ export default function ClientBoardPage() {
         live={isLive}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} onEditPromo={editLmPromo} />,
+    // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
+    // it just renders inside a host tab instead of owning one.
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} desk={skin === 'desk'} onEditPromo={editLmPromo} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} />,
+    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={skin === 'desk' ? <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} /> : null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
-    performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
+    performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={skin === 'desk'} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };
@@ -8219,9 +8352,15 @@ export default function ClientBoardPage() {
   // hides the tab exactly as before. No behaviour change for live boards, which already
   // required the package.
   const outreachAvailable = !!viewBoard.outreach;
-  const visibleTabs = (isLive
-    ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
-    : TABS.filter((t) => t.id !== 'team')
+  // Desk nav: six tabs, in the order the client reads them. A board with no outreach
+  // package still hides that tab, exactly as before. The folded surfaces are NOT removed —
+  // they stay in `surfaces` and stay addressable, so an old link resolves instead of 404ing
+  // to the week. Other skins keep the original nav untouched.
+  const visibleTabs = (skin === 'desk'
+    ? TABS.filter((t) => DESK_NAV_TABS.includes(t.id))
+    : isLive
+      ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
+      : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable);
   const activeTab: TabId = isLive
     ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
@@ -8234,6 +8373,42 @@ export default function ClientBoardPage() {
 .cb-pulse { animation: cb-pulse 1.6s ease-in-out infinite; }
 @keyframes cb-rowgrow { 0% { opacity:0; transform:translateY(-10px) scaleY(.92) } 100% { opacity:1; transform:translateY(0) scaleY(1) } }
 @media (prefers-reduced-motion: reduce) { .cb-pulse { animation: none !important } }
+
+/* ============ DESK skin composition overrides (scoped) ============ */
+/* The drawn content-desk look. Same trick as blackbox: compiled Tailwind radii/shadows and
+   inline styles cannot be reached by CSS vars, so structure is enforced here rather than by
+   editing hundreds of class strings. Rule of the skin: soft rounded paper, hairline rules,
+   no shadows, and numbers set in the display face big enough to read across a room. */
+[data-skin="desk"] * { box-shadow: none !important; }
+[data-skin="desk"] .cb-linkedin-preview { box-shadow: 0 1px 2px rgba(17,17,17,0.06) !important; }
+/* Paper corners: generous on cards, pill on chips/buttons. Tailwind's rounded-* utilities
+   are normalized so a card never renders half-square next to a drawn one. */
+[data-skin="desk"] .rounded, [data-skin="desk"] .rounded-md, [data-skin="desk"] .rounded-lg,
+[data-skin="desk"] .rounded-xl, [data-skin="desk"] .rounded-2xl, [data-skin="desk"] .rounded-3xl { border-radius: 25px !important; }
+[data-skin="desk"] .rounded-full { border-radius: 9999px !important; }
+[data-skin="desk"] .cb-linkedin-preview { border-radius: 14px !important; }
+[data-skin="desk"] .cb-linkedin-preview .rounded-full { border-radius: 9999px !important; }
+/* Eyebrows: the micro-label that opens every block. Wide tracking, heavy, muted. */
+[data-skin="desk"] .uppercase { font-weight: 800 !important; letter-spacing: 0.14em; }
+/* Numerals are the point of this board: display face, upright, tabular so columns line up. */
+[data-skin="desk"] .cb-num-serif { font-style: normal !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+[data-skin="desk"] .cb-accent-phrase { font-style: normal !important; font-weight: 700; }
+/* Headlines: display face, light weight carrying the sentence, bold carrying the verdict. */
+[data-skin="desk"] h1, [data-skin="desk"] h2, [data-skin="desk"] h3,
+[data-skin="desk"] .cb-display { font-weight: 300 !important; letter-spacing: -0.015em; }
+[data-skin="desk"] h1 b, [data-skin="desk"] h2 b, [data-skin="desk"] h3 b,
+[data-skin="desk"] h1 strong, [data-skin="desk"] h2 strong, [data-skin="desk"] .cb-display b { font-weight: 700 !important; }
+/* The dark proof plate: one per panel, carrying that panel's single most important number. */
+[data-skin="desk"] .cb-plate { background: var(--cb-plate, #333) !important; color: var(--cb-plate-ink, #fff) !important; border-color: var(--cb-plate, #333) !important; }
+[data-skin="desk"] .cb-plate .cb-plate-mute { color: var(--cb-plate-mute, #96968F) !important; }
+[data-skin="desk"] .cb-plate hr, [data-skin="desk"] .cb-plate .cb-plate-rule { border-color: var(--cb-plate-line, rgba(255,255,255,0.14)) !important; }
+/* Honest blanks read as drawn placeholders, never as a zero. */
+[data-skin="desk"] .cb-blank { border: 2px dashed var(--cb-line-bold) !important; background: repeating-linear-gradient(45deg, rgba(17,17,17,0.045) 0 4px, rgba(17,17,17,0) 4px 9px) !important; }
+/* Motion is a courtesy, not a feature: quiet lift on the things you can actually click. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-skin="desk"] .cb-liftable { transition: transform .15s ease, border-color .15s ease; }
+  [data-skin="desk"] .cb-liftable:hover { transform: translateY(-1px); }
+}
 
 /* ============ BLACK BOX skin composition overrides (scoped) ============ */
 /* Tailwind rounded and shadow utilities plus inline radii are compiled, so CSS vars
