@@ -107,6 +107,7 @@ const KIND_LABEL: Record<string, string> = { post: 'post', carousel: 'carousel',
 /** Format label, client vocabulary. */
 function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch' | 'style'>): string {
   if (q.lm_launch) return 'lead magnet launch';
+  if (q.style === 'video') return 'video';
   if (q.kind === 'post') return q.media_url ? 'image post' : 'text post';
   return KIND_LABEL[q.kind] || q.kind;
 }

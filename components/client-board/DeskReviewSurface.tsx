@@ -64,8 +64,9 @@ function cardImageUrlLocal(q: QueueItem, board: Pick<Board, 'lead_magnets'>): st
 
 /** Mirrors ClientBoardPage's (unexported) kickerOf: the client-readable format label. */
 const KIND_LABEL: Record<string, string> = { post: 'Text post', carousel: 'Carousel', lm: 'Lead magnet', newsletter: 'Newsletter', newsjack: 'Reactive slot' };
-function kickerOfLocal(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch'>): string {
+function kickerOfLocal(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch' | 'style'>): string {
   if (q.lm_launch) return 'Lead magnet launch';
+  if (q.style === 'video') return 'Video';
   if (q.kind === 'post') return q.media_url ? 'Image post' : 'Text post';
   return KIND_LABEL[q.kind] || q.kind;
 }
