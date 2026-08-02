@@ -119,6 +119,37 @@ describe('DeskPerformanceSurface', () => {
     expect(html).toContain('reads on the Tearing Down a Top DTC Brand&#x27;s Checkout post, 27 Jul');
     expect(html).not.toContain('Checkout Funnel post');
 
+    // (f) REMOVED 2026-08-02: the with-vs-without-outlier counterfactual strip. The exact
+    // copy that block carried must be gone from the rendered html. The KPI tile's
+    // capitalised "Reads per post" caption survives; only the counterfactual ever
+    // rendered the lowercase phrase.
+    expect(html).not.toContain('Take the best post out');
+    expect(html).not.toContain('reads per post');
+
+    // (g) hover layer, chart: one focusable (tabindex=0) hit column per measured bar,
+    // each carrying the cb-perfh-hit hover class...
+    expect((html.match(/class="cb-perfh-hit"/g) || []).length).toBe(8);
+    expect(html).toMatch(/class="cb-perfh-hit" tabindex="0"/);
+    // ...whose reveal node contains that post's REAL fixture number (27 Jul post, 1,354),
+    // rendered via the gate-visible <Num/> inside the tip
+    expect(html).toMatch(/class="cb-perfh-tip"[\s\S]{0,500}?>1,354</);
+    // tap/screen-reader parity: the same info rides the focusable element's aria-label
+    expect(html).toContain('1,354 reads, 27 Jul');
+
+    // (h) hover layer, ledger: every visible post row (4 in the latest week) carries the
+    // row hover class; the title cell is focusable; the reveal holds the full untruncated
+    // title plus the row's reads as a real number
+    expect((html.match(/class="cb-perfh-lrow"/g) || []).length).toBe(4);
+    expect(html).toMatch(/class="cb-perfh-rowfocus" tabindex="0"/);
+    expect(html).toMatch(/class="cb-perfh-rtip"[\s\S]{0,300}?Tearing Down a Top DTC Brand&#x27;s Checkout Funnel/);
+    expect(html).toMatch(/class="cb-perfh-rtip"[\s\S]{0,600}?>1,354</);
+    // reveals never present themselves to the reader twice: visual tip is aria-hidden,
+    // the aria-label on the focusable element is the accessible copy
+    expect(html).toMatch(/class="cb-perfh-rtip" aria-hidden="true"/);
+    expect(html).toMatch(/class="cb-perfh-tip" aria-hidden="true"/);
+    // motion respects prefers-reduced-motion: transitions live only inside the media block
+    expect(html).toContain('@media (prefers-reduced-motion: no-preference)');
+
     // (e) the ledger shows the LATEST week in full; the older week folds. The older
     // week's buyers-tagged post therefore lives inside the earlier-weeks drill (compact
     // title+reads rows, no chips by design), and the visible week still encodes aims.
@@ -135,6 +166,10 @@ describe('DeskPerformanceSurface', () => {
     expect(html).toContain('1 post measured on your feed.');
     expect(html).not.toMatch(/the average/);
     expect(html).not.toMatch(/class="delta/);
+    // no counterfactual on a single post either, but its one bar is still hoverable/tappable
+    expect(html).not.toContain('Take the best post out');
+    expect((html.match(/class="cb-perfh-hit"/g) || []).length).toBe(1);
+    expect(html).toContain('Solo post: 500 reads, 27 Jul');
     // still a real, gate-visible surface
     expect(html).toContain('data-metric');
     expect(html).toContain('data-viz');
@@ -156,5 +191,8 @@ describe('DeskPerformanceSurface', () => {
     expect(html).toContain('best post, not tracked yet');
     // 0 posts is a real fact, not a fabrication — it's fine for this one to render.
     expect(html).toContain('posts measured on your feed');
+    // no posts, no marks: the hover layer renders zero hit columns and zero ledger rows
+    expect(html).not.toMatch(/class="cb-perfh-hit"/);
+    expect(html).not.toMatch(/class="cb-perfh-lrow"/);
   });
 });

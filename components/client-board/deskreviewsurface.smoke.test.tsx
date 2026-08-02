@@ -146,6 +146,11 @@ describe('DeskReviewSurface', () => {
     // The diff drill is collapsed by default too.
     const diffDrillMatch = html().match(/<details class="drill"[^>]*>[\s\S]*?see the edit/);
     expect(diffDrillMatch).not.toBeNull();
+    // The edited post's card carries its own tiny history affordance, still collapsed.
+    const postLog = container.querySelector('[data-post-log="q-scheduled-1"]');
+    expect(postLog).not.toBeNull();
+    expect(postLog!.textContent).toContain('changed 1 time');
+    expect(html()).not.toMatch(/<details[^>]*\bopen\b[^>]*>/);
 
     cleanup();
   });
@@ -159,11 +164,18 @@ describe('DeskReviewSurface', () => {
     // Zero history: no count number is shown next to the (absent) "changes on this board" line.
     expect(html()).not.toContain('changes on this board');
     expect(html()).not.toMatch(/>0<\/span>\s*changes/);
+    // ...and no card grows a history affordance ("0 changes" is banned by omission).
+    expect(container.querySelectorAll('[data-post-log]').length).toBe(0);
+    expect(html()).not.toContain('changed ');
 
     cleanup();
   });
 
   it('never renders a raw identity, labels reschedules, and counts the ones on screen', async () => {
+    // Multi-post fixture: post A (q-scheduled-1) has 2 whitelisted entries, post B
+    // (q-buffer-1) has NONE client-visible — only an ops-note-typed entry that the
+    // whitelist must drop everywhere (global log AND per-post affordance).
+    const OPS_NOTE = 'born-inert marker XQ-77 goal-run stamp';
     const history: Record<string, HistoryEntry[]> = {
       'q-scheduled-1': [
         { action: 'edit_copy', at: '2026-07-31T04:45:00Z', by: 'mattan@risedtc.com', before: 'Open ChatGPT', after: 'Open ChatGPT and ask' },
@@ -171,6 +183,9 @@ describe('DeskReviewSurface', () => {
       ],
       'q-scheduled-2': [
         { action: 'set_schedule', at: '2026-07-27T20:10:00Z', by: 'claude-code (operator session)', before: '2026-08-06T16:00:00Z', after: '2026-08-06T19:00:00Z' },
+      ],
+      'q-buffer-1': [
+        { action: 'note', event: 'ops_marker', at: '2026-07-29T11:00:00Z', by: 'claude-code (operator session)', note: OPS_NOTE } as HistoryEntry,
       ],
       'q-published-1': [{ action: 'approve', at: '2026-07-20T09:00:00Z', by: null }],
     };
@@ -187,9 +202,33 @@ describe('DeskReviewSurface', () => {
       expect(t.toLowerCase()).not.toContain('claude');
       expect(t.toLowerCase()).not.toContain('session');
     });
+    // ...and nowhere in the whole markup either (per-post rows use spans, not chips).
+    expect(html()).not.toContain('risedtc.com');
+    expect(html()).not.toContain('ivanmanfredi.com');
+    expect(html()).not.toContain('claude-code');
+    expect(html()).not.toContain('operator session');
     // The founder's email resolves to his first name; every other writer to one desk label.
     expect(chipText()).toContain('Mattan');
     expect(chipText()).toContain('TESTCO desk');
+
+    // Ops-note-typed entries never render, anywhere on the surface.
+    expect(html()).not.toContain(OPS_NOTE);
+    expect(html()).not.toContain('XQ-77');
+
+    // Per-post history affordance: post A's card carries its own 2-entry log, collapsed.
+    const postLogA = container.querySelector('[data-post-log="q-scheduled-1"]');
+    expect(postLogA).not.toBeNull();
+    expect(postLogA!.textContent).toContain('changed 2 times');
+    expect(postLogA!.querySelector('details')).not.toBeNull();
+    expect(postLogA!.querySelector('details[open]')).toBeNull();
+    // Post B (ops note only) shows NO affordance — zero-history cards render nothing.
+    expect(container.querySelector('[data-post-log="q-buffer-1"]')).toBeNull();
+    // Exactly the three posts with whitelisted entries carry one.
+    expect(container.querySelectorAll('[data-post-log]').length).toBe(3);
+
+    // Global log is compact: at most 3 rows outside the fold; the 4th entry folds.
+    expect(container.querySelectorAll('[data-log-row]').length).toBeLessThanOrEqual(3);
+    expect(html()).toContain('more changes');
 
     // (b) reschedules read as a client label + the move, and the footer counts the same rows.
     expect(html()).toContain('Rescheduled');

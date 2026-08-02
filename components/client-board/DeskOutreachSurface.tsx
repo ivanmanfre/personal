@@ -3,8 +3,8 @@
  *
  * Ports `OutreachSurface` (components/ClientBoardPage.tsx, ~line 5689) onto the desk kit,
  * matching frag-outreach.html's block order and density:
- *   1. Headline + the dark this-week-vs-last plate, split by channel (invites/DMs/InMails),
- *      computed client-side from the live send log.
+ *   1. Headline + the dark this-week-vs-last plate, split by channel (invites/accepted/DMs/
+ *      InMails/open-profile/wrote-back), computed client-side from the live send log.
  *   2. The to-date funnel plate (people contacted -> accepted [not tracked] -> wrote back ->
  *      calls booked).
  *   3. The send allowance, collapsed into a Drill (the frag demoted it).
@@ -112,24 +112,38 @@ function addDays(d: Date, n: number): Date {
 }
 
 /**
- * Channel/type -> send-kind classifier, ported from the live message-tagging logic already
- * shipped in components/dashboard-v2/sections/clientops2/OutreachInbox.tsx (msgChannel /
- * convoChannel), which reads the SAME `type`/`channel` columns OutreachLogMessage carries:
+ * Channel/type -> send-kind classifier. Reads the `type`/`channel` columns OutreachLogMessage
+ * carries:
  *   - message_type 'connection_note' | 'connection_request'  -> the invite (with note)
- *   - message_type 'inmail' OR channel containing 'inmail'   -> InMail (no connection needed)
+ *   - message_type 'inmail'                                  -> PAID InMail (uses the allowance)
+ *   - anything else on an inmail channel                     -> FREE open-profile message
  *   - channel 'email' OR message_type 'email'                -> email (outside this LinkedIn
  *                                                                split; excluded from the plate)
  *   - anything else outbound                                 -> a DM
+ * The old OR-branch (`t === 'inmail' || ch.includes('inmail')`) folded the free open-profile
+ * lane into the paid InMail bar (verified row-level 2026-08-02: "24 InMails" was really
+ * 15 paid + 9 free, separable by message_type with zero all-time exceptions). A client reads
+ * "InMails" as the paid, allowance-consuming channel, so the two are never summed again.
  */
-type SendKind = 'invite' | 'dm' | 'inmail' | 'email';
+type SendKind = 'invite' | 'dm' | 'inmail' | 'openprofile' | 'email';
 function classifyMessage(m: OutreachLogMessage): SendKind {
   const t = (m.type || '').toLowerCase();
   const ch = (m.channel || '').toLowerCase();
   if (t === 'connection_note' || t === 'connection_request') return 'invite';
-  if (t === 'inmail' || ch.includes('inmail')) return 'inmail';
+  if (t === 'inmail') return 'inmail';
+  if (ch.includes('inmail')) return 'openprofile';
   if (ch === 'email' || t === 'email') return 'email';
   return 'dm';
 }
+
+/** The staged RPC patch adds per-entry `connection_sent_at`/`connected_at` and inbound rows in
+ *  `messages`. Neither field exists on the shipped OutreachLogEntry type; this local extension
+ *  lets the surface light up automatically when the patched feed arrives, and render honestly
+ *  (no fake rows) until it does. */
+type LogEntryExt = OutreachLogEntry & { connection_sent_at?: string | null; connected_at?: string | null };
+
+/** n === 1 ? '' : 's' — the headline sentence prints real counts, so it has to survive a 1. */
+const plural = (n: number) => (n === 1 ? '' : 's');
 
 function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?: SendKind): number {
   let n = 0;
@@ -200,24 +214,76 @@ export default function DeskOutreachSurface({
   // reaches back into last week. Less history than that -> this-week counts alone.
   const twoWeekCoverage = hasSends && earliestMs <= lastWeekStart.getTime();
 
+  // ── Weekly "wrote back": PEOPLE, not messages, in two tiers. The shipped RPC hard-filters
+  // `messages` to outbound-only, so counting inbound rows from it renders a FALSE 0 (verified
+  // 2026-08-02: the true week-of-27-Jul figure was 8 people / 17 messages while the plate said
+  // 0). Tier 1 (post-patch feed): distinct people with >=1 inbound message in the window.
+  // Tier 2 (today's feed): entries with `replied` whose `last_reply_at` falls in the window —
+  // reproduces the verified 8 / 4 on live data. An empty inboundMsgs array is a feed-shape
+  // artifact, never evidence of silence, so it NEVER gates the fallback off. ─────────────────
+  const hasInboundFeed = allInbound.length > 0;
+  const peopleWroteBack = (start: Date, end: Date): number => {
+    if (hasInboundFeed) {
+      const ids = new Set<string>();
+      for (const { m, e } of allInbound) {
+        const t = Date.parse(m.sent_at as string);
+        if (!Number.isNaN(t) && t >= start.getTime() && t < end.getTime()) ids.add(e.prospect_id);
+      }
+      return ids.size;
+    }
+    let n = 0;
+    for (const e of entries) {
+      if (!e.replied || !e.last_reply_at) continue;
+      const t = Date.parse(e.last_reply_at);
+      if (!Number.isNaN(t) && t >= start.getTime() && t < end.getTime()) n++;
+    }
+    return n;
+  };
+
+  // ── Weekly accepts, "landed" definition: an accept counts in the week it ARRIVED, never the
+  // week its invite went out (the two definitions genuinely diverge in the data and must never
+  // collapse). `connected_at` only exists once the staged RPC patch ships; until any entry
+  // carries the key, no row renders — the funnel's program-to-date accepts stays the only
+  // accept figure on the tab. ────────────────────────────────────────────────────────────────
+  const entriesExt = entries as LogEntryExt[];
+  const hasAcceptField = entriesExt.some((e) => 'connected_at' in e);
+  const acceptsLanded = (start: Date, end: Date): number => {
+    let n = 0;
+    for (const e of entriesExt) {
+      if (!e.connected_at) continue;
+      const t = Date.parse(e.connected_at);
+      if (!Number.isNaN(t) && t >= start.getTime() && t < end.getTime()) n++;
+    }
+    return n;
+  };
+
   const thisWeek = {
     invites: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'invite'),
+    accepted: acceptsLanded(thisWeekStart, nextWeekStart),
     dms: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'dm'),
     inmails: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'inmail'),
-    wroteBack: countInWindow(inboundMsgs, thisWeekStart, nextWeekStart),
+    openprofile: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'openprofile'),
+    wroteBack: peopleWroteBack(thisWeekStart, nextWeekStart),
   };
   const lastWeek = {
     invites: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'invite'),
+    accepted: acceptsLanded(lastWeekStart, thisWeekStart),
     dms: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'dm'),
     inmails: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'inmail'),
-    wroteBack: countInWindow(inboundMsgs, lastWeekStart, thisWeekStart),
+    openprofile: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'openprofile'),
+    wroteBack: peopleWroteBack(lastWeekStart, thisWeekStart),
   };
 
+  // The open-profile row only earns its place once the lane has actually sent in either week —
+  // never a permanent zero row. The Accepted row only exists once the feed carries the field.
+  const showOpenProfile = thisWeek.openprofile > 0 || lastWeek.openprofile > 0;
   const CATS: { key: keyof typeof thisWeek; label: string; note?: string }[] = [
     { key: 'invites', label: 'Connection invites' },
+    ...(hasAcceptField ? [{ key: 'accepted' as const, label: 'Accepted', note: '· invites that turned into connections' }] : []),
     { key: 'dms', label: 'DMs', note: '· follow-ups included' },
-    { key: 'inmails', label: 'InMails', note: '· no connection needed' },
-    { key: 'wroteBack', label: 'Wrote back' },
+    { key: 'inmails', label: 'InMails', note: '· uses the monthly InMail allowance' },
+    ...(showOpenProfile ? [{ key: 'openprofile' as const, label: 'Open profile messages', note: '· free, no connection needed' }] : []),
+    { key: 'wroteBack', label: 'Wrote back', note: '· people, not messages' },
   ];
 
   // ── To-date funnel: people contacted (real) -> accepted (not in the log, honest blank) ->
@@ -270,7 +336,11 @@ export default function DeskOutreachSurface({
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const tomorrowStart = addDays(todayStart, 1);
   const sentToday = countInWindow(outboundMsgs, todayStart, tomorrowStart);
-  const repliesToday = countInWindow(inboundMsgs, todayStart, tomorrowStart);
+  // Same two tiers as the weekly figure: inbound rows when the feed ships them, otherwise
+  // replied entries by last_reply_at — never a false 0 off the outbound-only feed.
+  const repliesToday = hasInboundFeed
+    ? countInWindow(inboundMsgs, todayStart, tomorrowStart)
+    : peopleWroteBack(todayStart, tomorrowStart);
 
   return (
     <div className="pb-16" data-surface="desk-outreach">
@@ -278,7 +348,7 @@ export default function DeskOutreachSurface({
       <Eyebrow>Outreach</Eyebrow>
       <DeskH2>
         {hasSends ? (
-          <>Week of {shortDate(thisWeekStart)}: {thisWeek.invites} invites, {thisWeek.dms} DMs, {thisWeek.inmails} InMails. <b>{thisWeek.wroteBack} wrote back.</b></>
+          <>Week of {shortDate(thisWeekStart)}: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
         ) : (
           <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
         )}
@@ -394,6 +464,11 @@ export default function DeskOutreachSurface({
         <Footnote on="plate">
           Full week, Mon&ndash;Fri. The funnel below counts invites and first messages only.
         </Footnote>
+        {hasSends && hasAcceptField && (
+          <Footnote on="plate">
+            Accepted counts the week the accept landed, not the week the invite went out.
+          </Footnote>
+        )}
       </Plate>
 
       {/* 2 — everyone contacted so far, to date. */}

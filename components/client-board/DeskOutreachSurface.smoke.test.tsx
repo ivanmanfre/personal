@@ -323,4 +323,94 @@ it('renders the desk Up-next card from a populated status: pace, meter, named qu
   expect(html).not.toContain('>8<');
 });
 
+it('legacy feed (outbound-only messages): weekly wrote-back falls back to replied/last_reply_at and never renders the false 0', () => {
+  // Today's RPC hard-filters messages to outbound-only, but still ships replied +
+  // last_reply_at per entry. Two entries replied this week, one last week, one never.
+  const log: OutreachLogEntry[] = [
+    {
+      prospect_id: 'l1', name: 'Replier One', company: 'Brand A', lane: 'cold',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(thisMonday, 1).toISOString(),
+      messages: [outbound(lastMonday, 'connection_note', 'linkedin'), outbound(addDays(thisMonday, 1), 'dm', 'linkedin')],
+    },
+    {
+      prospect_id: 'l2', name: 'Replier Two', company: 'Brand B', lane: 'cold',
+      reply_count: 2, replied: true, last_sent_at: addDays(lastMonday, 1).toISOString(), last_reply_at: addDays(thisMonday, 2).toISOString(),
+      messages: [outbound(addDays(lastMonday, 1), 'dm', 'linkedin')],
+    },
+    {
+      prospect_id: 'l3', name: 'Replier Last Week', company: 'Brand C', lane: 'cold',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(lastMonday, 3).toISOString(),
+      messages: [outbound(lastMonday, 'dm', 'linkedin')],
+    },
+    {
+      prospect_id: 'l4', name: 'Silent', company: 'Brand D', lane: 'cold',
+      reply_count: 0, replied: false, last_sent_at: addDays(thisMonday, 1).toISOString(), last_reply_at: null,
+      messages: [outbound(addDays(thisMonday, 1), 'connection_note', 'linkedin')],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={log} />
+  );
+  // two people replied inside this week; the empty inbound array must NOT zero the headline
+  expect(html).toContain('2 wrote back');
+  expect(html).not.toContain('0 wrote back');
+  expect(html).toContain('people, not messages');
+  // no connected_at anywhere in the feed -> no Accepted row, no definition line
+  expect(html).not.toContain('invites that turned into connections');
+  expect(html).not.toContain('Accepted counts the week the accept landed');
+  // no open-profile sends in either week -> no permanent zero row
+  expect(html).not.toContain('Open profile messages');
+});
+
+it('post-patch feed: inbound-people count, the Accepted row with its definition line, and the paid/free InMail split', () => {
+  // The staged RPC patch ships inbound message rows + connection_sent_at/connected_at.
+  const log = [
+    {
+      prospect_id: 'q1', name: 'Paid InMail Target', company: 'Brand P', lane: 'orbit',
+      reply_count: 2, replied: true, last_sent_at: addDays(thisMonday, 1).toISOString(), last_reply_at: addDays(thisMonday, 3).toISOString(),
+      connection_sent_at: lastMonday.toISOString(), connected_at: addDays(thisMonday, 1).toISOString(),
+      messages: [
+        outbound(lastMonday, 'connection_note', 'linkedin'),
+        // PAID InMail: type 'inmail'
+        outbound(addDays(thisMonday, 1), 'inmail', 'linkedin_inmail'),
+        inbound(addDays(thisMonday, 2)),
+        inbound(addDays(thisMonday, 3)),
+      ],
+    },
+    {
+      prospect_id: 'q2', name: 'Open Profile Target', company: 'Brand Q', lane: 'cold',
+      reply_count: 1, replied: true, last_sent_at: addDays(thisMonday, 1).toISOString(), last_reply_at: addDays(thisMonday, 2).toISOString(),
+      connection_sent_at: addDays(lastMonday, 1).toISOString(), connected_at: addDays(lastMonday, 2).toISOString(),
+      messages: [
+        outbound(addDays(lastMonday, 1), 'connection_note', 'linkedin'),
+        // FREE open-profile message: type 'dm' on the inmail channel
+        outbound(addDays(thisMonday, 1), 'dm', 'linkedin_inmail'),
+        inbound(addDays(thisMonday, 2)),
+      ],
+    },
+    {
+      prospect_id: 'q3', name: 'No Accept Yet', company: 'Brand R', lane: 'cold',
+      reply_count: 0, replied: false, last_sent_at: lastMonday.toISOString(), last_reply_at: null,
+      connection_sent_at: lastMonday.toISOString(), connected_at: null,
+      messages: [outbound(lastMonday, 'connection_note', 'linkedin')],
+    },
+  ] as unknown as OutreachLogEntry[];
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={log} />
+  );
+  // 3 inbound messages this week from 2 people -> the headline number is PEOPLE
+  expect(html).toContain('2 wrote back');
+  expect(html).not.toContain('3 wrote back');
+  // one paid InMail + one open-profile message land in different buckets, never "2 InMails"
+  expect(html).not.toContain('2 InMails');
+  expect(html).toContain('1 InMail,');
+  expect(html).toContain('1 open profile message');
+  expect(html).toContain('Open profile messages');
+  expect(html).toContain('free, no connection needed');
+  expect(html).toContain('uses the monthly InMail allowance');
+  // connected_at present -> the Accepted row renders, with its landed-definition line
+  expect(html).toContain('invites that turned into connections');
+  expect(html).toContain('Accepted counts the week the accept landed, not the week the invite went out');
+});
+
 });
