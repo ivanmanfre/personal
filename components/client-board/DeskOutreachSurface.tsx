@@ -1,0 +1,661 @@
+/**
+ * DeskOutreachSurface — the merged "Outreach & leads" tab for the desk client-board skin.
+ *
+ * Ports `OutreachSurface` (components/ClientBoardPage.tsx, ~line 5689) onto the desk kit,
+ * matching frag-outreach.html's block order and density:
+ *   1. Headline + the dark this-week-vs-last plate, split by channel (invites/DMs/InMails),
+ *      computed client-side from the live send log.
+ *   2. The to-date funnel plate (people contacted -> accepted [not tracked] -> wrote back ->
+ *      calls booked).
+ *   3. The send allowance, collapsed into a Drill (the frag demoted it).
+ *   4. Leads eyebrow: replies-in-play -> calls-booked journey graphic.
+ *   5. Booked calls (only when board.precall_briefs has rows).
+ *   6. "The bar" - the qualifying gates, driven by board.outreach.icp.
+ *   7. "Happening now" - the live lanes, from board.outreach.lanes + status.
+ *   8. The candidate list, collapsed (names/companies only, no fit/score chip - the
+ *      underlying scorer is known-inverted).
+ *   9. The send log, collapsed, per-lead outbound trail.
+ *  10. foldLeads, folded into a collapsed Drill (the old leads surface: detail modal +
+ *      captured-leads table).
+ *
+ * Props are byte-for-byte the original OutreachSurface signature. No callback, no prop,
+ * no data fetch is touched — this file is presentation only.
+ */
+import React from 'react';
+import {
+  Plate, Eyebrow, Num, BarRow, Funnel, JourneyPlate, Drill, Blank, Chip, DeskH2, Footnote,
+  Cols, Card, PlateMute, PlateRule,
+} from './desk-kit';
+import type { FunnelStep } from './desk-kit';
+import { inkOn, caText } from '../ClientBoardPage';
+import type { Board, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus } from '../ClientBoardPage';
+
+/** A lane is dead (retired / no ratified sequence) when its status says retired or its
+ *  name is the retired Network Activation lane. Ported verbatim from OutreachSurface's
+ *  local isDeadLane so a dead source never resurfaces on this tab either. */
+function isDeadLane(name?: string, status?: string, arms?: string): boolean {
+  const hay = `${name || ''} ${status || ''} ${arms || ''}`.toLowerCase();
+  return /retired|no ratified sequence|network activation/.test(hay);
+}
+
+/* ── Display-level vendor scrub ────────────────────────────────────────────────────────
+ * Lane names in the live board JSON still carry the tool we source from
+ * ("Pure cold: Sales Navigator"). Vendor vocabulary is on the client-facing ban list, so
+ * every lane string is filtered on its way to the screen: name, detail, arms, status.
+ * THE REAL FIX IS UPSTREAM — rename outreach.lanes[].name in the board JSON ("New founders")
+ * so the data itself is client-safe. This function is only the presentation backstop that
+ * guarantees a vendor name can never reach a client screen while that rename is pending.
+ * It never mutates the data, and it deliberately leaves the dead-lane test above reading the
+ * RAW strings (a lane retired under a vendor name must still be recognised as dead).
+ */
+const VENDOR_RE = /\b(?:sales\s*nav(?:igator)?|apollo(?:\.io)?|linkedin\s*recruiter|unipile|smartlead|phantombuster|harvestapi|apify)\b/gi;
+function scrubVendor(s?: string): string {
+  if (!s) return '';
+  return s
+    .replace(VENDOR_RE, '')
+    .replace(/\(\s*\)/g, '')            // "(Sales Navigator)" -> "()" -> ""
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s*[:–—,;-]\s*$/, '')  // "Pure cold: " -> "Pure cold"
+    .replace(/^\s*[:–—,;-]\s*/, '')
+    .trim();
+}
+/** Lane name for display. If the scrub eats the whole name (a lane called nothing but its
+ *  vendor) fall back to a neutral, non-fabricated label rather than leaking the original. */
+function laneName(name?: string): string { return scrubVendor(name) || 'Outreach lane'; }
+
+/** A lane status only earns a chip when it is a plain client-readable state. Anything
+ *  carrying internal or vendor vocabulary is dropped rather than translated. */
+const UNSAFE_STATUS_RE = /campaign|seat|scorer|icp|dm\s?[123]|sequence|webhook|api|cred|error|retired|paused|draft|\bid\b/i;
+function safeStatus(status?: string): string {
+  const s = scrubVendor(status);
+  if (!s || UNSAFE_STATUS_RE.test(s) || s.length > 22) return '';
+  return s;
+}
+
+/** Truncate a lane description to one short line, cut on a word boundary. Anything longer
+ *  belongs in a drill, not on the row (the tab has no density headroom). */
+function clipDetail(s: string, max = 90): string {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const sp = cut.lastIndexOf(' ');
+  return `${(sp > 40 ? cut.slice(0, sp) : cut).replace(/[\s,;:.]+$/, '')}…`;
+}
+
+/**
+ * Bar width for one value inside a comparison group. A ZERO IS ZERO WIDTH: the numeral next
+ * to the bar carries the truth, and a full track for a 0 (the shipped bug) read as the
+ * strongest row on the plate. An all-zero group renders two empty tracks, never two full ones.
+ */
+function barPct(value: number, max: number): number {
+  if (!(max > 0) || !(value > 0)) return 0;
+  return Math.max(0, Math.min(100, (value / max) * 100));
+}
+
+/* ── Local date helpers (frag-locked copy: "20 Jul", no weekday token) ────────────── */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** Month-to-date counters reset on the 1st, so early in a month they read smaller than the
+ *  week beside them. Naming the month is what stops the two numbers reading as a contradiction. */
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+function shortDate(d: Date): string { return `${d.getDate()} ${MONTHS[d.getMonth()]}`; }
+function shortDateTime(d: Date): string { return `${shortDate(d)}, ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; }
+function mondayOf(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = x.getDay();
+  x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
+  return x;
+}
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+/**
+ * Channel/type -> send-kind classifier, ported from the live message-tagging logic already
+ * shipped in components/dashboard-v2/sections/clientops2/OutreachInbox.tsx (msgChannel /
+ * convoChannel), which reads the SAME `type`/`channel` columns OutreachLogMessage carries:
+ *   - message_type 'connection_note' | 'connection_request'  -> the invite (with note)
+ *   - message_type 'inmail' OR channel containing 'inmail'   -> InMail (no connection needed)
+ *   - channel 'email' OR message_type 'email'                -> email (outside this LinkedIn
+ *                                                                split; excluded from the plate)
+ *   - anything else outbound                                 -> a DM
+ */
+type SendKind = 'invite' | 'dm' | 'inmail' | 'email';
+function classifyMessage(m: OutreachLogMessage): SendKind {
+  const t = (m.type || '').toLowerCase();
+  const ch = (m.channel || '').toLowerCase();
+  if (t === 'connection_note' || t === 'connection_request') return 'invite';
+  if (t === 'inmail' || ch.includes('inmail')) return 'inmail';
+  if (ch === 'email' || t === 'email') return 'email';
+  return 'dm';
+}
+
+function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?: SendKind): number {
+  let n = 0;
+  for (const m of msgs) {
+    if (!m.sent_at) continue;
+    const t = Date.parse(m.sent_at);
+    if (Number.isNaN(t) || t < start.getTime() || t >= end.getTime()) continue;
+    if (kind && classifyMessage(m) !== kind) continue;
+    n++;
+  }
+  return n;
+}
+
+export default function DeskOutreachSurface({
+  board, accent, usage = null, log = null, status = null, foldLeads = null,
+}: {
+  board: Board;
+  accent: string;
+  usage?: OutreachUsage | null;
+  log?: OutreachLogEntry[] | null;
+  status?: OutreachStatus | null;
+  foldLeads?: React.ReactNode;
+}) {
+  const o = board.outreach;
+
+  if (!o) {
+    return (
+      <div className="pb-16" data-surface="desk-outreach">
+        <Eyebrow>Outreach</Eyebrow>
+        <Card style={{ marginTop: 12 }}>
+          <Blank style={{ maxWidth: 220 }} />
+          <Footnote>Your outreach program lands here once it is set up.</Footnote>
+        </Card>
+      </div>
+    );
+  }
+
+  const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
+  const entries = log || [];
+
+  // ── Flatten the live send log once: every real outbound/inbound message, across every
+  // prospect, with its parent entry attached (unsent drafts carry no sent_at, so they are
+  // excluded here exactly as the original's `sent` filter did). ──────────────────────────
+  const allOutbound: { m: OutreachLogMessage; e: OutreachLogEntry }[] = [];
+  const allInbound: { m: OutreachLogMessage; e: OutreachLogEntry }[] = [];
+  for (const e of entries) {
+    for (const m of e.messages || []) {
+      if (!m.sent_at) continue;
+      if (m.direction === 'outbound') allOutbound.push({ m, e });
+      else if (m.direction === 'inbound') allInbound.push({ m, e });
+    }
+  }
+  const outboundMsgs = allOutbound.map((x) => x.m);
+  const inboundMsgs = allInbound.map((x) => x.m);
+  const hasSends = outboundMsgs.length > 0;
+
+  const now = new Date();
+  const thisWeekStart = mondayOf(now);
+  const nextWeekStart = addDays(thisWeekStart, 7);
+  const lastWeekStart = addDays(thisWeekStart, -7);
+
+  let earliestMs = Infinity;
+  for (const m of outboundMsgs) {
+    const t = Date.parse(m.sent_at as string);
+    if (!Number.isNaN(t)) earliestMs = Math.min(earliestMs, t);
+  }
+  // Honesty gate: only show the two-week comparison when the log's earliest send actually
+  // reaches back into last week. Less history than that -> this-week counts alone.
+  const twoWeekCoverage = hasSends && earliestMs <= lastWeekStart.getTime();
+
+  const thisWeek = {
+    invites: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'invite'),
+    dms: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'dm'),
+    inmails: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'inmail'),
+    wroteBack: countInWindow(inboundMsgs, thisWeekStart, nextWeekStart),
+  };
+  const lastWeek = {
+    invites: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'invite'),
+    dms: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'dm'),
+    inmails: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'inmail'),
+    wroteBack: countInWindow(inboundMsgs, lastWeekStart, thisWeekStart),
+  };
+
+  const CATS: { key: keyof typeof thisWeek; label: string; note?: string }[] = [
+    { key: 'invites', label: 'Connection invites' },
+    { key: 'dms', label: 'DMs', note: '· follow-ups included' },
+    { key: 'inmails', label: 'InMails', note: '· no connection needed' },
+    { key: 'wroteBack', label: 'Wrote back' },
+  ];
+
+  // ── To-date funnel: people contacted (real) -> accepted (not in the log, honest blank) ->
+  // wrote back (real, entry-level so it matches the Leads journey number below) -> calls
+  // booked (real once board.precall_briefs has rows, blank until then). ────────────────────
+  const contactedCount = entries.filter((e) => (e.messages || []).some((m) => m.direction === 'outbound' && m.sent_at)).length;
+  const repliedCount = entries.filter((e) => e.replied).length;
+  const callsBookedCount = (board.precall_briefs || []).length;
+  const wroteBackPct = barPct(repliedCount, contactedCount);
+
+  // Accepts ARE tracked — not in the send log (an accept is not a message), but in
+  // performance.outreach_indicators, captured by the program counter. Only an indicator with
+  // a captured_at stamp is a real reading: a value with no stamp is an unfilled slot and
+  // still renders the honest blank. Whole-program count, so no weekly split exists and the
+  // weekly bar group above deliberately stays absent rather than inventing one.
+  const acceptsInd = (board.performance?.outreach_indicators || []).find(
+    (ind) => /accept/i.test(`${ind.key || ''} ${ind.label || ''}`) && !!ind.captured_at && typeof ind.value === 'number',
+  );
+  const acceptsValue = acceptsInd ? (acceptsInd.value as number) : null;
+
+  const funnelSteps: FunnelStep[] = [
+    { value: contactedCount, label: 'People contacted', note: '· first touch only, one per person', pct: barPct(contactedCount, contactedCount) },
+    acceptsValue !== null
+      ? { value: acceptsValue, label: 'Accepted the invite', note: '· counted across the whole program', pct: barPct(acceptsValue, contactedCount) }
+      : { label: 'Accepted the invite', blank: true },
+    {
+      value: repliedCount, label: 'Wrote back', pct: wroteBackPct, highlight: true,
+      delta: contactedCount > 0 ? `→ ${Math.round(wroteBackPct)}% of contacted` : undefined,
+    },
+    callsBookedCount > 0
+      ? { value: callsBookedCount, label: 'Calls booked', pct: barPct(callsBookedCount, callsBookedCount) }
+      : { label: 'Calls booked', blank: true },
+  ];
+
+  // ── Candidate list: named board.outreach.candidates + orbit_finds, merged. No numeric
+  // fit/score field exists on either source in the live Board type, and none is ever added
+  // here on purpose - the underlying ICP scorer is known-inverted, so a number would be
+  // worse than nothing. ───────────────────────────────────────────────────────────────────
+  type CandidateRow = { name: string; role?: string; company?: string; domain?: string; note?: string; linkedinUrl?: string };
+  const candidateRows: CandidateRow[] = [];
+  (o.candidates?.groups || []).forEach((g) => (g.items || []).forEach((it) => candidateRows.push({
+    name: it.name, role: it.role, company: it.company, domain: it.domain, note: it.note, linkedinUrl: it.linkedin_url,
+  })));
+  (o.orbit_finds?.people || []).forEach((p) => candidateRows.push({
+    name: p.name, role: p.role, company: p.company, domain: p.domain, note: p.one_liner || p.caveat, linkedinUrl: p.linkedin_url,
+  }));
+  const icpBar = o.icp?.bar || [];
+
+  // ── Send-log Drill counts: real "today" + all-time totals, from the same flattened log. ──
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = addDays(todayStart, 1);
+  const sentToday = countInWindow(outboundMsgs, todayStart, tomorrowStart);
+  const repliesToday = countInWindow(inboundMsgs, todayStart, tomorrowStart);
+
+  return (
+    <div className="pb-16" data-surface="desk-outreach">
+
+      <Eyebrow>Outreach</Eyebrow>
+      <DeskH2>
+        {hasSends ? (
+          <>Week of {shortDate(thisWeekStart)}: {thisWeek.invites} invites, {thisWeek.dms} DMs, {thisWeek.inmails} InMails. <b>{thisWeek.wroteBack} wrote back.</b></>
+        ) : (
+          <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
+        )}
+      </DeskH2>
+
+      {/* 0 — up next: today's pace against the cap and the real named send queue.
+          Desk-kit port of the original UpNextBlock (that one carries 9-10.5px type and
+          fails the floor; the data contract is identical). ICP scores never render. */}
+      {status && (status.is_live || status.dispatch_scheduled) && (
+        <Card style={{ marginTop: 16, padding: '18px 24px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <Eyebrow tone="ink">Up next</Eyebrow>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>what goes out, and when</span>
+            {status.next_window_at && (
+              <Chip style={{ marginLeft: 'auto' }}>next send {new Date(status.next_window_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })} PT</Chip>
+            )}
+          </div>
+          {(() => {
+            const nextIsToday = !!status.next_window_at && new Date(status.next_window_at).toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' }) === new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' });
+            const sendDay = status.todays_sends > 0 || nextIsToday;
+            return sendDay ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginTop: 12, flexWrap: 'wrap' }}>
+                  <Num size="big" inline>{status.todays_sends}</Num>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>of {status.daily_cap} sends today</span>
+                </div>
+                <div className="bar" style={{ marginTop: 9, height: 9, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }} data-viz>
+                  <div style={{ height: '100%', width: `${barPct(status.todays_sends, status.daily_cap)}%`, borderRadius: 999, background: 'var(--cb-accent)' }} />
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginTop: 12, flexWrap: 'wrap' }}>
+                <Num size="big" inline>{status.daily_cap}</Num>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>go out on a send day, none today</span>
+              </div>
+            );
+          })()}
+          {(status.up_next || []).length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              {(status.up_next || []).slice(0, 5).map((u, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderTop: '1px solid var(--cb-line)', flexWrap: 'wrap' }}>
+                  <span style={{ flex: 'none', width: 20, fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{u.name}</span>
+                  {u.company && <span style={{ flex: '1 1 140px', minWidth: 0, fontSize: 12.5, color: 'var(--cb-ink-mute)' }}>{u.company}</span>}
+                  {u.lane && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{scrubVendor(u.lane) === 'orbit' ? 'client orbit' : scrubVendor(u.lane)}</Chip>}
+                </div>
+              ))}
+              {(status.up_next || []).length > 5 && (
+                <Footnote style={{ marginTop: 7 }}>+{(status.up_next || []).length - 5} more in the queue</Footnote>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* 1 — this week against last, split by channel. */}
+      <Plate style={{ marginTop: 18 }} pad="26px 26px 22px">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
+          <Eyebrow on="plate">Week against week</Eyebrow>
+          <PlateMute style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em' }}>{shortDate(now)}</PlateMute>
+        </div>
+
+        {!hasSends ? (
+          <div style={{ marginTop: 18 }}>
+            <Blank on="plate" style={{ maxWidth: 200 }} />
+            <Footnote on="plate">Sends have not started. Nothing has gone out yet, so there is nothing to compare week to week.</Footnote>
+          </div>
+        ) : (
+          <div style={{ marginTop: 16 }}>
+            {CATS.map((cat, i) => {
+              // Both bars in a group are scaled against that group's own max, so the two
+              // weeks stay comparable and a 0 draws NOTHING. A group where both weeks are 0
+              // (max 0) renders two empty tracks — the numerals carry it.
+              const groupMax = twoWeekCoverage ? Math.max(thisWeek[cat.key], lastWeek[cat.key]) : thisWeek[cat.key];
+              return (
+              <div key={cat.key} style={{ marginTop: i > 0 ? 15 : 0 }}>
+                {i > 0 && <PlateRule gap={0} />}
+                <div style={{ marginTop: i > 0 ? 14 : 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-plate-ink)' }}>
+                  {cat.label}{cat.note && <PlateMute style={{ fontWeight: 600 }}> {cat.note}</PlateMute>}
+                </div>
+                {twoWeekCoverage && (
+                  <BarRow
+                    on="plate"
+                    label={`w/ ${shortDate(lastWeekStart)}`}
+                    value={<Num size="row" inline tone="plate-mute">{lastWeek[cat.key]}</Num>}
+                    pct={barPct(lastWeek[cat.key], groupMax)}
+                  />
+                )}
+                <BarRow
+                  on="plate"
+                  tone="strong"
+                  label={`w/ ${shortDate(thisWeekStart)}, Mon-Fri`}
+                  value={<Num size="big" inline tone="plate">{thisWeek[cat.key]}</Num>}
+                  pct={barPct(thisWeek[cat.key], groupMax)}
+                />
+              </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ marginTop: 17 }}>
+          {twoWeekCoverage ? (
+            <Chip tone="plate">2 live weeks of data: direction, not a trend</Chip>
+          ) : hasSends ? (
+            <Chip tone="plate">Less than 2 weeks of sends so far: this week's counts only</Chip>
+          ) : null}
+        </div>
+        {/* Density fold: the reference's middle clause here ("three ways a first message goes
+            out: an invite with a note, a DM once connected, an InMail when not") is the SAME
+            definition the funnel plate's footnote carries one block below. Stating it once
+            pays for the booked-calls empty state and the lane lines this tab was missing. */}
+        <Footnote on="plate">
+          Full week, Mon&ndash;Fri. The funnel below counts invites and first messages only.
+        </Footnote>
+      </Plate>
+
+      {/* 2 — everyone contacted so far, to date. */}
+      <Plate style={{ marginTop: 22 }} pad="26px 26px 22px">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
+          <Eyebrow on="plate">Everyone contacted so far</Eyebrow>
+          <PlateMute style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em' }}>as of {shortDateTime(now)}</PlateMute>
+        </div>
+        <div style={{ marginTop: 18 }}>
+          <Funnel steps={funnelSteps} on="plate" />
+        </div>
+        <Footnote on="plate">
+          A first touch is an invite with a note, a first DM, or an InMail. Follow-up messages live in the weekly bars above.
+        </Footnote>
+      </Plate>
+
+      {/* 3 — the send allowance, collapsed (the frag demoted it off the top of the tab). */}
+      {usage && (
+        <Card style={{ marginTop: 12, padding: '4px 26px' }}>
+          {/* The month counters reset on the 1st, so early in a month they sit UNDER the week
+              total printed above them. Naming the month is what keeps the smaller number from
+              reading as a contradiction of the weekly plate. */}
+          <Drill
+            label="open it"
+            summaryLeft={<>Sent in {MONTHS_FULL[now.getMonth()]} so far: <b>{usage.connect_sent}</b> invite{usage.connect_sent === 1 ? '' : 's'}, <b>{usage.dm_sent}</b> DM{usage.dm_sent === 1 ? '' : 's'}</>}
+          >
+            <Cols n={3} gap={20}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <Num size="big" inline>{usage.connect_sent}</Num>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>invites sent &middot; cap {usage.connect_cap}</span>
+                </div>
+                <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
+                  <div className="barfill" style={{ height: '100%', width: `${barPct(usage.connect_sent, usage.connect_cap)}%`, borderRadius: 999, background: 'var(--cb-accent)' }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <Num size="big" inline>{usage.dm_sent}</Num>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>DMs sent &middot; no cap set</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <Num size="big" inline>{usage.inmail_used}</Num>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>InMails sent &middot; cap {usage.inmail_cap}</span>
+                </div>
+                <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
+                  <div className="barfill" style={{ height: '100%', width: `${barPct(usage.inmail_used, usage.inmail_cap)}%`, borderRadius: 999, background: 'var(--cb-accent)' }} />
+                </div>
+              </div>
+            </Cols>
+            <Footnote>The caps are ours, set low on purpose. These counters cover {MONTHS_FULL[now.getMonth()]} only and start again on the 1st.</Footnote>
+          </Drill>
+        </Card>
+      )}
+
+      {/* 4 — Leads: replies in play -> calls booked. */}
+      <Eyebrow style={{ marginTop: 28 }}>Leads</Eyebrow>
+      <Plate style={{ marginTop: 12 }} pad="28px 26px 24px">
+        <JourneyPlate
+          left={{ value: repliedCount, label: 'Replies in play', sub: `as of ${shortDateTime(now)}` }}
+          right={callsBookedCount > 0 ? { value: callsBookedCount, label: 'Calls booked' } : { label: 'Calls booked', blank: true }}
+        />
+      </Plate>
+
+      {/* 5 — Booked calls: the block ALWAYS renders. Rows once a real booking lands in
+          board.precall_briefs, and until then the reference's drawn honest empty state — a
+          dashed card that says the row is not here yet and what will fill it. Never a sample
+          row, never a fabricated booking. */}
+      <Card style={{ marginTop: 12, padding: '22px 26px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <Eyebrow>Booked calls</Eyebrow>
+            <span style={{ fontFamily: 'var(--cb-mono)', fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', letterSpacing: '0.04em' }}>from your LinkedIn booking link</span>
+          </div>
+          {(board.precall_briefs || []).length === 0 ? (
+            <div style={{
+              marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 25,
+              background: 'var(--cb-paper-sunk)', padding: '30px 28px',
+            }}>
+              <b style={{ display: 'block', fontFamily: 'var(--cb-serif)', fontSize: 19, fontWeight: 600, color: 'var(--cb-ink)', marginBottom: 8 }}>None yet.</b>
+              <div style={{ fontSize: 14.5, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>
+                When someone books, the row lands here: who, company, when, with the pre-call brief and their store scan one tap away.
+              </div>
+            </div>
+          ) : (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(board.precall_briefs || []).map((b) => (
+              <div key={b.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 12px', borderRadius: 14, background: 'var(--cb-paper-raise, #fff)', border: '1px solid var(--cb-line)', padding: '14px 16px' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{b.name}</span>
+                    {(b.company || b.domain) && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{b.company || b.domain}</span>}
+                  </div>
+                  {b.when_str && <div style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{b.when_str}</div>}
+                  {b.booked_note && <div style={{ fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{b.booked_note}</div>}
+                </div>
+                <div style={{ marginLeft: 'auto', display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>
+                  {b.scan_url && (
+                    <a href={b.scan_url} target="_blank" rel="noreferrer" style={{ borderRadius: 10, padding: '7px 13px', fontFamily: 'var(--cb-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cb-ink)', border: '1px solid var(--cb-line-bold)' }}>Their scan</a>
+                  )}
+                  {b.brief_url && (
+                    <a href={b.brief_url} target="_blank" rel="noreferrer" style={{ borderRadius: 10, padding: '7px 13px', fontFamily: 'var(--cb-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: inkOn(accent), background: accent, border: '1px solid var(--cb-line-bold)' }}>Pre-call brief</a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+      </Card>
+
+      {/* 6 — The bar: who qualifies, driven entirely by board.outreach.icp. */}
+      {o.icp && icpBar.length > 0 && (
+        <>
+          <Eyebrow style={{ marginTop: 28 }}>The bar</Eyebrow>
+          <Card style={{ marginTop: 12, padding: '22px 26px 6px' }}>
+            {/* Authored, approved card title — NOT o.icp.label. The live label is a segment
+                name ("DTC brand founders and operators"); the client's question is whose
+                inbox his name shows up in, and the checks below answer exactly that. */}
+            <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 19, lineHeight: 1.3, color: 'var(--cb-ink)' }}>
+              Who gets a message from your name
+            </div>
+            <Footnote>{icpBar.length} check{icpBar.length === 1 ? '' : 's'}. A name that misses any of them never gets a message.</Footnote>
+            <div style={{ marginTop: 15 }}>
+              {icpBar.map((b, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 0', borderTop: '1px solid var(--cb-line)' }}>
+                  <span style={{ flex: 'none', width: 26, height: 26, borderRadius: 9, background: 'var(--cb-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden>
+                    <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.4 7.4 5.6 10.6 11.6 3.8" fill="none" stroke={inkOn(accent)} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </span>
+                  <span style={{ flex: 'none', fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 12.5, letterSpacing: '0.06em', color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, minWidth: 0, color: 'var(--cb-ink)' }}>{b}</span>
+                </div>
+              ))}
+            </div>
+            {o.icp.note && <Footnote>{o.icp.note}</Footnote>}
+          </Card>
+        </>
+      )}
+
+      {/* 7-9 — Happening now: the live lanes, the candidate list, the send log. All three
+          share one card, matching the frag's density. The send-log Drill inside always
+          renders (honest-empty until sends go live), so this card is never itself empty. */}
+      <Eyebrow style={{ marginTop: 28 }}>Happening now</Eyebrow>
+      <Card style={{ marginTop: 12, padding: '4px 26px' }}>
+            {lanes.map((ln, i) => {
+              // Every string on this row goes through the vendor scrub on its way to the
+              // screen; the description is clipped to one short line so it costs the tab a
+              // line, not a paragraph.
+              const detail = clipDetail(scrubVendor(ln.detail));
+              const arms = scrubVendor(ln.arms);
+              const status = safeStatus(ln.status);
+              return (
+              <div key={ln.key || ln.name} style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '16px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
+                <div style={{ flex: '1 1 230px', minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 16, color: 'var(--cb-ink)' }}>{laneName(ln.name)}</div>
+                  {detail && <div style={{ fontSize: 14, color: 'var(--cb-ink-soft)', marginTop: 3 }}>{detail}</div>}
+                </div>
+                {arms && <Chip>{arms}</Chip>}
+                {status && <Chip tone="accent">{status}</Chip>}
+                <div style={{ textAlign: 'right', marginLeft: 'auto' }}>
+                  {typeof ln.scanned === 'number' ? (
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <Num size="row" inline tone="mute">{ln.scanned}</Num>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>looked at</span>
+                      <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 800 }}>&rarr;</span>
+                      <Num size="row" inline>{typeof ln.count === 'number' ? ln.count : (ln.fits ?? 0)}</Num>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>queued</span>
+                    </div>
+                  ) : typeof ln.count === 'number' ? (
+                    <>
+                      <Num size="row" inline>{ln.count}</Num>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', marginTop: 4 }}>waiting in the queue</div>
+                    </>
+                  ) : (
+                    <>
+                      <Blank style={{ display: 'inline-flex', width: 46, height: 28, minHeight: 28 }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', marginTop: 4 }}>lane count: not tracked yet</div>
+                    </>
+                  )}
+                </div>
+              </div>
+              );
+            })}
+
+            {/* 8 — candidate Drill: names + companies only, never a fit/score chip. */}
+            {candidateRows.length > 0 && (
+              <Drill label="open it" summaryLeft={<>The current list: <b>{candidateRows.length}</b> name{candidateRows.length === 1 ? '' : 's'}</>}>
+                {candidateRows.map((r, i) => (
+                  <div key={`${r.name}-${r.company || ''}-${i}`} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '8px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
+                    <span style={{ flex: 'none', width: 20, fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                    {r.linkedinUrl ? (
+                      <a href={r.linkedinUrl} target="_blank" rel="noreferrer" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-ink)' }}>{r.name}</a>
+                    ) : (
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-ink)' }}>{r.name}</span>
+                    )}
+                    <span style={{ fontSize: 13, color: 'var(--cb-ink-soft)', flex: '1 1 190px', minWidth: 0 }}>
+                      {[r.role, r.company].filter(Boolean).join(' · ')}{r.domain ? ` · ${r.domain}` : ''}
+                    </span>
+                    {r.note && <span style={{ flex: 'none', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-soft)', background: 'var(--cb-paper-sunk)', borderRadius: 999, padding: '3px 10px' }}>{r.note}</span>}
+                  </div>
+                ))}
+              </Drill>
+            )}
+
+            {/* 9 — send log Drill: real per-lead outbound trail, honest empty. */}
+            <Drill
+              label="open it"
+              summaryLeft={hasSends ? <>Today&rsquo;s log: <b>{sentToday}</b> messages out &middot; <b>{repliesToday}</b> replies in</> : <>Send log: nothing sent yet</>}
+            >
+              {!hasSends ? (
+                <Footnote>
+                  Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment sends go live, with the date it went out and whether they replied.
+                </Footnote>
+              ) : (
+                <div>
+                  {entries.map((e) => {
+                    const sent = (e.messages || []).filter((m) => m.direction === 'outbound');
+                    return (
+                      <details key={e.prospect_id} className="drill" style={{ marginTop: 8, borderRadius: 12, background: 'var(--cb-paper-sunk)', border: '1px solid var(--cb-line)' }}>
+                        <summary style={{ listStyle: 'none', cursor: 'pointer', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '12px 14px' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-ink)' }}>{e.name || '(unnamed)'}</span>
+                          {e.company && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{e.company}</span>}
+                          {scrubVendor(e.lane || '') && <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cb-ink-mute)', border: '1px solid var(--cb-line)', borderRadius: 999, padding: '1px 6px' }}>{scrubVendor(e.lane || '')}</span>}
+                          {e.replied && <Chip tone="accent">replied</Chip>}
+                          <span style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{sent.length} sent</span>
+                        </summary>
+                        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {sent.map((m, i) => (
+                            <div key={i} style={{ borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', border: '1px solid var(--cb-line)', padding: '10px 12px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                                <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: caText(accent) }}>&rarr; sent</span>
+                                <span style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: 'var(--cb-ink-mute)' }}>
+                                  {[m.type, m.channel].filter(Boolean).join(' · ')}{m.sent_at ? ` · ${shortDate(new Date(m.sent_at))}` : ''}
+                                </span>
+                              </div>
+                              {m.text && <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--cb-ink-soft)', whiteSpace: 'pre-line' }}>{m.text}</div>}
+                            </div>
+                          ))}
+                          {e.replied && (
+                            <div style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: caText(accent) }}>
+                              Replied{e.last_reply_at ? ` · ${shortDate(new Date(e.last_reply_at))}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              )}
+            </Drill>
+      </Card>
+
+      {/* 10 — the full leads view, folded in behind one more Drill so this tab carries every
+          write path the old Leads tab had (detail modal, captured-leads table) without
+          duplicating the drawn blocks above. */}
+      {foldLeads && (
+        <Card style={{ marginTop: 12, padding: '4px 26px' }}>
+          <Drill label="open it" summaryLeft={<>The full leads view: captured leads, the lead-pipeline detail and every write action</>}>
+            {foldLeads}
+          </Drill>
+        </Card>
+      )}
+    </div>
+  );
+}

@@ -10,6 +10,14 @@ import {
   stripMagicLinkFragment,
   type BoardSession,
 } from '../lib/boardSession';
+import { DeskKitStyle } from './client-board/desk-kit';
+import DeskWeekSurface from './client-board/DeskWeekSurface';
+import DeskReviewSurface from './client-board/DeskReviewSurface';
+import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
+import DeskOutreachSurface from './client-board/DeskOutreachSurface';
+import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
+import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
+import DeskCalendarStrip from './client-board/DeskCalendarStrip';
 import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -662,7 +670,7 @@ export function DocCarousel({ slides, title, accent }: { slides: string[]; title
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
           />
         ))}
-        <span className="absolute rounded-full px-2 py-0.5 text-[10.5px] font-semibold tabular-nums" style={{ top: 8, right: 8, background: 'rgba(0,0,0,.55)', color: '#fff', backdropFilter: 'blur(2px)' }}>
+        <span className="absolute rounded-full px-2 py-0.5 text-[11.5px] font-semibold tabular-nums" style={{ top: 8, right: 8, background: 'rgba(0,0,0,.55)', color: '#fff', backdropFilter: 'blur(2px)' }}>
           {idx + 1} / {total}
         </span>
         {idx > 0 && (
@@ -928,7 +936,7 @@ function FunnelChip({ stage, accent }: { stage?: string; accent: string }) {
   return (
     <span
       title={meta.tip}
-      className="inline-flex shrink-0 cursor-default items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-medium"
+      className="inline-flex shrink-0 cursor-default items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-medium"
       style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
     >
       <span className="h-[5px] w-[5px] shrink-0 rounded-full" style={{ background: `color-mix(in srgb, ${accent} ${FUNNEL_DOT[stage!] ?? 55}%, white)` }} aria-hidden />
@@ -1009,9 +1017,12 @@ export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, clampLines }: {
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none';
+  /** LinkedIn-faithful body fold: clamp to N lines the way the real feed folds a post.
+   *  The full copy stays one click away (the surface opens the post on click). */
+  clampLines?: number;
   /** Live board: the typographic plate is a preview fabrication — render the real
    *  generated image (media_url) or nothing. */
   live?: boolean;
@@ -1038,9 +1049,22 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · not scheduled yet' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
-      {item.body && (
-        <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', marginBottom: 12, whiteSpace: 'pre-line' }}>{item.body}</div>
-      )}
+      {item.body && (() => {
+        // LinkedIn-faithful fold: pre-fold text is truncated at a word boundary (the way
+        // the platform serves it), so the folded copy is really gone, in every register
+        // (visual, meter, screen reader) — never merely clipped by CSS.
+        const cap = clampLines ? clampLines * 88 : Infinity;
+        const folded = clampLines && item.body.length > cap
+          ? item.body.slice(0, item.body.lastIndexOf(' ', cap)).trimEnd()
+          : item.body;
+        const didFold = folded !== item.body;
+        return (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{folded}</div>
+            {didFold ? <span style={{ fontSize: bodyPx, color: '#666' }}>…see more</span> : null}
+          </div>
+        );
+      })()}
       {docPages.length >= 2 ? (
         <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
       ) : (item.media_url || cardImageUrl(item, board)) ? (
@@ -1051,7 +1075,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
       ) : showRender ? (
         <div className="flex items-center justify-center gap-2.5" style={{ aspectRatio: '1200/500', borderRadius: 6, border: `1px dashed ${caBorder(accent, 45)}` }}>
           <PulseDot color={accent} size={8} />
-          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.14em', color: INK_MUTE }}>cover rendering…</span>
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11.5, letterSpacing: '0.14em', color: INK_MUTE }}>cover rendering…</span>
         </div>
       ) : showCover ? (
         <div className="cb-cover-plate flex flex-col justify-end" style={{ background: accent, borderRadius: 6, aspectRatio: '1200/500', padding: size === 'lg' ? '20px 22px' : '15px 17px' }}>
@@ -1929,7 +1953,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                         return (
                           <div className="rounded-lg p-3.5" style={{ background: caWash(accent, 5), border: `1px solid ${caBorder(accent, 30)}` }}>
                             <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>now running in this slot</div>
-                            <div className="mt-1.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14.5, color: INK }}>{repl.title || 'A ready draft'}</div>
+                            <div className="mt-1.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14.5, color: INK }}>{(repl.title || 'A ready draft').replace(/^\[[^\]]*\]\s*/, '')}</div>
                             {(repl.body || repl.hook) && <p className="mt-0.5" style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.55, color: INK_SOFT }}>{repl.body || repl.hook}</p>}
                             <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="mt-2.5" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>undo and bring the original back</button>
                           </div>
@@ -1953,14 +1977,14 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                                   {bench.length > 0 && <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from this slot&apos;s bench</div>}
                                   {bench.map((alt) => (
                                     <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
-                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{alt.title}</span><span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span></span>
+                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{(alt.title || '').replace(/^\[[^\]]*\]\s*/, '')}</span><span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span></span>
                                       <button onClick={() => { setPickerRow(null); onPickReplacementAngle?.(q.id, alt); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
                                     </div>
                                   ))}
                                   {pool.length > 0 && <div className="mt-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from your ready drafts</div>}
                                   {pool.map((it) => (
                                     <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
-                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{it.title || 'Ready draft'}</span>{it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}</span>
+                                      <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{(it.title || 'Ready draft').replace(/^\[[^\]]*\]\s*/, '')}</span>{it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}</span>
                                       <button onClick={() => { setPickerRow(null); onPickReplacement?.(q.id, it); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
                                     </div>
                                   ))}
@@ -3024,7 +3048,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                   {benchFor(focused.id).map((alt) => (
                                     <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
                                       <span className="min-w-0">
-                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{alt.title}</span>
+                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{(alt.title || '').replace(/^\[[^\]]*\]\s*/, '')}</span>
                                         <span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span>
                                         {alt.drafts_by && <span className="block text-[11px] tabular-nums" style={{ color: FAINT }}>Drafts {fmtDay(alt.drafts_by)} if you pick it</span>}
                                       </span>
@@ -3035,7 +3059,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                   {pool.map((it) => (
                                     <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
                                       <span className="min-w-0">
-                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{it.title || 'Ready draft'}</span>
+                                        <span className="block text-[13px] font-semibold" style={{ color: INK }}>{(it.title || 'Ready draft').replace(/^\[[^\]]*\]\s*/, '')}</span>
                                         {it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}
                                       </span>
                                       <button onClick={() => pickPool(focused.id, it)} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
@@ -3312,7 +3336,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Honest source chip for the modal (call quote included).
   const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = stage === 'review' ? (isLive
-      ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change is logged for your operator.'
+      ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.'
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
     : stage === 'scheduled' ? (isLive ? 'Scheduled. It publishes on its date.' : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
@@ -7077,6 +7101,13 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
   );
 }
 
+/** Shared surface API for the desk-skin surfaces in components/client-board/. Those files
+ *  import types + the platform-artifact components from here; the page imports the desk
+ *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
+ *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
+export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
+export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
+
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
   const [params] = useSearchParams();
@@ -8014,7 +8045,7 @@ export default function ClientBoardPage() {
     '--cb-clinical': `"${deskBodyFont}", system-ui, sans-serif`,
     '--cb-card-shadow': 'none', '--cb-hero-shadow': 'none', '--cb-lift': 'none',
     // The one dark proof plate every panel gets exactly one of.
-    '--cb-plate': '#333333', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': '#96968F',
+    '--cb-plate': '#333333', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': '#ABABA3',
     '--cb-plate-line': 'rgba(255,255,255,0.14)',
   } : {};
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
@@ -8290,51 +8321,41 @@ export default function ClientBoardPage() {
   const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
   const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
   const approvedIds = new Set(Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
+  // One props object per switched surface: the desk variant and the original take the SAME
+  // wiring, so the skin can never change behaviour — only which presentation renders it.
+  const weekSurfaceProps = {
+    board: viewBoard, accent, mint, stageOf, approvedIds, angleSwaps, skips: weekSkips,
+    benchFor, pool: replacementPool, onPickReplacement: pickReplacement,
+    onBackToBuffer: backToBuffer, onLeaveDayEmpty: leaveDayEmpty, onSetSchedule: setScheduleRPC,
+    onClearDay: clearDay, onScheduleToDay: scheduleToDay, recentlyCleared, leftEmpty,
+    onLeaveEmpty: leaveEmpty, onRefillDay: refillDay, onOpen: openDetail,
+    onOpenCal: openCalendarItem, onApprove: approve, onPickAngle: pickAngle,
+    onSkip: skipDay, onUnskip: unskipDay, onGoContent: () => goTab('review'),
+    flashId, modalOpen: !!detail, live: isLive,
+  };
   const surfaces: Record<TabId, React.ReactNode> = {
-    week: (
-      <WeekSurface
-        board={viewBoard}
-        accent={accent}
-        mint={mint}
-        stageOf={stageOf}
-        approvedIds={approvedIds}
-        angleSwaps={angleSwaps}
-        skips={weekSkips}
-        benchFor={benchFor}
-        pool={replacementPool}
-        onPickReplacement={pickReplacement}
-        onBackToBuffer={backToBuffer}
-        onLeaveDayEmpty={leaveDayEmpty}
-        onSetSchedule={setScheduleRPC}
-        onClearDay={clearDay}
-        onScheduleToDay={scheduleToDay}
-        recentlyCleared={recentlyCleared}
-        leftEmpty={leftEmpty}
-        onLeaveEmpty={leaveEmpty}
-        onRefillDay={refillDay}
-        onOpen={openDetail}
-        onOpenCal={openCalendarItem}
-        onApprove={approve}
-        onPickAngle={pickAngle}
-        onSkip={skipDay}
-        onUnskip={unskipDay}
-        onGoContent={() => goTab('review')}
-        flashId={flashId}
-        modalOpen={!!detail}
-        live={isLive}
-      />
-    ),
-    review: <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} /> : <WeekSurface {...weekSurfaceProps} />,
+    review: skin === 'desk'
+      ? <DeskReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
     // it just renders inside a host tab instead of owning one.
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} desk={skin === 'desk'} onEditPromo={editLmPromo} />,
-    newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
+    lm: skin === 'desk'
+      ? <DeskLeadMagnetsSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} desk onEditPromo={editLmPromo} />
+      : <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} desk={false} onEditPromo={editLmPromo} />,
+    newsletter: skin === 'desk'
+      ? <DeskNewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />
+      : <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    outreach: <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={skin === 'desk' ? <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} /> : null} />,
+    outreach: skin === 'desk'
+      ? <DeskOutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
-    performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={skin === 'desk'} />,
+    performance: skin === 'desk'
+      ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim />
+      : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };
@@ -8383,6 +8404,8 @@ export default function ClientBoardPage() {
 @media (prefers-reduced-motion: reduce) { .cb-pulse { animation: none !important } }
 
 /* ============ DESK skin composition overrides (scoped) ============ */
+[data-skin="desk"] .cb-stickybar { position: sticky; top: 0; z-index: 15; }
+@media (max-width: 1023px) { [data-skin="desk"] .cb-stickybar { position: relative; z-index: 1; } }
 /* The drawn content-desk look. Same trick as blackbox: compiled Tailwind radii/shadows and
    inline styles cannot be reached by CSS vars, so structure is enforced here rather than by
    editing hundreds of class strings. Rule of the skin: soft rounded paper, hairline rules,
@@ -8521,6 +8544,7 @@ export default function ClientBoardPage() {
 @media (prefers-reduced-motion: reduce) { .cb-lm-card { transition: none } .cb-lm-card:hover { transform: none } }
 `}</style>
     <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
+      {skin === 'desk' && <DeskKitStyle />}
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
           the client heading font + accent period; "This week" the one serif nav item, the
           rest mono caps; record button the rail's only ink-filled element. */}
@@ -8596,11 +8620,21 @@ export default function ClientBoardPage() {
               <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>{isLive ? (board.domain || clientBrand(board)) : 'Run by InboundOnSteroids'}</span>
             </span>
           </div>
+          {/* Desk keeps Team off the six-tab nav; the invite flow stays one click away here. */}
+          {skin === 'desk' && isLive && (
+            <button
+              onClick={() => goTab('team')}
+              className="mt-2 block text-left text-[11.5px] font-semibold underline"
+              style={{ color: INK_MUTE, textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Invite a teammate
+            </button>
+          )}
         </div>
       </aside>
 
       {/* Mobile header */}
-      <header className="sticky top-0 z-20 flex items-center gap-2.5 border-b bg-white/85 px-4 py-3 backdrop-blur-md lg:hidden" style={{ borderColor: LINE }}>
+      <header className={`sticky top-0 z-20 flex items-center gap-2.5 border-b px-4 py-3 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE }}>
         {logo(22)}
         {isPreview && (
           <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium" title="Your first month, built ahead" style={{ border: `1px solid ${LINE}`, color: DIM }}>
@@ -8630,6 +8664,58 @@ export default function ClientBoardPage() {
           </span>
         </div>
 
+        {/* Desk sticky action bar: the accent strip that opens every tab with its one live
+            fact and one action — the reference board's signature band. Every sentence is
+            computed from the live board; the strip never renders an authored couplet. */}
+        {skin === 'desk' && (() => {
+          const q = viewBoard.queue;
+          const notOut = q.filter((x) => stageOf(x) !== 'published');
+          const dated = notOut.filter((x) => isScheduled(x)).sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+          const todayIso = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' });
+          const todays = dated.find((x) => x.publish_date === todayIso);
+          const next = todays || dated.find((x) => (x.publish_date || '') > todayIso);
+          const bufferN = notOut.length - dated.length;
+          const outN = q.length - notOut.length;
+          const lmLive = (viewBoard.lead_magnets || []).filter((e) => e.status === 'live');
+          const perfPosts = (viewBoard.performance?.posts || []).filter((x) => typeof x.impressions === 'number');
+          const best = perfPosts.length ? perfPosts.reduce((a, b) => ((b.impressions as number) > (a.impressions as number) ? b : a)) : null;
+          const fmtD = (iso?: string) => (iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '');
+          const scrollToText = (t: string) => { const el = Array.from(document.querySelectorAll('main *')).find((e) => e.children.length === 0 && e.textContent?.trim().toLowerCase() === t); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+          let text: React.ReactNode = null; let cta: { label: string; go: () => void } | null = null;
+          if (activeTab === 'week') {
+            if (todays) { text = <>Ships today: {todays.hook || todays.title}</>; cta = { label: 'Open today’s post →', go: () => openDetail(todays) }; }
+            else if (next) { text = <>Next post {fmtD(next.publish_date)}: {(next.hook || next.title || '').slice(0, 60)}</>; cta = { label: 'Open the post →', go: () => openDetail(next) }; }
+            else { text = <>{bufferN} drafts written and waiting in the buffer.</>; cta = { label: 'See the pipeline →', go: () => goTab('review') }; }
+          } else if (activeTab === 'review') {
+            text = <>Pipeline: {dated.length} scheduled, {bufferN} in the buffer, {outN} out.</>;
+            cta = { label: 'See the calendar →', go: () => setContentView('calendar') };
+          } else if (activeTab === 'lm') {
+            text = <>{lmLive.length} lead magnet{lmLive.length === 1 ? '' : 's'} live on your site.</>;
+            if (lmLive[0]?.url) cta = { label: 'Open the newest →', go: () => window.open(lmLive[lmLive.length - 1].url || lmLive[0].url, '_blank') };
+          } else if (activeTab === 'newsletter') {
+            const nIss = viewBoard.newsletter?.issues?.length || 0;
+            text = nIss ? <>{nIss} issue{nIss === 1 ? '' : 's'} of {viewBoard.newsletter?.name} out.</> : <>{viewBoard.newsletter?.name || 'The newsletter'} is drafted; opt-ins come from the lead magnets.</>;
+            cta = { label: 'See the lead magnets →', go: () => goTab('lm') };
+          } else if (activeTab === 'outreach') {
+            const st = outreachStatus;
+            text = st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Sends run on weekdays under your name.</>;
+            cta = { label: 'See the leads →', go: () => scrollToText('leads') };
+          } else if (activeTab === 'performance') {
+            text = best ? <>{perfPosts.length} posts measured. Best: {(best.impressions as number).toLocaleString()} reads.</> : <>Numbers land here as posts publish.</>;
+            cta = { label: 'Read the ledger →', go: () => scrollToText('the ledger') };
+          }
+          if (!text) return null;
+          return (
+            <div className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 34px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0 }}>{text}</div>
+              {cta && (
+                <button onClick={cta.go} style={{ background: 'var(--cb-ink)', color: 'var(--cb-paper)', border: 'none', borderRadius: 999, padding: '11px 22px', fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                  {cta.label}
+                </button>
+              )}
+            </div>
+          );
+        })()}
         <main className="px-4 pb-[calc(env(safe-area-inset-bottom)+88px)] pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-9">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -8640,15 +8726,15 @@ export default function ClientBoardPage() {
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
-              <div className={`w-full ${activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
+              <div className={`w-full ${skin === 'desk' ? 'max-w-[1040px]' : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
 
       {/* Mobile bottom tabs */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/85 px-1 pt-1 backdrop-blur-md lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
-        <nav className="grid w-full grid-cols-5" aria-label="Board sections">
+      <div className={`fixed inset-x-0 bottom-0 z-20 border-t px-1 pt-1 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
+        <nav className="grid w-full" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }} aria-label="Board sections">
           {visibleTabs.map((t) => {
             const active = activeTab === t.id;
             return (
@@ -8664,7 +8750,7 @@ export default function ClientBoardPage() {
                     <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
                   )}
                 </span>
-                <span className={`max-w-full truncate text-[9px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{t.label}</span>
+                <span className={`max-w-full truncate text-[10px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{skin === 'desk' ? t.label.split(' ')[0] : t.label}</span>
               </button>
             );
           })}
