@@ -8435,11 +8435,21 @@ export default function ClientBoardPage() {
 [data-skin="desk"] .cb-plate hr, [data-skin="desk"] .cb-plate .cb-plate-rule { border-color: var(--cb-plate-line, rgba(255,255,255,0.14)) !important; }
 /* Honest blanks read as drawn placeholders, never as a zero. */
 [data-skin="desk"] .cb-blank { border: 2px dashed var(--cb-line-bold) !important; background: repeating-linear-gradient(45deg, rgba(17,17,17,0.045) 0 4px, rgba(17,17,17,0) 4px 9px) !important; }
-/* Motion is a courtesy, not a feature: quiet lift on the things you can actually click. */
+/* Motion, ported 1:1 from the approved static demo: cards lift -2px with a border shift,
+   the dark plate lifts with a shadow (re-granted past the skin's shadow kill), clickable
+   pills nudge -1px, sidebar items slide right, tab content fades in, bars grow (kit CSS).
+   All behind reduced-motion. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-skin="desk"] .cb-liftable { transition: transform .15s ease, border-color .15s ease; }
+  [data-skin="desk"] .card, [data-skin="desk"] .cb-plate { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  [data-skin="desk"] .card:hover { transform: translateY(-2px); border-color: var(--cb-line-bold, #c9c9c2); }
+  [data-skin="desk"] .cb-plate:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(17,17,17,0.16) !important; }
+  [data-skin="desk"] .cb-liftable { transition: transform .15s ease, background .15s ease, border-color .15s ease; }
   [data-skin="desk"] .cb-liftable:hover { transform: translateY(-1px); }
+  [data-skin="desk"] aside nav button { transition: background .15s ease, padding-left .15s ease; }
+  [data-skin="desk"] aside nav button:hover { padding-left: 28px; }
+  [data-skin="desk"] main [data-surface] { animation: cb-tabin .28s ease-out; }
 }
+@keyframes cb-tabin { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
 
 /* ============ BLACK BOX skin composition overrides (scoped) ============ */
 /* Tailwind rounded and shadow utilities plus inline radii are compiled, so CSS vars

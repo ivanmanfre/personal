@@ -176,9 +176,14 @@ describe('DeskWeekSurface', () => {
     // Swap slot is preview-only: the live modal carries no change-request pane
     // (canAct && !isLive), so the pill is gated off on live boards.
     expect(html).not.toContain('Swap slot');
-    // 3 — the LinkedIn preview of the selected post
-    expect(html).toContain('The post, as it lands on LinkedIn');
+    // 3 — the LinkedIn preview of the selected post, beside the plate (Ivan 08-02: on the
+    // side, not below), with NO repeated status chip / action pills under the card — the
+    // preview's own header carries the schedule line, the plate carries the edit pills.
+    expect(html).toContain('As it lands on LinkedIn');
     expect(html).toContain('cb-linkedin-preview');
+    const previewCol = html.slice(html.indexOf('As it lands on LinkedIn'), html.indexOf('The week at a glance'));
+    expect(previewCol).not.toContain('Edit copy');
+    expect(previewCol).not.toContain('Edit time');
     // 4 — the queue rail
     expect(html).toContain('The week at a glance');
     expect(html).toContain('working days in this window carry a post');
@@ -238,11 +243,15 @@ describe('DeskWeekSurface', () => {
     expect((html.match(/>149</g) || [])).toHaveLength(1);
   });
 
-  it('renders an honest blank for an empty weekday and marks weekends non-posting', () => {
+  it('renders an honest blank for an empty weekday; weekends carry NO day-by-day row', () => {
     expect(html).toContain('nothing scheduled this day');
     const weekendInWindow = [0, 1, 2, 3, 4, 5, 6].map(D).some(isWeekend);
     expect(weekendInWindow).toBe(true);
-    expect(html).toContain('Weekend, not a posting day');
+    // 08-02 dedup: the glance rail draws weekends dashed and its footnote names them;
+    // a "Weekend, not a posting day" row in Day-by-day said the same thing twice a week.
+    const dayByDay = html.slice(html.indexOf('Day by day'));
+    expect(dayByDay).not.toContain('Weekend, not a posting day');
+    expect(html).toContain('Weekends are not posting days');
   });
 
   it('only chips REAL provenance, never a curation fallback', () => {

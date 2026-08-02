@@ -353,7 +353,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   /* ---- the plate's featured post: what ships today, else the next dated post. ---- */
   const plateItem = todayItems[0] || nextDated;
   const plateSlides = plateItem ? slidesOf(plateItem) : [];
-  const plateCover = plateItem ? cardImageUrl(plateItem) : undefined;
 
   const cadence = cadencePerWeek(board.strategy?.cadence?.headline);
   const cadenceCaption = /working day/i.test(board.strategy?.cadence?.headline || '')
@@ -605,7 +604,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             type="button"
             onClick={() => onOpen(q)}
             style={{ display: 'block', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}
-          >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 88)}</button>
+          >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 72)}</button>
           {chipRow(q)}
           <Drill label="Open post" style={{ marginTop: 11 }}>{rowDrillBody(q)}</Drill>
         </div>
@@ -691,8 +690,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <Eyebrow>This week · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
-      {/* 2 — the one dark plate: the queue, what ships today, its slides and its copy. */}
-      <Plate style={{ marginTop: 18 }} pad="26px 26px 24px">
+      {/* 2 — the plate and the LinkedIn preview share one row (Ivan 08-02: the preview sits
+          on the side, not below — stacking them repeated the same post twice). The plate is
+          the ops read: counts, what ships next, the queue rail. The preview beside it IS the
+          post — cover, copy, schedule line — so the plate never renders those again. */}
+      <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
+      <Plate style={{ flex: '1 1 460px', minWidth: 0 }} pad="26px 26px 24px">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 190px', minWidth: 0 }}>
             {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
@@ -752,65 +755,25 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
         {plateItem && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-              <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em' }}>
-                {plateSlides.length >= 2 ? 'The slides' : 'The cover'}
-              </Eyebrow>
-              {plateSlides.length >= 2 && (
-                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                  <Num size="row" inline tone="plate-mute">{plateSlides.length}</Num>
-                  <PlateMute style={{ fontSize: 12, fontWeight: 700 }}>in the deck, first {Math.min(6, plateSlides.length)} shown</PlateMute>
-                </span>
-              )}
-            </div>
-
+            {/* A deck is information the single-cover preview can't show; a single cover is
+                already the preview card beside this plate, so it never repeats here. */}
+            {plateSlides.length >= 2 && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                  <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em' }}>The slides</Eyebrow>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
+                    <Num size="row" inline tone="plate-mute">{plateSlides.length}</Num>
+                    <PlateMute style={{ fontSize: 12, fontWeight: 700 }}>in the deck, first {Math.min(6, plateSlides.length)} shown</PlateMute>
+                  </span>
+                </div>
+                <SlideStrip srcs={plateSlides.slice(0, 6)} style={{ marginTop: 9 }} />
+              </>
+            )}
             <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {platePill('Edit copy', { editing: true })}
               {platePill('Edit time', { scheduling: true })}
               {!live && platePill('Swap slot', { changing: true })}
             </div>
-
-            {plateSlides.length >= 2 ? (
-              <SlideStrip srcs={plateSlides.slice(0, 6)} style={{ marginTop: 9 }} />
-            ) : plateItem.generating ? (
-              <Blank on="plate" style={{ marginTop: 9, height: 96 }}>the cover is still rendering</Blank>
-            ) : plateCover ? (
-              /* Full-bleed inside the plate, not a 360px card: a capped-width cover left the
-                 whole right half of the plate empty below UP NEXT. Banner crop, top-anchored. */
-              <img
-                src={plateCover}
-                alt=""
-                loading="lazy"
-                onError={hideBroken}
-                style={{ marginTop: 9, width: '100%', height: 'clamp(120px, 16vw, 188px)', objectFit: 'cover', objectPosition: 'top', borderRadius: 12, border: `1px solid ${PLATE_BORDER}`, display: 'block' }}
-              />
-            ) : (
-              <Blank on="plate" style={{ marginTop: 9, height: 72 }}>no image on this post</Blank>
-            )}
-
-            <Drill
-              label="Open the copy"
-              on="plate"
-              style={{ marginTop: 14 }}
-            >
-              <div style={{ color: PLATE_SOFT }}>
-                <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em' }}>Hook</Eyebrow>
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: PLATE_INK, lineHeight: 1.4, marginTop: 5 }}>
-                  {noDash(plateItem.hook || plateItem.title) || 'No hook written yet.'}
-                </div>
-                <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em', marginTop: 13 }}>The copy</Eyebrow>
-                {plateItem.body ? (
-                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: PLATE_SOFT, marginTop: 5, ...CLAMP8 }}>{plateItem.body}</div>
-                ) : (
-                  <Blank on="plate" style={{ marginTop: 6, height: 44 }}>{plateItem.generating ? 'being written now' : 'no copy written yet'}</Blank>
-                )}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 13 }}>
-                  <Chip tone="plate">{kickerOf(plateItem)}</Chip>
-                  {plateItem.funnel_stage && <Chip tone="plate">{plateItem.funnel_stage}</Chip>}
-                  {provenanceOf(plateItem) && <Chip tone="plate">{noDash(provenanceOf(plateItem)!.label)}</Chip>}
-                </div>
-              </div>
-            </Drill>
           </div>
         )}
 
@@ -834,25 +797,24 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </Footnote>
       </Plate>
 
-      {/* 3 — the LinkedIn preview of the selected day's post. Selection drives it. */}
-      <div style={{ marginTop: 28 }}>
-        <SectionRule
-          label="The post, as it lands on LinkedIn"
-          blurb={`${weekdayLong(selectedDay)}, ${fmtDay(selectedDay)}`}
-          right={
-            <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {days.map((d) => (
-                <Pill
-                  key={d}
-                  active={d === selectedDay}
-                  onClick={() => setPickedDay(d)}
-                  style={{ padding: '6px 12px', fontSize: 12 }}
-                >{weekdayShort(d)} {dayNumOf(d)}</Pill>
-              ))}
-            </span>
-          }
-        />
-        <div style={{ marginTop: 16, maxWidth: 620 }}>
+      {/* 3 — the LinkedIn preview, on the side of the plate. Day pills drive it. No status
+          chip and no action row under the card: FeedPreview's own header already says
+          "Scheduled · Mon 3 Aug", the edit pills live on the plate and on the day rows
+          below, and clicking the card opens the full post. Repeating them here was the
+          duplication Ivan flagged. */}
+      <div style={{ flex: '1 1 330px', minWidth: 0, maxWidth: 560 }}>
+        <Eyebrow>As it lands on LinkedIn</Eyebrow>
+        <div style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {days.map((d) => (
+            <Pill
+              key={d}
+              active={d === selectedDay}
+              onClick={() => setPickedDay(d)}
+              style={{ padding: '5px 10px', fontSize: 11.5 }}
+            >{weekdayShort(d)} {dayNumOf(d)}</Pill>
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
           {selectedItem ? (
             <>
               {selectedItem.generating && (
@@ -869,18 +831,9 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   size="lg"
                   cover={selectedItem.generating ? 'render' : 'plate'}
                   live={live}
-                  clampLines={4}
+                  /* 3 lines: LinkedIn's real desktop fold. 4 was the stacked layout's number. */
+                  clampLines={3}
                 />
-              </div>
-              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Chip tone={selectedItem.publish_date === today ? 'accent' : 'default'}>{statusOf(selectedItem)}</Chip>
-                {stageOf(selectedItem) !== 'published' && (
-                  <>
-                    {actionPill(selectedItem, 'Edit copy', { editing: true })}
-                    {actionPill(selectedItem, 'Edit time', { scheduling: true })}
-                    {!live && actionPill(selectedItem, 'Swap slot', { changing: true })}
-                  </>
-                )}
               </div>
             </>
           ) : isWeekendDay(selectedDay) ? (
@@ -896,6 +849,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           )}
         </div>
       </div>
+      </div>{/* /plate + preview row */}
 
       {/* 4 — the queue rail: one tile a day, carrying the real cover. */}
       <div style={{ marginTop: 28 }}>
@@ -948,9 +902,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           blurb={days.some((d) => postsOnDay(d).length) ? 'dated on the days below' : 'no post carries a date in this window'}
         />
         <div className="timeline">
-          {days.map((d, di) => {
+          {/* Weekends carry no row here: the glance rail above already draws them dashed and
+              its footnote says so. A "Weekend, not a posting day" line per weekend repeated
+              that fact twice a week. */}
+          {days.filter((d) => postsOnDay(d).length > 0 || !isWeekendDay(d)).map((d, di, rowDays) => {
             const posts = postsOnDay(d);
-            const last = di === days.length - 1 && beyondWindow.length === 0;
+            const last = di === rowDays.length - 1 && beyondWindow.length === 0;
             if (!posts.length) return emptyRow(d, last);
             return posts.map((q, qi) => postRow(q, d, { last: last && qi === posts.length - 1 }));
           })}
@@ -964,17 +921,16 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 </div>
                 <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Past this week</div>
               </div>
-              {beyondWindow.slice(0, 3).map((q, i) => postRow(q, q.publish_date || '', { dim: true, last: i === Math.min(beyondWindow.length, 3) - 1 }))}
-              {beyondWindow.length > 3 && (
-                <Drill label="open it" summaryLeft={<>Further out: <b>{beyondWindow.length - 3}</b> more dated posts</>} style={{ marginLeft: 102 }}>
-                  {beyondWindow.slice(3).map((q, i) => (
-                    <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: '1px solid var(--cb-line)' }}>
-                      <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
-                      <button onClick={() => onOpen(q)} style={{ flex: '1 1 200px', minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{noDash(stripBrand(q.hook || q.title)) || 'Untitled'}</button>
-                    </div>
-                  ))}
-                </Drill>
-              )}
+              {/* All of them fold: three open rows of NEXT week's posts on the This-week tab
+                  was weight without information — the count and the drill carry it. */}
+              <Drill label="open them" summaryLeft={<><b>{beyondWindow.length}</b> {beyondWindow.length === 1 ? 'post is' : 'posts are'} dated past this window</>} style={{ marginLeft: 102 }}>
+                {beyondWindow.map((q, i) => (
+                  <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: i ? '1px solid var(--cb-line)' : 'none' }}>
+                    <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
+                    <button onClick={() => onOpen(q)} style={{ flex: '1 1 200px', minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{noDash(stripBrand(q.hook || q.title)) || 'Untitled'}</button>
+                  </div>
+                ))}
+              </Drill>
             </>
           )}
         </div>
