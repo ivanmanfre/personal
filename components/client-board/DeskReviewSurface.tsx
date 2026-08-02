@@ -308,6 +308,12 @@ export default function DeskReviewSurface({
   const copyEdits = filteredEntries.filter((e) => e.action === 'edit_copy').length;
   const reschedules = filteredEntries.filter((e) => historyLabelLocal(e) === 'Rescheduled').length;
 
+  // Per-post grouping for the card-level history affordance ("changed N times · last …").
+  // Same fetched, whitelist-filtered entries as the global log — no extra RPC, no wider set.
+  // Global sort is newest-first, so each post's slice arrives newest-first too.
+  const entriesByPost: Record<string, (HistoryEntry & { postId: string; postTitle: string })[]> = {};
+  (entries || []).forEach((e) => { (entriesByPost[e.postId] = entriesByPost[e.postId] || []).push(e); });
+
   // ---- Row renderer (Blocks 4 + list rows inside Block 5's mini-list share the thumb math) ----
   const renderRow = (q: QueueItem, bucket: Bucket) => {
     const stage = stageOf(q);
@@ -426,6 +432,39 @@ export default function DeskReviewSurface({
             </div>
           )}
         </Drill>
+        {/* This post's own history: only when it HAS whitelisted entries (zero-history posts
+            render nothing — no "0 changes"). Same fetched set, same wording as the global
+            log; a plain span (not a Chip) carries the author so the identity mapping still
+            holds without adding card-level chip noise. */}
+        {(entriesByPost[q.id] || []).length > 0 && (
+          <div data-post-log={q.id}>
+            <Drill
+              className="post-log" label="open it" ruled={false}
+              summaryStyle={{ padding: '4px 0' }}
+              summaryLeft={
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
+                  changed {entriesByPost[q.id].length} {entriesByPost[q.id].length === 1 ? 'time' : 'times'} · last {fmtWhen(entriesByPost[q.id][0].at)}
+                </span>
+              }
+            >
+              {entriesByPost[q.id].map((h, i) => {
+                const author = authorOf(h.by, board, deskLabel);
+                const label = historyLabelLocal(h);
+                const move = label === 'Rescheduled' ? rescheduleMove(h.before, h.after) : null;
+                return (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap', padding: '6px 0', borderTop: '1px solid var(--cb-line)' }}>
+                    <span style={{ flex: 'none', width: 84, fontSize: 11.5, fontWeight: 800, color: 'var(--cb-ink-mute)', whiteSpace: 'nowrap' }}>{fmtWhen(h.at)}</span>
+                    <span style={{ flex: 'none', fontSize: 11.5, fontWeight: 800, color: author.founder ? 'var(--cb-ink)' : 'var(--cb-ink-mute)' }}>{author.label}</span>
+                    <span style={{ flex: '1 1 120px', minWidth: 0, fontSize: 12, fontWeight: 700, color: 'var(--cb-ink)' }}>
+                      {label}
+                      {move && <span style={{ color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}> · {move}</span>}
+                    </span>
+                  </div>
+                );
+              })}
+            </Drill>
+          </div>
+        )}
       </div>
     );
   };
@@ -562,13 +601,16 @@ export default function DeskReviewSurface({
         </div>
       )}
 
-      {/* Block 6: changes log — absent fetchHistory (preview boards) renders nothing. */}
+      {/* Block 6: changes log — absent fetchHistory (preview boards) renders nothing.
+          Compact by request (2026-08-02): the per-post history now lives on each card, so
+          this global block drops to footnote weight — 3 most-recent rows visible, the rest
+          folded. Same whitelist, same identity mapping as before. */}
       {fetchHistory && (
-        <div style={{ marginTop: 30 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--cb-ink)', flex: '1 1 auto' }}>Changes log</div>
-            {entries !== null && entries.length > 0 && <Num size="row" inline style={{ fontSize: 19 }}>{entries.length}</Num>}
-            {entries !== null && entries.length > 0 && <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>changes on this board</span>}
+        <div style={{ marginTop: 26 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)' }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}>Changes log</div>
+            {entries !== null && entries.length > 0 && <Num size="row" inline style={{ fontSize: 13 }}>{entries.length}</Num>}
+            {entries !== null && entries.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>changes on this board</span>}
             {entries !== null && entries.length > 0 && (
               <div style={{ display: 'flex', gap: 6, marginLeft: 6 }}>
                 <Pill active={who === 'all'} onClick={() => setWho('all')}>All</Pill>
@@ -576,43 +618,30 @@ export default function DeskReviewSurface({
               </div>
             )}
           </div>
-          {historyLoading && <Footnote style={{ marginTop: 12 }}>reading the log…</Footnote>}
-          {!historyLoading && entries !== null && entries.length === 0 && <Footnote style={{ marginTop: 12 }}>No changes recorded yet.</Footnote>}
+          {historyLoading && <Footnote style={{ marginTop: 10 }}>reading the log…</Footnote>}
+          {!historyLoading && entries !== null && entries.length === 0 && <Footnote style={{ marginTop: 10 }}>No changes recorded yet.</Footnote>}
           {!historyLoading && filteredEntries.length > 0 && (
             <>
-              <Footnote style={{ marginTop: 12 }}>Who touched a post, when, and what moved.</Footnote>
-              {/* Recent entries visible; the long tail folds. Live boards accumulate far
-                  past what the drawn page budgets for, and the density gate binds. */}
-              {filteredEntries.slice(0, 6).map((h, i) => {
+              {/* 3 recent entries visible; everything else folds. */}
+              {filteredEntries.slice(0, 3).map((h, i) => {
                 const author = authorOf(h.by, board, deskLabel);
-                const isFounder = author.founder;
                 const label = historyLabelLocal(h);
                 const move = label === 'Rescheduled' ? rescheduleMove(h.before, h.after) : null;
                 const hasDiff = !move && !!(h.before && h.after);
                 const delta = hasDiff && h.action === 'edit_copy' ? (h.after as string).length - (h.before as string).length : null;
                 return (
-                  <div
-                    key={i}
-                    style={{
-                      padding: isFounder ? '16px 14px 12px' : '14px 14px 10px',
-                      marginTop: isFounder ? 10 : 0,
-                      background: isFounder ? 'color-mix(in srgb, var(--cb-accent) 6%, var(--cb-paper))' : undefined,
-                      borderLeft: isFounder ? '3px solid var(--cb-accent)' : undefined,
-                      borderRadius: isFounder ? '0 14px 14px 0' : undefined,
-                      borderBottom: isFounder ? undefined : '1px solid var(--cb-line)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                      <span style={{ flex: 'none', width: 88, fontSize: 11.5, fontWeight: 800, color: isFounder ? 'var(--cb-ink)' : 'var(--cb-ink-mute)', whiteSpace: 'nowrap' }}>{fmtWhen(h.at)}</span>
-                      <Chip tone={isFounder ? 'accent' : 'default'} style={{ flex: 'none' }}>{author.label}</Chip>
-                      <span style={{ flex: 'none', fontSize: 13, fontWeight: 800, color: 'var(--cb-ink)' }}>{label}</span>
-                      <span style={{ flex: '1 1 190px', minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-mute)', lineHeight: 1.35 }}>{truncAt(h.postTitle || '', 58)}</span>
+                  <div key={i} data-log-row="" style={{ padding: '8px 0 6px', borderBottom: '1px solid var(--cb-line)' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                      <span style={{ flex: 'none', width: 84, fontSize: 11.5, fontWeight: 800, color: 'var(--cb-ink-mute)', whiteSpace: 'nowrap' }}>{fmtWhen(h.at)}</span>
+                      <Chip tone={author.founder ? 'accent' : 'default'} style={{ flex: 'none' }}>{author.label}</Chip>
+                      <span style={{ flex: 'none', fontSize: 12, fontWeight: 800, color: 'var(--cb-ink)' }}>{label}</span>
+                      <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-mute)', lineHeight: 1.35 }}>{truncAt(h.postTitle || '', 58)}</span>
                     </div>
                     {move && (
-                      <div style={{ marginTop: 7, fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{move}</div>
+                      <div style={{ marginTop: 4, fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{move}</div>
                     )}
                     {hasDiff && (
-                      <Drill label="see the edit" ruled={false} style={{ marginTop: 6 }}>
+                      <Drill label="see the edit" ruled={false} style={{ marginTop: 3 }} summaryStyle={{ padding: '4px 0' }}>
                         <Diff
                           before={prettyHistoryValue(h.before)}
                           after={prettyHistoryValue(h.after)}
@@ -620,26 +649,26 @@ export default function DeskReviewSurface({
                         />
                       </Drill>
                     )}
-                    {!hasDiff && h.note && <div style={{ marginTop: 7, fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>&ldquo;{h.note}&rdquo;</div>}
+                    {!hasDiff && h.note && <div style={{ marginTop: 4, fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>&ldquo;{h.note}&rdquo;</div>}
                   </div>
                 );
               })}
-              {filteredEntries.length > 6 && (
-                <Drill label="open it" summaryLeft={<>The earlier log: <b>{filteredEntries.length - 6}</b> more changes</>} style={{ marginTop: 8 }}>
-                  {filteredEntries.slice(6).map((h, i) => {
+              {filteredEntries.length > 3 && (
+                <Drill label="open it" summaryLeft={<span style={{ fontSize: 12 }}>The earlier log: <b>{filteredEntries.length - 3}</b> more changes</span>} style={{ marginTop: 6 }} summaryStyle={{ padding: '7px 0' }}>
+                  {filteredEntries.slice(3).map((h, i) => {
                     const author = authorOf(h.by, board, deskLabel);
                     return (
-                      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '9px 0', borderTop: '1px solid var(--cb-line)' }}>
-                        <span style={{ flex: 'none', width: 88, fontSize: 11.5, fontWeight: 800, color: 'var(--cb-ink-mute)', whiteSpace: 'nowrap' }}>{fmtWhen(h.at)}</span>
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: '1px solid var(--cb-line)' }}>
+                        <span style={{ flex: 'none', width: 84, fontSize: 11.5, fontWeight: 800, color: 'var(--cb-ink-mute)', whiteSpace: 'nowrap' }}>{fmtWhen(h.at)}</span>
                         <Chip tone={author.founder ? 'accent' : 'default'} style={{ flex: 'none' }}>{author.label}</Chip>
-                        <span style={{ flex: 'none', fontSize: 13, fontWeight: 800, color: 'var(--cb-ink)' }}>{historyLabelLocal(h)}</span>
-                        <span style={{ flex: '1 1 190px', minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink-mute)', lineHeight: 1.35 }}>{truncAt(h.postTitle || '', 58)}</span>
+                        <span style={{ flex: 'none', fontSize: 12, fontWeight: 800, color: 'var(--cb-ink)' }}>{historyLabelLocal(h)}</span>
+                        <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-mute)', lineHeight: 1.35 }}>{truncAt(h.postTitle || '', 58)}</span>
                       </div>
                     );
                   })}
                 </Drill>
               )}
-              <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap', marginTop: 14 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                 <Chip>{copyEdits} copy edits</Chip>
                 <Chip>{reschedules} reschedules</Chip>
               </div>

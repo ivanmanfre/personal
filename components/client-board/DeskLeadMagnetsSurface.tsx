@@ -25,6 +25,49 @@ type LmIdeaLite = {
   source_label?: string; cover_url?: string;
 };
 
+/** Structural extras from the staged corrected `board.lead_magnets` proposal
+ *  (phase1-evidence-1d §6). Field names there are canonical: `status` widens to
+ *  'live' | 'live_unannounced' | 'drafted', plus `posted_to_linkedin`, `posted_date`,
+ *  `posted_note`, `page_live`, `optins`, `linkedin_activity`, `date_label`. All optional:
+ *  today's 3-entry array carries none of them and must render exactly as before. */
+type ShelfEntry = LeadMagnetEntry & {
+  posted_to_linkedin?: boolean;
+  posted_date?: string;
+  posted_note?: string;
+  page_live?: boolean;
+  optins?: number;
+  linkedin_activity?: string;
+};
+
+/** Opt-in count for an entry: staged shape uses `optins`, the frozen shape used
+ *  `captured`. Absent on both -> undefined (renders the blank, never 0). */
+const optinsOf = (e: ShelfEntry): number | undefined =>
+  typeof e.optins === 'number' ? e.optins : (typeof e.captured === 'number' ? e.captured : undefined);
+
+/** "23 Jul" from a bare date or ISO timestamp; unparseable -> '' (same parse-safety
+ *  rationale as ClientBoardPage's fmtDay, which isn't the right shape here: it prefixes
+ *  the weekday and the announce mark wants "announced DD Mon"). */
+function fmtAnnouncedDay(iso?: string): string {
+  if (!iso) return '';
+  const d = /[T ]/.test(iso) ? new Date(iso) : new Date(iso + 'T00:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+/** Feed-announce state for a shelf tile, derived ONLY from fields the data actually
+ *  carries. Status grammar ratified 07-20: a page is not "launched" until the feed post
+ *  runs. Unknown/absent fields -> null -> today's rendering, no invented marks. */
+function announceMark(e: ShelfEntry): string | null {
+  if (e.posted_to_linkedin === true && e.posted_date) {
+    const day = fmtAnnouncedDay(e.posted_date);
+    return day ? `announced ${day}` : null;
+  }
+  if (e.posted_to_linkedin === false || e.status === 'live_unannounced') {
+    return 'page live, not announced on the feed yet';
+  }
+  return null;
+}
+
 /**
  * Desk skin for the lead-magnet library. Frag: frag-lm.html. Original: `LeadMagnetSurface`
  * in ClientBoardPage.tsx (the `live` branch: library only, no embed, no leads table — that
@@ -44,9 +87,13 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
   // closing clears it. Nothing about the drawer's own wiring changes.
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
 
-  const entries = board.lead_magnets || [];
-  const liveEntries = entries.filter((e) => e.status === 'live');
+  const entries: ShelfEntry[] = board.lead_magnets || [];
+  // Shelf = pages that are live on the client's domain, announced or not. A
+  // 'live_unannounced' page IS live on the site; it just carries the not-announced mark.
+  // A 'drafted' entry never shelves as live — it joins the pipeline section below.
+  const liveEntries = entries.filter((e) => e.status === 'live' || e.status === 'live_unannounced');
   const liveN = liveEntries.length;
+  const draftedEntries = entries.filter((e) => e.status === 'drafted');
 
   // The build pipeline lives in `board.lm_ideas`, NOT in non-'live' `lead_magnets` entries —
   // on a real board every lead_magnets row is already live; ideas-in-progress are a
@@ -59,9 +106,12 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
   const liveTitles = new Set((board.lead_magnets || []).map((e) => norm(e.title)));
   const ideas: LmIdeaLite[] = (((board.lm_ideas as LmIdeaLite[] | undefined) || [])).filter((i) => !liveTitles.has(norm(i.title)));
   const ideasN = ideas.length;
+  // Pipeline = lm_ideas (not yet built) + 'drafted' lead_magnets entries (page drafted,
+  // not live). Today's array has no drafted entries, so pipelineN === ideasN as before.
+  const pipelineN = ideasN + draftedEntries.length;
 
-  const anyCaptured = entries.some((e) => typeof e.captured === 'number');
-  const totalCaptured = entries.reduce((sum, e) => sum + (typeof e.captured === 'number' ? e.captured : 0), 0);
+  const anyCaptured = entries.some((e) => typeof optinsOf(e) === 'number');
+  const totalCaptured = entries.reduce((sum, e) => sum + (optinsOf(e) ?? 0), 0);
 
   const nl = board.newsletter;
   const nurtureSteps = nl?.nurture || [];
@@ -73,7 +123,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
       <Eyebrow>Lead magnets</Eyebrow>
       <DeskH2>
         {liveN} lead {liveN === 1 ? 'magnet is' : 'magnets are'} <b>live on your site</b>
-        {ideasN > 0 ? <>, {ideasN} more drawn up.</> : '.'}
+        {pipelineN > 0 ? <>, {pipelineN} more drawn up.</> : '.'}
       </DeskH2>
 
       <Plate style={{ marginTop: 18 }}>
@@ -130,14 +180,22 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                   <Chip tone="plate">{LM_FORMAT_LABEL[entry.format] || entry.format}</Chip>
                   <Chip tone="accent">live on your domain</Chip>
                 </div>
+                {/* Feed-announce state, ONLY when the data carries it (staged shape).
+                    Today's frozen entries have no posted fields -> no mark, tile
+                    renders exactly as before. */}
+                {announceMark(entry) && (
+                  <PlateMute as="div" style={{ fontSize: 12, fontWeight: 700, marginTop: 8, lineHeight: 1.4 }}>
+                    {announceMark(entry)}
+                  </PlateMute>
+                )}
                 <div style={{ marginTop: 10 }}>
-                  {typeof entry.captured === 'number' ? (
+                  {typeof optinsOf(entry) === 'number' ? (
                     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                      <Num size="row" inline tone="plate">{entry.captured}</Num>
+                      <Num size="row" inline tone="plate">{optinsOf(entry)}</Num>
                       <PlateMute style={{ fontSize: 12 }}>opt-ins</PlateMute>
                     </span>
                   ) : (
-                    <StatBlank on="plate" caption="opt-ins: not tracked yet" style={{ maxWidth: 150 }} />
+                    <StatBlank on="plate" caption="opt-ins: not shown here yet" style={{ maxWidth: 150 }} />
                   )}
                 </div>
                 {entry.url && (
@@ -183,14 +241,33 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
         )}
       </Plate>
 
-      {ideasN > 0 && (
+      {pipelineN > 0 && (
         <div style={{ marginTop: 20 }}>
           <SectionRule
             label="Drawn up next"
-            count={ideasN}
-            blurb={ideasN === 1 ? 'lead magnet in the pipeline' : 'lead magnets in the pipeline'}
+            count={pipelineN}
+            blurb={pipelineN === 1 ? 'lead magnet in the pipeline' : 'lead magnets in the pipeline'}
           />
           <Cols n={2} min={220} gap={16} style={{ marginTop: 16 }}>
+            {/* 'drafted' lead_magnets entries render in the pipeline treatment — a drafted
+                page is never a live shelf item. */}
+            {draftedEntries.map((entry) => (
+              <Blank
+                key={entry.id}
+                style={{
+                  flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start',
+                  textAlign: 'left', minHeight: 150, padding: '14px 14px 16px',
+                }}
+              >
+                <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 15.5, color: 'var(--cb-ink)', lineHeight: 1.3 }}>
+                  {entry.title}
+                </div>
+                <div style={{ marginTop: 11, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {entry.format && <Chip>{LM_FORMAT_LABEL[entry.format] || entry.format}</Chip>}
+                  <Chip>Page drafted</Chip>
+                </div>
+              </Blank>
+            ))}
             {ideas.map((idea) => (
               <Blank
                 key={idea.id}
@@ -227,11 +304,11 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
 
       <StatStrip>
         <Stat value={liveN} caption="tools live" />
-        <Stat value={ideasN} caption="drawn up next" />
+        <Stat value={pipelineN} caption="drawn up next" />
         {anyCaptured ? (
           <Stat value={totalCaptured} caption="opt-ins captured" />
         ) : (
-          <StatBlank caption="opt-ins: not tracked yet" />
+          <StatBlank caption="opt-ins: not shown here yet" />
         )}
       </StatStrip>
 

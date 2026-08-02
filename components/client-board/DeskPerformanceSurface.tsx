@@ -101,6 +101,41 @@ function mondayOf(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
 }
 
+/**
+ * Scoped hover/focus styles for this surface only. Every class is `cb-perfh-`-prefixed
+ * (no global selectors), all colors come from the board's `--cb-*` vars (the only
+ * literals are the plate-relative rgba-whites the kit already allows inside a Plate),
+ * and all motion sits inside a prefers-reduced-motion: no-preference block — with
+ * reduced motion the reveals still appear, they just don't animate.
+ *
+ * TAP PARITY: every hover trigger is a `tabIndex={0}` element, so the same reveal fires
+ * on `:focus`/`:focus-visible` (chart hits) and `:focus-within` (ledger rows). On touch,
+ * tapping the element focuses it — no hover-only data. Reveals are absolutely positioned
+ * inside their (clipping-free but bounded) anchors with `left:0; right:0`, so they can
+ * never widen the page at 390px, and being position:absolute + visibility-toggled they
+ * cause zero layout shift. The same information is mirrored into `aria-label`/`title`
+ * on the focusable element (the visual tip carries aria-hidden as the redundant copy).
+ */
+const PERFH_CSS = `
+.cb-perfh-grid { position: absolute; inset: 0; display: flex; gap: clamp(4px, 1.2vw, 14px); }
+.cb-perfh-hit { flex: 1 1 0; min-width: 0; cursor: pointer; border-radius: 8px; }
+.cb-perfh-hit:hover, .cb-perfh-hit:focus-visible { background: rgba(255,255,255,0.07); }
+.cb-perfh-tip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; opacity: 0; visibility: hidden; pointer-events: none; display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding: 9px 13px; border-radius: 12px; background: var(--cb-plate); border: 1px solid var(--cb-plate-line); color: var(--cb-plate-ink); }
+.cb-perfh-tip-t { font-size: 12.5px; font-weight: 700; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
+.cb-perfh-tip-m { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.cb-perfh-hit:hover > .cb-perfh-tip, .cb-perfh-hit:focus > .cb-perfh-tip, .cb-perfh-hit:focus-visible > .cb-perfh-tip { opacity: 1; visibility: visible; }
+.cb-perfh-lrow:hover > td, .cb-perfh-lrow:focus-within > td { background: var(--cb-paper-sunk); }
+.cb-perfh-rowfocus { position: relative; display: block; border-radius: 8px; }
+.cb-perfh-rtip { position: absolute; left: 0; right: 0; bottom: -2px; z-index: 3; opacity: 0; visibility: hidden; pointer-events: none; display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding: 8px 12px; border-radius: 12px; background: var(--cb-paper); border: 1px solid var(--cb-line-bold); color: var(--cb-ink); }
+.cb-perfh-rtip-t { font-size: 13px; font-weight: 700; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
+.cb-perfh-rtip-m { font-size: 12.5px; font-weight: 600; color: var(--cb-ink-mute); white-space: nowrap; }
+.cb-perfh-lrow:hover .cb-perfh-rtip, .cb-perfh-lrow:focus-within .cb-perfh-rtip { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .cb-perfh-tip, .cb-perfh-rtip { transition: opacity .16s ease, visibility .16s ease, transform .16s ease; transform: translateY(3px); }
+  .cb-perfh-hit:hover > .cb-perfh-tip, .cb-perfh-hit:focus > .cb-perfh-tip, .cb-perfh-hit:focus-visible > .cb-perfh-tip, .cb-perfh-lrow:hover .cb-perfh-rtip, .cb-perfh-lrow:focus-within .cb-perfh-rtip { transform: translateY(0); }
+}
+`;
+
 type Week = {
   key: string;
   monday: Date;
@@ -164,9 +199,6 @@ export function DeskPerformanceSurface({
     return da - db;
   });
   const withReads = sorted.filter((p) => typeof p.impressions === 'number' && (p.impressions as number) > 0);
-  const bestPost = withReads.length
-    ? withReads.reduce((a, b) => ((b.impressions as number) > (a.impressions as number) ? b : a))
-    : null;
 
   const weekMap = new Map<string, PerfPost[]>();
   sorted.forEach((p) => {
@@ -209,17 +241,6 @@ export function DeskPerformanceSurface({
   // The KPI row's deltas always compare the LATEST two weeks; requiring exactly two
   // meant the first history backfill silently reverted the row to all-time numbers.
   const spansTwoWeeks = weeks.length >= 2;
-
-  // Counterfactual: pull the single best post out of the (capped) set and recompute the
-  // per-post average. Only computable with 2+ posts in the set.
-  const counterfactual = (() => {
-    if (!bestPost || sorted.length < 2) return null;
-    const rest = sorted.filter((p) => p !== bestPost);
-    if (!rest.length) return null;
-    const allReads = sorted.reduce((t, p) => t + (typeof p.impressions === 'number' ? (p.impressions as number) : 0), 0);
-    const restReads = rest.reduce((t, p) => t + (typeof p.impressions === 'number' ? (p.impressions as number) : 0), 0);
-    return { before: Math.round(allReads / sorted.length), after: Math.round(restReads / rest.length) };
-  })();
 
   // KPI row aggregates. With two weeks on the board the heroes are the CURRENT week —
   // the same basis as their own deltas and the ledger's week subtotal. A hero that says
@@ -288,6 +309,8 @@ export function DeskPerformanceSurface({
 
   return (
     <div data-surface="performance">
+      {/* Scoped hover/focus styles for this surface only (cb-perfh-* — see PERFH_CSS). */}
+      <style>{PERFH_CSS}</style>
       {/* Block 1 */}
       <Eyebrow>Performance</Eyebrow>
       <DeskH2>{headline}</DeskH2>
@@ -343,6 +366,30 @@ export function DeskPerformanceSurface({
                 </Footnote>
               </div>
             )}
+            {/* Hover/focus hit layer: one transparent column per measured bar, geometry
+                mirroring the Spark's flex columns (same flex basis, same gap) so each hit
+                sits exactly over its bar. Hover OR keyboard focus OR a tap (tap focuses the
+                tabIndex element) reveals that post's exact numbers — title, reads, publish
+                date, all straight off the same `measured` rows the bars are drawn from,
+                nothing invented. The reveal is a full-width strip pinned to the bottom of
+                the chart box (left:0/right:0), so it can never overflow at 390px and never
+                shifts layout; the identical text rides aria-label/title as the
+                screen-reader/backup copy. */}
+            <div className="cb-perfh-grid">
+              {measured.map((p, i) => {
+                const reads = p.impressions as number;
+                const label = `${p.title || 'Untitled post'}: ${reads.toLocaleString()} reads, ${shortDate(p.published_at)}`;
+                return (
+                  <div key={i} className="cb-perfh-hit" tabIndex={0} aria-label={label} title={label}>
+                    <span className="cb-perfh-tip" aria-hidden="true">
+                      <Num size="row" inline tone={i === bestIndex ? 'accent' : 'plate'}>{reads.toLocaleString()}</Num>
+                      <span className="cb-perfh-tip-m"><PlateMute>reads · {shortDate(p.published_at)}</PlateMute></span>
+                      <span className="cb-perfh-tip-t">{truncateWords(p.title || 'Untitled post', 60)}</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           {spansMultipleWeeks && (
             <div style={{ display: 'flex', marginTop: 14, fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-plate-mute)' }}>
@@ -351,16 +398,6 @@ export function DeskPerformanceSurface({
                   Week of {shortDate(localKey(w.monday))}
                 </div>
               ))}
-            </div>
-          )}
-          {counterfactual && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--cb-plate-line)' }}>
-              <PlateMute style={{ fontWeight: 700 }}>Take the best post out</PlateMute>
-              <Num size="row" inline tone="plate">{counterfactual.before}</Num>
-              <PlateMute>&rarr;</PlateMute>
-              <Num size="row" inline tone="plate">{counterfactual.after}</Num>
-              <PlateMute style={{ fontWeight: 600 }}>reads per post</PlateMute>
-              <Delta on="plate">flat</Delta>
             </div>
           )}
         </Plate>
@@ -504,15 +541,25 @@ export function DeskPerformanceSurface({
                 const reads = typeof p.impressions === 'number' ? (p.impressions as number) : null;
                 const rate = reads != null && reads > 0 ? (((p.reactions || 0) + (p.comments || 0)) / reads) * 100 : null;
                 const pct = bestReadsInSet > 0 && reads != null ? (reads / bestReadsInSet) * 100 : 0;
+                const fullTitle = p.title || 'Untitled post';
+                const rowLabel = `${fullTitle}${reads != null ? `: ${reads.toLocaleString()} reads` : ''}`;
                 return (
-                  <LedgerRow key={`${w.key}-${i}`} tone={isBest ? 'best' : 'default'}>
+                  // Hover/focus treatment (cb-perfh-lrow / cb-perfh-rowfocus): hovering the
+                  // row \u2014 or tapping/tabbing to its focusable title cell (tabIndex=0, so
+                  // :focus-within fires on touch too) \u2014 tints the row via the existing
+                  // --cb-paper-sunk var and reveals the row's one truncated datum: the FULL
+                  // title, alongside its reads. The reveal is absolutely positioned inside
+                  // the cell (left:0/right:0), so no layout shift and no overflow at 390px;
+                  // the same text rides aria-label/title as the backup copy.
+                  <LedgerRow key={`${w.key}-${i}`} tone={isBest ? 'best' : 'default'} className="cb-perfh-lrow">
                     <LedgerCell width={isBest ? 95 : 62}>
                       {cover ? <Thumb src={cover} size="lg" /> : null}
                     </LedgerCell>
                     <LedgerCell>
+                      <div className="cb-perfh-rowfocus" tabIndex={0} aria-label={rowLabel} title={fullTitle}>
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{shortDate(p.published_at)}</div>
                       <div style={{ marginTop: 3, fontSize: isBest ? 15.5 : 14.5, fontWeight: isBest ? 800 : 600, lineHeight: 1.3 }}>
-                        {(() => { const t = p.title || 'Untitled post'; return t.length > 70 ? t.slice(0, t.lastIndexOf(' ', 70)) + '\u2026' : t; })()}{isBest && <Chip tone="accent" style={{ marginLeft: 4 }}>best</Chip>}
+                        {(() => { const t = fullTitle; return t.length > 70 ? t.slice(0, t.lastIndexOf(' ', 70)) + '\u2026' : t; })()}{isBest && <Chip tone="accent" style={{ marginLeft: 4 }}>best</Chip>}
                       </div>
                       <div style={{ marginTop: isBest ? 10 : 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {q?.funnel_stage && AIM_LABEL[q.funnel_stage] && (
@@ -524,6 +571,13 @@ export function DeskPerformanceSurface({
                         </span>
                       </div>
                       <LedgerBar pct={pct} tone={isBest ? 'strong' : 'muted'} height={isBest ? 16 : 10} />
+                      <span className="cb-perfh-rtip" aria-hidden="true">
+                        <span className="cb-perfh-rtip-t">{fullTitle}</span>
+                        {reads != null && (
+                          <span className="cb-perfh-rtip-m"><Num size="row" inline>{reads.toLocaleString()}</Num> reads</span>
+                        )}
+                      </span>
+                      </div>
                     </LedgerCell>
                     <LedgerCell num align="right" width="1%">
                       {reads != null ? reads.toLocaleString() : '—'}

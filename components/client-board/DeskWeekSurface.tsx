@@ -694,8 +694,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           on the side, not below — stacking them repeated the same post twice). The plate is
           the ops read: counts, what ships next, the queue rail. The preview beside it IS the
           post — cover, copy, schedule line — so the plate never renders those again. */}
-      <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
-      <Plate style={{ flex: '1 1 460px', minWidth: 0 }} pad="26px 26px 24px">
+      {/* alignItems stretch + the plate as a flex column: the plate always runs the full
+          height of the row, so the preview beside it can never hang past its bottom edge.
+          An interior spacer (before the footer rule) absorbs the stretch; content order is
+          unchanged and the "posts are out so far" line sits on the plate's bottom edge. */}
+      <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'stretch' }}>
+      <Plate style={{ flex: '1 1 460px', minWidth: 0, display: 'flex', flexDirection: 'column' }} pad="26px 26px 24px">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 190px', minWidth: 0 }}>
             {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
@@ -787,6 +791,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           </div>
         )}
 
+        {/* The stretch spacer: pushes the footer line to the plate's bottom edge. */}
+        <div style={{ flex: '1 0 0' }} aria-hidden />
         <PlateRule gap={18} />
         <Footnote on="plate">
           {publishedItems.length > 0
@@ -802,7 +808,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           "Scheduled · Mon 3 Aug", the edit pills live on the plate and on the day rows
           below, and clicking the card opens the full post. Repeating them here was the
           duplication Ivan flagged. */}
-      <div style={{ flex: '1 1 330px', minWidth: 0, maxWidth: 560 }}>
+      <div className="cb-week-preview-col" style={{ flex: '1 1 330px', minWidth: 0, maxWidth: 560 }}>
+        {/* CSS-only media cap on the preview card's cover image: LinkedIn's own feed crops
+            tall media, so a capped object-fit crop is faithful — and it keeps this column
+            no taller than a reasonably-filled plate. Direct-child img only: the doc-carousel
+            and slide strips keep their own sizing. */}
+        <style>{`.cb-week-preview-col .cb-linkedin-preview > img { max-height: 320px; object-fit: cover; object-position: center top; }`}</style>
         <Eyebrow>As it lands on LinkedIn</Eyebrow>
         <div style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {days.map((d) => (
@@ -881,7 +892,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'linear-gradient(0deg, rgba(17,17,17,.62), rgba(17,17,17,0))' : 'none', padding: '10px 0 3px' }}>
+                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'linear-gradient(0deg, rgba(17,17,17,.62), rgba(17,17,17,0))' : 'none', padding: '10px 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {weekdayShort(d)}
                 </span>
               </button>
