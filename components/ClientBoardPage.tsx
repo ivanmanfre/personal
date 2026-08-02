@@ -1190,13 +1190,6 @@ function weekdayLong(iso?: string): string {
 
 /** Mono stage mark for a ledger row — honest, and the auto-publish clock is part of it. */
 function stageMark(q: QueueItem, stage: Stage, autoDays: number, live = false): { text: string; sub?: string; color: string; pulse?: boolean } {
-  // Video slots are posted natively by the client (custom thumbnail is upload-time UI
-  // only) — the mark states that truth instead of the pipeline's "Drafting"/"Scheduled".
-  if (q.style === 'video' && stage !== 'published') {
-    return q.publish_date
-      ? { text: `● Video · ${weekAbbr(q.publish_date)}`, sub: 'you post this one natively', color: caText('var(--cb-accent)') }
-      : { text: '● Video', sub: 'you post this one natively', color: caText('var(--cb-accent)') };
-  }
   if (stage === 'review') {
     // Live boards publish from the buffer — the mark states the slot truth, never a gate.
     if (live) {
