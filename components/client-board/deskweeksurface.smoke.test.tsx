@@ -258,18 +258,17 @@ describe('DeskWeekSurface', () => {
     expect(html.slice(html.indexOf('cb-linkedin-preview'))).toContain('color:#111');
   });
 
-  it('draws the plate queue rail: one tile per queued item, in counted bands', () => {
-    // The fixture's queue: 1 dated today, 1 dated later, 1 undated in the buffer.
-    const tiles = html.match(/data-rail-tile="(today|scheduled|buffer)"/g) || [];
-    expect(tiles).toHaveLength(3);
-    expect(tiles.filter((t) => t.includes('today'))).toHaveLength(1);
-    expect(tiles.filter((t) => t.includes('scheduled'))).toHaveLength(1);
-    // The buffer draft exists as a MARK on the plate, not only as a sentence at the foot.
-    expect(tiles.filter((t) => t.includes('buffer'))).toHaveLength(1);
-    expect(html).toContain('in buffer');
-    // …and the rail sits INSIDE the dark plate, which now follows the glance selector.
-    expect(html.indexOf('The week at a glance')).toBeLessThan(html.indexOf('data-rail-tile'));
-    expect(html.indexOf('class="cb-plate cb-week-plate"')).toBeLessThan(html.indexOf('data-rail-tile'));
+  it('carries NO queue accounting on the plate (round 6): the plate is the week view', () => {
+    // Ivan 08-03: "14 in the queue / 0 today / 8 scheduled / 6 in buffer" deleted, with the
+    // thumbnail rails and the buffer sentence. The pipeline numbers live on All content.
+    expect(html).not.toContain('data-rail-tile');
+    const plate = html.slice(html.indexOf('class="cb-plate cb-week-plate"'), html.indexOf('Day by day'));
+    expect(plate).not.toContain('in the queue');
+    expect(plate).not.toContain('in buffer');
+    expect(html).not.toContain('waiting in the buffer');
+    // The funnel tag rides ON the glance tile image (uppercase chip over the cover).
+    const rail = railOf(html);
+    expect(rail).toContain('reach');
   });
 
   /** The glance rail as the SECOND control on the day selector (Ivan, 08-02). */
@@ -422,7 +421,7 @@ describe('DeskWeekSurface', () => {
 
     it('renders honest blanks, and never a zero in a stat slot', () => {
       expect(blankHtml).toContain('not tracked yet');
-      expect(blankHtml).toContain('nothing in the queue yet');
+      expect(blankHtml).toContain('nothing is dated yet');
       expect(blankHtml).toContain('nothing scheduled this day');
       // Stat values render inside <b>; an absent stat must never land a 0 there.
       expect(blankHtml).not.toMatch(/<b[^>]*>0<\/b>/);

@@ -225,10 +225,9 @@ const WEEK_CSS = `
 .cb-week-col-left { display: flex; flex-direction: column; min-width: 0; }
 .cb-week-col-right { min-width: 0; border-top: 1px solid rgba(255,255,255,0.16); padding-top: 20px; }
 @media (min-width: 900px) {
-  .cb-week-grid { grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); gap: 26px; }
+  .cb-week-grid { grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr); gap: clamp(22px, 2.6vw, 34px); }
   .cb-week-col-right { border-top: 0; padding-top: 0; border-left: 1px solid rgba(255,255,255,0.16); padding-left: 26px; }
 }
-.cb-week-preview-frame .cb-linkedin-preview > img { max-height: 250px; object-fit: cover; object-position: center top; }
 @media (prefers-reduced-motion: no-preference) {
   [data-skin="desk"] .cb-week-plate:hover { transform: none !important; box-shadow: none !important; }
 }
@@ -445,69 +444,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     >{label}</Pill>
   );
 
-  /* ────────── the plate's queue rail ──────────
-     One tile per queued item, banded: what ships today (accent outline), what carries a
-     later date (real cover), and what sits undated in the buffer (dashed ghost — a buffer
-     draft that already has a cover shows it dimmed rather than as an empty box). Bands are
-     weighted by their own count, so the rail reads as a proportion as well as a set. Every
-     count is the band's real length; a band with nothing in it is not drawn at all. */
-
-  const RAIL_TILE_CAP = 12;
-  type RailBand = 'today' | 'scheduled' | 'buffer';
-
-  const railTile = (q: QueueItem, band: RailBand) => {
-    const cover = cardImageUrl(q);
-    return (
-      <button
-        key={q.id}
-        type="button"
-        onClick={() => onOpen(q)}
-        data-rail-tile={band}
-        title={noDash(q.title || q.hook) || 'Untitled post'}
-        style={{
-          flex: '1 1 0', minWidth: 0, padding: 0, cursor: 'pointer', display: 'block',
-          height: 'clamp(44px, 9vw, 56px)', position: 'relative', overflow: 'hidden',
-          borderRadius: 7, background: PLATE_TILE_SUNK,
-          border: band === 'today' ? '2px solid var(--cb-accent)'
-            : band === 'buffer' ? `1px dashed ${PLATE_TILE_GHOST}`
-            : `1px solid ${PLATE_TILE_LINE}`,
-        }}
-      >
-        {cover && (
-          <img
-            src={cover}
-            alt=""
-            loading="lazy"
-            onError={hideBroken}
-            style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'top',
-              opacity: band === 'buffer' ? 0.42 : band === 'scheduled' ? 0.88 : 1,
-            }}
-          />
-        )}
-        <span aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(17,17,17,.55), rgba(17,17,17,0) 62%)' }} />
-      </button>
-    );
-  };
-
-  const railBand = (items: QueueItem[], band: RailBand, label: string) => {
-    if (!items.length) return null;
-    const tone = band === 'today' ? 'accent' : band === 'scheduled' ? 'plate' : 'plate-mute';
-    const labelColor = band === 'today' ? 'var(--cb-accent)' : band === 'scheduled' ? PLATE_SOFT : PLATE_MUTE;
-    return (
-      <div key={band} style={{ flex: `${items.length} 1 0`, minWidth: 0 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {items.slice(0, RAIL_TILE_CAP).map((q) => railTile(q, band))}
-        </div>
-        <div aria-hidden style={{ height: 7, border: `1px solid ${PLATE_RULE_SOFT}`, borderTop: 0, marginTop: 9 }} />
-        <div style={{ marginTop: 5, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 5, flexWrap: 'wrap' }}>
-          <Num size="row" inline tone={tone}>{items.length}</Num>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: labelColor, lineHeight: 1.35 }}>{label}</span>
-        </div>
-      </div>
-    );
-  };
 
   const scheduledSpan = dateSpan(laterItems[0]?.publish_date, laterItems[laterItems.length - 1]?.publish_date);
 
@@ -777,7 +713,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                        reads as one at 390px where a 2px border is nearly nothing. */}
       <div style={{ marginTop: 22 }}>
         <Eyebrow>The week at a glance</Eyebrow>
-        <div data-viz style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+        <div data-viz style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           {days.map((d) => {
             const dayPosts = postsOnDay(d);
             const post = dayPosts[0];
@@ -809,7 +745,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 aria-label={`${weekdayLong(d)} ${dayNumOf(d)}${lm ? ', lead magnet' : ''}`}
                 style={{
                   flex: '1 1 0', minWidth: 0, padding: 0, cursor: 'pointer',
-                  height: 'clamp(54px, 13vw, 82px)', position: 'relative', overflow: 'hidden',
+                  height: 'clamp(78px, 17vw, 128px)', position: 'relative', overflow: 'hidden',
                   borderRadius: 7, display: 'block', background: 'var(--cb-paper-sunk)',
                   border: lm ? '2px solid var(--cb-mint)'
                     : isToday ? '2px solid var(--cb-ink)'
@@ -822,6 +758,11 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 }}
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
+                {post?.funnel_stage && (
+                  <span style={{ position: 'absolute', left: 5, top: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '2px 7px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {post.funnel_stage}
+                  </span>
+                )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
                 {lm && <span aria-hidden style={{ position: 'absolute', left: 4, right: 4, bottom: 3, height: 3, borderRadius: 2, background: 'var(--cb-mint)' }} />}
                 <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'linear-gradient(0deg, rgba(17,17,17,.62), rgba(17,17,17,0))' : 'none', padding: `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -858,41 +799,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <Plate className="cb-week-plate" style={{ marginTop: 18 }} pad="clamp(20px, 2.8vw, 28px)">
       <div className="cb-week-grid">
       <div className="cb-week-col-left">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 190px', minWidth: 0 }}>
-            {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
-                zeros INSIDE a real queue (0 today, 5 scheduled) are computed facts and stay. */}
-            {queueTotal > 0 ? (
-              <>
-                <Num size="hero" tone="accent">{queueTotal}</Num>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: PLATE_SOFT, marginTop: 6, lineHeight: 1.35 }}>in the queue</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px', marginTop: 10 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-                    <Num size="big" inline tone="plate">{todayItems.length}</Num>
-                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>today</PlateMute>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-                    <Num size="big" inline tone="plate-mute">{laterItems.length}</Num>
-                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>scheduled</PlateMute>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-                    <Num size="big" inline tone="plate-mute">{bufferItems.length}</Num>
-                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>in buffer</PlateMute>
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <Blank on="plate" style={{ height: 62 }}>nothing in the queue yet</Blank>
-                <Footnote on="plate">No drafts are dated and none are waiting in the buffer.</Footnote>
-              </>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 12 }} aria-hidden>
-              <span style={{ flex: 1, borderTop: '1px dashed rgba(255,255,255,.5)' }} />
-              <span style={{ width: 0, height: 0, borderLeft: '8px solid var(--cb-accent)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' }} />
-            </div>
-          </div>
-
+        <div>
           <div style={{ flex: '1 1 240px', minWidth: 0, borderLeft: '3px solid var(--cb-accent)', paddingLeft: 16 }}>
             {/* Round 4: this block shows the SELECTED day's post (fallback: up next), and
                 the pills act on the post shown, so every day's post is editable from here. */}
@@ -948,24 +855,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               </span>
             </div>
             <SlideStrip srcs={plateSlides.slice(0, 6)} style={{ marginTop: 9 }} />
-          </div>
-        )}
-
-        {/* The queue, drawn: one tile per queued item, banded and counted. This is what makes
-            the buffer visible — undated drafts exist as marks here, not only as a sentence. */}
-        {/* The rail sits toward the BOTTOM of its column, so both columns close near the
-            footer rule. Growing from a 0 basis, it takes the slack the taller column
-            (usually the preview) leaves; when the queue is long it collapses to the min.
-            CAPPED at 120px (08-02 defect): uncapped, a tall preview beside a short left
-            column opened a dead field of dark plate between the up-next block and the rail.
-            The cap keeps the rail near its content and lets the column simply end early,
-            which reads as composition rather than as a hole. */}
-        {queueTotal > 0 && <div style={{ flex: '1 0 0', minHeight: 18, maxHeight: 120 }} aria-hidden />}
-        {queueTotal > 0 && (
-          <div data-viz style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(9px, 2.4vw, 22px)' }}>
-            {railBand(todayItems, 'today', 'today')}
-            {railBand(laterItems, 'scheduled', scheduledSpan ? `scheduled, ${scheduledSpan}` : 'scheduled')}
-            {railBand(bufferItems, 'buffer', 'in buffer')}
           </div>
         )}
 
@@ -1089,12 +978,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
         <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Pill onClick={onGoContent}>See everything in the pipeline</Pill>
-          {bufferItems.length > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-              <Num size="row" inline tone="mute">{bufferItems.length}</Num>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{bufferItems.length === 1 ? 'draft is' : 'drafts are'} written and waiting in the buffer, no date yet</span>
-            </span>
-          )}
         </div>
       </div>
 
