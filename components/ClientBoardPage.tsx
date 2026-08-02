@@ -8075,7 +8075,7 @@ export default function ClientBoardPage() {
     if (!board || photoPool.length === 0) return map;
     const hashStr = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
     const eligible = board.queue
-      .filter((q) => q.kind === 'post' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url)
+      .filter((q) => q.kind === 'post' && q.style !== 'video' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url)
       .slice()
       .sort((a, b) => a.id.localeCompare(b.id));
     let ri = 0;
