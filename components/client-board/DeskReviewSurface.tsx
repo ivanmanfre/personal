@@ -241,10 +241,11 @@ export default function DeskReviewSurface({
   // Unused-here wiring kept for interface parity with ReviewSurface (see file header):
   // onApprove, onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
   // onClearDay, onEditPromo, replacements, pool, benchFor, onRestore, onPickReplacement,
-  // onPickReplacementAngle, foldPhotos, skips — none has a block in the approved reference.
+  // onPickReplacementAngle, skips — none has a block in the approved reference.
+  // (foldPhotos DOES render — the photo library block near the foot of the list view.)
   void onApprove; void onRemove; void leftEmpty; void onLeaveEmpty; void onRefillDay; void onBackToBuffer;
   void onLeaveDayEmpty; void onClearDay; void onEditPromo; void replacements; void pool; void benchFor;
-  void onRestore; void onPickReplacement; void onPickReplacementAngle; void foldPhotos; void skips; void mint;
+  void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
@@ -674,6 +675,19 @@ export default function DeskReviewSurface({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Block 6b: the client's photo library. The page passes the full PhotosSurface node
+          (its own upload/delete UI) on live boards; preview boards pass null and this whole
+          block, header included, renders nothing. The node is opaque — rendered as-is, never
+          wrapped in a drill: it is content-bearing, so it stays visible on the list view. */}
+      {foldPhotos != null && view !== 'calendar' && (
+        <div style={{ marginTop: 26 }}>
+          <div style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)' }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>The photo library</div>
+          </div>
+          <div style={{ marginTop: 12 }}>{foldPhotos}</div>
         </div>
       )}
 

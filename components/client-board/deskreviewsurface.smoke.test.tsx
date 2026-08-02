@@ -65,7 +65,7 @@ const stageOf = (q: QueueItem) => q.stage;
 const noop = () => {};
 const noopAsync = async () => ({ ok: true });
 
-function Harness({ fetchHistory }: { fetchHistory?: (ref: string) => Promise<HistoryEntry[]> }) {
+function Harness({ fetchHistory, foldPhotos = null }: { fetchHistory?: (ref: string) => Promise<HistoryEntry[]>; foldPhotos?: React.ReactNode }) {
   const [view, setView] = React.useState<'list' | 'board' | 'feed' | 'calendar'>('list');
   return (
     <div data-skin="desk" style={SKIN_VARS}>
@@ -83,6 +83,7 @@ function Harness({ fetchHistory }: { fetchHistory?: (ref: string) => Promise<His
         setView={setView}
         skips={{}}
         live
+        foldPhotos={foldPhotos}
         foldCalendar={<div data-testid="fold-calendar">calendar</div>}
         fetchHistory={fetchHistory}
       />
@@ -272,6 +273,24 @@ describe('DeskReviewSurface', () => {
     expect((html.match(/height:58px/g) || []).length).toBe(21);
     // Zero prose.
     expect(html).not.toContain('<p');
+  });
+
+  it('renders the photo library section (header + node) in list view when foldPhotos is passed', () => {
+    const { container } = render(<Harness foldPhotos={<div data-test-photos="" />} />);
+    const html = container.innerHTML;
+    expect(html).toContain('The photo library');
+    expect(container.querySelector('[data-test-photos]')).not.toBeNull();
+    // Content-bearing block: the node is NOT buried inside a collapsed drill.
+    const node = container.querySelector('[data-test-photos]')!;
+    expect(node.closest('details')).toBeNull();
+    cleanup();
+  });
+
+  it('renders neither the photo library header nor node when foldPhotos is null (preview boards)', () => {
+    const { container } = render(<Harness foldPhotos={null} />);
+    expect(container.innerHTML).not.toContain('The photo library');
+    expect(container.querySelector('[data-test-photos]')).toBeNull();
+    cleanup();
   });
 
   it('renders nothing for the changes log when fetchHistory is absent (preview boards)', () => {
