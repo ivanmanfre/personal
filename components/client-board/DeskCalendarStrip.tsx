@@ -107,11 +107,28 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds }: {
   const days: Date[] = [];
   for (let i = 0; i < weeks * 7; i++) days.push(new Date(spanStart.getTime() + i * DAY_MS));
   const gridEnd = days[days.length - 1];
+  const gridEndIso = isoOf(gridEnd);
   const approvedShown = marks.some((m) => m.approved);
 
-  const markFill = (m: Mark) => (m.state === 'out'
-    ? 'var(--cb-ink)'
-    : m.approved ? 'var(--cb-accent)' : 'color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))');
+  // ---- Lead magnets get their own mark colour (Ivan, 08-02). Mint is the one palette var
+  // this strip's post marks don't already spend (ink=out, accent=scheduled/approved), and it
+  // is set on the board root for every skin. The solid-vs-washed state cue is kept, just in
+  // the mint family; a squared corner (vs the post pill) backs the colour up at 390px, where
+  // a bar is only a few px wide. Legend key renders ONLY when an LM actually lands inside
+  // the drawn window (the 10-row cap can crop trailing dates). ----
+  const isLm = (m: Mark) => m.item.kind === 'lm';
+  const lmShown = marks.some((m) => isLm(m) && m.item.date <= gridEndIso);
+
+  const markFill = (m: Mark) => {
+    if (isLm(m)) {
+      return m.state === 'out' || m.approved
+        ? 'var(--cb-mint)'
+        : 'color-mix(in srgb, var(--cb-mint) 42%, var(--cb-paper))';
+    }
+    return m.state === 'out'
+      ? 'var(--cb-ink)'
+      : m.approved ? 'var(--cb-accent)' : 'color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))';
+  };
 
   const legendKey = (fill: string, border: string | undefined, label: string) => (
     <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -160,11 +177,13 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds }: {
                     {dayMarks.slice(0, 3).map((m, i) => (
                       <span
                         key={i}
-                        className="bar"
+                        className={isLm(m) ? 'bar bar-lm' : 'bar'}
                         style={{
-                          flex: '1 1 0', minWidth: 0, height: 7, borderRadius: 999,
+                          flex: '1 1 0', minWidth: 0, height: 7, borderRadius: isLm(m) ? 2 : 999,
                           background: markFill(m),
-                          border: m.state === 'ahead' && !m.approved ? '1px solid var(--cb-accent)' : undefined,
+                          border: m.state === 'ahead' && !m.approved
+                            ? `1px solid ${isLm(m) ? 'var(--cb-mint)' : 'var(--cb-accent)'}`
+                            : undefined,
                         }}
                       />
                     ))}
