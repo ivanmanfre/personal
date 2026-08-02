@@ -111,12 +111,13 @@ function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch' | 'style
   return KIND_LABEL[q.kind] || q.kind;
 }
 /**
- * Lead magnet, classified EXACTLY as DeskCalendarStrip.tsx classifies it (its `kind` mapping
- * reads `q.lm_launch ? 'lm' : … : q.kind === 'lm' ? 'lm' : …`), so the glance rail and the
- * calendar strip can never disagree about which day carries one.
+ * Lead magnet, classified the same way DeskCalendarStrip classifies it, so the glance rail
+ * and the calendar strip can never disagree about which day carries one. `lm_gate` counts
+ * (Ivan 08-02): a gated carousel IS a lead magnet — the gate is the whole point — even when
+ * the writer never set `lm_launch` (the 31 Jul ChatGPT checklist carousel is the live case).
  */
-function isLeadMagnet(q: Pick<QueueItem, 'lm_launch' | 'kind'>): boolean {
-  return !!q.lm_launch || q.kind === 'lm';
+function isLeadMagnet(q: Pick<QueueItem, 'lm_launch' | 'kind' | 'lm_gate'>): boolean {
+  return !!q.lm_launch || q.kind === 'lm' || !!q.lm_gate;
 }
 /**
  * Provenance, REAL sources only. A call-grounded post carries the call; an own-post
@@ -410,7 +411,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
   /* ---- the plate's featured post: what ships today, else the next dated post. ---- */
   const plateItem = todayItems[0] || nextDated;
-  const plateSlides = plateItem ? slidesOf(plateItem) : [];
+  /* Round 4 (Ivan 08-02): the plate's post block FOLLOWS the day selector, so every post
+     is editable as you move through the days. An empty or weekend day falls back to the
+     up-next post, labelled "Up next", which keeps the block alive and the pills honest. */
+  const stageItem = selectedItem || plateItem;
+  const stageIsFallback = !selectedItem && !!plateItem;
+  const stagePublished = !!stageItem && stageOf(stageItem) === 'published';
+  const plateSlides = stageItem ? slidesOf(stageItem) : [];
 
   const cadence = cadencePerWeek(board.strategy?.cadence?.headline);
   const cadenceCaption = /working day/i.test(board.strategy?.cadence?.headline || '')
@@ -432,30 +439,10 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
   const platePill = (label: string, opts: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => (
     <Pill
-      onClick={() => plateItem && onOpen(plateItem, opts)}
+      onClick={() => stageItem && onOpen(stageItem, opts)}
       style={{ borderColor: PLATE_BORDER, color: PLATE_INK, background: 'none', fontSize: 12, padding: '6px 14px' }}
     >{label}</Pill>
   );
-
-  /** The day selector, now living ON the plate above the preview. Plate-relative palette:
-   *  white ink on the dark ground, the accent fill (with ink text, the kit's own accent
-   *  pairing) marking the selected day. Selection behaviour is unchanged. */
-  const dayPill = (d: string) => {
-    const on = d === selectedDay;
-    return (
-      <Pill
-        key={d}
-        active={on}
-        onClick={() => setPickedDay(d)}
-        style={{
-          padding: '5px 11px', fontSize: 11.5,
-          background: on ? 'var(--cb-accent)' : 'none',
-          borderColor: on ? 'var(--cb-accent)' : PLATE_BORDER,
-          color: on ? 'var(--cb-ink)' : PLATE_INK,
-        }}
-      >{weekdayShort(d)} {dayNumOf(d)}</Pill>
-    );
-  };
 
   /* ────────── the plate's queue rail ──────────
      One tile per queued item, banded: what ships today (accent outline), what carries a
@@ -773,198 +760,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <Eyebrow>This week · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
-      {/* 2 — ONE full-width plate. Its UP NEXT area hosts the LinkedIn preview itself
-          (Ivan 08-02: "it could be inside that gray queue square up next"), so the post and
-          the numbers about the post finally sit on the same piece of paper. The old outside
-          preview column and the row that wrapped it are gone: nothing hangs below the plate,
-          because there is nothing beside the plate any more.
-          Left column = the ops read (counts, what ships next, the deck, the edit pills, the
-          queue rail, the footer line). Right column = day pills + the framed preview. */}
-      <style>{WEEK_CSS}</style>
-      <Plate className="cb-week-plate" style={{ marginTop: 18 }} pad="clamp(20px, 2.8vw, 28px)">
-      <div className="cb-week-grid">
-      <div className="cb-week-col-left">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 190px', minWidth: 0 }}>
-            {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
-                zeros INSIDE a real queue (0 today, 5 scheduled) are computed facts and stay. */}
-            {queueTotal > 0 ? (
-              <>
-                <Num size="hero" tone="accent">{queueTotal}</Num>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: PLATE_SOFT, marginTop: 6, lineHeight: 1.35 }}>in the queue</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px', marginTop: 10 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                    <Num size="row" inline tone="plate">{todayItems.length}</Num>
-                    <PlateMute style={{ fontSize: 12.5, fontWeight: 700 }}>today</PlateMute>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                    <Num size="row" inline tone="plate-mute">{laterItems.length}</Num>
-                    <PlateMute style={{ fontSize: 12.5, fontWeight: 700 }}>scheduled</PlateMute>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                    <Num size="row" inline tone="plate-mute">{bufferItems.length}</Num>
-                    <PlateMute style={{ fontSize: 12.5, fontWeight: 700 }}>in buffer</PlateMute>
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <Blank on="plate" style={{ height: 62 }}>nothing in the queue yet</Blank>
-                <Footnote on="plate">No drafts are dated and none are waiting in the buffer.</Footnote>
-              </>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 12 }} aria-hidden>
-              <span style={{ flex: 1, borderTop: '1px dashed rgba(255,255,255,.5)' }} />
-              <span style={{ width: 0, height: 0, borderLeft: '8px solid var(--cb-accent)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' }} />
-            </div>
-          </div>
-
-          <div style={{ flex: '1 1 240px', minWidth: 0, borderLeft: '3px solid var(--cb-accent)', paddingLeft: 16 }}>
-            <Eyebrow on="plate">{todayItems.length ? 'Ships today' : 'Up next'}</Eyebrow>
-            {plateItem ? (
-              <>
-                <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 'clamp(17px, 4.6vw, 21px)', lineHeight: 1.3, color: PLATE_INK, marginTop: 8 }}>
-                  {noDash(plateItem.title || plateItem.hook) || 'Untitled post'}
-                </div>
-                <div style={{ marginTop: 11, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Chip tone="accent">{statusOf(plateItem)}{isScheduled(plateItem) ? `, ${fmtSchedLA(plateItem.scheduled_at, plateItem.publish_date)}` : ''}</Chip>
-                  <Chip tone="plate">{kickerOf(plateItem)}</Chip>
-                  {plateItem.funnel_stage && <Chip tone="plate">{plateItem.funnel_stage}</Chip>}
-                </div>
-                {/* The edit pills live INSIDE the up-next block, under its own title and
-                    chips and inside its accent rule, because they act on THIS post and on
-                    nothing else. Sitting lower in the column they read as bound to whatever
-                    the preview beside them happened to be showing, which is a mis-edit
-                    waiting to happen: the preview follows the day selector, these pills
-                    never do. */}
-                <div data-upnext-actions="" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {platePill('Edit copy', { editing: true })}
-                  {platePill('Edit time', { scheduling: true })}
-                  {!live && platePill('Swap slot', { changing: true })}
-                </div>
-              </>
-            ) : (
-              <>
-                <Blank on="plate" style={{ marginTop: 10, height: 52 }}>nothing is dated yet</Blank>
-                <Footnote on="plate">No post carries a date this week. Drafts in the buffer take the next open slot.</Footnote>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* A deck is information the single-cover preview can't show; a single cover is
-            already the framed preview in the next column, so it never repeats here. The
-            edit pills that used to close this block moved up into the up-next block. */}
-        {plateItem && plateSlides.length >= 2 && (
-          <div style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-              <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em' }}>The slides</Eyebrow>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
-                <Num size="row" inline tone="plate-mute">{plateSlides.length}</Num>
-                <PlateMute style={{ fontSize: 12, fontWeight: 700 }}>in the deck, first {Math.min(6, plateSlides.length)} shown</PlateMute>
-              </span>
-            </div>
-            <SlideStrip srcs={plateSlides.slice(0, 6)} style={{ marginTop: 9 }} />
-          </div>
-        )}
-
-        {/* The queue, drawn: one tile per queued item, banded and counted. This is what makes
-            the buffer visible — undated drafts exist as marks here, not only as a sentence. */}
-        {/* The rail sits toward the BOTTOM of its column, so both columns close near the
-            footer rule. Growing from a 0 basis, it takes the slack the taller column
-            (usually the preview) leaves; when the queue is long it collapses to the min.
-            CAPPED at 120px (08-02 defect): uncapped, a tall preview beside a short left
-            column opened a dead field of dark plate between the up-next block and the rail.
-            The cap keeps the rail near its content and lets the column simply end early,
-            which reads as composition rather than as a hole. */}
-        {queueTotal > 0 && <div style={{ flex: '1 0 0', minHeight: 18, maxHeight: 120 }} aria-hidden />}
-        {queueTotal > 0 && (
-          <div data-viz style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(9px, 2.4vw, 22px)' }}>
-            {railBand(todayItems, 'today', 'today')}
-            {railBand(laterItems, 'scheduled', scheduledSpan ? `scheduled, ${scheduledSpan}` : 'scheduled')}
-            {railBand(bufferItems, 'buffer', 'in buffer')}
-          </div>
-        )}
-
-      </div>{/* /left column */}
-
-      {/* The plate's right column: the day selector, then the LinkedIn preview ITSELF, on
-          the plate. No status chip and no action row under the card — FeedPreview's own
-          header already says "Scheduled · Mon 3 Aug", the edit pills sit in the left column
-          and on the day rows below, and clicking the card opens the full post. */}
-      <div className="cb-week-col-right">
-        <Eyebrow on="plate">As it lands on LinkedIn</Eyebrow>
-        <div data-day-pills="" style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {days.map(dayPill)}
-        </div>
-        <div style={{ marginTop: 13 }}>
-          {selectedItem ? (
-            <>
-              {selectedItem.generating && (
-                <div style={{ marginBottom: 9 }}>
-                  <Chip tone="plate">being written, the cover is still rendering</Chip>
-                </div>
-              )}
-              {/* The paper mat. Two jobs: it frames the card as an artifact pinned to dark
-                  paper, and it BREAKS THE CASCADE — the desk skin sets the plate's colour
-                  with !important and every unstyled descendant inherits it, so the mat
-                  re-declares page ink on page paper and the white card keeps its own
-                  contrast no matter what the plate is painted. */}
-              <div
-                className="cb-week-preview-frame"
-                data-plate-preview=""
-                onClick={() => onOpen(selectedItem)}
-                style={{
-                  cursor: 'pointer',
-                  color: 'var(--cb-ink)',
-                  background: 'var(--cb-paper)',
-                  border: `1px solid ${PLATE_BORDER}`,
-                  borderRadius: 18,
-                  padding: 'clamp(8px, 1.3vw, 12px)',
-                }}
-              >
-                <FeedPreview
-                  item={selectedItem}
-                  board={board}
-                  accent={accent}
-                  fontStack={fontStack}
-                  size="lg"
-                  cover={selectedItem.generating ? 'render' : 'plate'}
-                  live={live}
-                  /* 3 lines: LinkedIn's real desktop fold. 4 was the stacked layout's number. */
-                  clampLines={3}
-                />
-              </div>
-            </>
-          ) : isWeekendDay(selectedDay) ? (
-            <>
-              <Blank on="plate" style={{ height: 120 }}>weekend, not a posting day</Blank>
-              <Footnote on="plate">The cadence runs Monday to Friday.</Footnote>
-            </>
-          ) : (
-            <>
-              <Blank on="plate" style={{ height: 120 }}>nothing scheduled this day</Blank>
-              <Footnote on="plate">Pick another day above, or add a post to this one in the list below.</Footnote>
-            </>
-          )}
-        </div>
-      </div>{/* /right column */}
-      </div>{/* /plate grid */}
-
-      {/* The plate's footer fact, run FULL WIDTH under both columns: it closes the plate as
-          one composition, and the column seam terminates on it. Pinning it to the bottom of
-          the shorter column instead left a dead band of plate under the queue rail. */}
-      <PlateRule gap={20} />
-      <Footnote on="plate">
-        {publishedItems.length > 0
-          /* The rail above already carries "the rest keeps publishing on its slots" as
-             marks, so the line stays a single fact and the panel keeps density headroom. */
-          ? <><Num size="row" inline tone="plate-mute">{publishedItems.length}</Num> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
-          : 'Nothing has published from this board yet.'}
-      </Footnote>
-      </Plate>
-
-      {/* 3 — the week at a glance: one tile a day, carrying the real cover. It is also the
+      {/* 2 — the week at a glance, ABOVE the plate (Ivan 08-02 round 3): one tile a day, carrying the real cover. It is also the
           artwork the compressed day rows below no longer repeat, AND the second control on
           the day selector (Ivan 08-02: "when u touch on any of the week at a glance it shows
           its preview linkedin html"). One state, two controls: these tiles and the day pills
@@ -978,7 +774,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                        and the tiles never reflow when the selection moves)
             mint band  — the lead magnet again, in shape as well as colour, so the tile still
                        reads as one at 390px where a 2px border is nearly nothing. */}
-      <div style={{ marginTop: 28 }}>
+      <div style={{ marginTop: 22 }}>
         <Eyebrow>The week at a glance</Eyebrow>
         <div data-viz style={{ display: 'flex', gap: 6, marginTop: 10 }}>
           {days.map((d) => {
@@ -1048,6 +844,206 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           )}
         </Footnote>
       </div>
+
+
+      {/* 3 — ONE full-width plate. Its UP NEXT area hosts the LinkedIn preview itself
+          (Ivan 08-02: "it could be inside that gray queue square up next"), so the post and
+          the numbers about the post finally sit on the same piece of paper. The old outside
+          preview column and the row that wrapped it are gone: nothing hangs below the plate,
+          because there is nothing beside the plate any more.
+          Left column = the ops read (counts, what ships next, the deck, the edit pills, the
+          queue rail, the footer line). Right column = day pills + the framed preview. */}
+      <style>{WEEK_CSS}</style>
+      <Plate className="cb-week-plate" style={{ marginTop: 18 }} pad="clamp(20px, 2.8vw, 28px)">
+      <div className="cb-week-grid">
+      <div className="cb-week-col-left">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
+          <div style={{ flex: '1 1 190px', minWidth: 0 }}>
+            {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
+                zeros INSIDE a real queue (0 today, 5 scheduled) are computed facts and stay. */}
+            {queueTotal > 0 ? (
+              <>
+                <Num size="hero" tone="accent">{queueTotal}</Num>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: PLATE_SOFT, marginTop: 6, lineHeight: 1.35 }}>in the queue</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 14px', marginTop: 10 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+                    <Num size="big" inline tone="plate">{todayItems.length}</Num>
+                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>today</PlateMute>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+                    <Num size="big" inline tone="plate-mute">{laterItems.length}</Num>
+                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>scheduled</PlateMute>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+                    <Num size="big" inline tone="plate-mute">{bufferItems.length}</Num>
+                    <PlateMute style={{ fontSize: 13.5, fontWeight: 700 }}>in buffer</PlateMute>
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Blank on="plate" style={{ height: 62 }}>nothing in the queue yet</Blank>
+                <Footnote on="plate">No drafts are dated and none are waiting in the buffer.</Footnote>
+              </>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 12 }} aria-hidden>
+              <span style={{ flex: 1, borderTop: '1px dashed rgba(255,255,255,.5)' }} />
+              <span style={{ width: 0, height: 0, borderLeft: '8px solid var(--cb-accent)', borderTop: '5px solid transparent', borderBottom: '5px solid transparent' }} />
+            </div>
+          </div>
+
+          <div style={{ flex: '1 1 240px', minWidth: 0, borderLeft: '3px solid var(--cb-accent)', paddingLeft: 16 }}>
+            {/* Round 4: this block shows the SELECTED day's post (fallback: up next), and
+                the pills act on the post shown, so every day's post is editable from here. */}
+            <Eyebrow on="plate">
+              {stageIsFallback ? 'Up next'
+                : stagePublished ? (selectedDay === today ? 'Out today' : `Out ${weekdayLong(selectedDay)} ${dayNumOf(selectedDay)}`)
+                : selectedDay === today ? 'Ships today'
+                : `On ${weekdayLong(selectedDay)} ${dayNumOf(selectedDay)}`}
+            </Eyebrow>
+            {stageItem ? (
+              <>
+                <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 'clamp(17px, 4.6vw, 21px)', lineHeight: 1.3, color: PLATE_INK, marginTop: 8 }}>
+                  {noDash(stageItem.title || stageItem.hook) || 'Untitled post'}
+                </div>
+                <div style={{ marginTop: 11, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Chip tone="accent">{statusOf(stageItem)}{isScheduled(stageItem) ? `, ${fmtSchedLA(stageItem.scheduled_at, stageItem.publish_date)}` : ''}</Chip>
+                  <Chip tone="plate">{kickerOf(stageItem)}</Chip>
+                  {stageItem.funnel_stage && <Chip tone="plate">{stageItem.funnel_stage}</Chip>}
+                </div>
+                <div data-upnext-actions="" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {stagePublished ? (
+                    (() => { const perf = perfFor(stageItem); return perf?.url
+                      ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
+                      : null; })()
+                  ) : (
+                    <>
+                      {platePill('Edit copy', { editing: true })}
+                      {platePill('Edit time', { scheduling: true })}
+                      {!live && platePill('Swap slot', { changing: true })}
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Blank on="plate" style={{ marginTop: 10, height: 52 }}>nothing is dated yet</Blank>
+                <Footnote on="plate">No post carries a date this week. Drafts in the buffer take the next open slot.</Footnote>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* A deck is information the single-cover preview can't show; a single cover is
+            already the framed preview in the next column, so it never repeats here. The
+            edit pills that used to close this block moved up into the up-next block. */}
+        {plateItem && plateSlides.length >= 2 && (
+          <div style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+              <Eyebrow on="plate" style={{ fontSize: 11.5, letterSpacing: '0.12em' }}>The slides</Eyebrow>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
+                <Num size="row" inline tone="plate-mute">{plateSlides.length}</Num>
+                <PlateMute style={{ fontSize: 12, fontWeight: 700 }}>in the deck, first {Math.min(6, plateSlides.length)} shown</PlateMute>
+              </span>
+            </div>
+            <SlideStrip srcs={plateSlides.slice(0, 6)} style={{ marginTop: 9 }} />
+          </div>
+        )}
+
+        {/* The queue, drawn: one tile per queued item, banded and counted. This is what makes
+            the buffer visible — undated drafts exist as marks here, not only as a sentence. */}
+        {/* The rail sits toward the BOTTOM of its column, so both columns close near the
+            footer rule. Growing from a 0 basis, it takes the slack the taller column
+            (usually the preview) leaves; when the queue is long it collapses to the min.
+            CAPPED at 120px (08-02 defect): uncapped, a tall preview beside a short left
+            column opened a dead field of dark plate between the up-next block and the rail.
+            The cap keeps the rail near its content and lets the column simply end early,
+            which reads as composition rather than as a hole. */}
+        {queueTotal > 0 && <div style={{ flex: '1 0 0', minHeight: 18, maxHeight: 120 }} aria-hidden />}
+        {queueTotal > 0 && (
+          <div data-viz style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(9px, 2.4vw, 22px)' }}>
+            {railBand(todayItems, 'today', 'today')}
+            {railBand(laterItems, 'scheduled', scheduledSpan ? `scheduled, ${scheduledSpan}` : 'scheduled')}
+            {railBand(bufferItems, 'buffer', 'in buffer')}
+          </div>
+        )}
+
+      </div>{/* /left column */}
+
+      {/* The plate's right column: the day selector, then the LinkedIn preview ITSELF, on
+          the plate. No status chip and no action row under the card — FeedPreview's own
+          header already says "Scheduled · Mon 3 Aug", the edit pills sit in the left column
+          and on the day rows below, and clicking the card opens the full post. */}
+      <div className="cb-week-col-right">
+        {/* No header here by ruling (Ivan 08-02 round 4): the card speaks for itself, its
+            own top line already says "Scheduled · Mon 3 Aug". The glance rail above the
+            plate is the selector; this column just shows the picked day's post. */}
+        <div>
+          {selectedItem ? (
+            <>
+              {selectedItem.generating && (
+                <div style={{ marginBottom: 9 }}>
+                  <Chip tone="plate">being written, the cover is still rendering</Chip>
+                </div>
+              )}
+              {/* The paper mat. Two jobs: it frames the card as an artifact pinned to dark
+                  paper, and it BREAKS THE CASCADE — the desk skin sets the plate's colour
+                  with !important and every unstyled descendant inherits it, so the mat
+                  re-declares page ink on page paper and the white card keeps its own
+                  contrast no matter what the plate is painted. */}
+              <div
+                className="cb-week-preview-frame"
+                data-plate-preview=""
+                onClick={() => onOpen(selectedItem)}
+                style={{
+                  cursor: 'pointer',
+                  color: 'var(--cb-ink)',
+                  background: 'var(--cb-paper)',
+                  border: `1px solid ${PLATE_BORDER}`,
+                  borderRadius: 18,
+                  padding: 'clamp(8px, 1.3vw, 12px)',
+                }}
+              >
+                <FeedPreview
+                  item={selectedItem}
+                  board={board}
+                  accent={accent}
+                  fontStack={fontStack}
+                  size="lg"
+                  cover={selectedItem.generating ? 'render' : 'plate'}
+                  live={live}
+                  /* 3 lines: LinkedIn's real desktop fold. 4 was the stacked layout's number. */
+                  clampLines={3}
+                />
+              </div>
+            </>
+          ) : isWeekendDay(selectedDay) ? (
+            <>
+              <Blank on="plate" style={{ height: 120 }}>weekend, not a posting day</Blank>
+              <Footnote on="plate">The cadence runs Monday to Friday.</Footnote>
+            </>
+          ) : (
+            <>
+              <Blank on="plate" style={{ height: 120 }}>nothing scheduled this day</Blank>
+              <Footnote on="plate">Pick another day above, or add a post to this one in the list below.</Footnote>
+            </>
+          )}
+        </div>
+      </div>{/* /right column */}
+      </div>{/* /plate grid */}
+
+      {/* The plate's footer fact, run FULL WIDTH under both columns: it closes the plate as
+          one composition, and the column seam terminates on it. Pinning it to the bottom of
+          the shorter column instead left a dead band of plate under the queue rail. */}
+      <PlateRule gap={20} />
+      <Footnote on="plate">
+        {publishedItems.length > 0
+          /* The rail above already carries "the rest keeps publishing on its slots" as
+             marks, so the line stays a single fact and the panel keeps density headroom. */
+          ? <><Num size="row" inline tone="plate-mute">{publishedItems.length}</Num> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
+          : 'Nothing has published from this board yet.'}
+      </Footnote>
+      </Plate>
 
       {/* 4 — day by day, one compressed line each, every one still openable. */}
       <div style={{ marginTop: 28 }}>

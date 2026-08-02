@@ -210,12 +210,12 @@ describe('DeskWeekSurface', () => {
     // Swap slot is preview-only: the live modal carries no change-request pane
     // (canAct && !isLive), so the pill is gated off on live boards.
     expect(html).not.toContain('Swap slot');
-    //     …and the preview, in the plate's right column, with NO repeated status chip or
-    //     action pills under the card — the preview's own header carries the schedule line,
-    //     the plate's left column carries the edit pills.
-    expect(html).toContain('As it lands on LinkedIn');
+    //     …and the preview, in the plate's right column, with NO section header (round 4:
+    //     "remove As it lands on LinkedIn") and no action pills under the card — the card's
+    //     own top line carries the schedule, the left column carries the pills.
+    expect(html).not.toContain('As it lands on LinkedIn');
     expect(html).toContain('cb-linkedin-preview');
-    const previewCol = html.slice(html.indexOf('As it lands on LinkedIn'), html.indexOf('The week at a glance'));
+    const previewCol = html.slice(html.indexOf('class="cb-week-col-right"'), html.indexOf('Day by day'));
     expect(previewCol).not.toContain('Edit copy');
     expect(previewCol).not.toContain('Edit time');
     // 3 — the week at a glance
@@ -234,20 +234,17 @@ describe('DeskWeekSurface', () => {
     expect((html.match(/class="cb-plate cb-week-plate"/g) || [])).toHaveLength(1);
     // The old outside preview column is gone entirely.
     expect(html).not.toContain('cb-week-preview-col');
-    const plate = html.indexOf('cb-week-plate');
-    const dayPills = html.indexOf('data-day-pills');
+    const plate = html.indexOf('class="cb-plate cb-week-plate"');
     const preview = html.indexOf('data-plate-preview');
     const glance = html.indexOf('The week at a glance');
     expect(plate).toBeGreaterThan(-1);
-    // Day pills sit on the plate, above the preview; the preview sits on the plate, above
-    // the glance rail (which is the first thing OUTSIDE the plate).
-    expect(plate).toBeLessThan(dayPills);
-    expect(dayPills).toBeLessThan(preview);
-    expect(preview).toBeLessThan(glance);
-    // The queue rail and the plate footer line stay inside the plate too.
-    expect(html.indexOf('data-rail-tile')).toBeLessThan(glance);
+    // Round 3 (Ivan 08-02): the glance rail sits ABOVE the plate, directly under the
+    // headline, and it is the ONE day selector — the old on-plate day pills are gone.
+    expect(glance).toBeLessThan(plate);
+    expect(plate).toBeLessThan(preview);
+    expect(html).not.toContain('data-day-pills');
     // The preview card really is the LinkedIn card, not a re-drawn stand-in.
-    expect(html.slice(preview, glance)).toContain('cb-linkedin-preview');
+    expect(html.slice(preview)).toContain('cb-linkedin-preview');
   });
 
   it('isolates the white preview card from the plate ink cascade', () => {
@@ -270,13 +267,13 @@ describe('DeskWeekSurface', () => {
     // The buffer draft exists as a MARK on the plate, not only as a sentence at the foot.
     expect(tiles.filter((t) => t.includes('buffer'))).toHaveLength(1);
     expect(html).toContain('in buffer');
-    // …and the rail sits INSIDE the dark plate, above the outside-the-plate day rail.
-    expect(html.indexOf('cb-plate')).toBeLessThan(html.indexOf('data-rail-tile'));
-    expect(html.indexOf('data-rail-tile')).toBeLessThan(html.indexOf('The week at a glance'));
+    // …and the rail sits INSIDE the dark plate, which now follows the glance selector.
+    expect(html.indexOf('The week at a glance')).toBeLessThan(html.indexOf('data-rail-tile'));
+    expect(html.indexOf('class="cb-plate cb-week-plate"')).toBeLessThan(html.indexOf('data-rail-tile'));
   });
 
   /** The glance rail as the SECOND control on the day selector (Ivan, 08-02). */
-  const railOf = (h: string) => h.slice(h.indexOf('The week at a glance'), h.indexOf('Day by day'));
+  const railOf = (h: string) => h.slice(h.indexOf('The week at a glance'), h.indexOf('cb-week-plate'));
   const tilesOf = (h: string) => railOf(h).match(/<button[^>]*data-glance-tile="[^"]*"[^>]*>/g) || [];
 
   it('makes every glance tile a focusable day selector, exactly one of them pressed', () => {
@@ -296,8 +293,8 @@ describe('DeskWeekSurface', () => {
     // tile and never reflows the row.
     const pressed = tiles.find((t) => t.includes('aria-pressed="true"')) as string;
     expect(pressed).toContain('box-shadow:inset 0 0 0 2px var(--cb-accent)');
-    // …and the day pills on the plate are still there: one state, two controls.
-    expect(html).toContain('data-day-pills');
+    // …and it is the only day selector: the on-plate pills are gone (round 3).
+    expect(html).not.toContain('data-day-pills');
   });
 
   it('tints a lead-magnet day mint and only then prints the legend token', () => {
@@ -317,18 +314,26 @@ describe('DeskWeekSurface', () => {
     expect(lmPressed).toHaveLength(1);
   });
 
-  it('binds the edit pills to the UP NEXT post, never to the previewed day', () => {
+  it('shows the SELECTED day post on the plate, pills acting on it (round 4)', () => {
+    // Default selection = today, which carries a post: the block is day-labelled and the
+    // pills live inside it, so what you edit is what the block names.
     const upnext = html.indexOf('data-upnext-actions');
     const heading = html.indexOf('Ships today');
     expect(upnext).toBeGreaterThan(-1);
-    // The pills sit inside the up-next block: after its own eyebrow, before the preview
-    // column that follows the day selector.
     expect(heading).toBeLessThan(upnext);
-    expect(upnext).toBeLessThan(html.indexOf('As it lands on LinkedIn'));
-    // Nothing day-selectable sits between the up-next title and its pills.
-    expect(html.slice(heading, upnext)).not.toContain('data-day-pills');
-    expect(html.slice(heading, upnext)).not.toContain('data-glance-tile');
-    expect(html.slice(upnext, html.indexOf('As it lands on LinkedIn'))).toContain('Edit copy');
+    expect(html.slice(upnext, html.indexOf('class="cb-week-col-right"'))).toContain('Edit copy');
+    // The rail (the one selector) sits ABOVE the plate block.
+    expect(html.indexOf('data-glance-tile')).toBeLessThan(heading);
+  });
+
+  it('a published selected day reads Out + View on LinkedIn, never edit pills', () => {
+    const pubOnly: Board = { ...board, queue: [publishedItem] };
+    const h = render(pubOnly);
+    expect(h).toContain('Out today');
+    const block = h.slice(h.indexOf('data-upnext-actions'), h.indexOf('class="cb-week-col-right"'));
+    expect(block).toContain('View on LinkedIn');
+    expect(block).not.toContain('Edit copy');
+    expect(block).not.toContain('Edit time');
   });
 
   it('compresses day-by-day to one line: no cover thumb, status chip only', () => {
