@@ -69,6 +69,16 @@ function weekDayList(startIso: string): string[] {
   const start = new Date(startIso + 'T12:00:00Z').getTime();
   return Array.from({ length: 7 }, (_, i) => new Date(start + i * 86400000).toISOString().slice(0, 10));
 }
+/** The number the WEEK badge shows: posts landing in this week's 7-day window, nothing
+ *  else (Ivan 08-03: the sidebar said 14 — the whole queue — where the week is 5). Mirrors
+ *  the surface's own window derivation exactly. */
+export function weekWindowCount(board: Board, skips: Record<string, true | undefined> = {}): number {
+  const today = todayIsoLA();
+  const cal = board.calendar;
+  const startIso = cal && cal.start > today ? cal.start : today;
+  const days = new Set(weekDayList(startIso));
+  return board.queue.filter((q) => q.stage !== 'published' && !!q.publish_date && days.has(q.publish_date) && !skips[q.id]).length;
+}
 /** True once a post has a real slot (not sitting undated in the buffer). */
 function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boolean {
   return !!(q.scheduled_at || q.publish_date);

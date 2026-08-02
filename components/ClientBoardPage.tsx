@@ -11,7 +11,7 @@ import {
   type BoardSession,
 } from '../lib/boardSession';
 import { DeskKitStyle } from './client-board/desk-kit';
-import DeskWeekSurface from './client-board/DeskWeekSurface';
+import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
@@ -8361,6 +8361,8 @@ export default function ClientBoardPage() {
 
   // Badge = pieces actually awaiting an action: generating, swapped and skipped excluded.
   const reviewCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id]).length;
+  // The WEEK badge counts this week's posts, never the whole queue (desk skin; Ivan 08-03).
+  const weekBadge = skin === 'desk' ? weekWindowCount(viewBoard, weekSkips) : reviewCount;
   const scheduledCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id] && isScheduled(q)).length;
   const bufferCount = reviewCount - scheduledCount;
   const founderName = board.founder?.name || board.company_name;
@@ -8582,8 +8584,8 @@ export default function ClientBoardPage() {
                       >
                         {t.label}
                       </span>
-                      {isHero && reviewCount > 0 && (
-                        <span className="rounded-full px-2 py-0.5 leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: caText(accent), color: PAPER }}><RollingNumber n={reviewCount} /></span>
+                      {isHero && weekBadge > 0 && (
+                        <span className="rounded-full px-2 py-0.5 leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: caText(accent), color: PAPER }}><RollingNumber n={weekBadge} /></span>
                       )}
                     </button>
                   );
@@ -8749,8 +8751,8 @@ export default function ClientBoardPage() {
               >
                 <span className="relative">
                   <NavIcon id={t.id} size={18} />
-                  {t.id === 'week' && reviewCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
+                  {t.id === 'week' && weekBadge > 0 && (
+                    <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={weekBadge} /></span>
                   )}
                 </span>
                 <span className={`max-w-full truncate text-[10px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{skin === 'desk' ? t.label.split(' ')[0] : t.label}</span>
