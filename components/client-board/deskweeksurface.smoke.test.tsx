@@ -1,8 +1,17 @@
 // @vitest-environment jsdom
 /**
- * DeskWeekSurface smoke test.
+ * DeskWeekSurface smoke test — candidate A layout ("preview inside the plate").
  *
  * Run:  npx vitest run components/client-board/deskweeksurface.smoke.test.tsx
+ *
+ * WHAT THIS LAYOUT ASSERTS ON TOP OF THE HONEST-STATE + REGISTER CONTRACT
+ * - There is exactly ONE plate, it is full width, and the LinkedIn preview renders INSIDE
+ *   it (the old outside `cb-week-preview-col` is gone).
+ * - The day pills live on the plate, above the preview.
+ * - The preview sits on a mat that re-declares page ink / page paper, so the plate's
+ *   !important colour cannot cascade into the white card.
+ * - Day-by-day rows are compressed: no cover thumbnail, exactly one chip (the status) on
+ *   the visible line, and the drill still carries every write path.
  *
  * Fabricated fixture (test-only): one generating draft, one published post with a real
  * LinkedIn url, one carousel with image_urls, at least one empty weekday, and a weekend.
@@ -176,23 +185,55 @@ describe('DeskWeekSurface', () => {
     // Swap slot is preview-only: the live modal carries no change-request pane
     // (canAct && !isLive), so the pill is gated off on live boards.
     expect(html).not.toContain('Swap slot');
-    // 3 — the LinkedIn preview of the selected post, beside the plate (Ivan 08-02: on the
-    // side, not below), with NO repeated status chip / action pills under the card — the
-    // preview's own header carries the schedule line, the plate carries the edit pills.
+    //     …and the preview, in the plate's right column, with NO repeated status chip or
+    //     action pills under the card — the preview's own header carries the schedule line,
+    //     the plate's left column carries the edit pills.
     expect(html).toContain('As it lands on LinkedIn');
     expect(html).toContain('cb-linkedin-preview');
     const previewCol = html.slice(html.indexOf('As it lands on LinkedIn'), html.indexOf('The week at a glance'));
     expect(previewCol).not.toContain('Edit copy');
     expect(previewCol).not.toContain('Edit time');
-    // 4 — the queue rail
+    // 3 — the week at a glance
     expect(html).toContain('The week at a glance');
     expect(html).toContain('working days in this window carry a post');
-    // 5 — day by day
+    // 4 — day by day
     expect(html).toContain('Day by day');
     expect(html).toContain('Open post');
-    // 6 — the stat footer
+    // 5 — the stat footer
     expect(html).toContain('posts a week, one a working day');
     expect(html).toContain('out so far');
+  });
+
+  it('renders the LinkedIn preview INSIDE the one full-width plate', () => {
+    // One plate, not a plate plus a column beside it.
+    expect((html.match(/class="cb-plate cb-week-plate"/g) || [])).toHaveLength(1);
+    // The old outside preview column is gone entirely.
+    expect(html).not.toContain('cb-week-preview-col');
+    const plate = html.indexOf('cb-week-plate');
+    const dayPills = html.indexOf('data-day-pills');
+    const preview = html.indexOf('data-plate-preview');
+    const glance = html.indexOf('The week at a glance');
+    expect(plate).toBeGreaterThan(-1);
+    // Day pills sit on the plate, above the preview; the preview sits on the plate, above
+    // the glance rail (which is the first thing OUTSIDE the plate).
+    expect(plate).toBeLessThan(dayPills);
+    expect(dayPills).toBeLessThan(preview);
+    expect(preview).toBeLessThan(glance);
+    // The queue rail and the plate footer line stay inside the plate too.
+    expect(html.indexOf('data-rail-tile')).toBeLessThan(glance);
+    // The preview card really is the LinkedIn card, not a re-drawn stand-in.
+    expect(html.slice(preview, glance)).toContain('cb-linkedin-preview');
+  });
+
+  it('isolates the white preview card from the plate ink cascade', () => {
+    // The mat re-declares page ink on page paper. Without this the desk skin's
+    // `.cb-plate { color: … !important }` inherits straight into the card.
+    const frame = html.slice(html.indexOf('data-plate-preview'));
+    const style = frame.slice(frame.indexOf('style="'), frame.indexOf('>', frame.indexOf('style="')));
+    expect(style).toContain('color:var(--cb-ink)');
+    expect(style).toContain('background:var(--cb-paper)');
+    // FeedPreview's own header/body ink is literal, so the card holds contrast on white.
+    expect(html.slice(html.indexOf('cb-linkedin-preview'))).toContain('color:#111');
   });
 
   it('draws the plate queue rail: one tile per queued item, in counted bands', () => {
@@ -207,6 +248,29 @@ describe('DeskWeekSurface', () => {
     // …and the rail sits INSIDE the dark plate, above the outside-the-plate day rail.
     expect(html.indexOf('cb-plate')).toBeLessThan(html.indexOf('data-rail-tile'));
     expect(html.indexOf('data-rail-tile')).toBeLessThan(html.indexOf('The week at a glance'));
+  });
+
+  it('compresses day-by-day to one line: no cover thumb, status chip only', () => {
+    const dayByDay = html.slice(html.indexOf('Day by day'));
+    // The glance rail above already draws the artwork; the rows dropped their thumbnails.
+    expect(dayByDay).not.toContain('class="thumb');
+    const rows = dayByDay.split('data-day-row').slice(1);
+    expect(rows.length).toBeGreaterThan(0);
+    const postRows = rows.filter((r) => r.includes('Open post'));
+    // The fixture dates two posts today and one later in the window.
+    expect(postRows.length).toBeGreaterThanOrEqual(3);
+    for (const row of postRows) {
+      // The visible line is everything before the collapsed drill.
+      const line = row.slice(0, row.indexOf('<details'));
+      expect(line).not.toContain('class="thumb');
+      // Exactly one chip on the line, and it is the status. Format / funnel / pillar /
+      // provenance / read-count chips moved into the drill.
+      expect((line.match(/class="chip"/g) || [])).toHaveLength(1);
+    }
+    // Every write path the old fat row carried is still one click away, inside the drill.
+    for (const label of ['Edit copy', 'Edit time', 'Remove this post', 'Back to the buffer', 'Clear the day']) {
+      expect(dayByDay).toContain(label);
+    }
   });
 
   it('emits the gate hooks: data-metric numerals and a data-viz encoding', () => {

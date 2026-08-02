@@ -7,12 +7,25 @@
  * the same semantic place, and nothing here fetches, mutates or derives state the original
  * did not. Blocks, in frag order:
  *   1  eyebrow (real week range) + computed headline
- *   2  the dark Plate: queue hero + breakdown, "Ships today", slides, collapsed copy drill,
- *      and the Edit copy / Edit time / Swap slot pills
- *   3  the LinkedIn preview of the SELECTED day's post (FeedPreview, size lg)
- *   4  the queue rail: one tile per day of the window, carrying the real cover
- *   5  day-by-day rows, each with a collapsed drill and the per-stage actions
- *   6  the stat footer
+ *   2  ONE full-width dark Plate, split into two columns at >= 900px:
+ *        left  — queue hero + breakdown, "Ships today"/"Up next" facts, the deck strip,
+ *                the Edit copy / Edit time / Swap slot pills, and the banded queue rail
+ *                (bottom-aligned, so both columns close on the same rule)
+ *        right — the day pills, then the LinkedIn preview ITSELF, framed on a paper mat
+ *                INSIDE the plate (Ivan 08-02: "it could be inside that gray queue square
+ *                up next"). Below 900px it stacks under the up-next block, still inside.
+ *      then a full-width footer line under both columns closes the plate.
+ *   3  the week-at-a-glance rail: one tile a day, carrying the real cover
+ *   4  day-by-day rows, compressed to a single line (day, title, status, Open post) since
+ *      the rail above already carries the artwork; each row keeps its collapsed drill
+ *   5  the stat footer
+ *
+ * CONTRAST ISOLATION
+ * The white preview card is a framed artifact on dark paper. The desk skin sets
+ * `[data-skin="desk"] .cb-plate { color: var(--cb-plate-ink) !important }`, which every
+ * descendant that does not set its own colour inherits. The mat div re-declares
+ * `color: var(--cb-ink)` and `background: var(--cb-paper)`, so nothing plate-relative can
+ * cascade into the card and the card keeps its own AA contrast on its own white ground.
  *
  * HONESTY RULES BAKED IN
  * - Every number comes from props. Absent data renders a kit <Blank/>/<StatBlank/>, never a 0.
@@ -31,7 +44,7 @@ import {
   Eyebrow, SectionRule, DeskH2, Footnote,
   Plate, PlateMute, PlateRule,
   Num, Stat, StatStrip, StatBlank, Chip, Pill,
-  Drill, Thumb, SlideStrip, Blank,
+  Drill, SlideStrip, Blank,
 } from './desk-kit';
 import { FeedPreview, FunnelChip, fmtDay } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
@@ -178,6 +191,32 @@ const PLATE_INK = 'var(--cb-plate-ink)';
 const PLATE_MUTE = 'var(--cb-plate-mute)';
 /** The kit's own plate soft-text literal (desk-kit PLATE_SOFT_TEXT), kept in sync. */
 const PLATE_SOFT = '#C9C9C2';
+
+/**
+ * The four rules this surface cannot inline.
+ * 1. The plate's own column split. An inline style cannot carry a media query, and the
+ *    split is a real breakpoint: at >= 900px the preview sits in the plate's right column,
+ *    below it stacks inside the plate under the up-next block.
+ * 2. The seam between the two plate columns (left rule wide, top rule stacked).
+ * 3. The preview's media cap. LinkedIn's own feed crops tall media, so a capped object-fit
+ *    crop is faithful, and it keeps the framed card from out-running the left column.
+ * 4. The plate hover-lift is dropped for THIS plate only. The reference lifts a small proof
+ *    plate; lifting a full-width stage that now holds the post preview reads as a glitch.
+ *    The skin's rule carries !important on the shadow, so this one has to as well.
+ */
+const WEEK_CSS = `
+.cb-week-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+.cb-week-col-left { display: flex; flex-direction: column; min-width: 0; }
+.cb-week-col-right { min-width: 0; border-top: 1px solid rgba(255,255,255,0.16); padding-top: 20px; }
+@media (min-width: 900px) {
+  .cb-week-grid { grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); gap: 26px; }
+  .cb-week-col-right { border-top: 0; padding-top: 0; border-left: 1px solid rgba(255,255,255,0.16); padding-left: 26px; }
+}
+.cb-week-preview-frame .cb-linkedin-preview > img { max-height: 250px; object-fit: cover; object-position: center top; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-skin="desk"] .cb-week-plate:hover { transform: none !important; box-shadow: none !important; }
+}
+`;
 
 /* ────────────────────────── the surface ────────────────────────── */
 
@@ -376,6 +415,26 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     >{label}</Pill>
   );
 
+  /** The day selector, now living ON the plate above the preview. Plate-relative palette:
+   *  white ink on the dark ground, the accent fill (with ink text, the kit's own accent
+   *  pairing) marking the selected day. Selection behaviour is unchanged. */
+  const dayPill = (d: string) => {
+    const on = d === selectedDay;
+    return (
+      <Pill
+        key={d}
+        active={on}
+        onClick={() => setPickedDay(d)}
+        style={{
+          padding: '5px 11px', fontSize: 11.5,
+          background: on ? 'var(--cb-accent)' : 'none',
+          borderColor: on ? 'var(--cb-accent)' : PLATE_BORDER,
+          color: on ? 'var(--cb-ink)' : PLATE_INK,
+        }}
+      >{weekdayShort(d)} {dayNumOf(d)}</Pill>
+    );
+  };
+
   /* ────────── the plate's queue rail ──────────
      One tile per queued item, banded: what ships today (accent outline), what carries a
      later date (real cover), and what sits undated in the buffer (dashed ghost — a buffer
@@ -442,27 +501,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
   const scheduledSpan = dateSpan(laterItems[0]?.publish_date, laterItems[laterItems.length - 1]?.publish_date);
 
-  /** The chip row that sits under every row title. Only real facts get a chip. */
-  const chipRow = (q: QueueItem) => {
-    const prov = provenanceOf(q);
-    const perf = perfFor(q);
-    const swapped = !!angleSwaps[q.id];
-    return (
-      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-        <Chip tone={q.publish_date === today && stageOf(q) !== 'published' ? 'accent' : 'default'}>{statusOf(q)}</Chip>
-        <FunnelChip stage={q.funnel_stage} accent={accent} />
-        {q.pillar && <Chip>{noDash(q.pillar)}</Chip>}
-        {prov && <Chip>{noDash(prov.label)}</Chip>}
-        {swapped && <Chip>fresh idea, same slot</Chip>}
-        {typeof perf?.impressions === 'number' && (
-          <>
-            <Num size="row" inline>{perf.impressions.toLocaleString('en-GB')}</Num>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>reads</span>
-          </>
-        )}
-      </div>
-    );
-  };
+  /** The ONE chip a compressed day row carries. Everything else a row used to chip (format,
+   *  funnel, pillar, provenance, the swap mark, the read count) moved into that row's drill:
+   *  the glance rail above already carries the artwork, and a four-chip row per day was the
+   *  redundancy this rebuild set out to kill. */
+  const statusChip = (q: QueueItem) => (
+    <Chip tone={q.publish_date === today && stageOf(q) !== 'published' ? 'accent' : 'default'}>{statusOf(q)}</Chip>
+  );
 
   /** The swap list: this slot's bench angles plus the ready-draft pool. */
   const swapList = (q: QueueItem) => {
@@ -503,6 +548,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     const perf = perfFor(q);
     const prov = provenanceOf(q);
     const isOut = stageOf(q) === 'published';
+    const swapped = !!angleSwaps[q.id];
     return (
       <>
         <Eyebrow>Hook</Eyebrow>
@@ -537,7 +583,15 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 13 }}>
           <Chip>{kickerOf(q)}</Chip>
           <FunnelChip stage={q.funnel_stage} accent={accent} />
+          {q.pillar && <Chip>{noDash(q.pillar)}</Chip>}
           {prov && <Chip>{noDash(prov.label)}</Chip>}
+          {swapped && <Chip>fresh idea, same slot</Chip>}
+          {typeof perf?.impressions === 'number' && (
+            <>
+              <Num size="row" inline>{perf.impressions.toLocaleString('en-GB')}</Num>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>reads</span>
+            </>
+          )}
           {prov?.quote && <span style={{ fontSize: 12.5, fontStyle: 'italic', color: 'var(--cb-ink-mute)' }}>“{noDash(prov.quote)}”</span>}
         </div>
 
@@ -567,46 +621,61 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     );
   };
 
-  /** One dated post row. `dim` marks the beyond-the-window group. */
+  /** The day cell every timeline row opens with, on ONE line (weekday + date numeral). The
+   *  month lives in the week-range eyebrow at the top; repeating it per row was half the
+   *  old row's height for none of its information. */
+  const dayCell = (day: string, tone: 'today' | 'dated' | 'empty') => (
+    <div style={{ flex: 'none', width: 74, display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 6 }}>
+      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: tone === 'today' ? 'var(--cb-ink)' : 'var(--cb-ink-mute)' }}>{weekdayShort(day)}</span>
+      <Num size="row" inline tone={tone === 'today' ? 'ink' : tone === 'dated' ? 'soft' : 'mute'}>{dayNumOf(day)}</Num>
+    </div>
+  );
+
+  /**
+   * One dated post row, compressed to a single line: day, title, status, and the collapsed
+   * "Open post" drill that still carries every write path. The cover thumbnail is gone on
+   * purpose — the glance rail directly above draws the same artwork a day at a time, and the
+   * drill shows it full size. `dim` marks the beyond-the-window group.
+   */
   const postRow = (q: QueueItem, day: string, opts: { dim?: boolean; last?: boolean } = {}) => {
-    const cover = cardImageUrl(q);
     const isToday = day === today;
     const isOut = stageOf(q) === 'published';
     return (
       <div
         key={q.id}
+        data-day-row=""
         style={{
-          display: 'flex', gap: 14, padding: '16px 0',
+          display: 'flex', gap: 14, padding: '11px 0',
           borderBottom: opts.last ? undefined : '1px solid var(--cb-line)',
           opacity: opts.dim ? 0.78 : 1,
           background: flashId === q.id ? 'color-mix(in srgb, var(--cb-accent) 7%, var(--cb-paper))' : undefined,
         }}
       >
-        <div style={{ flex: 'none', width: 68, textAlign: 'right' }}>
-          <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: isToday ? 'var(--cb-ink)' : 'var(--cb-ink-mute)' }}>{weekdayShort(day)}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, justifyContent: 'flex-end' }}>
-            <Num size="row" inline tone={isToday ? 'ink' : 'soft'}>{dayNumOf(day)}</Num>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{monthOf(day)}</span>
-          </div>
-        </div>
+        {dayCell(day, isToday ? 'today' : 'dated')}
         <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
-          <span style={{ position: 'absolute', left: 9, top: 0, bottom: -16, width: 1, background: 'var(--cb-line)' }} />
+          <span style={{ position: 'absolute', left: 9, top: 0, bottom: -11, width: 1, background: 'var(--cb-line)' }} />
           <span style={{
-            position: 'absolute', left: isToday ? 1 : 3.5, top: isToday ? 6 : 8,
+            position: 'absolute', left: isToday ? 1 : 3.5, top: isToday ? 3 : 5,
             width: isToday ? 17 : 12, height: isToday ? 17 : 12, borderRadius: '50%',
             background: isToday ? 'var(--cb-accent)' : isOut ? mint : 'var(--cb-paper)',
             border: isToday ? '3px solid var(--cb-ink)' : isOut ? `1px solid ${mint}` : '1px solid var(--cb-ink-mute)',
           }} />
         </div>
-        {cover && <Thumb src={cover} size="sm" />}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <button
-            type="button"
-            onClick={() => onOpen(q)}
-            style={{ display: 'block', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}
-          >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 72)}</button>
-          {chipRow(q)}
-          <Drill label="Open post" style={{ marginTop: 11 }}>{rowDrillBody(q)}</Drill>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => onOpen(q)}
+              style={{
+                flex: '1 1 200px', minWidth: 0, textAlign: 'left', background: 'none', border: 'none',
+                padding: 0, cursor: 'pointer', fontFamily: 'var(--cb-serif)', fontWeight: 600,
+                fontSize: 15.5, lineHeight: 1.35, color: 'var(--cb-ink)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}
+            >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 72)}</button>
+            {statusChip(q)}
+          </div>
+          <Drill label="Open post" ruled={false} summaryStyle={{ padding: '5px 0 0' }}>{rowDrillBody(q)}</Drill>
         </div>
       </div>
     );
@@ -624,40 +693,32 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       ? [...readyToAdd].sort((a, b) => (a.id === restoreFirst ? -1 : b.id === restoreFirst ? 1 : 0))
       : readyToAdd;
     return (
-      <div key={day} style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: last ? undefined : '1px solid var(--cb-line)' }}>
-        <div style={{ flex: 'none', width: 68, textAlign: 'right' }}>
-          <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>{weekdayShort(day)}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, justifyContent: 'flex-end' }}>
-            <Num size="row" inline tone="mute">{dayNumOf(day)}</Num>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{monthOf(day)}</span>
-          </div>
-        </div>
+      <div key={day} data-day-row="" style={{ display: 'flex', gap: 14, padding: '11px 0', borderBottom: last ? undefined : '1px solid var(--cb-line)' }}>
+        {dayCell(day, 'empty')}
         <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
-          <span style={{ position: 'absolute', left: 9, top: 0, bottom: -14, width: 1, background: 'var(--cb-line)' }} />
-          <span style={{ position: 'absolute', left: 3.5, top: 8, width: 12, height: 12, borderRadius: '50%', border: '2px dashed var(--cb-ink-mute)', background: 'var(--cb-paper)' }} />
+          <span style={{ position: 'absolute', left: 9, top: 0, bottom: -11, width: 1, background: 'var(--cb-line)' }} />
+          <span style={{ position: 'absolute', left: 3.5, top: 5, width: 12, height: 12, borderRadius: '50%', border: '2px dashed var(--cb-ink-mute)', background: 'var(--cb-paper)' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {weekend ? (
             <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>Weekend, not a posting day</div>
           ) : calItems.length ? (
-            <>
-              <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: 'var(--cb-ink-soft)' }}>{noDash(calItems[0].label)}</div>
-              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Chip>planned</Chip>
-                <Pill onClick={() => onOpenCal(calItems[0])}>Open this slot</Pill>
-              </div>
-            </>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ flex: '1 1 200px', minWidth: 0, fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: 'var(--cb-ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noDash(calItems[0].label)}</span>
+              <Chip>planned</Chip>
+              <Pill onClick={() => onOpenCal(calItems[0])}>Open this slot</Pill>
+            </div>
           ) : held ? (
-            <>
-              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{weekdayLong(day)} is held empty on purpose.</div>
-              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Pill onClick={() => onRefillDay?.(held)}>Put a post back on this day</Pill>
-              </div>
-            </>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ flex: '1 1 200px', minWidth: 0, fontSize: 14.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{weekdayLong(day)} is held empty on purpose.</span>
+              <Pill onClick={() => onRefillDay?.(held)}>Put a post back on this day</Pill>
+            </div>
           ) : (
             <>
-              <Blank style={{ minHeight: 34, maxWidth: 260 }}>nothing scheduled this day</Blank>
-              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {/* Caption scale, not numeral scale: the kit's blank is sized for a lone
+                    em dash, and a six-word caption at that size overflowed its own box. */}
+                <Blank style={{ flex: '1 1 190px', minHeight: 32, maxWidth: 280, padding: '5px 12px', fontSize: 13.5, lineHeight: 1.35, textAlign: 'center' }}>nothing scheduled this day</Blank>
                 {onScheduleToDay && ready.length > 0 && (
                   <Pill active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)}>Add a post</Pill>
                 )}
@@ -690,16 +751,17 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <Eyebrow>This week · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
-      {/* 2 — the plate and the LinkedIn preview share one row (Ivan 08-02: the preview sits
-          on the side, not below — stacking them repeated the same post twice). The plate is
-          the ops read: counts, what ships next, the queue rail. The preview beside it IS the
-          post — cover, copy, schedule line — so the plate never renders those again. */}
-      {/* alignItems stretch + the plate as a flex column: the plate always runs the full
-          height of the row, so the preview beside it can never hang past its bottom edge.
-          An interior spacer (before the footer rule) absorbs the stretch; content order is
-          unchanged and the "posts are out so far" line sits on the plate's bottom edge. */}
-      <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'stretch' }}>
-      <Plate style={{ flex: '1 1 460px', minWidth: 0, display: 'flex', flexDirection: 'column' }} pad="26px 26px 24px">
+      {/* 2 — ONE full-width plate. Its UP NEXT area hosts the LinkedIn preview itself
+          (Ivan 08-02: "it could be inside that gray queue square up next"), so the post and
+          the numbers about the post finally sit on the same piece of paper. The old outside
+          preview column and the row that wrapped it are gone: nothing hangs below the plate,
+          because there is nothing beside the plate any more.
+          Left column = the ops read (counts, what ships next, the deck, the edit pills, the
+          queue rail, the footer line). Right column = day pills + the framed preview. */}
+      <style>{WEEK_CSS}</style>
+      <Plate className="cb-week-plate" style={{ marginTop: 18 }} pad="clamp(20px, 2.8vw, 28px)">
+      <div className="cb-week-grid">
+      <div className="cb-week-col-left">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px 26px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 190px', minWidth: 0 }}>
             {/* An empty queue is ABSENT data, not a zero: it renders the honest blank. Real
@@ -760,7 +822,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         {plateItem && (
           <div style={{ marginTop: 20 }}>
             {/* A deck is information the single-cover preview can't show; a single cover is
-                already the preview card beside this plate, so it never repeats here. */}
+                already the framed preview in the next column, so it never repeats here. */}
             {plateSlides.length >= 2 && (
               <>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
@@ -783,57 +845,55 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
         {/* The queue, drawn: one tile per queued item, banded and counted. This is what makes
             the buffer visible — undated drafts exist as marks here, not only as a sentence. */}
+        {/* The rail sits on the BOTTOM of its column, so both columns bottom out on the
+            footer rule. Growing from a 0 basis, it takes only the slack the taller column
+            (usually the preview) leaves; when the queue is long it collapses to the min. */}
+        {queueTotal > 0 && <div style={{ flex: '1 0 0', minHeight: 20 }} aria-hidden />}
         {queueTotal > 0 && (
-          <div data-viz style={{ marginTop: 22, display: 'flex', alignItems: 'flex-end', gap: 'clamp(9px, 2.4vw, 22px)' }}>
+          <div data-viz style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(9px, 2.4vw, 22px)' }}>
             {railBand(todayItems, 'today', 'today')}
             {railBand(laterItems, 'scheduled', scheduledSpan ? `scheduled, ${scheduledSpan}` : 'scheduled')}
             {railBand(bufferItems, 'buffer', 'in buffer')}
           </div>
         )}
 
-        {/* The stretch spacer: pushes the footer line to the plate's bottom edge. */}
-        <div style={{ flex: '1 0 0' }} aria-hidden />
-        <PlateRule gap={18} />
-        <Footnote on="plate">
-          {publishedItems.length > 0
-            /* The rail above already carries "the rest keeps publishing on its slots" as
-               marks, so the line stays a single fact and the panel keeps density headroom. */
-            ? <><Num size="row" inline tone="plate-mute">{publishedItems.length}</Num> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
-            : 'Nothing has published from this board yet.'}
-        </Footnote>
-      </Plate>
+      </div>{/* /left column */}
 
-      {/* 3 — the LinkedIn preview, on the side of the plate. Day pills drive it. No status
-          chip and no action row under the card: FeedPreview's own header already says
-          "Scheduled · Mon 3 Aug", the edit pills live on the plate and on the day rows
-          below, and clicking the card opens the full post. Repeating them here was the
-          duplication Ivan flagged. */}
-      <div className="cb-week-preview-col" style={{ flex: '1 1 330px', minWidth: 0, maxWidth: 560 }}>
-        {/* CSS-only media cap on the preview card's cover image: LinkedIn's own feed crops
-            tall media, so a capped object-fit crop is faithful — and it keeps this column
-            no taller than a reasonably-filled plate. Direct-child img only: the doc-carousel
-            and slide strips keep their own sizing. */}
-        <style>{`.cb-week-preview-col .cb-linkedin-preview > img { max-height: 320px; object-fit: cover; object-position: center top; }`}</style>
-        <Eyebrow>As it lands on LinkedIn</Eyebrow>
-        <div style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {days.map((d) => (
-            <Pill
-              key={d}
-              active={d === selectedDay}
-              onClick={() => setPickedDay(d)}
-              style={{ padding: '5px 10px', fontSize: 11.5 }}
-            >{weekdayShort(d)} {dayNumOf(d)}</Pill>
-          ))}
+      {/* The plate's right column: the day selector, then the LinkedIn preview ITSELF, on
+          the plate. No status chip and no action row under the card — FeedPreview's own
+          header already says "Scheduled · Mon 3 Aug", the edit pills sit in the left column
+          and on the day rows below, and clicking the card opens the full post. */}
+      <div className="cb-week-col-right">
+        <Eyebrow on="plate">As it lands on LinkedIn</Eyebrow>
+        <div data-day-pills="" style={{ marginTop: 10, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {days.map(dayPill)}
         </div>
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 13 }}>
           {selectedItem ? (
             <>
               {selectedItem.generating && (
-                <div style={{ marginBottom: 10 }}>
-                  <Chip>being written, the cover is still rendering</Chip>
+                <div style={{ marginBottom: 9 }}>
+                  <Chip tone="plate">being written, the cover is still rendering</Chip>
                 </div>
               )}
-              <div onClick={() => onOpen(selectedItem)} style={{ cursor: 'pointer' }}>
+              {/* The paper mat. Two jobs: it frames the card as an artifact pinned to dark
+                  paper, and it BREAKS THE CASCADE — the desk skin sets the plate's colour
+                  with !important and every unstyled descendant inherits it, so the mat
+                  re-declares page ink on page paper and the white card keeps its own
+                  contrast no matter what the plate is painted. */}
+              <div
+                className="cb-week-preview-frame"
+                data-plate-preview=""
+                onClick={() => onOpen(selectedItem)}
+                style={{
+                  cursor: 'pointer',
+                  color: 'var(--cb-ink)',
+                  background: 'var(--cb-paper)',
+                  border: `1px solid ${PLATE_BORDER}`,
+                  borderRadius: 18,
+                  padding: 'clamp(8px, 1.3vw, 12px)',
+                }}
+              >
                 <FeedPreview
                   item={selectedItem}
                   board={board}
@@ -849,20 +909,34 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             </>
           ) : isWeekendDay(selectedDay) ? (
             <>
-              <Blank style={{ height: 120 }}>weekend, not a posting day</Blank>
-              <Footnote>The cadence runs Monday to Friday.</Footnote>
+              <Blank on="plate" style={{ height: 120 }}>weekend, not a posting day</Blank>
+              <Footnote on="plate">The cadence runs Monday to Friday.</Footnote>
             </>
           ) : (
             <>
-              <Blank style={{ height: 120 }}>nothing scheduled this day</Blank>
-              <Footnote>Pick another day above, or add a post to this one in the list below.</Footnote>
+              <Blank on="plate" style={{ height: 120 }}>nothing scheduled this day</Blank>
+              <Footnote on="plate">Pick another day above, or add a post to this one in the list below.</Footnote>
             </>
           )}
         </div>
-      </div>
-      </div>{/* /plate + preview row */}
+      </div>{/* /right column */}
+      </div>{/* /plate grid */}
 
-      {/* 4 — the queue rail: one tile a day, carrying the real cover. */}
+      {/* The plate's footer fact, run FULL WIDTH under both columns: it closes the plate as
+          one composition, and the column seam terminates on it. Pinning it to the bottom of
+          the shorter column instead left a dead band of plate under the queue rail. */}
+      <PlateRule gap={20} />
+      <Footnote on="plate">
+        {publishedItems.length > 0
+          /* The rail above already carries "the rest keeps publishing on its slots" as
+             marks, so the line stays a single fact and the panel keeps density headroom. */
+          ? <><Num size="row" inline tone="plate-mute">{publishedItems.length}</Num> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
+          : 'Nothing has published from this board yet.'}
+      </Footnote>
+      </Plate>
+
+      {/* 3 — the week at a glance: one tile a day, carrying the real cover. It is also the
+          artwork the compressed day rows below no longer repeat. */}
       <div style={{ marginTop: 28 }}>
         <Eyebrow>The week at a glance</Eyebrow>
         <div data-viz style={{ display: 'flex', gap: 6, marginTop: 10 }}>
@@ -905,7 +979,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </Footnote>
       </div>
 
-      {/* 5 — day by day, each openable. */}
+      {/* 4 — day by day, one compressed line each, every one still openable. */}
       <div style={{ marginTop: 28 }}>
         <SectionRule
           label="Day by day"
@@ -957,7 +1031,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </div>
       </div>
 
-      {/* 6 — the stat footer. Nothing here is typed in; a stat that cannot be computed is
+      {/* 5 — the stat footer. Nothing here is typed in; a stat that cannot be computed is
              either an honest blank or is not rendered at all. */}
       <StatStrip>
         {cadence !== null
