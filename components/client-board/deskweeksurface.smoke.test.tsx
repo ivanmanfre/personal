@@ -273,6 +273,14 @@ describe('DeskWeekSurface', () => {
     expect(rail).toContain('reach');
     expect(rail).toContain('data-pillar-tag');
     expect(rail).toContain('Teardown');
+    // The baseline pillar never tags; snake_case prettifies.
+    const authBoard: Board = { ...board, queue: board.queue.map((q) => ({ ...q, pillar: 'authority' })) };
+    expect(render(authBoard)).not.toContain('data-pillar-tag');
+    const csBoard: Board = { ...board, queue: board.queue.map((q) => ({ ...q, pillar: 'case_study' })) };
+    expect(render(csBoard)).toContain('Case study');
+    // Swap is one control opening whole alternatives; the old section headers are gone.
+    expect(html).not.toContain('A different idea for this slot');
+    expect(html).not.toContain('From your ready drafts');
   });
 
   /** The glance rail as the SECOND control on the day selector (Ivan, 08-02). */

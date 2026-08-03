@@ -79,6 +79,11 @@ export function weekWindowCount(board: Board, skips: Record<string, true | undef
   const days = new Set(weekDayList(startIso));
   return board.queue.filter((q) => q.stage !== 'published' && !!q.publish_date && days.has(q.publish_date) && !skips[q.id]).length;
 }
+/** 'case_study' -> 'Case study'. The board's pillar values arrive snake_cased. */
+function prettyPillar(v: string): string {
+  const t = v.replace(/_/g, ' ').trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 /** True once a post has a real slot (not sitting undated in the buffer). */
 function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boolean {
   return !!(q.scheduled_at || q.publish_date);
@@ -464,30 +469,27 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   const swapList = (q: QueueItem) => {
     const bench = benchFor(q.id);
     if (!bench.length && !pool.length) return null;
+    /* Ivan 08-03: no standing section headers here. One "Swap" control; opening it shows
+       each alternative WHOLE - its artwork and its full copy, never a one-line summary. */
+    const optionCard = (key: string, title: string, hook: string | undefined, body: string | undefined, img: string | undefined, onUse: () => void) => (
+      <div key={key} style={{ border: '1px solid var(--cb-line)', borderRadius: 12, padding: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <span style={{ minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(title)}</span>
+          <Pill onClick={onUse}>Use this</Pill>
+        </div>
+        {img && <img src={img} alt="" loading="lazy" onError={hideBroken} style={{ marginTop: 9, width: '100%', maxWidth: 340, height: 'auto', borderRadius: 8, border: '1px solid var(--cb-line)' }} />}
+        {hook && <div style={{ marginTop: 9, fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(hook)}</div>}
+        {body && <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line' }}>{noDash(body)}</div>}
+      </div>
+    );
     return (
       <div style={{ marginTop: 14 }}>
-        <Eyebrow>A different idea for this slot</Eyebrow>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          {bench.map((alt) => (
-            <div key={alt.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, border: '1px solid var(--cb-line)', borderRadius: 12, padding: 10 }}>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(alt.title)}</span>
-                <span style={{ display: 'block', fontSize: 12.5, color: 'var(--cb-ink-mute)' }}>{noDash(alt.hook)}</span>
-              </span>
-              <Pill onClick={() => onPickAngle(q.id, alt)}>Use this</Pill>
-            </div>
-          ))}
-          {pool.length > 0 && <Eyebrow style={{ marginTop: 4 }}>From your ready drafts</Eyebrow>}
-          {pool.map((it) => (
-            <div key={it.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, border: '1px solid var(--cb-line)', borderRadius: 12, padding: 10 }}>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(it.title || 'Ready draft')}</span>
-                {it.body && <span style={{ display: 'block', fontSize: 12.5, color: 'var(--cb-ink-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{noDash(it.body)}</span>}
-              </span>
-              <Pill onClick={() => onPickReplacement?.(q.id, it)}>Use this</Pill>
-            </div>
-          ))}
-        </div>
+        <Drill summaryLeft={<span className="more" style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Swap</span>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
+            {bench.map((alt) => optionCard(alt.id, alt.title || 'Another angle', alt.hook, alt.body, undefined, () => onPickAngle(q.id, alt)))}
+            {pool.map((it) => optionCard(it.id, it.title || 'Ready draft', it.hook, it.body, cardImageUrl(it), () => onPickReplacement?.(q.id, it)))}
+          </div>
+        </Drill>
       </div>
     );
   };
@@ -768,11 +770,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                     {post.funnel_stage}
                   </span>
                 )}
-                {post?.pillar && (
-                  /* The second tag (Ivan 08-03): the content category, quieter than the
-                     funnel tag — same 11.5px floor (the gate), lighter weight + wash. */
-                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 27 : 5, fontSize: 11.5, fontWeight: 650, letterSpacing: '0.04em', color: '#EDEBE4', background: 'rgba(17,17,17,0.5)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {post.pillar}
+                {post?.pillar && post.pillar.toLowerCase() !== 'authority' && (
+                  /* The second tag (Ivan 08-03): the content CATEGORY — Teardown, Case
+                     study, Personal. The baseline pillar (authority) says nothing, so it
+                     never tags. Light chip against the dark funnel tag; 11.5px floor. */
+                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 27 : 5, fontSize: 11.5, fontWeight: 650, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.92)', borderRadius: 4, padding: '0px 5px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {prettyPillar(post.pillar)}
                   </span>
                 )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
