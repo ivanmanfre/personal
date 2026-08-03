@@ -247,6 +247,31 @@ const MidCTA: React.FC<{ children: React.ReactNode; href?: string; linkText?: st
   </motion.p>
 );
 
+// ─── Open loop — a seam that pulls into the next section ─────────────────────
+// Short-form structure move: close a value block with the question the next one
+// answers, so the reader carries curiosity across the seam instead of deciding
+// whether to keep scrolling. Deliberately quiet, and never an ask (the MidCTA
+// above already carries those).
+const OpenLoop: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <motion.div {...inView} className="container mx-auto px-8 max-w-3xl -mt-10 md:-mt-14 pb-20 md:pb-24">
+    <p
+      className="pl-6"
+      style={{
+        fontFamily: '"Source Serif 4",Georgia,serif',
+        fontStyle: 'italic',
+        fontSize: '17px',
+        lineHeight: 1.55,
+        color: '#5A5752',
+        borderLeft: '2px solid var(--color-accent)',
+        maxWidth: '48ch',
+      }}
+    >
+      {children}{' '}
+      <span aria-hidden="true" style={{ fontStyle: 'normal', color: 'var(--color-accent-ink)' }}>↓</span>
+    </p>
+  </motion.div>
+);
+
 // ─── Media query hook ────────────────────────────────────────────────────────
 const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false);
@@ -267,7 +292,7 @@ const useMediaQuery = (query: string): boolean => {
 const METRICS = [
   { fig: '100+', label: 'Systems built', receipt: 'Designed and run by me, including the engine behind my own LinkedIn.' },
   { fig: '5+', unit: '/wk', label: 'Posts in your voice', receipt: 'Posts, carousels, video, lead magnets, and a weekly newsletter, out without you touching them.' },
-  { fig: '~15', unit: 'min/wk', label: 'Your time', receipt: 'You review and approve. The engine does the rest.' },
+  { fig: '0', unit: 'hrs/wk', label: 'Your time', receipt: 'One voice intake at the start. After that it posts on its own and you read the replies.' },
 ];
 
 // Compact credential strip — refined, not gigantic. Figures sit at a calm
@@ -420,7 +445,7 @@ const EngineSection: React.FC = () => (
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-3xl">
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
-          One system,{' '}
+          One engine,{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
             idea to booked call.
           </span>
@@ -428,9 +453,9 @@ const EngineSection: React.FC = () => (
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
           You record your voice once. The engine decides what to post, writes it
           in your voice across every format, and runs each piece through an
-          anti-slop QA pass. You approve, about 15 minutes a week. Then it schedules
-          and publishes daily, the lead magnets pull in leads, and real
-          performance feeds back so it sharpens what it posts next.
+          anti-slop QA pass. Then it schedules and publishes daily on its own,
+          the lead magnets pull in leads, and real performance feeds back so it
+          sharpens what it posts next. Nothing waits on you.
         </p>
       </motion.div>
 
@@ -723,7 +748,7 @@ const COMPARE_ROWS: { label: string; cells: string[] }[] = [
   { label: 'Formats', cells: ['Posts, carousels, video, lead magnets, newsletter', 'Posts', 'Posts', 'Whatever you manage'] },
   { label: 'Owned audience + list', cells: ['Yes, yours to keep', 'No', 'No', 'Yes'] },
   { label: 'What happens to a lead', cells: ['Worked to a reply, then your calendar', 'Nothing, you chase them', 'You chase them', 'You chase them'] },
-  { label: 'Your time / week', cells: ['About 15 min review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
+  { label: 'Your time / week', cells: ['None after the voice intake', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
   { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
 ];
 
@@ -933,7 +958,7 @@ const ROICalculator: React.FC = () => {
                 </div>
               </div>
               <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B', marginTop: '24px' }}>
-                The engine does more, posts, carousels, video, lead magnets, and a weekly newsletter, daily and in your voice, for about 15 minutes a week of your time.
+                The engine does more, posts, carousels, video, lead magnets, and a weekly newsletter, daily and in your voice, and it does not need an hour of your week.
               </p>
             </div>
           </motion.div>
@@ -1319,6 +1344,54 @@ const PaybackSection: React.FC = () => {
   );
 };
 
+// ─── Self-qualification — the last filter before the ask ─────────────────────
+// Describes the person who gets the most out of this rather than the service,
+// so the right founder recognises himself and the wrong one leaves quietly.
+// Sits after the FAQ and feeds straight into the booking section.
+const ENJOY_LINES = [
+  "You want LinkedIn handled the way you hand off your books: it runs, and you read what came back.",
+  "You want to be shown the leads that came in this week and the calls they booked.",
+  "You're fine hearing that an idea of yours won't land, with the reason attached.",
+  "You'd rather pick the right person to run it than the cheapest one.",
+  "You want the audience and the email list sitting in your own accounts, yours to keep.",
+];
+
+const EnjoySection: React.FC = () => (
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-3xl">
+      <motion.div {...inView}>
+        <Label>Fit</Label>
+        <RevealH2 style={{ ...T.display('clamp(2.3rem,4vw,3.6rem)'), lineHeight: 1.04, marginBottom: '2.5rem' }}>
+          {"You'll probably enjoy this if…"}
+        </RevealH2>
+      </motion.div>
+
+      <div className="flex flex-col gap-5">
+        {ENJOY_LINES.map((l, i) => (
+          <motion.div
+            key={l}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.55, ease, delay: i * 0.07 }}
+            className="flex items-start gap-3.5"
+          >
+            <span
+              aria-hidden="true"
+              style={{ marginTop: '0.55em', width: '9px', height: '9px', flexShrink: 0, backgroundColor: 'var(--color-accent)' }}
+            />
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '18px', lineHeight: 1.5, color: '#1A1A1A', maxWidth: '52ch' }}>
+              {l}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+
+      <MidCTA>Four of those, and the call is worth 30 minutes.</MidCTA>
+    </div>
+  </section>
+);
+
 // ─── Section: The ask — single booking CTA, no option cards ──────────────────
 // ─── Calendly inline embed — branded (paper bg, sage primary), SPA-safe ──────
 const CALENDLY_URL = 'https://calendly.com/im-ivanmanfredi/30min?hide_gdpr_banner=1&background_color=f7f4ef&text_color=1a1a1a&primary_color=2a8f65';
@@ -1428,14 +1501,14 @@ const MeetOperator: React.FC = () => (
       {/* Copy */}
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-16 py-16 md:py-24">
         <div className="max-w-2xl">
-          <div style={{ ...T.mono, marginBottom: '1.5rem' }}>Who builds it</div>
+          <div style={{ ...T.mono, marginBottom: '1.5rem' }}>Who runs it</div>
           <RevealH2 style={{ ...T.display('clamp(2.3rem,3.8vw,3.6rem)'), lineHeight: 1.04, marginBottom: '1.5rem' }}>
-            You work with the<br />person who built it.
+            You work with the<br />person who runs it.
           </RevealH2>
           <p style={{ ...T.serif, fontSize: '18px', lineHeight: 1.65, color: '#3D3D3B', marginBottom: '2.25rem', maxWidth: '50ch' }}>
             I'm Iván. I've shipped 100+ AI systems for agencies and service
             businesses, and I run my own LinkedIn on the same inbound engine I'd
-            install for you.
+            run for you.
           </p>
           <div className="flex flex-col gap-4 mb-10">
             {OPERATOR_POINTS.map((pt) => (
@@ -1460,7 +1533,7 @@ const FAQS = [
   { q: "How long until it's live?", a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
   { q: 'What do I own?', a: "You own the audience, the content, and the email list, and they all live in your accounts. The engine is fully managed, so there's nothing for you to run, host, or maintain." },
   { q: 'What does it cost?', a: "One flat monthly rate that covers building and running the whole engine, scoped to your channels and volume on the fit call. No build fee, no long lock-in, and the audience and list are yours to keep." },
-  { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About 15 minutes a week. The engine handles the rest.' },
+  { q: 'What do I actually have to do?', a: 'Record a voice intake once. After that, nothing. It writes, clears its own QA, and publishes on schedule, and you read the replies that come in. Your board is there if you ever want to change a line, and nothing stalls if you never open it.' },
   { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a fully managed engine that writes the posts, builds the lead magnets, and ships every format daily in your voice. You keep the audience and list, with nothing to manage.' },
   { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },
 ];
@@ -1790,15 +1863,18 @@ const LandingPage: React.FC = () => {
         <ProblemSection />
         <EngineSection />
         <PromisesSection />
+        <OpenLoop>That is the claim. The feed below is this week&rsquo;s output, posted without anyone touching it.</OpenLoop>
         <LiveEngineProof />
         <ComparisonSection />
         <ROICalculator />
         <BeforeAfterSection />
+        <OpenLoop>There is a catch, and it decides which of those two you get. Better you hear it now.</OpenLoop>
         <QualificationSection />
         <TestimonialsSection />
         <ReviewsMarquee />
         <MeetOperator />
         <FAQSection />
+        <EnjoySection />
         <OfferSection />
         <LandingFooter />
       </div>

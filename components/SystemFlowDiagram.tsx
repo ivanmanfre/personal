@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 //
 // One idea flows left → right through the real production engine: four sources
 // feed the Content Brain, a six-step pipeline drafts, QA-checks and de-slops it
-// in your voice, you approve in one tap (the only human step), and it splits
+// in your voice, it ships on schedule with nothing waiting on you, and it splits
 // into a scheduled LinkedIn post and a self-publishing lead magnet that fans out
 // into a landing page, resource page, cover, email capture and booked calls.
 // Top performers loop back into the Brain.
@@ -76,10 +76,10 @@ const STEPS: Record<string, StepDetail> = {
     body: 'A deterministic linter then strips the residual tells a model can miss: stock phrases, hedges, repetitive rhythms. The last gate before anything reaches you.',
   },
   approve: {
-    kicker: 'Your only step',
-    title: 'You approve in one tap',
-    body: 'Finished drafts queue on your board. Read one, adjust the copy, image or timing if you want, and approve. Once it is running, your daily lift is under ten minutes.',
-    shot: { src: '/content-system/ui/board.webp', alt: 'The content board where finished drafts queue for one-tap approval' },
+    kicker: 'Nothing to do',
+    title: 'It ships without you',
+    body: 'Finished drafts land on your board with the copy, image and timing already set, and they publish on schedule. Open it if you want to see what is queued or change a line. Nothing stalls if you never do.',
+    shot: { src: '/content-system/ui/board.webp', alt: 'The content board where finished drafts queue and publish on schedule' },
   },
   post: {
     kicker: 'Output',
@@ -230,7 +230,7 @@ export const SystemFlowDiagram: React.FC = () => {
           viewBox="0 26 1440 560"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post in your voice, runs anti-AI-patterns QA and a de-slop lint; you approve in one tap, your only step; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
+          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post in your voice, runs anti-AI-patterns QA and a de-slop lint; the finished draft ships on schedule with nothing waiting on you; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
         >
           <defs>
             <filter id="sfd-glow" x="-80%" y="-80%" width="260%" height="260%">
@@ -339,11 +339,11 @@ export const SystemFlowDiagram: React.FC = () => {
             {/* ── Approve gate (single attention pulse) ─────────────── */}
             <Pick id="approve">
               <rect className="sfd-onlypill" x="874" y="240" width="124" height="24" rx="12" />
-              <text className="sfd-onlypill-t" x="936" y="255">YOUR ONLY STEP</text>
+              <text className="sfd-onlypill-t" x="936" y="255">NOTHING TO DO</text>
               {!R && <path className="sfd-gate-pulse" d="M894,320 L936,274 L978,320 L936,366 Z" />}
               <path className="sfd-gate" d="M894,320 L936,274 L978,320 L936,366 Z" />
               <path className="sfd-check" d="M921,321 l10,11 l18,-22" />
-              <text className="sfd-stg sfd-stg-em" x="936" y="398">YOU APPROVE</text>
+              <text className="sfd-stg sfd-stg-em" x="936" y="398">IT SHIPS</text>
             </Pick>
 
             {/* ── Outputs ───────────────────────────────────────────── */}
