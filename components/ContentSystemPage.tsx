@@ -3,14 +3,14 @@ import { useMetadata } from '../hooks/useMetadata';
 
 const PRODUCT_URL = 'https://inboundonsteroids.com/';
 
-// The inbound engine now lives on its own product domain. This route stays
+// The inbound service now lives on its own product domain. This route stays
 // registered so old DM and post links keep resolving, but it redirects to the
 // product site and shows a minimal fallback link if the redirect is blocked.
 export default function ContentSystemPage() {
   useMetadata({
-    title: 'Inbound Engine | Manfredi',
+    title: 'Inbound Service | Manfredi',
     description:
-      'An always-on inbound engine that posts daily in your voice, refuses to publish AI slop, and turns the readers who engage into named leads in your inbox.',
+      'An always-on inbound service that posts daily in your voice, refuses to publish AI slop, and turns the readers who engage into named leads in your inbox.',
     canonical: PRODUCT_URL,
   });
 

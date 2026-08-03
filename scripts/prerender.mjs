@@ -327,7 +327,7 @@ process.on('SIGTERM', () => shutdown(143));
       // carries the right share tags (other routes set metadata synchronously).
       if (route.startsWith('/scan/')) {
         await page
-          .waitForFunction(() => /^(A content system|An inbound engine|A growth scan) for /.test(document.title), { timeout: 15000 })
+          .waitForFunction(() => /^(A content system|An inbound engine|An inbound service|A growth scan) for /.test(document.title), { timeout: 15000 })
           .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
         // Bake the full report body, not just OG tags. The scan content arrives via a
         // client-side Supabase fetch, so without this wait the baked #root is empty and

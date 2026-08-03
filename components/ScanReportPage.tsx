@@ -823,7 +823,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
     fundingStats.push({ label: 'Investors', display: String(f.investors.length) });
   }
 
-  // Traffic source breakdown — load-bearing signal: high search + low paid = inbound engine, no AI optimization
+  // Traffic source breakdown — load-bearing signal: high search + low paid = inbound running, no AI optimization
   const sources = t?.traffic_sources;
   const sourceRows: Array<{ label: string; pct: number; tone: string }> = [];
   if (sources) {
@@ -845,7 +845,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   const paidPct = sources?.paidReferrals ?? 0;
   const verdict =
     searchPct > 0.40 && paidPct < 0.05
-      ? `${(searchPct * 100).toFixed(0)}% of traffic comes from search. Almost none from paid. Inbound engine running, not bought.`
+      ? `${(searchPct * 100).toFixed(0)}% of traffic comes from search. Almost none from paid. Inbound running, not bought.`
       : paidPct > 0.20
       ? `${(paidPct * 100).toFixed(0)}% of traffic is paid. The funnel breathes through the wallet.`
       : sourceRows.length > 0
@@ -2961,12 +2961,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const founder = cs.founder;
   const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || displayCompany;
   const founderFull = founder?.name || companyName;
-  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('inbound engine')}`;
+  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('inbound service')}`;
 
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
-    title: `An inbound engine for ${displayCompany}`,
+    title: `An inbound service for ${displayCompany}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
@@ -3585,7 +3585,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
             <div>
               <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets in their own voice, and bring the right buyers in.</div>
-              <p className="op-b">It&rsquo;s an inbound engine that writes your posts and lead magnets in your voice, gets them out every week, and turns the readers into a list you own. I run my own LinkedIn on the same setup I&rsquo;d build for you.</p>
+              <p className="op-b">It&rsquo;s an inbound service we run for you: your posts and lead magnets written in your voice, out every week, and the readers who engage turned into a list you own. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
