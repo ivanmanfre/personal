@@ -767,11 +767,13 @@ None of it shows in the dashboard. All of it shows in a margin audit.
 
 Scaling multiplies whatever is already in the account, including the leaks. Audit first, then scale.`;
 
-/** Format kicker: refines the raw kind into the client-readable format label. */
-function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'lm_launch' | 'style'>): string {
+/** Format kicker: refines the raw kind into the client-readable format label.
+ *  Image presence checks image_urls too — most queue rows carry their photo there
+ *  with media_url unset (only the set_media RPC writes media_url). */
+function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'image_urls' | 'lm_launch' | 'style'>): string {
   if (q.lm_launch) return 'Lead magnet launch';
   if (q.style === 'video') return 'Video';
-  if (q.kind === 'post') return q.media_url ? 'Image post' : 'Text post';
+  if (q.kind === 'post') return (q.media_url || (q.image_urls && q.image_urls.length)) ? 'Image post' : 'Text post';
   return KIND_LABEL[q.kind] || q.kind;
 }
 
