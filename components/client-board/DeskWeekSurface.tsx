@@ -773,6 +773,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                     {post.funnel_stage}
                   </span>
                 )}
+                {post?.pillar && (
+                  /* The second tag (Ivan 08-03): the content category, quieter than the
+                     funnel tag — same 11.5px floor (the gate), lighter weight + wash. */
+                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 27 : 5, fontSize: 11.5, fontWeight: 650, letterSpacing: '0.04em', color: '#EDEBE4', background: 'rgba(17,17,17,0.5)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {post.pillar}
+                  </span>
+                )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
                 {lm && <span aria-hidden style={{ position: 'absolute', left: 4, right: 4, bottom: 3, height: 3, borderRadius: 2, background: 'var(--cb-mint)' }} />}
                 <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'linear-gradient(0deg, rgba(17,17,17,.62), rgba(17,17,17,0))' : 'none', padding: `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

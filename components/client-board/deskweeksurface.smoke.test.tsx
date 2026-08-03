@@ -85,6 +85,7 @@ const carouselItem: QueueItem = {
   stage: 'review',
   hook: 'Six thousand into ads, nineteen hundred back',
   title: 'Carousel: the ad teardown',
+  pillar: 'Teardown',
   body: 'The ads did their one job. They got a cold stranger to click.',
   funnel_stage: 'reach',
   publish_date: CAROUSEL_DAY,
@@ -266,9 +267,12 @@ describe('DeskWeekSurface', () => {
     expect(plate).not.toContain('in the queue');
     expect(plate).not.toContain('in buffer');
     expect(html).not.toContain('waiting in the buffer');
-    // The funnel tag rides ON the glance tile image (uppercase chip over the cover).
+    // The funnel tag rides ON the glance tile image (uppercase chip over the cover),
+    // with the quieter category tag under it when the post carries a pillar.
     const rail = railOf(html);
     expect(rail).toContain('reach');
+    expect(rail).toContain('data-pillar-tag');
+    expect(rail).toContain('Teardown');
   });
 
   /** The glance rail as the SECOND control on the day selector (Ivan, 08-02). */
