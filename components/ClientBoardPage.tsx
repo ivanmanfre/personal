@@ -2308,8 +2308,9 @@ interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
  *  comment-gated post gives away, and the exact PDF a carousel publishes as. Both are the
  *  things a reviewer cannot check from the copy alone, so they are links, not labels.
  *  Renders nothing when the post has neither. */
-function PostAssets({ gate, pdfUrl, accent }: { gate?: { title: string; url: string; keyword: string } | null; pdfUrl?: string | null; accent: string }) {
+function PostAssets({ gate, pdfUrl, accent, slides }: { gate?: { title: string; url: string; keyword: string } | null; pdfUrl?: string | null; accent: string; slides?: string[] | null }) {
   if (!gate && !pdfUrl) return null;
+  const hasSlides = !!slides && slides.length >= 2;
   const linkStyle: React.CSSProperties = { fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 };
   return (
     <div className="mt-1 rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
@@ -2331,28 +2332,40 @@ function PostAssets({ gate, pdfUrl, accent }: { gate?: { title: string; url: str
       )}
       {pdfUrl && (
         <div style={gate ? { marginTop: 12, paddingTop: 10, borderTop: `1px solid ${LINE}` } : undefined}>
-          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>
-            The file that publishes
-          </div>
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex min-h-[36px] items-center gap-2 rounded-[6px] px-3 text-[12.5px] font-semibold"
-            style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', textDecoration: 'none' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            Download the PDF
-          </a>
-          {/* LinkedIn takes the document title from the filename, so the reviewer sees the
-              name that will appear on the post. */}
-          <div className="mt-1.5 truncate" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>
-            {decodeURIComponent((pdfUrl.split('/').pop() || '').split('?')[0])}
-          </div>
+          {hasSlides ? (
+            /* The rendered carousel IS the artifact (Ivan 08-03) - the reviewer sees the
+               slides themselves; the PDF stays one quiet link underneath. */
+            <>
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {slides!.map((u, i) => (
+                  <img key={i} src={u} alt="" loading="lazy" style={{ height: 190, width: 'auto', borderRadius: 6, border: `1px solid ${LINE}`, flex: 'none' }} />
+                ))}
+              </div>
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" download onClick={(e) => e.stopPropagation()} className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: INK_MUTE, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                Download the PDF
+              </a>
+            </>
+          ) : (
+            <>
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex min-h-[36px] items-center gap-2 rounded-[6px] px-3 text-[12.5px] font-semibold"
+                style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', textDecoration: 'none' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Download the PDF
+              </a>
+              <div className="mt-1.5 truncate" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>
+                {decodeURIComponent((pdfUrl.split('/').pop() || '').split('?')[0])}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -2914,7 +2927,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                             {provenance && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, lineHeight: 1.5, color: INK_MUTE }}>{provenance}</span>}
                             {focusedChip?.quote && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, lineHeight: 1.5, color: INK_MUTE }}>“{focusedChip.quote}”</span>}
                             {focusedLm && <LmLaunchCard lm={focusedLm} accent={accent} />}
-                            <PostAssets gate={focused.lm_gate} pdfUrl={focused.pdf_url} accent={accent} />
+                            <PostAssets gate={focused.lm_gate} pdfUrl={focused.pdf_url} accent={accent} slides={focused.image_urls} />
                             {/* Exactly three choices: Edit (copy, time + photo live inside),
                                 Swap (a different post for this slot), Clear day (post goes back
                                 to your ready posts, nothing is deleted). */}
@@ -3573,7 +3586,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             )}
           </div>
 
-          <PostAssets gate={item.lm_gate} pdfUrl={item.pdf_url} accent={accent} />
+          <PostAssets gate={item.lm_gate} pdfUrl={item.pdf_url} accent={accent} slides={item.image_urls} />
 
           {/* Provenance (client-appropriate): status, its date, and what happens next.
               No agent steps, scores, prompts, or model names. */}
