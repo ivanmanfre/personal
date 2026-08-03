@@ -683,15 +683,21 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               </div>
               {addDay === day && (
                 <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Each candidate reads at a glance: artwork, hook, format — the hook
+                      alone made every row look like the same text post (Ivan, 08-03). */}
                   {ready.map((r) => (
-                    <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, border: '1px solid var(--cb-line)', borderRadius: 12, padding: 10 }}>
-                      <span style={{ minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Ready draft'}</span>
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px solid var(--cb-line)', borderRadius: 12, padding: 10 }}>
+                      {cardImageUrl(r) && <img src={cardImageUrl(r)} alt="" loading="lazy" onError={hideBroken} style={{ flex: 'none', width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--cb-line)' }} />}
+                      <span style={{ flex: '1 1 170px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Ready draft'}</span>
+                      <Chip>{kickerOf(r)}</Chip>
                       <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Put it here</Pill>
                     </div>
                   ))}
                   {movable.map((r) => (
-                    <div key={r.id} data-movable-draft="" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', border: '1px dashed var(--cb-line-bold)', borderRadius: 12, padding: 10 }}>
-                      <span style={{ flex: '1 1 180px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Scheduled draft'}</span>
+                    <div key={r.id} data-movable-draft="" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px dashed var(--cb-line-bold)', borderRadius: 12, padding: 10 }}>
+                      {cardImageUrl(r) && <img src={cardImageUrl(r)} alt="" loading="lazy" onError={hideBroken} style={{ flex: 'none', width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--cb-line)' }} />}
+                      <span style={{ flex: '1 1 170px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Scheduled draft'}</span>
+                      <Chip>{kickerOf(r)}</Chip>
                       <Chip>{`now ${weekdayLong(r.publish_date!)} ${dayNumOf(r.publish_date!)}`}</Chip>
                       <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Move it here</Pill>
                     </div>
