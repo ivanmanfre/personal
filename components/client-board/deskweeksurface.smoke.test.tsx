@@ -273,9 +273,9 @@ describe('DeskWeekSurface', () => {
     expect(rail).toContain('reach');
     expect(rail).toContain('data-pillar-tag');
     expect(rail).toContain('Teardown');
-    // The baseline pillar never tags; snake_case prettifies.
+    // Every category tags, the baseline included (Ivan 08-03: all five); snake_case prettifies.
     const authBoard: Board = { ...board, queue: board.queue.map((q) => ({ ...q, pillar: 'authority' })) };
-    expect(render(authBoard)).not.toContain('data-pillar-tag');
+    expect(render(authBoard)).toContain('Authority');
     const csBoard: Board = { ...board, queue: board.queue.map((q) => ({ ...q, pillar: 'case_study' })) };
     expect(render(csBoard)).toContain('Case study');
     // Swap is one control opening whole alternatives; the old section headers are gone.

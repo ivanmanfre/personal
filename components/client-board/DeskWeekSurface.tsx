@@ -770,10 +770,11 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                     {post.funnel_stage}
                   </span>
                 )}
-                {post?.pillar && post.pillar.toLowerCase() !== 'authority' && (
-                  /* The second tag (Ivan 08-03): the content CATEGORY — Teardown, Case
-                     study, Personal. The baseline pillar (authority) says nothing, so it
-                     never tags. Light chip against the dark funnel tag; 11.5px floor. */
+                {post?.pillar && (
+                  /* The second tag (Ivan 08-03): the content CATEGORY — Authority, Case
+                     study, Teardown, Launch, Opinion. Every post shows its category
+                     (Ivan: all five, no baseline exception). Light chip against the
+                     dark funnel tag; 11.5px floor. */
                   <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 27 : 5, fontSize: 11.5, fontWeight: 650, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.92)', borderRadius: 4, padding: '0px 5px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {prettyPillar(post.pillar)}
                   </span>
