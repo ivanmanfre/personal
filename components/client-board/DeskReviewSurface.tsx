@@ -418,7 +418,7 @@ export default function DeskReviewSurface({
               {img && <img src={img} alt="" loading="lazy" style={{ flex: 'none', width: 180, height: 'auto', border: '1px solid var(--cb-line)', borderRadius: 6 }} />}
               <div style={{ flex: '1 1 260px', minWidth: 0 }}>
                 <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>The copy</div>
-                <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line', marginTop: 5, display: '-webkit-box', WebkitLineClamp: 8, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as React.CSSProperties}>{q.body}</div>
+                <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line', marginTop: 5 }}>{q.body}</div>
               </div>
             </div>
           ) : null}

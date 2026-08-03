@@ -196,11 +196,6 @@ const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
   img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 };
 
-const CLAMP8: React.CSSProperties = {
-  display: '-webkit-box', WebkitLineClamp: 8, WebkitBoxOrient: 'vertical',
-  overflow: 'hidden', whiteSpace: 'pre-line',
-} as React.CSSProperties;
-
 /* Plate-internal literals. Relative to the dark plate, not to the brand. */
 const PLATE_BORDER = 'rgba(255,255,255,0.35)';
 /** The queue rail's tile borders: solid for a dated tile, dashed for an undated buffer ghost. */
@@ -530,7 +525,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <div style={{ marginTop: 13 }}>
           <Eyebrow>The copy</Eyebrow>
           {q.body ? (
-            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-soft)', marginTop: 5, ...CLAMP8 }}>{q.body}</div>
+            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-soft)', marginTop: 5, whiteSpace: 'pre-line' }}>{q.body}</div>
           ) : (
             <Blank style={{ marginTop: 6, height: 44 }}>{q.generating ? 'being written now' : 'no copy written yet'}</Blank>
           )}
