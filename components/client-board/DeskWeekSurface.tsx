@@ -766,16 +766,16 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
                 {post?.funnel_stage && (
-                  <span style={{ position: 'absolute', left: 5, top: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '2px 7px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ position: 'absolute', left: 5, top: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {post.funnel_stage}
                   </span>
                 )}
                 {post?.pillar && (
-                  /* The second tag (Ivan 08-03): the content CATEGORY — Authority, Case
-                     study, Teardown, Launch, Opinion. Every post shows its category
-                     (Ivan: all five, no baseline exception). Light chip against the
-                     dark funnel tag; 11.5px floor. */
-                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 27 : 5, fontSize: 11.5, fontWeight: 650, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.92)', borderRadius: 4, padding: '0px 5px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  /* The second tag (Ivan 08-03): the content pillar — the canonical
+                     five from board.strategy.pillars (Demand, Authority, Teardown,
+                     Case Studies, Personal). Every post shows its pillar. Quiet light
+                     chip under the dark funnel tag, deliberately smaller than it. */
+                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 23 : 5, fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.9)', borderRadius: 4, padding: '0px 4px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {prettyPillar(post.pillar)}
                   </span>
                 )}
