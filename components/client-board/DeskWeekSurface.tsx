@@ -645,6 +645,10 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     const ready = restoreFirst
       ? [...readyToAdd].sort((a, b) => (a.id === restoreFirst ? -1 : b.id === restoreFirst ? 1 : 0))
       : readyToAdd;
+    /** Dated-but-future drafts (the video slots live weeks out) can be pulled onto an
+     *  open day too — same set_schedule path the calendar drag uses, published never
+     *  qualifies. Capped to the six nearest so the drill stays a list, not a queue dump. */
+    const movable = laterItems.filter((q) => q.publish_date !== day).slice(0, 6);
     return (
       <div key={day} data-day-row="" style={{ display: 'flex', gap: 14, padding: '11px 0', borderBottom: last ? undefined : '1px solid var(--cb-line)' }}>
         {dayCell(day, 'empty')}
@@ -672,7 +676,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 {/* Caption scale, not numeral scale: the kit's blank is sized for a lone
                     em dash, and a six-word caption at that size overflowed its own box. */}
                 <Blank style={{ flex: '1 1 190px', minHeight: 32, maxWidth: 280, padding: '5px 12px', fontSize: 13.5, lineHeight: 1.35, textAlign: 'center' }}>nothing scheduled this day</Blank>
-                {onScheduleToDay && ready.length > 0 && (
+                {onScheduleToDay && (ready.length > 0 || movable.length > 0) && (
                   <Pill active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)}>Add a post</Pill>
                 )}
                 {onLeaveEmpty && <Pill onClick={() => onLeaveEmpty(day)}>Leave this day empty</Pill>}
@@ -683,6 +687,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                     <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, border: '1px solid var(--cb-line)', borderRadius: 12, padding: 10 }}>
                       <span style={{ minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Ready draft'}</span>
                       <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Put it here</Pill>
+                    </div>
+                  ))}
+                  {movable.map((r) => (
+                    <div key={r.id} data-movable-draft="" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', border: '1px dashed var(--cb-line-bold)', borderRadius: 12, padding: 10 }}>
+                      <span style={{ flex: '1 1 180px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Scheduled draft'}</span>
+                      <Chip>{`now ${weekdayLong(r.publish_date!)} ${dayNumOf(r.publish_date!)}`}</Chip>
+                      <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Move it here</Pill>
                     </div>
                   ))}
                 </div>

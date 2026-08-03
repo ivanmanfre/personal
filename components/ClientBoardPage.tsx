@@ -3206,7 +3206,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
   // Photo attach (live): the chosen lifestyle image for this post, plus the pool picker.
-  const [mediaUrl, setMediaUrlState] = useState(item.media_url || '');
+  // Most queue rows carry their photo in image_urls with media_url unset (only the
+  // set_media RPC writes media_url), so the current photo falls back to image_urls[0].
+  const [mediaUrl, setMediaUrlState] = useState(item.media_url || (item.kind === 'post' && item.image_urls?.[0]) || '');
   const [poolOpen, setPoolOpen] = useState(false);
   const [pool, setPool] = useState<PhotoItem[]>([]);
   const [poolLoading, setPoolLoading] = useState(false);
@@ -3477,75 +3479,6 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </span>
                 </div>
                 {err && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
-
-                {/* Photo attach (live): pick a lifestyle picture for this post, or remove it. */}
-                {isLive && setMedia && (
-                  <div className="mt-4 border-t pt-4" style={{ borderColor: DIVIDE }}>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {mediaUrl ? (
-                        <>
-                          <img src={mediaUrl} alt="" className="h-12 w-12 rounded-md object-cover" style={{ border: `1px solid ${LINE}` }} />
-                          <button
-                            onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
-                            className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
-                            style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-                          >
-                            Change photo
-                          </button>
-                          <button
-                            onClick={() => void chooseMedia('')}
-                            disabled={!!mediaBusy}
-                            className="inline-flex min-h-[38px] items-center rounded-[6px] px-3 text-[13px] font-medium"
-                            style={{ color: DIM, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, opacity: mediaBusy ? 0.6 : 1 }}
-                          >
-                            {mediaBusy === 'clear' ? 'Removing…' : 'Remove photo'}
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
-                          className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
-                          style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
-                          </svg>
-                          Add a photo
-                        </button>
-                      )}
-                      <span className="text-[12px]" style={{ color: FAINT }}>From your lifestyle library.</span>
-                    </div>
-                    {mediaErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{mediaErr}</div>}
-                    {poolOpen && (
-                      <div className="mt-3 rounded-lg p-3" style={{ border: `1px solid ${LINE}`, background: PAPER_SUNK }}>
-                        {poolLoading ? (
-                          <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>Loading your photos…</div>
-                        ) : pool.length === 0 ? (
-                          <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>No photos yet. Add some in the Photos section below.</div>
-                        ) : (
-                          <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
-                            {pool.map((p) => {
-                              const chosen = p.url === mediaUrl;
-                              return (
-                                <button
-                                  key={p.name}
-                                  onClick={() => void chooseMedia(p.url)}
-                                  disabled={!!mediaBusy}
-                                  className="relative aspect-square overflow-hidden rounded-md"
-                                  style={{ border: chosen ? `2px solid ${accent}` : `1px solid ${LINE}`, cursor: mediaBusy ? 'default' : 'pointer' }}
-                                  aria-label="Use this photo"
-                                >
-                                  <img src={p.url} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }} />
-                                  {mediaBusy === p.url && <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white" style={{ background: 'rgba(19,18,16,0.55)' }}>…</span>}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             ) : (
               <div className="cb-linkedin-preview">
@@ -3587,6 +3520,76 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </div>
             )}
           </div>
+
+          {/* Photo attach (live): a first-class action on the opened post, no longer buried
+              under the copy editor. Video slots excluded — autoPhoto owns their artwork. */}
+          {isLive && setMedia && item.kind === 'post' && item.style !== 'video' && (
+            <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}` }}>
+              <div className="flex flex-wrap items-center gap-3">
+                {mediaUrl ? (
+                  <>
+                    <img src={mediaUrl} alt="" className="h-12 w-12 rounded-md object-cover" style={{ border: `1px solid ${LINE}` }} />
+                    <button
+                      onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
+                      className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                    >
+                      Change photo
+                    </button>
+                    <button
+                      onClick={() => void chooseMedia('')}
+                      disabled={!!mediaBusy}
+                      className="inline-flex min-h-[38px] items-center rounded-[6px] px-3 text-[13px] font-medium"
+                      style={{ color: DIM, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, opacity: mediaBusy ? 0.6 : 1 }}
+                    >
+                      {mediaBusy === 'clear' ? 'Removing…' : 'Remove photo'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
+                    className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    Add a photo
+                  </button>
+                )}
+                <span className="text-[12px]" style={{ color: FAINT }}>From your lifestyle library.</span>
+              </div>
+              {mediaErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{mediaErr}</div>}
+              {poolOpen && (
+                <div className="mt-3 rounded-lg p-3" style={{ border: `1px solid ${LINE}`, background: PAPER_SUNK }}>
+                  {poolLoading ? (
+                    <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>Loading your photos…</div>
+                  ) : pool.length === 0 ? (
+                    <div className="py-6 text-center text-[12.5px]" style={{ color: FAINT }}>No photos yet. Add some in the Photos section below.</div>
+                  ) : (
+                    <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
+                      {pool.map((p) => {
+                        const chosen = p.url === mediaUrl;
+                        return (
+                          <button
+                            key={p.name}
+                            onClick={() => void chooseMedia(p.url)}
+                            disabled={!!mediaBusy}
+                            className="relative aspect-square overflow-hidden rounded-md"
+                            style={{ border: chosen ? `2px solid ${accent}` : `1px solid ${LINE}`, cursor: mediaBusy ? 'default' : 'pointer' }}
+                            aria-label="Use this photo"
+                          >
+                            <img src={p.url} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }} />
+                            {mediaBusy === p.url && <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white" style={{ background: 'rgba(19,18,16,0.55)' }}>…</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <PostAssets gate={item.lm_gate} pdfUrl={item.pdf_url} accent={accent} slides={item.image_urls} />
 
