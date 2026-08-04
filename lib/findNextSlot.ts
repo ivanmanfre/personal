@@ -4,9 +4,10 @@ import { supabase } from './supabase';
  * Finds the next available posting slot.
  *
  * Strategy:
- *   - Cadence: ONE post per calendar day (BA-local), Mon-Fri ONLY — the
- *     2026-07-17 storefront step-down (5 dense posts/wk, Play 4 of the
- *     engagement playbook) layered on the 2026-07-03 one-per-day decision.
+ *   - Cadence: ONE post per calendar day (BA-local), Sun-Thu ONLY — still the
+ *     5 dense posts/wk of the 2026-07-17 storefront step-down (Play 4),
+ *     layered on the 2026-07-03 one-per-day decision, with the send days
+ *     shifted Fri -> Sun on 2026-08-04 (see the day-quality note below).
  *     The time window rotates by day (morning / early-afternoon).
  *   - Scan from tomorrow forward; skip any day that already has a post
  *   - Cap the scan at 30 days out
@@ -96,10 +97,18 @@ export async function findNextSlot(): Promise<Date> {
       // was making us pick today's already-past 9am slot.
       const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
       const cl = ymdInTz(candidate, TZ);
-      // Step-down cadence (2026-07-17): 5 dense posts/wk = 1/day Mon-Fri. Weekend
-      // days are skipped; density + the weekly flagship carry the reach instead.
+      // Step-down cadence (2026-07-17): 5 dense posts/wk = 1/day. Send days are
+      // Sun-Thu since 2026-08-04: Friday and Saturday are the two weakest days in
+      // Ivan's own reach data (own_posts, 150d, impressions > 0: Sun median 74 on
+      // n=14, Fri 52 on n=23, Sat 56 on n=20; last 60d Fri drops to 31, Sun holds
+      // 74) and the same ranking shows in the outreach lane (warm invite accepts
+      // by send day since 06-15: Sun 32.4%, Fri 20.8%, Sat 14.3%), which is what
+      // moved paid InMail to Sun-Thu on 2026-08-02. Samples are 7-23 per day, so
+      // this is directional, not proven — cheap to reverse by restoring Fri here
+      // and in the two n8n slot-finders that mirror this rule: Post Ready ->
+      // Scheduled (beRGM4hr2ZHrRjbe) and Lead Magnets (XQSUuQH2e4YVwLCB).
       const dow = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(candidate);
-      if (dow === 'Sat' || dow === 'Sun') continue;
+      if (dow === 'Fri' || dow === 'Sat') continue;
       if (occupiedDays.has(`${cl.y}-${cl.m}-${cl.d}`)) continue; // day already has a post
       // Rotate the time window by day-of-month so timing still varies day to day.
       const w = SLOT_WINDOWS[cl.d % SLOT_WINDOWS.length];
