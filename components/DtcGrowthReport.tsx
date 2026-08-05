@@ -200,6 +200,13 @@ function ProfitGapSpread({
   const procFrac = procPct / 100;
   const contribution = (1 - returnsRate) * aov * (1 - cogsRate) - shipping - (procFrac * aov + 0.3);
   const profitPerOrder = contribution - cac;
+  // 2026-08-05: break-even ROAS is the number DTC founders actually speak in ("1.4 ROAS means
+  // losing £5 per sale, I needed 1.9 just to break even" — rise-buyer-pain-taxonomy v2). The
+  // page already had every input it needs, it just never printed the threshold.
+  // Break-even is CAC = contribution, and ROAS = revenue / ad spend = AOV / CAC, so the
+  // threshold is AOV / contribution. Null when contribution <= 0: an order that loses money
+  // before a cent of ad spend has no ad efficiency that rescues it.
+  const breakEvenRoas = contribution > 0 ? aov / contribution : null;
 
   const sliders: Array<{ key: string; label: string; value: number; set: (v: number) => void; min: number; max: number; step: number; fmt: (v: number) => string }> = [
     { key: 'aov', label: 'AOV', value: aov, set: setAov, min: 10, max: 300, step: 1, fmt: (v) => fmtMoney(v) },
@@ -306,9 +313,17 @@ function ProfitGapSpread({
               >
                 {fmtMoney(profitPerOrder)}
               </div>
-              <div className="mt-4 inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
-                <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Contribution per order</span>
-                <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{fmtMoney(contribution)}</span>
+              <div className="mt-4 flex flex-wrap items-center gap-2.5" data-calc="1">
+                <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
+                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Contribution per order</span>
+                  <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{fmtMoney(contribution)}</span>
+                </div>
+                <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
+                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Break-even ROAS</span>
+                  <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: breakEvenRoas === null ? accent : surface }} data-calc="1">
+                    {breakEvenRoas === null ? 'unreachable' : `${breakEvenRoas.toFixed(2)}x`}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
