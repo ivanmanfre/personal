@@ -288,6 +288,27 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     }
   });
 
+  // NOTE: the 'unreachable' branch (contribution <= 0) is NOT covered here. It is only
+  // reachable by dragging AOV below ~$11 at the default cost mix, and these are static
+  // render assertions with no slider interaction.
+  it('break-even ROAS: printed from the same seed arithmetic as the waterfall', () => {
+    const fixture = loadFixture('rodial-com.json');
+    const seed = fixture.dtc.profit_gap!.seed_aov!;
+    const { html } = renderFixture('rodial-com.json');
+
+    // Recomputed independently, from the seeded slider defaults (same basis as the geometry test).
+    const aov = seed;
+    const contribution = (1 - 0.08) * aov * (1 - 0.35) - 6 - (0.029 * aov + 0.3);
+    const expected = `${(aov / contribution).toFixed(2)}x`;
+
+    expect(contribution).toBeGreaterThan(0);
+    expect(html).toContain('Break-even ROAS');
+    expect(html).toContain(expected);
+
+    // The threshold is AOV / contribution, so it must sit above 1x on any profitable order.
+    expect(Number(expected.replace('x', ''))).toBeGreaterThan(1);
+  });
+
   it('receipt: rodial renders the bound vitals lines, thin and blocked-heavy fixtures collapse the whole band', () => {
     const rich = renderFixture('rodial-com.json');
     expect(rich.html).toContain('Everything we read, and where');
