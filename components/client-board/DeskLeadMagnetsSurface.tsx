@@ -36,6 +36,11 @@ type ShelfEntry = LeadMagnetEntry & {
   posted_note?: string;
   page_live?: boolean;
   optins?: number;
+  /** Distinct-IP visitors to this page (lm_events view events, is_test rows excluded). */
+  visitors?: number;
+  /** True only when the page actually asks for an email. Most hub tools are ungated,
+   *  so an opt-in count on them reads as a failure when there was never a gate to pass. */
+  gated?: boolean;
   linkedin_activity?: string;
 };
 
@@ -43,6 +48,10 @@ type ShelfEntry = LeadMagnetEntry & {
  *  `captured`. Absent on both -> undefined (renders the blank, never 0). */
 const optinsOf = (e: ShelfEntry): number | undefined =>
   typeof e.optins === 'number' ? e.optins : (typeof e.captured === 'number' ? e.captured : undefined);
+
+/** Visitor count for an entry. Absent -> undefined (renders the blank, never 0). */
+const visitorsOf = (e: ShelfEntry): number | undefined =>
+  typeof e.visitors === 'number' ? e.visitors : undefined;
 
 /** "23 Jul" from a bare date or ISO timestamp; unparseable -> '' (same parse-safety
  *  rationale as ClientBoardPage's fmtDay, which isn't the right shape here: it prefixes
@@ -110,8 +119,15 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
   // not live). Today's array has no drafted entries, so pipelineN === ideasN as before.
   const pipelineN = ideasN + draftedEntries.length;
 
-  const anyCaptured = entries.some((e) => typeof optinsOf(e) === 'number');
-  const totalCaptured = entries.reduce((sum, e) => sum + (optinsOf(e) ?? 0), 0);
+  // Gated-only aggregate: summing opt-ins across ungated pages counts zeros that were
+  // never askable, which reads as failure rather than as "no gate here".
+  const gatedEntries = entries.filter((e) => e.gated);
+  const anyCaptured = gatedEntries.some((e) => typeof optinsOf(e) === 'number');
+  const totalCaptured = gatedEntries.reduce((sum, e) => sum + (optinsOf(e) ?? 0), 0);
+  // ip_hash is salted per-slug upstream, so the same person on two pages is two hashes.
+  // This total is page-visit sessions, NOT deduped people — the caption says so.
+  const anyVisitors = entries.some((e) => typeof visitorsOf(e) === 'number');
+  const totalVisitors = entries.reduce((sum, e) => sum + (visitorsOf(e) ?? 0), 0);
 
   const nl = board.newsletter;
   const nurtureSteps = nl?.nurture || [];
@@ -188,14 +204,23 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                     {announceMark(entry)}
                   </PlateMute>
                 )}
-                <div style={{ marginTop: 10 }}>
-                  {typeof optinsOf(entry) === 'number' ? (
+                {/* Visitors is the headline number, not opt-ins: most hub tools are
+                    ungated, so an opt-in count there measures a gate that doesn't exist.
+                    Opt-ins render as a second line ONLY on pages that ask for an email. */}
+                <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                  {typeof visitorsOf(entry) === 'number' ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
+                      <Num size="row" inline tone="plate">{visitorsOf(entry)}</Num>
+                      <PlateMute style={{ fontSize: 12 }}>{visitorsOf(entry) === 1 ? 'visitor' : 'visitors'}</PlateMute>
+                    </span>
+                  ) : (
+                    <StatBlank on="plate" caption="visitors: not shown here yet" style={{ maxWidth: 150 }} />
+                  )}
+                  {entry.gated && typeof optinsOf(entry) === 'number' && (
                     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5 }}>
                       <Num size="row" inline tone="plate">{optinsOf(entry)}</Num>
                       <PlateMute style={{ fontSize: 12 }}>opt-ins</PlateMute>
                     </span>
-                  ) : (
-                    <StatBlank on="plate" caption="opt-ins: not shown here yet" style={{ maxWidth: 150 }} />
                   )}
                 </div>
                 {entry.url && (
@@ -305,11 +330,12 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
       <StatStrip>
         <Stat value={liveN} caption="tools live" />
         <Stat value={pipelineN} caption="drawn up next" />
-        {anyCaptured ? (
-          <Stat value={totalCaptured} caption="opt-ins captured" />
+        {anyVisitors ? (
+          <Stat value={totalVisitors} caption="visits across the pages" />
         ) : (
-          <StatBlank caption="opt-ins: not shown here yet" />
+          <StatBlank caption="visitors: not shown here yet" />
         )}
+        {anyCaptured && <Stat value={totalCaptured} caption="opt-ins on gated pages" />}
       </StatStrip>
 
       {lmDetail && (

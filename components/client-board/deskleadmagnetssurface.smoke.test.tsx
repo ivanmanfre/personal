@@ -13,7 +13,8 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
     domain: 'acme.example',
     queue: [],
     lead_magnets: [
-      // Live, captured is a real number — exercises the Num path.
+      // Live, visitors + captured are real numbers — exercises the Num path. `gated`
+      // is what licenses the opt-ins line: this page asks for an email.
       {
         id: 'lm-live-tracked',
         title: 'True Profit Per Order X-Ray',
@@ -21,10 +22,12 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
         status: 'live',
         url: 'https://acme.example/profit-xray',
         cover_url: 'https://acme.example/assets/cover.jpg',
+        visitors: 38,
+        gated: true,
         captured: 142,
         promise: 'Seven numbers in, a written diagnosis of where profit leaks.',
       },
-      // Live, captured UNDEFINED — must render "not tracked yet", never "0".
+      // Live, visitors UNDEFINED — must render the blank, never "0".
       {
         id: 'lm-live-untracked',
         title: 'Ad Account Report Card',
@@ -88,14 +91,17 @@ describe('DeskLeadMagnetsSurface', () => {
     expect(html).not.toMatch(/<details[^>]*\bopen\b[^>]*>/);
 
     // (d) absent-data variant: the untracked live entry renders the honest blank,
-    // never a fabricated zero for that field. Opt-ins ARE tracked upstream (lm_events
+    // never a fabricated zero for that field. Visitors ARE tracked upstream (lm_events
     // via lm-beacon) — the board data just doesn't carry counts yet — so the caption
     // must never claim "not tracked".
-    expect(html).toContain('opt-ins: not shown here yet');
+    expect(html).toContain('visitors: not shown here yet');
     expect(html).not.toContain('not tracked yet');
-    // Footer opt-ins stat is also blank (fixture has one tracked + one untracked entry,
-    // so anyCaptured is true and the footer shows the real aggregate — 142 — instead).
+    // Visitors is the headline number on the tile; opt-ins ride alongside it only
+    // because this entry is gated. Footer carries both aggregates.
+    expect(html).toContain('>38<');
     expect(html).toContain('142');
+    expect(html).toContain('visits across the pages');
+    expect(html).toContain('opt-ins on gated pages');
 
     // Today's shape carries no posted/announce fields: no invented marks.
     expect(html).not.toContain('announced');
@@ -112,7 +118,7 @@ describe('DeskLeadMagnetsSurface', () => {
     expect(html).not.toContain('Sends from');
   });
 
-  it('omits the opt-ins stat number and shows the honest blank when NO entry has a captured count', () => {
+  it('omits the visitor stat number and shows the honest blank when NO entry has a count', () => {
     const board = makeBoard({
       lead_magnets: [
         {
@@ -137,9 +143,12 @@ describe('DeskLeadMagnetsSurface', () => {
       />
     );
 
-    expect(html).toContain('opt-ins: not shown here yet');
+    expect(html).toContain('visitors: not shown here yet');
     expect(html).not.toContain('not tracked yet');
-    // No captured count anywhere in the fixture: never render a bare "0" stat for it.
+    // Nothing is gated in this fixture, so the opt-ins line must not appear at all —
+    // an ungated page has no gate to have failed.
+    expect(html).not.toContain('opt-ins');
+    // No count anywhere in the fixture: never render a bare "0" stat for it.
     // (liveN=1 legitimately renders as "1" — a real count, not the captured field — so we
     // only assert the specific absent-field copy renders, above. lm_ideas is empty here on
     // purpose: ideasN=0 is a true, computed zero — not the false-zero bug case above.)
@@ -151,8 +160,8 @@ describe('DeskLeadMagnetsSurface', () => {
     // posted_note, page_live, optins.
     const board = makeBoard({
       lead_magnets: [
-        // Posted entry with a date AND an optins count — announce date shown, count in
-        // the opt-ins slot, included in the aggregate.
+        // Posted, gated entry with visitors AND an optins count — announce date shown,
+        // visitors headline, opt-ins alongside, both in the aggregates.
         {
           id: 'lml-3',
           title: 'RISE DTC AI Kit',
@@ -161,11 +170,13 @@ describe('DeskLeadMagnetsSurface', () => {
           status: 'live',
           posted_to_linkedin: true,
           posted_date: '2026-07-23',
+          visitors: 4,
+          gated: true,
           optins: 19,
           url: 'https://acme.example/ai-kit',
         },
         // Live page, never announced on the feed — shows the plain mark, never claims
-        // announced. Carries an optins count too (included in the aggregate).
+        // announced. Gated, so it carries an optins count too.
         {
           id: 'lml-2',
           title: 'True Profit Per Order X-Ray',
@@ -174,10 +185,14 @@ describe('DeskLeadMagnetsSurface', () => {
           status: 'live_unannounced',
           posted_to_linkedin: false,
           posted_note: 'Page live since 2026-07-17. Launch post never went out.',
+          visitors: 3,
+          gated: true,
           optins: 5,
           url: 'https://acme.example/profit-xray',
         },
-        // Live + posted but NO optins field — the re-worded blank, never a 0.
+        // UNGATED page with real visitors: shows the visitor count and NO opt-ins line.
+        // This is the case the old shape got wrong — it rendered "0 opt-ins" on a page
+        // that never asked for an email.
         {
           id: 'lml-6',
           title: 'The ChatGPT Shopping Checklist',
@@ -186,6 +201,7 @@ describe('DeskLeadMagnetsSurface', () => {
           status: 'live',
           posted_to_linkedin: true,
           posted_date: '2026-07-31',
+          visitors: 2,
           url: 'https://acme.example/chatgpt',
         },
         // Drafted page — pipeline treatment, never a live shelf item.
@@ -225,14 +241,21 @@ describe('DeskLeadMagnetsSurface', () => {
     expect(html).toMatch(/3 lead magnets are/);
     expect(html).not.toContain('Open Return Rate Rescue'); // no shelf card aria-label for it
 
-    // Optins counts render in the opt-ins slot and sum into the footer aggregate.
+    // Visitor counts render as the tile headline and sum into the footer aggregate.
+    expect(html).toContain('>4<');
+    expect(html).toContain('>3<');
+    expect(html).toContain('>2<');
+    expect(html).toContain('>9<'); // 4 + 3 + 2 visits across the three live pages
+    // Opt-ins render only for the two gated entries and only they sum into that stat.
     expect(html).toContain('>19<');
     expect(html).toContain('>5<');
-    expect(html).toContain('>24<'); // 19 + 5
-    // The count-less entry renders the re-worded blank; no "0" anywhere data was absent.
-    expect(html).toContain('opt-ins: not shown here yet');
+    expect(html).toContain('>24<'); // 19 + 5, the ungated page contributes nothing
+    // Every live entry has a visitor count here, so no blank renders...
+    expect(html).not.toContain('visitors: not shown here yet');
     expect(html).not.toContain('not tracked yet');
+    // ...and the ungated page never shows a fabricated "0 opt-ins".
     expect(html).not.toContain('>0<');
+    expect(html.match(/opt-ins/g) || []).toHaveLength(3); // 2 tiles + 1 footer stat
   });
 
   it('renders a one-line Newsletter pointer when board.newsletter is present (the full rail lives on the Newsletter tab)', () => {
