@@ -25,7 +25,11 @@ import { GATE, fmtDate } from './shared';
  */
 
 interface LaneKpis {
-  staged: number; sent: number; sent_mtd: number; sent_7d: number;
+  staged: number; sent: number; sent_mtd: number; sent_7d: number; sent_1d: number;
+  // sendable = what the Connection Request Sender could actually pick right now (same predicate,
+  // field for field). staged only means "never invited", which counts ad-unverified rows, rows
+  // with no note, null-geo rows the gate fails closed on, and rows on a PAUSED lane.
+  sendable: number; held_no_ads: number; held_no_note: number;
   accepted: number; accept_rate: number | null;
   dm1: number; dm2: number; replied: number; reply_rate: number | null;
   needs_reply: number; last_send_at: string | null;
@@ -139,7 +143,10 @@ export function LaneKpisPanel({ clientId }: { clientId: string | null }) {
         </div>
       )}
       <div className="co4-legend">
-        Accept % = accepted / invites sent, all-time. Reply % = replied / DM'd. Real prospect rows at load.
+        Sendable = what the sender could pick right now: ad-confirmed, note written, geo resolved,
+        not yet contacted, on a live lane. It is not the same as unsent — a paused lane and a lane
+        full of ad-unverified rows both read 0. Accept % = accepted / invites sent, all-time.
+        Reply % = replied / DM'd. Real prospect rows at load.
       </div>
     </div>
   );
@@ -148,6 +155,11 @@ export function LaneKpisPanel({ clientId }: { clientId: string | null }) {
 function LaneCard({ lane }: { lane: Lane }) {
   const k = lane.kpis;
   const noSends = k.sent === 0;
+  // Days of runway at yesterday's burn. This is the number that tells you whether a lane is about
+  // to go quiet, and it is the one the card never had: a lane can show 87 "staged" and still be
+  // one day from dry, because most of those rows can never be picked.
+  const runway = k.sent_1d > 0 ? k.sendable / k.sent_1d : null;
+  const dry = lane.is_active && k.sent_1d > 0 && k.sendable < k.sent_1d;
   return (
     <div className="co4-card">
       <div className="co4-card-head">
@@ -155,17 +167,32 @@ function LaneCard({ lane }: { lane: Lane }) {
         <span className={`co3-badge ${lane.is_active ? 'co3-badge--on' : ''}`}>{lane.is_active ? 'Live' : 'Paused'}</span>
       </div>
       {noSends ? (
-        <div className="co4-nosends">{k.staged > 0 ? `${k.staged} staged, nothing sent yet.` : 'Nothing staged, nothing sent.'}</div>
+        <div className="co4-nosends">
+          {k.sendable > 0
+            ? `${k.sendable} sendable, nothing sent yet.`
+            : k.staged > 0
+              ? `${k.staged} rows here but 0 sendable${k.held_no_ads > 0 ? ` — ${k.held_no_ads} held with no confirmed ads` : ''}.`
+              : 'Nothing staged, nothing sent.'}
+        </div>
       ) : (
         <div className="co4-grid3">
-          <Stat label="Sent" v={k.sent} sub={`${k.sent_7d} this wk`} />
+          <Stat label="Sendable now" v={k.sendable} sub={runway != null ? `${runway.toFixed(1)}d at today's rate` : undefined} red={dry} />
+          <Stat label="Sent" v={k.sent} sub={`${k.sent_1d} today · ${k.sent_7d} this wk`} />
           <Stat label="Accepted" v={k.accepted} sub={pctFmt(k.accept_rate)} />
           <Stat label="Replied" v={k.replied} sub={pctFmt(k.reply_rate)} />
-          <Stat label="Staged" v={k.staged} />
           <Stat label="DM 1" v={k.dm1} sub={k.dm2 > 0 ? `${k.dm2} DM 2` : undefined} />
           <Stat label="Owe reply" v={k.needs_reply} red={k.needs_reply > 0} />
         </div>
       )}
+      {/* Why the rest are not sendable. Without this a starved lane looks like a broken engine. */}
+      {(k.held_no_ads > 0 || k.held_no_note > 0) && (
+        <div className="co4-held">
+          {k.staged} unsent · {k.held_no_ads > 0 ? `${k.held_no_ads} no confirmed ads` : ''}
+          {k.held_no_ads > 0 && k.held_no_note > 0 ? ' · ' : ''}
+          {k.held_no_note > 0 ? `${k.held_no_note} no note written` : ''}
+        </div>
+      )}
+      {dry && <div className="co4-stall">Sendable is under one day of burn. The lane goes quiet unless the engine refills it.</div>}
       {k.last_send_at && <div className="co4-lastsend">last send {fmtDate(k.last_send_at)}</div>}
     </div>
   );
@@ -351,6 +378,7 @@ const CSS = `
 .ec .co4-stat-sub { font-family:var(--ec-sans); font-size:9.5px; color:var(--ec-mutedc); font-variant-numeric:tabular-nums; }
 .ec .co4-nosends { font-family:var(--ec-clinical); font-style:italic; font-size:12px; color:var(--ec-mutedc); }
 .ec .co4-lastsend { font-family:var(--ec-sans); font-size:9.5px; color:var(--ec-mutedc); font-variant-numeric:tabular-nums; }
+.ec .co4-held { font-family:var(--ec-clinical); font-style:italic; font-size:10.5px; line-height:1.45; color:var(--ec-mutedc); font-variant-numeric:tabular-nums; }
 .ec .co4-stall { font-family:var(--ec-sans); font-size:11px; line-height:1.45; color:var(--ec-ink); background:rgba(19,18,16,0.04); border-left:2px solid var(--ec-ink); padding:0.4rem 0.55rem; }
 .ec .co4-pausedwrap { margin-top:0.8rem; }
 .ec .co4-fold { font-family:var(--ec-sans); font-weight:700; font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ec-mutedc); background:none; border:0; border-bottom:1px dashed var(--ec-rule-strong); padding:0 0 0.1rem; cursor:pointer; }
