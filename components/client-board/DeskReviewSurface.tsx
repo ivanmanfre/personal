@@ -302,17 +302,14 @@ export default function DeskReviewSurface({
     if (q.register === 'personal' || q.register === 'hybrid') return 'personal';
     return q.pillar || null;
   };
-  // Topic pills come from the rows themselves (the canon pillar labels live on the data —
-  // never a hardcoded list here). Personal leads, then the client's core pillars, then rest
-  // by count.
+  // Topic pills are PINNED to the canonical set (the client's 4 hand-authored pillars +
+  // personal; Ivan 2026-08-08: "never coin new labels on a client surface"). A rogue pillar
+  // value — e.g. one leaked from another lane's taxonomy enum — gets NO pill; its row still
+  // shows under All. Pills render only for canon values present in the data.
   const TOPIC_ORDER = ['personal', 'teardown', 'authority', 'demand', 'case_study'];
   const topicCounts: Record<string, number> = {};
   board.queue.forEach((q) => { const t = topicOf(q); if (t) topicCounts[t] = (topicCounts[t] || 0) + 1; });
-  const topics = Object.keys(topicCounts).sort((a, b) => {
-    const ia = TOPIC_ORDER.indexOf(a), ib = TOPIC_ORDER.indexOf(b);
-    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-    return topicCounts[b] - topicCounts[a];
-  });
+  const topics = TOPIC_ORDER.filter((t) => (topicCounts[t] || 0) > 0);
   const topicLabel = (t: string) => t.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
   const readParam = (k: string) => { try { return new URLSearchParams(window.location.search).get(k); } catch { return null; } };
   const [cat, setCatState] = useState<Cat>(() => {
