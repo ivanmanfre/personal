@@ -325,21 +325,30 @@ export default function DeskReviewSurface({
     if (t) return t;
     return readParam('cat') === 'personal' ? 'personal' : 'all';
   });
+  // Third axis (2026-08-07, Ivan): AIM (?aim=) — reach/trust/buyers, i.e. funnel stage
+  // (TOFU→BOFU), plumbed from carousel_drafts.funnel_stage. Same words the dark plate and
+  // the per-row chip already use, so the three surfaces never disagree.
+  const AIMS = ['reach', 'trust', 'buyers'];
+  const aimOf = (q: QueueItem): string | null => (q.funnel_stage && AIMS.includes(q.funnel_stage)) ? q.funnel_stage : null;
+  const aimCount = (a: string) => board.queue.filter((q) => aimOf(q) === a).length;
+  const [aimSel, setAimState] = useState<string>(() => readParam('aim') || 'all');
   // Filter clicks write the URL (shareable view) and tell the panel shell on
   // resources.risedtc.com to swap its pretty path (/panel/content/<x>/). The message carries
-  // only the two filter ids — nothing sensitive crosses the frame boundary.
-  const syncFilterUrl = (c: Cat, t: string) => {
+  // only the three filter ids — nothing sensitive crosses the frame boundary.
+  const syncFilterUrl = (c: Cat, t: string, a: string) => {
     try {
       const u = new URL(window.location.href);
       if (c === 'all') u.searchParams.delete('cat'); else u.searchParams.set('cat', c);
       if (t === 'all') u.searchParams.delete('topic'); else u.searchParams.set('topic', t);
+      if (a === 'all') u.searchParams.delete('aim'); else u.searchParams.set('aim', a);
       window.history.replaceState(null, '', u.toString());
-      if (window.parent !== window) window.parent.postMessage({ type: 'cb-filter', cat: c, topic: t }, '*');
+      if (window.parent !== window) window.parent.postMessage({ type: 'cb-filter', cat: c, topic: t, aim: a }, '*');
     } catch { /* URL sync is best-effort; the filter itself already applied */ }
   };
-  const setCat = (c: Cat) => { setCatState(c); syncFilterUrl(c, topic); };
-  const setTopic = (t: string) => { setTopicState(t); syncFilterUrl(cat, t); };
-  const inCat = (q: QueueItem) => (cat === 'all' || catOf(q) === cat) && (topic === 'all' || topicOf(q) === topic);
+  const setCat = (c: Cat) => { setCatState(c); syncFilterUrl(c, topic, aimSel); };
+  const setTopic = (t: string) => { setTopicState(t); syncFilterUrl(cat, t, aimSel); };
+  const setAim = (a: string) => { setAimState(a); syncFilterUrl(cat, topic, a); };
+  const inCat = (q: QueueItem) => (cat === 'all' || catOf(q) === cat) && (topic === 'all' || topicOf(q) === topic) && (aimSel === 'all' || aimOf(q) === aimSel);
   const catCount = (id: Cat) => id === 'all' ? board.queue.length : board.queue.filter((q) => catOf(q) === id).length;
   const fUpNext = upNextRows.filter(inCat), fBuffer = bufferRows.filter(inCat), fDrafted = draftedRows.filter(inCat),
     fPublished = publishedRows.filter(inCat), fReview = reviewRows.filter(inCat), fScheduled = scheduledRows.filter(inCat);
@@ -708,10 +717,19 @@ export default function DeskReviewSurface({
           ))}
         </div>
       )}
+      {AIMS.some((a) => aimCount(a) > 0) && (
+        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Aim</span>
+          <Pill active={aimSel === 'all'} onClick={() => setAim('all')}>All</Pill>
+          {AIMS.map((a) => aimCount(a) > 0 && (
+            <Pill key={a} active={aimSel === a} onClick={() => setAim(a)}>{a[0].toUpperCase() + a.slice(1)}</Pill>
+          ))}
+        </div>
+      )}
 
       {view === 'calendar' ? (
         (foldCalendar && React.isValidElement(foldCalendar)
-          ? React.cloneElement(foldCalendar as React.ReactElement<any>, { queueFilter: (cat === 'all' && topic === 'all') ? undefined : inCat })
+          ? React.cloneElement(foldCalendar as React.ReactElement<any>, { queueFilter: (cat === 'all' && topic === 'all' && aimSel === 'all') ? undefined : inCat })
           : foldCalendar) || <Footnote>Calendar view not available yet.</Footnote>
       ) : (
         <div>
@@ -734,7 +752,7 @@ export default function DeskReviewSurface({
                   </Drill>
                 ) : null,
               ], 'published')}
-              {(cat !== 'all' || topic !== 'all') && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
+              {(cat !== 'all' || topic !== 'all' || aimSel !== 'all') && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
                 <Footnote style={{ marginTop: 16 }}>Nothing in this category yet.</Footnote>
               )}
             </>
