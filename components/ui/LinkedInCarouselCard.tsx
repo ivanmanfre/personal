@@ -83,37 +83,79 @@ interface FitTextProps {
   className?: string;
 }
 
+/** Multi-line "does it fit" check. Deliberately NOT a raw scrollHeight-vs-clientHeight
+ *  pixel diff: web fonts (this card renders in the prospect's/lead's brand font) can
+ *  carry line-gap metrics that make a browser's line-box math overshoot scrollHeight by
+ *  a few px EVEN ON TEXT THAT ALREADY FITS — confirmed directly (DM Sans: +5px on a
+ *  2-line heading that renders with zero visual defect; the system-font fallback: +0px on
+ *  the identical box). A flat pixel tolerance would have to be guessed per font; rounding
+ *  to a whole line count is font-metric-agnostic and matches how a human reads the box
+ *  ("does this take more lines than allowed"), not how sub-pixel layout rounds. */
+function fitsLines(el: HTMLElement, maxLines: number): boolean {
+  const lineHeightPx = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.2;
+  return Math.round(el.scrollHeight / lineHeightPx) <= maxLines;
+}
+
 const FitText: React.FC<FitTextProps> = ({ as: Tag, text, style, maxLines, className }) => {
   const ref = useRef<HTMLElement>(null);
   const [step, setStep] = useState(0);
+  // Set only once step-down is exhausted and the text still doesn't fit at the floor
+  // size — a JS-truncated prefix (not CSS-only ellipsis) so the box's own scrollHeight
+  // stops exceeding its clientHeight. CSS line-clamp is a fine VISUAL terminal fallback,
+  // but the DOM still reports the untruncated content as "overflowing" itself even
+  // though nothing bleeds past the box — so for slides drafted well past the char
+  // budget, cut the string for real rather than lean on CSS to hide it.
+  const [truncated, setTruncated] = useState<string | null>(null);
   const singleLine = maxLines <= 1;
 
   // Text changed (e.g. slide navigation) — restart at the default size.
-  useLayoutEffect(() => { setStep(0); }, [text]);
+  useLayoutEffect(() => { setStep(0); setTruncated(null); }, [text]);
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || step >= STEP_DOWN_STEPS) return;
-    const overflowing = singleLine
-      ? el.scrollWidth - el.clientWidth > 1
-      : el.scrollHeight - el.clientHeight > 1;
+    if (!el || truncated !== null || step >= STEP_DOWN_STEPS) return;
+    const overflowing = singleLine ? el.scrollWidth - el.clientWidth > 2 : !fitsLines(el, maxLines);
     if (!overflowing) return;
     const currentPx = parseFloat(getComputedStyle(el).fontSize);
     if (currentPx > MIN_FONT_PX + 0.5) setStep((s) => s + 1);
-  }, [step, text, singleLine]);
+  }, [step, text, singleLine, truncated, maxLines]);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || truncated !== null || step < STEP_DOWN_STEPS) return;
+    const fits = () => (singleLine ? el.scrollWidth - el.clientWidth <= 2 : fitsLines(el, maxLines));
+    if (fits()) return;
+    const original = el.textContent;
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      el.textContent = `${text.slice(0, mid).trimEnd()}…`;
+      if (fits()) lo = mid; else hi = mid - 1;
+    }
+    el.textContent = original;
+    setTruncated(`${text.slice(0, lo).trimEnd()}…`);
+  }, [step, text, singleLine, truncated, maxLines]);
 
   const scale = Math.pow(STEP_DOWN_RATIO, step);
   const baseFontSize = style.fontSize;
   const fontSize = baseFontSize && step > 0 ? `max(${MIN_FONT_PX}px, calc(${baseFontSize} * ${scale}))` : baseFontSize;
 
+  // Multi-line clamp deliberately does NOT use -webkit-line-clamp: Chromium's
+  // -webkit-box + -webkit-line-clamp reports scrollHeight a few px ABOVE clientHeight
+  // even for content that already fits (confirmed empirically — a single "…" character
+  // in a 3-line-clamped box still shows scrollHeight-clientHeight>0), which would make
+  // the fits()-check above loop forever truncating text that was never actually
+  // overflowing. A plain max-height (line-height em × maxLines) + overflow hidden
+  // measures cleanly (0 diff when content fits, real diff when it doesn't) at the cost
+  // of no native ellipsis glyph — moot, since by the time content is long enough to hit
+  // this box the JS truncation above has already appended our own "…".
+  const lineHeightMultiplier = typeof style.lineHeight === 'number' ? style.lineHeight : 1.2;
   const fitStyle: React.CSSProperties = singleLine
     ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
     : {
-        display: '-webkit-box',
-        WebkitLineClamp: maxLines,
-        WebkitBoxOrient: 'vertical',
+        maxHeight: `${lineHeightMultiplier * maxLines}em`,
         overflow: 'hidden',
-        textOverflow: 'ellipsis',
         overflowWrap: 'break-word',
         wordBreak: 'break-word',
       };
@@ -121,7 +163,7 @@ const FitText: React.FC<FitTextProps> = ({ as: Tag, text, style, maxLines, class
   return React.createElement(
     Tag,
     { ref, className, style: { ...style, ...(fontSize ? { fontSize } : {}), minHeight: 0, ...fitStyle } },
-    text
+    truncated ?? text
   );
 };
 
