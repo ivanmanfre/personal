@@ -8,7 +8,7 @@
     },
     "reason": "Meta transparency: \"This Page isn't currently running ads.\"",
     "status": "empty",
-    "fetched_at": "2026-08-07T14:42:25.806684+00:00",
+    "fetched_at": "2026-08-07T16:10:47.723256+00:00",
     "source_url": "https://www.facebook.com/OfficialPantherVision"
    },
    "google": {
@@ -134,7 +134,7 @@
    "reason": null,
    "status": "present",
    "partial": true,
-   "fetched_at": "2026-08-07T14:42:26.034995+00:00",
+   "fetched_at": "2026-08-07T16:10:47.976128+00:00",
    "source_url": "https://panthervision.com/"
   },
   "reviews": {
@@ -143,7 +143,7 @@
    },
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
-   "fetched_at": "2026-08-07T14:42:26.029042+00:00",
+   "fetched_at": "2026-08-07T16:10:47.971857+00:00",
    "source_url": "https://panthervision.com/products/sting-stick-bug-bite-relief-device-chemical-free-heat-therapy-pen-for-mosquito-bites-bee-stings-rechargeable"
   },
   "shopify": {
@@ -162,7 +162,7 @@
     "products_on_discount": 23
    },
    "status": "present",
-   "fetched_at": "2026-08-07T14:42:11.327878+00:00",
+   "fetched_at": "2026-08-07T16:10:39.558383+00:00",
    "source_url": "https://panthervision.com/products.json",
    "endpoint_used": "products.json"
   },
@@ -217,7 +217,7 @@
     "title": "You're not running paid social right now",
     "bucket": "rise",
     "signal": "ads.meta",
-    "evidence": "The public Meta Ad Library shows zero active ads. For a brand at your catalog depth, that's unclaimed demand, and a cold-audience paid engine is the fastest lever we pull.",
+    "evidence": "The public Meta Ad Library shows zero ads for this brand. For a brand at your catalog depth, that's unclaimed demand, and a cold-audience paid engine is the fastest lever we pull.",
     "week_one": "Multi-network ads management targeted at your ideal customer, optimized for profit from the first campaign.",
     "source_url": "https://www.facebook.com/OfficialPantherVision",
     "bucket_pillar": "Optimized Media Buying"
@@ -288,7 +288,7 @@
     ]
    },
    "status": "present",
-   "fetched_at": "2026-08-07T14:42:10.832465+00:00",
+   "fetched_at": "2026-08-07T16:10:39.352956+00:00",
    "source_url": "https://panthervision.com/"
   },
   "competitors": {
@@ -362,6 +362,7 @@
      }
     ],
     "checked_at": "2026-08-07T14:43:25.230283+00:00",
+    "from_cache": true,
     "max_results": 90,
     "sampled_items": 118,
     "advertisers_seen": 55,
@@ -377,7 +378,7 @@
   },
   "screenshots": {
    "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/panther-vision-3f-pdp.png",
-   "captured_at": "2026-08-07T14:42:26.302217+00:00",
+   "captured_at": "2026-08-07T16:10:48.206498+00:00",
    "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/panther-vision-3f.png"
   },
   "completeness": {
