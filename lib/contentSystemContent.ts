@@ -49,7 +49,7 @@ export const ONE_IDEA_FORMATS: string[] = ['Text post', 'Single image', 'Carouse
 export interface FlowStep { n: string; title: string; body: string; }
 export const SYSTEM_FLOW: FlowStep[] = [
   { n: '01', title: 'It finds the idea', body: 'Pulls topics from your calls, the web, and your past winners, then ranks them by what will actually land with your audience.' },
-  { n: '02', title: 'It writes it in your voice', body: 'A multi-step pipeline drafts the hook and body, grounded in your real conversations, and strips every AI tell before it reaches you.' },
+  { n: '02', title: 'It goes out under your name', body: 'The hook and body are drafted from your real conversations, and every AI tell is stripped before it reaches you.' },
   { n: '03', title: 'You approve in one tap', body: 'Read the finished draft, tweak the copy, image, or timing, and approve. Once it is running, your daily lift is under ten minutes.' },
   { n: '04', title: 'It ships your whole funnel', body: 'Schedules the post to LinkedIn and builds a matching lead magnet on a live page that captures every signup onto your email list.' },
 ];

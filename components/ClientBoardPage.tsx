@@ -2047,7 +2047,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
         <div className="min-w-[240px] flex-1">
           <SectionHead
             eyebrow="All content"
-            title={foldCalendar ? deskPipelineTitle : (live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>in your voice.</Accent></>)}
+            title={foldCalendar ? deskPipelineTitle : (live ? <>Every piece, <Accent>one pool.</Accent></> : <>Every piece, <Accent>under your name.</Accent></>)}
             sub={live ? undefined : `Ideas, drafts and scheduled posts, each moving toward its slot. Nothing goes out until you approve it.`}
           />
         </div>
@@ -2830,7 +2830,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                     : 'Nothing needs you this week. We keep drafting behind the scenes, and new pieces land here for your review.')
                   : live
                   ? 'Handled. The rest of the buffer keeps publishing on schedule, and new drafts land here as they are written.'
-                  : 'Approved in your voice and queued to their slots. Next week is drafting behind the scenes, and nothing goes out until you approve it.'}
+                  : 'Approved and queued to their slots. Next week is already drafting, and nothing goes out until you approve it.'}
               </p>
               {total === 0 && waitingElsewhere > 0 && (
                 <button onClick={() => onGoContent()} className="mt-4 uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
@@ -5070,8 +5070,8 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
       ) : (
         <SectionHead
           eyebrow="Weekly to your list"
-          title={<>Your newsletter, <Accent>in your voice.</Accent></>}
-          sub={'One issue a week, written in your voice. Every lead your assessments capture gets it.'}
+          title={<>Your newsletter, <Accent>to a list you own.</Accent></>}
+          sub={'One issue a week, out under your name. Every lead your assessments capture gets it.'}
         />
       )}
 
@@ -5097,7 +5097,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false
                 )}
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                  {live ? 'Drafted ahead, shared here before each send' : 'Drafted in your voice, ready for your review'}
+                  {live ? 'Drafted ahead, shared here before each send' : 'Drafted and ready for your review'}
                 </span>
               </div>
             </div>

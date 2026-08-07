@@ -284,9 +284,9 @@ const WarmOutreachMock: React.FC = () => (
 );
 
 const PILLARS: Pillar[] = [
-  { name: 'Content', role: 'LinkedIn posts and carousels, drafted in your voice', render: () => <ContentMock /> },
+  { name: 'Content', role: 'LinkedIn posts and carousels, out every week', render: () => <ContentMock /> },
   { name: 'Lead magnet', role: 'An interactive asset that turns readers into named leads', render: () => <LeadMagnetMock /> },
-  { name: 'Newsletter', role: 'Your list hears from you, in your voice', render: () => <NewsletterMock /> },
+  { name: 'Newsletter', role: 'Your list hears from you every week, and the list stays yours', render: () => <NewsletterMock /> },
   { name: 'Follow-ups', role: 'Everyone who grabs the magnet gets a sequence', render: () => <FollowUpMock /> },
   { name: 'Warm outreach', role: 'Reactions to your posts become conversations', render: () => <WarmOutreachMock /> },
 ];

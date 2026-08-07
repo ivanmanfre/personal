@@ -3167,7 +3167,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     outbound: 'No warm follow-up found. People who engage the posts are left there.',
   };
   const PROJECTED_FALLBACK: Record<PillarKey, string> = {
-    content: 'Five posts a week, in your voice.',
+    content: 'A week of posts under your name.',
     inbound: 'A gated asset in your brand names every reader. A newsletter and a follow-up sequence keep them.',
     outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
   };
@@ -3379,7 +3379,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec" id="cs-ch-content" style={{ scrollMarginTop: 76 }}>
           <SecHead
             label={<>Chapter 01&nbsp;·&nbsp;Content</>}
-            title={<>Once daily, in your voice.</>}
+            title={<>A publishing week that builds something you own.</>}
           />
           <WinRows k="content" />
           {feedSpec.posts.length > 0 && (
@@ -3489,7 +3489,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {(newsletter || followUps) && (
             <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               {newsletter && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="Written from the same week's material, in your voice.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="Built from the same week's material and sent to a list you keep.">
                   <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
                 </Exhibit>
               )}
@@ -3584,8 +3584,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
             </div>
             <div>
-              <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets in their own voice, and bring the right buyers in.</div>
-              <p className="op-b">It&rsquo;s an inbound service we run for you: your posts and lead magnets written in your voice, out every week, and the readers who engage turned into a list you own. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
+              <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into content, lead magnets and an audience they own.</div>
+              <p className="op-b">It&rsquo;s an inbound service we run for you. Your posts and lead magnets go out every week, and every reader who engages lands on a list you keep. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>

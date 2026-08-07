@@ -291,7 +291,7 @@ const useMediaQuery = (query: string): boolean => {
 // Only vetted, defensible numbers live at the top of the page.
 const METRICS = [
   { fig: '100+', label: 'Systems built', receipt: 'Designed and run by me, including the engine behind my own LinkedIn.' },
-  { fig: '5+', unit: '/wk', label: 'Posts in your voice', receipt: 'Posts, carousels, video, lead magnets, and a weekly newsletter, out without you touching them.' },
+  { fig: '5+', unit: '/wk', label: 'Posts published', receipt: 'Posts, carousels, video, lead magnets, and a weekly newsletter, all feeding an audience you own.' },
   { fig: '0', unit: 'hrs/wk', label: 'Your time', receipt: 'One voice intake at the start. After that it posts on its own and you read the replies.' },
 ];
 
@@ -451,11 +451,10 @@ const EngineSection: React.FC = () => (
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
-          You record your voice once. The engine decides what to post, writes it
-          in your voice across every format, and runs each piece through an
-          anti-slop QA pass. Then it schedules and publishes daily on its own,
-          the lead magnets pull in leads, and real performance feeds back so it
-          sharpens what it posts next. Nothing waits on you.
+          You record your voice once. From there we handle the publishing week
+          end to end, every format QA&rsquo;d against an anti-slop pass before it
+          goes out. The lead magnets pull in leads onto a list you own, and real
+          performance feeds back so next week&rsquo;s material gets sharper.
         </p>
       </motion.div>
 
@@ -675,7 +674,7 @@ const FUTURES = {
   },
   with: {
     label: 'WITH IT',
-    lines: ['A post goes out every day, in your voice, without you lifting a finger.', 'A founder you never met books a call because your last post landed.', 'Lead magnets and carousels ship on their own. The pipeline stays full.', 'You build an audience and an email list that are yours to keep, so the inbound keeps compounding.'],
+    lines: ['A post goes out every day under your name and the audience keeps growing.', 'A founder you never met books a call because your last post landed.', 'Lead magnets and carousels keep feeding the list you own. The pipeline stays full.', 'You build an audience and an email list that are yours to keep, so the inbound keeps compounding.'],
   },
 };
 
@@ -743,7 +742,7 @@ const BeforeAfterSection: React.FC = () => (
 // ─── Comparison: Why not just hire a ghostwriter? ────────────────────────────
 const COMPARE_COLS = ['Your system', 'Ghostwriter', 'In-house hire', 'DIY'] as const;
 const COMPARE_ROWS: { label: string; cells: string[] }[] = [
-  { label: 'Who writes it', cells: ['An engine in your voice', 'One writer', 'One hire', 'You'] },
+  { label: 'Who writes it', cells: ['Us, under your name', 'One writer', 'One hire', 'You'] },
   { label: 'Sounds like you', cells: ['Yes, anti-slop QA', 'Sometimes', 'Sometimes', 'Yes'] },
   { label: 'Formats', cells: ['Posts, carousels, video, lead magnets, newsletter', 'Posts', 'Posts', 'Whatever you manage'] },
   { label: 'Owned audience + list', cells: ['Yes, yours to keep', 'No', 'No', 'Yes'] },
@@ -958,7 +957,7 @@ const ROICalculator: React.FC = () => {
                 </div>
               </div>
               <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B', marginTop: '24px' }}>
-                The engine does more, posts, carousels, video, lead magnets, and a weekly newsletter, daily and in your voice, and it does not need an hour of your week.
+                We do more than that, posts, carousels, video, lead magnets, and a weekly newsletter, all of it building an audience you own.
               </p>
             </div>
           </motion.div>
@@ -1132,7 +1131,7 @@ const ENGINE_CASES = [
     summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
     metrics: [
       { v: '5', l: 'new clients a month from the system' },
-      { v: 'Live', l: 'gated funnel, on autopilot' },
+      { v: 'Live', l: 'gated funnel feeding a list they own' },
     ],
   },
 ];
@@ -1436,8 +1435,8 @@ const OfferSection: React.FC = () => (
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.25rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto' }}>
-          Book the fit call. I'll show you exactly what the engine would write for
-          your agency, in your voice, even if we never work together.
+          Book the fit call. I'll show you the first week we'd publish under
+          your name, even if we never work together.
         </p>
       </motion.div>
 
@@ -1464,7 +1463,7 @@ const OfferSection: React.FC = () => (
             </div>
           ))}
         </div>
-        <div style={{ ...T.mono, marginTop: '14px', color: '#5A5752' }}>Real output, in your voice</div>
+        <div style={{ ...T.mono, marginTop: '14px', color: '#5A5752' }}>Real output, ready to judge</div>
       </motion.div>
 
       <motion.div {...inView} className="flex justify-center mt-9">
@@ -1478,7 +1477,7 @@ const OfferSection: React.FC = () => (
 
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
-  'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, lead magnets, and a weekly newsletter, all QA’d before they go out.',
+  'Your posts, carousels, video, lead magnets, and a weekly newsletter all go out under your name, QA’d before they go out.',
   "It's the same system already running for operators like Agency Operators and Lemonade, not a demo.",
   'You build an audience and an email list that live in your accounts and are yours for good.',
 ];
@@ -1534,7 +1533,7 @@ const FAQS = [
   { q: 'What do I own?', a: "You own the audience, the content, and the email list, and they all live in your accounts. The engine is fully managed, so there's nothing for you to run, host, or maintain." },
   { q: 'What does it cost?', a: "One flat monthly rate that covers building and running the whole engine, scoped to your channels and volume on the fit call. No build fee, no long lock-in, and the audience and list are yours to keep." },
   { q: 'What do I actually have to do?', a: 'Record a voice intake once. After that, nothing. It writes, clears its own QA, and publishes on schedule, and you read the replies that come in. Your board is there if you ever want to change a line, and nothing stalls if you never open it.' },
-  { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a fully managed engine that writes the posts, builds the lead magnets, and ships every format daily in your voice. You keep the audience and list, with nothing to manage.' },
+  { q: 'How is this different from a ghostwriter or an agency?', a: 'We produce and publish every format under your name, the posts, the lead magnets, the newsletter, out on schedule. The audience and the list live in your accounts and stay yours.' },
   { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },
 ];
 

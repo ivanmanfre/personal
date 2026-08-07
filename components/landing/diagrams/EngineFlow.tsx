@@ -5,7 +5,7 @@ import { DIAGRAM, prefersReducedMotion } from './tokens';
 // ─── EngineFlow v5 — a readable MAP of how the system functions ──────────────
 // Grounded in Ivan's own walkthrough (public/content-system-walkthrough.md):
 // the system is a SELF-IMPROVING LOOP, not a linear pipeline. One idea →
-// written in your voice → anti-slop QA → you approve → it schedules itself →
+// written under your name → anti-slop QA → you approve → it schedules itself →
 // publishes daily → lead magnets capture leads → and performance feeds back so
 // it learns what lands and gets sharper. The feedback loop is the whole point.
 //
@@ -27,7 +27,7 @@ const BOX_H = 42;
 type Stage = { n: string; x: number; w: number; label: string; caption: string; signature?: boolean };
 const STAGES: Stage[] = [
   { n: '1', x: 16, w: 112, label: 'Idea engine', caption: 'decides what to post' },
-  { n: '2', x: 196, w: 104, label: 'Create', caption: 'written in your voice' },
+  { n: '2', x: 196, w: 104, label: 'Create', caption: 'written under your name' },
   { n: '3', x: 360, w: 120, label: 'Anti-slop QA', caption: 'voice-matched, no slop', signature: true },
   { n: '4', x: 540, w: 116, label: 'You approve', caption: 'about 1 hr a week' },
   { n: '5', x: 716, w: 96, label: 'Schedule', caption: 'fills the calendar' },
@@ -66,7 +66,7 @@ const StageBox: React.FC<{ s: Stage }> = ({ s }) => (
 );
 
 const Scene: React.FC<{ loop: boolean }> = ({ loop }) => (
-  <svg viewBox="0 0 1080 380" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="A map of how the content system works as a self-improving loop: an idea engine decides what to post, the system writes it in your voice as a post, carousel, video or lead magnet, runs it through an anti-slop QA pass, you approve it in about 15 minutes a week, it schedules itself and publishes daily, the lead magnets capture and qualify leads, and real performance feeds back so the system learns what lands.">
+  <svg viewBox="0 0 1080 380" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="A map of how the content system works as a self-improving loop: an idea engine decides what to post, the system writes it under your name as a post, carousel, video or lead magnet, runs it through an anti-slop QA pass, you approve it in about 15 minutes a week, it schedules itself and publishes daily, the lead magnets capture and qualify leads, and real performance feeds back so the system learns what lands.">
     {/* return loop (the self-improving feedback) — drawn distinctly, labelled */}
     <path
       d={`M ${cx(PUBLISH)} ${SPINE + BOX_H / 2} C ${cx(PUBLISH) + 96} ${SPINE + 60} ${cx(PUBLISH) + 96} 320 ${cx(PUBLISH)} 320 L ${cx(IDEA)} 320 C ${cx(IDEA) - 96} 320 ${cx(IDEA) - 96} ${SPINE + 30} ${cx(IDEA)} ${SPINE + BOX_H / 2 + 7}`}

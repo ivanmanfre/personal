@@ -10,7 +10,7 @@ export default function ContentSystemPage() {
   useMetadata({
     title: 'Inbound Service | Manfredi',
     description:
-      'An always-on inbound service that posts daily in your voice, refuses to publish AI slop, and turns the readers who engage into named leads in your inbox.',
+      'An inbound service that builds you an audience you own, refuses to publish AI slop, and turns the readers who engage into named leads in your inbox.',
     canonical: PRODUCT_URL,
   });
 

@@ -34,7 +34,7 @@ const TOPICS = [
   {
     title: 'Eat your own cooking',
     body:
-      'How my content engine ships 5 posts a week with 30 minutes of weekly review — applied case study of the methodology to itself.',
+      'The audience-building system I run for agency owners, applied to my own feed as a case study.',
   },
   {
     title: 'When NOT to deploy AI',

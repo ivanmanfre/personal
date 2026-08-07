@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 //
 // One idea flows left → right through the real production engine: four sources
 // feed the Content Brain, a six-step pipeline drafts, QA-checks and de-slops it
-// in your voice, it ships on schedule with nothing waiting on you, and it splits
+// under your name, it ships on schedule with nothing waiting on you, and it splits
 // into a scheduled LinkedIn post and a self-publishing lead magnet that fans out
 // into a landing page, resource page, cover, email capture and booked calls.
 // Top performers loop back into the Brain.
@@ -61,7 +61,7 @@ const STEPS: Record<string, StepDetail> = {
   },
   write: {
     kicker: 'Pipeline · 4',
-    title: 'Drafted in your voice',
+    title: 'Written under your name',
     body: 'Trained on your voice and built on your real conversations, it writes the full post so it sounds like you. You can edit any word before it ships.',
     shot: { src: '/content-system/ui/editor.webp', alt: 'The post editor: edit a draft’s copy, image, and schedule' },
   },
@@ -230,7 +230,7 @@ export const SystemFlowDiagram: React.FC = () => {
           viewBox="0 26 1440 560"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post in your voice, runs anti-AI-patterns QA and a de-slop lint; the finished draft ships on schedule with nothing waiting on you; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
+          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post under your name, runs anti-AI-patterns QA and a de-slop lint; the finished draft ships on schedule with nothing waiting on you; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
         >
           <defs>
             <filter id="sfd-glow" x="-80%" y="-80%" width="260%" height="260%">

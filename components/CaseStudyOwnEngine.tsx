@@ -29,7 +29,7 @@ function timeAgo(iso: string): string {
 
 const CaseStudyOwnEngine: React.FC = () => {
   useMetadata({
-    title: 'How this site\'s content engine ships 5+ posts a week | Manfredi',
+    title: 'How a founder ends up with an audience they own | Manfredi',
     description:
       'A live case study of the AI content engine applied to its own feed. Real metrics, honest tradeoffs.',
     canonical: 'https://ivanmanfredi.com/case-studies/own-content-engine',
@@ -298,7 +298,7 @@ const CaseStudyOwnEngine: React.FC = () => {
                   04 · Repeatable enough to encode
                 </p>
                 <p className="text-ink-soft leading-relaxed">
-                  Five posts a week, every week. Same shape, same review queue, same publishing surface. The pattern repeats often enough that automation compounds.
+                  The same shape runs every week through one review queue and one publishing surface, and the audience it builds keeps compounding.
                 </p>
               </div>
             </div>

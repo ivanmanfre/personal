@@ -354,7 +354,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               placeholder={type === 'carousel' ? 'e.g. Why hiring more people made your firm slower' : "e.g. Stop hiring to fix a process you haven't automated yet"}
               className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
             />
-            <p className="mt-1.5 text-[12px] text-[var(--ds-faint)]">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
+            <p className="mt-1.5 text-[12px] text-[var(--ds-faint)]">One line is enough. The hook, body{type === 'single_image' ? ', and image' : ''} come back ready to post.</p>
           </div>
           {type === 'carousel' ? (
             <div>
