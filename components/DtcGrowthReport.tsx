@@ -175,6 +175,7 @@ function ProfitGapSpread({
   headingFont,
   ctaHref,
   adsEmpty,
+  metaSweepZero,
 }: {
   seedAov: number | null;
   sourceNote: string;
@@ -184,6 +185,9 @@ function ProfitGapSpread({
   headingFont: string;
   ctaHref: string;
   adsEmpty: boolean;
+  // audit v3: true only when a brand-wide meta_sweep proved the zero. Gates the wording so a
+  // pre-v3 row (no sweep) keeps the exact original sentence, byte-identical to the floor.
+  metaSweepZero?: boolean;
 }) {
   const [aov, setAov] = useState(seedAov ?? 68);
   // seed_aov is number|null and the 68 above is a placeholder, so every "seeded from your
@@ -296,7 +300,9 @@ function ProfitGapSpread({
             </h2>
             <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: surface, opacity: 0.8 }}>
               {adsEmpty
-                ? 'This is the first number RISE looks at. The public Meta Ad Library shows no active ads on your brand right now, so the seed carries $0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.'
+                ? metaSweepZero
+                  ? 'This is the first number RISE looks at. The public Meta Ad Library shows zero ads on record for your brand, so the seed carries $0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.'
+                  : 'This is the first number RISE looks at. The public Meta Ad Library shows no active ads on your brand right now, so the seed carries $0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.'
                 : seeded
                   ? 'This is the first number RISE looks at on any brand. AOV is seeded from your public catalog. CAC starts at $0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.'
                   : 'This is the first number RISE looks at on any brand. AOV starts at a placeholder, so type your real number in. CAC starts at $0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.'}
@@ -531,6 +537,668 @@ function ProfitGapSpread({
   );
 }
 
+// ══ audit v3 additions ═══════════════════════════════════════════════════════════════
+// Everything below is ADDITIVE and presence-gated. A pre-v3 row carries no bucket, no
+// google block, no meta_sweep, no competitors and no screenshots, so every surface here is
+// born-absent and the old render is byte-identical to the floor.
+
+// Dates are the whole argument of the evidence spread, so they are parsed as calendar days
+// in UTC and never re-derived from a local clock: a rendered age is always (read date minus
+// record date), which is what the source itself supports.
+function isoDay(s?: string | null): string | null {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+function dayMs(s?: string | null): number | null {
+  const d = isoDay(s);
+  if (!d) return null;
+  const [y, mo, da] = d.split('-').map(Number);
+  return Date.UTC(y, mo - 1, da);
+}
+function longDay(s?: string | null): string | null {
+  const ms = dayMs(s);
+  if (ms == null) return null;
+  return new Date(ms).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+// b minus a in whole days. Null when either end is unreadable, so an age is never guessed.
+function daysBetween(a?: string | null, b?: string | null): number | null {
+  const A = dayMs(a);
+  const B = dayMs(b);
+  if (A == null || B == null) return null;
+  return Math.round((B - A) / 86400000);
+}
+// A capped read can only ever state a floor. capped=true renders "at least N", never N.
+function countParts(n: number, capped?: boolean): { pre: string | null; n: string } {
+  return { pre: capped ? 'at least' : null, n: String(n) };
+}
+
+// Image fallback chain for an ad creative: stored copy, then the source image, then the
+// preview. A preview that is a script endpoint (Google serves some video previews as
+// content.js) is not an image and is refused here rather than rendered as a broken tile.
+function creativeImageSrc(c: any): string | null {
+  for (const u of [c?.stored_url, c?.image_url, c?.preview_url]) {
+    if (typeof u === 'string' && u.length > 0 && !/\.js(\?|$)/i.test(u)) return u;
+  }
+  return null;
+}
+
+// One evidence tile. No src, or a src that fails to decode, falls through to the caller's
+// dated text tile: never a broken img, never a placeholder box.
+function EvidenceImg({
+  src,
+  alt,
+  ratio,
+  fallback,
+}: {
+  src: string | null;
+  alt: string;
+  ratio: string;
+  fallback: React.ReactNode;
+}) {
+  const [failed, setFailed] = useState(false);
+  const usable = !!src && !failed;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: ratio,
+        overflow: 'hidden',
+        borderRadius: 3,
+        background: 'rgba(255,255,255,.05)',
+        border: '1px solid rgba(255,255,255,.14)',
+      }}
+    >
+      {usable ? (
+        <img
+          src={src as string}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
+        />
+      ) : (
+        fallback
+      )}
+    </div>
+  );
+}
+
+// ── Bucket contract ────────────────────────────────────────────────────────────────────
+// Labels are LOCKED copy. `cells` drives a two-square glyph that repeats on every chip and
+// in the week-one panel, so the division of labor is drawn wherever it is named.
+type BucketKey = 'rise' | 'split' | 'yours' | 'asset';
+type Cell = 'accent' | 'ink' | 'open';
+const BUCKETS: Record<BucketKey, { label: string; cells: [Cell, Cell]; dashed?: boolean }> = {
+  rise: { label: 'RISE takes this over', cells: ['accent', 'accent'] },
+  split: { label: 'Split', cells: ['accent', 'open'] },
+  yours: { label: 'On your side', cells: ['open', 'open'], dashed: true },
+  asset: { label: 'Working asset', cells: ['ink', 'ink'] },
+};
+const BUCKET_ORDER: BucketKey[] = ['rise', 'split', 'yours', 'asset'];
+function bucketOf(f: any): BucketKey | null {
+  const b = f?.bucket;
+  return b === 'rise' || b === 'split' || b === 'yours' || b === 'asset' ? b : null;
+}
+function BucketGlyph({ b, accent, ink, size = 8 }: { b: BucketKey; accent: string; ink: string; size?: number }) {
+  const cfg = BUCKETS[b];
+  return (
+    <span className="inline-flex items-center" style={{ gap: 3 }} aria-hidden="true">
+      {cfg.cells.map((c, i) => (
+        <span
+          key={i}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: 1.5,
+            background: c === 'accent' ? accent : c === 'ink' ? ink : 'transparent',
+            border: c === 'open' ? `1px ${cfg.dashed ? 'dashed' : 'solid'} ${ink}66` : undefined,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ── Evidence-first dark spread ─────────────────────────────────────────────────────────
+// A sibling of the Profit Gap band: same ink-on-surface flip, same drawn-first discipline.
+// Three instruments, each one dated at the source. Nothing here states a present-tense ad
+// status: a creative carries a first-shown date and a last-shown date, and the gap between
+// a date and the read date is stated as a measured number of days.
+function AdEvidenceSpread({
+  google,
+  metaPage,
+  metaSweep,
+  competitors,
+  accent,
+  ink,
+  surface,
+  headingFont,
+}: {
+  google: any;
+  metaPage: any;
+  metaSweep: any;
+  competitors: any;
+  accent: string;
+  ink: string;
+  surface: string;
+  headingFont: string;
+}) {
+  const g = google?.status === 'present' && google.data ? google.data : null;
+  // Meta zero is provable two ways: the brand page read, and the brand-wide keyword sweep.
+  // Either one alone is honest; the statement below names whichever was actually read.
+  const sweep = metaSweep?.status === 'empty' && metaSweep.data ? metaSweep.data : null;
+  const pageZero = metaPage?.status === 'empty';
+  const metaReadDate = longDay(sweep?.checked_at || metaPage?.fetched_at);
+  const showMeta = (pageZero || sweep) && metaReadDate;
+  const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
+  const compCreatives: any[] = Array.isArray(comp?.creatives) ? comp.creatives.filter((c: any) => c && c.advertiser) : [];
+
+  if (!g && !showMeta && !compCreatives.length) return null;
+
+  const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
+  const gReadLong = longDay(g?.checked_at || google?.fetched_at);
+  const newestAge = g ? daysBetween(g.newest_first_shown, gRead) : null;
+  const lastAge = g ? daysBetween(g.latest_last_shown, gRead) : null;
+
+  // Format split. Segments are drawn against their own sum, which is the count on record.
+  const fmts: Array<{ k: string; label: string; v: number; fill: string }> = [];
+  if (g?.formats) {
+    const F = g.formats;
+    if (typeof F.text === 'number' && F.text > 0) fmts.push({ k: 'text', label: 'Text', v: F.text, fill: 'rgba(255,255,255,.26)' });
+    if (typeof F.image === 'number' && F.image > 0) fmts.push({ k: 'image', label: 'Image', v: F.image, fill: 'rgba(255,255,255,.52)' });
+    if (typeof F.video === 'number' && F.video > 0) fmts.push({ k: 'video', label: 'Video', v: F.video, fill: 'rgba(255,255,255,.80)' });
+  }
+  const fmtTotal = fmts.reduce((a, b) => a + b.v, 0);
+
+  // The dated strip: one bar per sampled creative, placed by its own first-shown and
+  // last-shown dates on a shared axis that ends on the day the record was read.
+  const gCreatives: any[] = Array.isArray(g?.creatives) ? g.creatives.slice(0, 6) : [];
+  const spanStart = dayMs(g?.oldest_first_shown) ?? Math.min(...gCreatives.map((c) => dayMs(c.first_shown) ?? Infinity));
+  const spanEnd = dayMs(gRead) ?? Math.max(...gCreatives.map((c) => dayMs(c.last_shown) ?? -Infinity));
+  const spanOk = Number.isFinite(spanStart) && Number.isFinite(spanEnd) && spanEnd > spanStart;
+  const pos = (iso?: string | null) => {
+    const m = dayMs(iso);
+    if (m == null || !spanOk) return null;
+    return Math.max(0, Math.min(100, ((m - (spanStart as number)) / ((spanEnd as number) - (spanStart as number))) * 100));
+  };
+  const fmtFill = (f: string) => (f === 'video' ? 'rgba(255,255,255,.80)' : f === 'image' ? 'rgba(255,255,255,.52)' : 'rgba(255,255,255,.26)');
+  // Year ticks inside the drawn span, so the strip reads as a calendar and not a bar chart.
+  const yearTicks: Array<{ y: number; p: number }> = [];
+  if (spanOk) {
+    const y0 = new Date(spanStart as number).getUTCFullYear();
+    const y1 = new Date(spanEnd as number).getUTCFullYear();
+    for (let y = y0 + 1; y <= y1; y++) {
+      const p = pos(`${y}-01-01`);
+      if (p != null && p > 2 && p < 98) yearTicks.push({ y, p });
+    }
+  }
+
+  // Competitor recency axis: left is the oldest sampled start date, right is the read date.
+  const compAges = compCreatives.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
+  const maxAge = compAges.length ? Math.max(...compAges, newestAge ?? 0) : newestAge ?? 0;
+  const axisMax = Math.max(7, Math.ceil((maxAge + 4) / 5) * 5);
+  const agePos = (d: number) => Math.max(0, Math.min(100, (1 - d / axisMax) * 100));
+  const fresherThanBrand = newestAge != null ? compAges.filter((a) => a < newestAge).length : null;
+  const compReadLong = longDay(comp?.checked_at || competitors?.fetched_at);
+  const gCount = g && typeof g.ads_found === 'number' ? countParts(g.ads_found, g.capped) : null;
+
+  const eyebrow = (t: string) => (
+    <div className="flex items-center gap-3 mb-6">
+      <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: 'rgba(255,255,255,.35)' }} />
+      <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: surface, opacity: 0.65 }}>{t}</span>
+    </div>
+  );
+
+  const Stat = ({ pre, n, unit, label }: { pre?: string | null; n: string; unit?: string; label: string }) => (
+    <div>
+      {pre ? (
+        <div className="text-[0.66rem] font-bold uppercase tracking-[0.22em]" style={{ color: surface, opacity: 0.55 }}>{pre}</div>
+      ) : null}
+      <div className="flex items-baseline gap-2">
+        <span
+          className="font-extrabold tabular-nums leading-none tracking-[-0.03em]"
+          style={{ fontFamily: headingFont, fontSize: 'clamp(2.9rem, 6vw, 4.5rem)', color: surface }}
+        >
+          {n}
+        </span>
+        {unit ? (
+          <span className="text-[0.9rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.6 }}>{unit}</span>
+        ) : null}
+      </div>
+      <div className="mt-2 text-[0.86rem] leading-snug" style={{ color: surface, opacity: 0.62, maxWidth: '22ch' }}>{label}</div>
+    </div>
+  );
+
+  return (
+    <section aria-label="Public ad records" data-densepanel="1" data-adspread="1" style={{ background: ink, color: surface }}>
+      <div className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-20 sm:py-24">
+        {eyebrow('Public ad records')}
+        <div className="grid lg:grid-cols-12 gap-y-6 lg:gap-x-12 items-end">
+          <div className="lg:col-span-8">
+            <h2
+              className="font-extrabold leading-[0.98] tracking-[-0.02em]"
+              style={{ fontFamily: headingFont, fontSize: 'clamp(2.4rem, 6.4vw, 4.6rem)', color: surface }}
+            >
+              {g && gCount ? (
+                <>
+                  {gCount.pre ? `${gCount.pre} ` : ''}
+                  {gCount.n} on Google.{' '}
+                </>
+              ) : null}
+              {showMeta ? <span style={{ color: accent }}>Zero on Meta.</span> : null}
+            </h2>
+          </div>
+          <div className="lg:col-span-4">
+            <p className="text-[0.98rem] leading-relaxed" style={{ color: surface, opacity: 0.7 }}>
+              {gReadLong && metaReadDate
+                ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
+                : `A public ad archive, read on ${gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
+            </p>
+          </div>
+        </div>
+
+        {/* ── Instrument 1: the dated Google strip ───────────────────────────────── */}
+        {g ? (
+          <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-9">
+              <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+                Google Ads Transparency
+              </span>
+              {g.advertiser ? (
+                <span className="text-[0.86rem]" style={{ color: surface, opacity: 0.62 }}>
+                  {clean(String(g.advertiser))}{g.region ? `, region ${g.region}` : ''}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-y-9 sm:gap-x-8">
+              {gCount ? <Stat pre={gCount.pre} n={gCount.n} label="creatives on record for this advertiser" /> : null}
+              {newestAge != null && g.newest_first_shown ? (
+                <Stat n={String(newestAge)} unit="days" label={`since the newest first-shown date, ${isoDay(g.newest_first_shown)}`} />
+              ) : null}
+              {lastAge != null && g.latest_last_shown ? (
+                <Stat n={String(lastAge)} unit="days" label={`since the most recent last-shown date, ${isoDay(g.latest_last_shown)}`} />
+              ) : null}
+            </div>
+
+            {/* Format split, drawn against its own sum. */}
+            {fmts.length > 0 && fmtTotal > 0 ? (
+              <div className="mt-12">
+                <div className="text-[0.62rem] font-bold uppercase tracking-[0.24em] mb-3" style={{ fontFamily: headingFont, color: surface, opacity: 0.5 }}>
+                  Formats on record
+                </div>
+                <div className="cedt-fmtbar" aria-hidden="true">
+                  {fmts.map((f) => (
+                    <span key={f.k} style={{ width: `${(f.v / fmtTotal) * 100}%`, background: f.fill }} />
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+                  {fmts.map((f) => (
+                    <span key={f.k} className="inline-flex items-center gap-2.5">
+                      <span style={{ width: 11, height: 11, borderRadius: 2, background: f.fill, display: 'inline-block' }} />
+                      <span className="text-[0.8rem] uppercase tracking-[0.14em]" style={{ color: surface, opacity: 0.6 }}>{f.label}</span>
+                      <span className="text-[1.05rem] font-bold tabular-nums" style={{ fontFamily: headingFont, color: surface }}>{f.v}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* The strip: each sampled creative drawn between its own two dates. */}
+            {spanOk && gCreatives.length > 0 ? (
+              <div className="mt-14">
+                <div className="cedt-gan cedt-gan-head" aria-hidden="true">
+                  <span />
+                  <span className="trk">
+                    {yearTicks.map((t) => (
+                      <span key={t.y} className="yr" style={{ left: `${t.p}%` }}>{t.y}</span>
+                    ))}
+                  </span>
+                </div>
+                {gCreatives.map((c, i) => {
+                  const a = pos(c.first_shown);
+                  const b = pos(c.last_shown);
+                  const left = a == null ? null : a;
+                  const width = a == null || b == null ? null : Math.max(1.2, b - a);
+                  return (
+                    <div key={i} className="cedt-gan">
+                      <span className="lbl">{String(c.format || 'ad')}</span>
+                      <span className="trk">
+                        {left != null && width != null ? (
+                          <span className="bar" style={{ left: `${left}%`, width: `${width}%`, background: fmtFill(String(c.format)) }} />
+                        ) : null}
+                        <span className="dts">
+                          {isoDay(c.first_shown) ? <b>{isoDay(c.first_shown)}</b> : null}
+                          {isoDay(c.last_shown) ? <b>{isoDay(c.last_shown)}</b> : null}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="cedt-gan cedt-gan-foot">
+                  <span />
+                  <span className="trk">
+                    <b style={{ left: 0 }}>{isoDay(g.oldest_first_shown) || ''}</b>
+                    <b style={{ right: 0 }}>{gRead || ''}</b>
+                  </span>
+                </div>
+                <p className="mt-6 text-[0.86rem] leading-relaxed" style={{ color: surface, opacity: 0.55, maxWidth: '62ch' }}>
+                  {`${gCreatives.length} of those creatives, drawn between their own first-shown and last-shown dates.`}
+                </p>
+              </div>
+            ) : null}
+
+            {/* The creatives themselves. Imageless ones stay in the strip as dated tiles. */}
+            {gCreatives.length > 0 ? (
+              <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {gCreatives.map((c, i) => {
+                  const src = creativeImageSrc(c);
+                  const first = isoDay(c.first_shown);
+                  const fallback = (
+                    <span
+                      className="absolute inset-0 flex flex-col justify-end p-2.5"
+                      style={{ background: 'rgba(255,255,255,.05)' }}
+                    >
+                      <span className="text-[0.6rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>
+                        {String(c.format || 'ad')}
+                      </span>
+                      {first ? (
+                        <span className="text-[0.72rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{first}</span>
+                      ) : null}
+                    </span>
+                  );
+                  return (
+                    <figure key={i} style={{ margin: 0 }}>
+                      <EvidenceImg src={src} alt={`${String(c.format || 'ad')} creative first shown ${first || ''}`} ratio="4 / 3" fallback={fallback} />
+                      <figcaption className="mt-2 text-[0.6rem] font-bold uppercase tracking-[0.14em] tabular-nums" style={{ fontFamily: headingFont, color: surface, opacity: 0.55 }}>
+                        {String(c.format || 'ad')}
+                        {first ? <span className="block mt-0.5" style={{ opacity: 0.85 }}>{first}</span> : null}
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Instrument 2: the brand-wide Meta zero ─────────────────────────────── */}
+        {showMeta ? (
+          <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+            <div className="grid lg:grid-cols-12 gap-y-8 lg:gap-x-12 items-start">
+              <div className="lg:col-span-4">
+                <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+                  Meta Ad Library
+                </span>
+                <div
+                  className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
+                  style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
+                >
+                  0
+                </div>
+              </div>
+              <div className="lg:col-span-8">
+                <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
+                  {`Meta's Ad Library shows zero ads for this brand as of ${metaReadDate}.`}
+                </p>
+                <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
+                  {pageZero ? (
+                    <div className="cedt-mrow">
+                      <span className="nm">Brand page read</span>
+                      <span className="vl">0 ads returned</span>
+                      <span className="dt">{metaReadDate}</span>
+                    </div>
+                  ) : null}
+                  {sweep ? (
+                    <div className="cedt-mrow">
+                      <span className="nm">
+                        {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
+                      </span>
+                      <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to this brand`}</span>
+                      <span className="dt">{longDay(sweep.checked_at) || metaReadDate}</span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Instrument 3: the counterpoint ─────────────────────────────────────── */}
+        {compCreatives.length > 0 ? (
+          <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 mb-8">
+              <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+                The same keywords, other advertisers
+              </span>
+              {Array.isArray(comp?.keywords) ? (
+                <span className="flex flex-wrap gap-2">
+                  {comp.keywords.slice(0, 5).map((k: string) => (
+                    <span
+                      key={k}
+                      className="text-[0.72rem] font-semibold px-2.5 py-1 rounded-full"
+                      style={{ border: '1px solid rgba(255,255,255,.28)', color: surface, opacity: 0.75 }}
+                    >
+                      {clean(k)}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-y-9 sm:gap-x-8">
+              {typeof comp?.advertisers_seen === 'number' ? (
+                <Stat {...countParts(comp.advertisers_seen, comp.capped)} label="separate advertisers seen on those keywords" />
+              ) : null}
+              {typeof comp?.sampled_items === 'number' ? (
+                <Stat {...countParts(comp.sampled_items, comp.capped)} label="ads read across the sweep" />
+              ) : null}
+              {compAges.length > 0 ? (
+                <Stat n={String(Math.min(...compAges))} unit="days" label="since the most recent competitor start date" />
+              ) : null}
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {compCreatives.slice(0, 6).map((c, i) => {
+                const src = creativeImageSrc(c);
+                const start = isoDay(c.start_date);
+                const fallback = (
+                  <span className="absolute inset-0 flex flex-col justify-end p-2.5" style={{ background: 'rgba(255,255,255,.05)' }}>
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>ad</span>
+                    {start ? <span className="text-[0.72rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{start}</span> : null}
+                  </span>
+                );
+                return (
+                  <figure key={i} style={{ margin: 0 }}>
+                    <EvidenceImg src={src} alt={`Ad from ${clean(String(c.advertiser))}`} ratio="4 / 5" fallback={fallback} />
+                    <figcaption className="mt-2">
+                      {typeof c.age_days === 'number' ? (
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="font-extrabold tabular-nums leading-none" style={{ fontFamily: headingFont, fontSize: '1.55rem', color: surface }}>{c.age_days}</span>
+                          <span className="text-[0.62rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.55 }}>days</span>
+                        </span>
+                      ) : null}
+                      <span className="block mt-1 text-[0.78rem] font-bold leading-tight" style={{ color: surface, opacity: 0.9 }}>{clean(String(c.advertiser))}</span>
+                      {start ? <span className="block mt-0.5 text-[0.68rem] tabular-nums" style={{ color: surface, opacity: 0.5 }}>{start}</span> : null}
+                      {c.keyword ? (
+                        <span className="block mt-1.5 text-[0.6rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: accent, opacity: 0.85 }}>{clean(String(c.keyword))}</span>
+                      ) : null}
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+
+            {/* Shared recency axis: the counterpoint, drawn. */}
+            {compAges.length > 0 ? (
+              <div className="mt-14">
+                <div className="text-[0.62rem] font-bold uppercase tracking-[0.24em] mb-4" style={{ fontFamily: headingFont, color: surface, opacity: 0.5 }}>
+                  Start dates, drawn back from the read
+                </div>
+                <div className="cedt-axis">
+                  {compCreatives.map((c, i) =>
+                    typeof c.age_days === 'number' ? (
+                      <span key={i} className="dot" style={{ left: `${agePos(c.age_days)}%` }} title={`${clean(String(c.advertiser))}, ${c.age_days} days`} />
+                    ) : null,
+                  )}
+                  {newestAge != null ? (
+                    <span className="mkr" style={{ left: `${agePos(newestAge)}%`, background: accent }} />
+                  ) : null}
+                  <span className="ln" />
+                  <span className="end l">{`${axisMax} days back`}</span>
+                  <span className="end r">{compReadLong ? `read ${compReadLong}` : 'read date'}</span>
+                  {newestAge != null ? (
+                    <span className="mkl" style={{ left: `${agePos(newestAge)}%`, color: accent }}>{`your newest, ${newestAge} days`}</span>
+                  ) : null}
+                </div>
+                {fresherThanBrand != null && newestAge != null ? (
+                  <p className="mt-7 text-[1.05rem] leading-relaxed" style={{ color: surface, opacity: 0.82, maxWidth: '66ch' }}>
+                    {`${fresherThanBrand} of the ${compCreatives.length} competitor creatives sampled carry a start date more recent than your newest first-shown date, which is ${newestAge} days back.`}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+// ── Week-one panel: the split of labor, drawn ──────────────────────────────────────────
+// Closes the findings chapter. Titles only: each finding already carries its own verbatim
+// week_one line above, so this panel summarizes rather than repeats.
+function WeekOnePanel({
+  findings,
+  accent,
+  ink,
+  surface,
+  headingFont,
+}: {
+  findings: any[];
+  accent: string;
+  ink: string;
+  surface: string;
+  headingFont: string;
+}) {
+  const byBucket: Record<BucketKey, any[]> = { rise: [], split: [], yours: [], asset: [] };
+  let total = 0;
+  for (const f of findings) {
+    const b = bucketOf(f);
+    if (b) {
+      byBucket[b].push(f);
+      total++;
+    }
+  }
+  if (total === 0) return null;
+  const present = BUCKET_ORDER.filter((b) => byBucket[b].length > 0);
+  const segFill = (b: BucketKey) =>
+    b === 'rise' ? accent : b === 'split' ? `repeating-linear-gradient(45deg, ${accent} 0 3px, ${ink}14 3px 8px)` : b === 'asset' ? ink : `${ink}0f`;
+
+  const column = (b: BucketKey) => (
+    <div>
+      <div className="flex items-center gap-2.5">
+        <BucketGlyph b={b} accent={accent} ink={ink} size={9} />
+        <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+          {BUCKETS[b].label}
+        </span>
+      </div>
+      <div
+        className="mt-3 font-extrabold tabular-nums leading-none"
+        style={{ fontFamily: headingFont, fontSize: 'clamp(2.75rem, 6vw, 4rem)', color: b === 'rise' ? ink : ink, opacity: b === 'yours' ? 0.55 : 1 }}
+      >
+        {byBucket[b].length}
+      </div>
+      <ul className="mt-5" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {byBucket[b].map((f, i) => (
+          <li key={i} className="py-3 text-[0.98rem] leading-snug" style={{ borderTop: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
+            {clean(f.title)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  return (
+    <div className="mt-20 pt-12" data-weekone="1" style={{ borderTop: `2px solid ${ink}` }}>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
+        <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Week one</span>
+      </div>
+      <h3 className="font-extrabold tracking-[-0.02em] mb-9" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4vw, 2.9rem)', color: ink, lineHeight: 1.04 }}>
+        Who does what
+      </h3>
+
+      {/* The whole read in one glance: every finding, sized by side. */}
+      <div className="cedt-splitbar" aria-hidden="true">
+        {present.map((b) => (
+          <span
+            key={b}
+            style={{
+              width: `${(byBucket[b].length / total) * 100}%`,
+              background: segFill(b),
+              border: b === 'yours' ? `1px dashed ${ink}59` : undefined,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="mt-10 grid md:grid-cols-2 gap-y-10 md:gap-x-14">
+        {byBucket.rise.length > 0 ? column('rise') : null}
+        {byBucket.yours.length > 0 ? column('yours') : null}
+      </div>
+
+      {byBucket.split.length > 0 ? (
+        <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${ink}14` }}>
+          <div className="grid md:grid-cols-12 gap-y-4 md:gap-x-10 items-start">
+            <div className="md:col-span-3">
+              <div className="flex items-center gap-2.5">
+                <BucketGlyph b="split" accent={accent} ink={ink} size={9} />
+                <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+                  {BUCKETS.split.label}
+                </span>
+              </div>
+              <div className="mt-3 font-extrabold tabular-nums leading-none" style={{ fontFamily: headingFont, fontSize: 'clamp(2.75rem, 6vw, 4rem)', color: ink }}>
+                {byBucket.split.length}
+              </div>
+            </div>
+            <div className="md:col-span-9">
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {byBucket.split.map((f, i) => (
+                  <li key={i} className="py-3 text-[0.98rem] leading-snug" style={{ borderTop: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
+                    {clean(f.title)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {byBucket.asset.length > 0 ? (
+        <div className="mt-12 p-6 sm:p-7" style={{ background: ink, color: surface, borderRadius: 4 }}>
+          <div className="flex items-center gap-2.5 mb-4">
+            <BucketGlyph b="asset" accent={accent} ink={surface} size={9} />
+            <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.8 }}>
+              {BUCKETS.asset.label}
+            </span>
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {byBucket.asset.map((f, i) => (
+              <li key={i} className="py-2.5 text-[0.98rem] leading-snug" style={{ borderTop: '1px solid rgba(255,255,255,.16)', color: surface, opacity: 0.88 }}>
+                {clean(f.title)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const d = report.dtc;
   if (!d) return null;
@@ -606,6 +1274,35 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   const findingVariant = (i: number): 'lead' | 'split' | 'offset' => (['lead', 'split', 'offset'] as const)[i % 3];
 
+  // ── audit v3 evidence blocks (all optional, all presence-gated) ─────────────────────
+  const dAny = d as any;
+  const gAds = dAny.ads?.google;
+  const metaSweep = dAny.ads?.meta_sweep;
+  const competitors = dAny.competitors;
+  // The brand-wide sweep is what upgrades "this page runs nothing" into a brand-wide zero.
+  const sweepZero = metaSweep?.status === 'empty' && !!metaSweep.data;
+  const hasAdEvidence =
+    gAds?.status === 'present' ||
+    sweepZero ||
+    (competitors?.status === 'present' && Array.isArray(competitors.data?.creatives) && competitors.data.creatives.length > 0);
+
+  // Dated storefront plates. A URL with no capture date, or a capture date with no URL,
+  // renders nothing: an undated screenshot is not evidence.
+  const shots = dAny.screenshots;
+  const shotDate = longDay(shots?.captured_at);
+  const shotPlates: Array<{ idx: number; url: string; label: string }> = [];
+  if (shots && shotDate) {
+    const homeIdx = findings.findIndex((f) => f.signal === 'shopify');
+    const pdpIdx = findings.findIndex((f) => f.signal === 'reviews');
+    if (shots.homepage_url && homeIdx >= 0) shotPlates.push({ idx: homeIdx, url: shots.homepage_url, label: 'Your homepage' });
+    if (shots.pdp_url) {
+      const at = pdpIdx >= 0 ? pdpIdx : findings.map((f, i) => (f.signal === 'shopify' ? i : -1)).filter((i) => i >= 0 && i !== homeIdx)[0];
+      if (at != null && at >= 0) shotPlates.push({ idx: at, url: shots.pdp_url, label: 'Your product page' });
+    }
+  }
+
+  const anyBucket = findings.some((f) => bucketOf(f) !== null);
+
   // ── Sourced vitals receipt ──────────────────────────────────────────────────────────
   // Two gates per line: the signal status has to allow it (correctness spine) AND the fact
   // has to be BOUND, meaning a rendered finding cites it or it seeds the Profit Gap. Binding
@@ -680,7 +1377,14 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const paidLines: ReceiptLine[] = [];
   if (adsMeta?.status === 'empty' && (hasFinding('ads.meta') || pgRenders)) {
     // The $0 CAC seed under the calculator rests on this read, which is what binds it.
-    paidLines.push({ signal: 'ads.meta', label: 'Meta Ad Library', value: 'no active ads', source: 'meta ad library', none: true });
+    // With the brand-wide sweep on the row the line can state the dated record instead of a
+    // status, which is what the evidence spread argues from. Without it, the pre-v3 wording
+    // stands untouched, so an old row's receipt is byte-identical to the floor.
+    paidLines.push(
+      sweepZero
+        ? { signal: 'ads.meta', label: 'Meta Ad Library', value: 'zero ads on record', source: 'meta ad library', none: true }
+        : { signal: 'ads.meta', label: 'Meta Ad Library', value: 'no active ads', source: 'meta ad library', none: true },
+    );
   } else if (
     adsMeta?.status === 'present' && adsMeta.data &&
     typeof adsMeta.data.active_ad_count === 'number' && adsMeta.data.active_ad_count > 0 &&
@@ -791,6 +1495,54 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           .cedt-lgd .pc { display: none; }
         }
         .cedt-sticky { transition: opacity .18s ease, transform .18s ease; }
+
+        /* ── audit v3: evidence spread instruments ─────────────────────────────── */
+        /* Format split: one strip, segments proportional to their own sum. */
+        .cedt-fmtbar { display: flex; height: 30px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,.3); }
+        .cedt-fmtbar span { height: 100%; flex: 0 0 auto; border-right: 1px solid rgba(17,17,17,.4); }
+        .cedt-fmtbar span:last-child { border-right: none; }
+        /* Dated strip: format tag, then a track carrying one bar between two dates. */
+        .cedt-gan { display: grid; grid-template-columns: 74px minmax(0,1fr); align-items: center; column-gap: 16px; padding: 5px 0; }
+        .cedt-gan .lbl { font-family: 'Sora', sans-serif; font-size: .58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: rgba(255,255,255,.5); }
+        .cedt-gan .trk { position: relative; display: block; height: 26px; border-radius: 3px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
+        .cedt-gan .bar { position: absolute; top: 4px; bottom: 4px; border-radius: 2px; min-width: 3px; }
+        .cedt-gan .dts { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; pointer-events: none; }
+        .cedt-gan .dts b { font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .04em; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
+        .cedt-gan-head .trk, .cedt-gan-foot .trk { height: 18px; background: transparent; border: none; }
+        .cedt-gan-head .yr { position: absolute; top: 0; transform: translateX(-50%); font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.4); }
+        .cedt-gan-head .yr::after { content: ""; position: absolute; left: 50%; top: 15px; width: 1px; height: 7px; background: rgba(255,255,255,.22); }
+        .cedt-gan-foot .trk b { position: absolute; top: 4px; font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
+        @media (max-width: 640px) {
+          .cedt-gan { grid-template-columns: minmax(0,1fr); row-gap: 3px; padding: 7px 0; }
+          .cedt-gan .dts b { font-size: .56rem; }
+        }
+        /* Meta ledger row. */
+        .cedt-mrow { display: grid; grid-template-columns: minmax(0,1fr) auto 160px; align-items: baseline; column-gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.14); }
+        .cedt-mrow .nm { font-size: .94rem; color: rgba(255,255,255,.8); }
+        .cedt-mrow .vl { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; font-variant-numeric: tabular-nums; }
+        .cedt-mrow .dt { font-family: 'Sora', sans-serif; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; text-align: right; color: rgba(255,255,255,.45); }
+        @media (max-width: 640px) {
+          .cedt-mrow { grid-template-columns: minmax(0,1fr) auto; row-gap: 3px; }
+          .cedt-mrow .dt { grid-column: 1 / -1; text-align: left; }
+        }
+        /* Recency axis: older on the left, the read date on the right. */
+        .cedt-axis { position: relative; height: 96px; }
+        .cedt-axis .ln { position: absolute; left: 0; right: 0; top: 52px; height: 1px; background: rgba(255,255,255,.28); }
+        .cedt-axis .dot { position: absolute; top: 45px; width: 15px; height: 15px; margin-left: -7.5px; border-radius: 50%; background: rgba(255,255,255,.62); border: 1px solid rgba(17,17,17,.5); }
+        .cedt-axis .mkr { position: absolute; top: 30px; height: 44px; width: 3px; margin-left: -1.5px; }
+        .cedt-axis .mkl { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; font-family: 'Sora', sans-serif; font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+        .cedt-axis .end { position: absolute; top: 74px; font-family: 'Sora', sans-serif; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: rgba(255,255,255,.45); }
+        .cedt-axis .end.l { left: 0; }
+        .cedt-axis .end.r { right: 0; }
+        /* Week-one split bar. */
+        .cedt-splitbar { display: flex; height: 40px; border-radius: 4px; overflow: hidden; border: 1px solid ${ink}33; }
+        .cedt-splitbar span { height: 100%; flex: 0 0 auto; }
+        /* Bucket chip + week-one action row. */
+        .cedt-w1 { display: grid; grid-template-columns: 108px minmax(0,1fr); column-gap: 18px; align-items: start; padding: 14px 0 14px 16px; margin-top: 1.5rem; }
+        @media (max-width: 640px) { .cedt-w1 { grid-template-columns: minmax(0,1fr); row-gap: 6px; } }
+        /* Evidence plate: a viewport-height crop, not a full-page dump. */
+        .cedt-plate { display: block; width: 100%; height: 420px; object-fit: cover; object-position: top center; }
+        @media (max-width: 640px) { .cedt-plate { height: 260px; } }
       `}</style>
 
       {/* Masthead */}
@@ -871,6 +1623,22 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
         </div>
       </section>
+
+      {/* Chapter — Evidence-first dark spread. Sits straight after the hook because the ad
+          record is the one thing on this page the reader cannot argue with: it is dated, it
+          is public, and it was read without them. Born-absent on a pre-v3 row. */}
+      {hasAdEvidence ? (
+        <AdEvidenceSpread
+          google={gAds}
+          metaPage={adsMeta}
+          metaSweep={metaSweep}
+          competitors={competitors}
+          accent={accent}
+          ink={ink}
+          surface={surface}
+          headingFont={headingFont}
+        />
+      ) : null}
 
       {/* Chapter — Sourced vitals receipt. Every line is a public fact we read AND that a
           finding below cites or the Profit Gap runs on, which is what the foot line claims.
@@ -977,6 +1745,52 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                   {LEVER_LABEL[f.lever] || f.lever}
                 </span>
               );
+              // Bucket chip: the deal shape, on the finding it applies to. Locked copy, and
+              // the same two-square glyph the week-one panel uses, so a chip and the panel
+              // read as one instrument. Bucket null renders no chip at all.
+              const bk = bucketOf(f);
+              const bucketChip = bk ? (
+                <span
+                  data-bucket={bk}
+                  className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full whitespace-nowrap"
+                  style={
+                    bk === 'rise'
+                      ? { background: accent, color: ink }
+                      : bk === 'asset'
+                        ? { background: ink, color: surface }
+                        : { border: `1px ${bk === 'yours' ? 'dashed' : 'solid'} ${ink}59`, color: ink, opacity: bk === 'yours' ? 0.75 : 1 }
+                  }
+                >
+                  <BucketGlyph b={bk} accent={bk === 'rise' ? ink : accent} ink={bk === 'asset' ? surface : ink} size={7} />
+                  {BUCKETS[bk].label}
+                </span>
+              ) : null;
+
+              // week_one renders VERBATIM: no clean(), no reflow, never merged with a numeral.
+              const weekOne = typeof f.week_one === 'string' && f.week_one.trim() ? f.week_one : null;
+              const weekOneRow = weekOne ? (
+                <div
+                  className="cedt-w1"
+                  data-weekone-row="1"
+                  style={{
+                    borderLeft: `3px ${bk === 'yours' ? 'dashed' : 'solid'} ${bk === 'yours' ? `${ink}40` : accent}`,
+                    background: bk === 'rise' ? `${accent}1a` : `${ink}08`,
+                  }}
+                >
+                  <div>
+                    <span className="block text-[0.6rem] font-bold uppercase tracking-[0.22em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}>
+                      Week one
+                    </span>
+                    {f.bucket_pillar ? (
+                      <span className="block mt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+                        {clean(String(f.bucket_pillar))}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-[1.02rem] leading-[1.55] font-medium" style={{ color: ink }}>{weekOne}</p>
+                </div>
+              ) : null;
+
               const sourceLink = f.source_url ? (
                 <a href={f.source_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.6 }}>
                   {sourceLabel(f.source_url)}
@@ -1023,7 +1837,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 content = (
                   <div className="grid lg:grid-cols-12 gap-y-5 lg:gap-x-10">
                     <div className="lg:col-span-5">
-                      {chip}
+                      {bucketChip ? <div className="flex flex-wrap items-center gap-2.5">{chip}{bucketChip}</div> : chip}
                       <h3 className="mt-5 font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 3.6vw, 2.9rem)', color: ink, lineHeight: 1.05 }}>
                         {clean(f.title)}
                       </h3>
@@ -1040,7 +1854,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 content = (
                   <div className="grid lg:grid-cols-12 gap-y-4 lg:gap-x-10 items-start">
                     <div className="lg:col-span-5">
-                      {chip}
+                      {bucketChip ? <div className="flex flex-wrap items-center gap-2.5">{chip}{bucketChip}</div> : chip}
                       <h3 className="mt-4 font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.4rem, 2.6vw, 2rem)', color: ink, lineHeight: 1.1 }}>
                         {clean(f.title)}
                       </h3>
@@ -1061,6 +1875,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                     <div className="lg:col-span-11 lg:pl-4">
                       <div className="flex flex-wrap items-center gap-4 mb-3">
                         {chip}
+                        {bucketChip}
                         <h3 className="font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.35rem, 2.4vw, 1.85rem)', color: ink, lineHeight: 1.1 }}>
                           {clean(f.title)}
                         </h3>
@@ -1097,6 +1912,30 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 </figure>
               ) : null;
 
+              // Dated storefront plates: the page paid traffic actually lands on, cropped to
+              // a viewport band and stamped with its capture date. No date, no plate.
+              const storePlates = shotPlates
+                .filter((p) => p.idx === i)
+                .map((p) => (
+                  <figure key={p.url} data-shot-plate="1" className="mt-8" style={{ margin: 0 }}>
+                    <div style={{ border: `1px solid ${ink}1f`, borderRadius: 4, overflow: 'hidden', background: surface }}>
+                      <img
+                        className="cedt-plate"
+                        src={p.url}
+                        alt={`${companyName} ${p.label.toLowerCase()}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                    <figcaption
+                      className="mt-2.5 text-[0.62rem] font-bold uppercase tracking-[0.16em]"
+                      style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}
+                    >
+                      {`${p.label}, captured ${shotDate}`}
+                    </figcaption>
+                  </figure>
+                ));
+
               return (
                 <article
                   key={i}
@@ -1106,12 +1945,20 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                   <div className="lg:col-span-9">
                     {content}
                     {plate}
+                    {storePlates}
+                    {weekOneRow}
                   </div>
                   {marginAside}
                 </article>
               );
             })}
           </div>
+
+          {/* The chapter closes on the split of labor, drawn: the whole bucket read in one
+              glance. Absent entirely when no finding on the row carries a bucket. */}
+          {anyBucket ? (
+            <WeekOnePanel findings={findings} accent={accent} ink={ink} surface={surface} headingFont={headingFont} />
+          ) : null}
         </section>
       ) : null}
 
@@ -1158,6 +2005,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           headingFont={headingFont}
           ctaHref={ctaUrl('profitgap')}
           adsEmpty={adsEmpty}
+          metaSweepZero={sweepZero}
         />
       ) : null}
 

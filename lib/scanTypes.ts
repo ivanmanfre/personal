@@ -188,6 +188,33 @@ export interface DtcFinding {
   title: string;
   evidence: string;          // grounded prose; every numeral ∈ fact_table
   source_url?: string | null;
+  // audit v3 (2026-08-07) deal shape. All optional: a pre-v3 row carries none of them and
+  // renders exactly as before. Rendered labels are LOCKED: "RISE takes this over" / "Split"
+  // / "On your side" / "Working asset".
+  bucket?: 'rise' | 'split' | 'yours' | 'asset' | null;
+  bucket_pillar?: string | null;
+  week_one?: string | null;  // one digit-free sentence, rendered VERBATIM
+}
+
+// audit v3 ad-record evidence. One sampled creative off a public ad archive.
+export interface DtcGoogleCreative {
+  format: string;            // text | image | video
+  first_shown?: string | null;
+  last_shown?: string | null;
+  preview_url?: string | null;
+  image_url?: string | null;
+  stored_url?: string | null;   // our own copy; first in the image fallback chain
+  ad_url?: string | null;
+}
+export interface DtcCompetitorCreative {
+  advertiser: string;
+  start_date?: string | null;
+  age_days?: number | null;
+  image_url?: string | null;
+  stored_url?: string | null;
+  opening_text?: string | null;
+  keyword?: string | null;
+  page_id?: string | null;
 }
 
 export interface DtcGrowth {
@@ -207,10 +234,38 @@ export interface DtcGrowth {
     has_subscription: boolean | null; discount_depth_pct: number | null; products_on_discount?: number;
     note?: string;
   }>;
-  ads?: { meta?: DtcSignalMeta<{
-    active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number;
-    has_video?: boolean; has_static?: boolean;
-  }> };
+  ads?: {
+    meta?: DtcSignalMeta<{
+      active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number;
+      has_video?: boolean; has_static?: boolean;
+    }>;
+    // audit v3: the prospect's own Google ad record. `capped` true means ads_found is a
+    // FLOOR, never a total, and every rendered count must say "at least N".
+    google?: DtcSignalMeta<{
+      query?: string; region?: string; advertiser?: string | null;
+      ads_found: number; max_results?: number; capped?: boolean;
+      formats?: { text?: number; image?: number; video?: number };
+      newest_first_shown?: string | null; oldest_first_shown?: string | null;
+      latest_last_shown?: string | null; checked_at?: string;
+      creatives?: DtcGoogleCreative[];
+    }>;
+    // audit v3: brand-wide Meta keyword sweep. status 'empty' is a PROVABLE brand-wide zero
+    // (the archive was reached and nothing traced back to this brand), never a blocked read.
+    meta_sweep?: DtcSignalMeta<{
+      keywords?: string[]; identity_matched_ads: number; sampled_items?: number;
+      max_results?: number; capped?: boolean; matched_pages?: unknown[]; checked_at?: string;
+    }>;
+  };
+  // audit v3: other advertisers on the same keywords. The counterpoint strip.
+  competitors?: DtcSignalMeta<{
+    keywords?: string[]; advertisers_seen?: number; sampled_items?: number;
+    max_results?: number; capped?: boolean; checked_at?: string;
+    creatives?: DtcCompetitorCreative[];
+  }>;
+  // audit v3: dated storefront captures. A capture with no date does not render.
+  screenshots?: {
+    homepage_url?: string | null; pdp_url?: string | null; captured_at?: string | null;
+  } | null;
   tech_stack?: DtcSignalMeta<{ confirmed: string[]; missing_critical: string[]; is_shopify: boolean; pdp_checked?: boolean }>;
   reviews?: DtcSignalMeta<{ rating: number | null; review_count: number | null; has_reviews: boolean }>;
   pagespeed?: DtcSignalMeta<{ perf_score: number | null; mobile_lcp_s: number | null; cls: number | null; field_data: boolean }>;
