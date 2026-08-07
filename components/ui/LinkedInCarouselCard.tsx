@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { avatarInitials, foldAtWordBoundary, safeHex, inkOnSurface, familyStack } from './LinkedInPostPreview';
 import type { BrandKitSpec, TextSlideSpec } from '../../lib/linkedinFeedSpec';
@@ -60,6 +60,82 @@ function tokenize(line: string): React.ReactNode[] {
   }
   if (cursor < line.length) out.push(line.slice(cursor));
   return out;
+}
+
+// ── Text-slide fitting guard ────────────────────────────────────────────
+// A drafted carousel slide has no length contract — a heading or a lead's raw
+// LinkedIn headline (see safeKicker below) can be arbitrarily long. FitText makes
+// every text block physically incapable of overlapping its neighbors: it is
+// line-clamped from first paint (CSS-only, holds before any measurement runs),
+// then steps its font size down (up to STEP_DOWN_STEPS times, floor MIN_FONT_PX)
+// to try to recover the full text within that clamp — ellipsis is the terminal
+// fallback, never overlap or bleed past the slide.
+const STEP_DOWN_RATIO = 0.86;
+const STEP_DOWN_STEPS = 2;
+const MIN_FONT_PX = 11;
+
+interface FitTextProps {
+  as: 'div' | 'h4' | 'p';
+  text: string;
+  style: React.CSSProperties;
+  /** 1 = single-line truncation (nowrap + ellipsis); >1 = multi-line clamp. */
+  maxLines: number;
+  className?: string;
+}
+
+const FitText: React.FC<FitTextProps> = ({ as: Tag, text, style, maxLines, className }) => {
+  const ref = useRef<HTMLElement>(null);
+  const [step, setStep] = useState(0);
+  const singleLine = maxLines <= 1;
+
+  // Text changed (e.g. slide navigation) — restart at the default size.
+  useLayoutEffect(() => { setStep(0); }, [text]);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || step >= STEP_DOWN_STEPS) return;
+    const overflowing = singleLine
+      ? el.scrollWidth - el.clientWidth > 1
+      : el.scrollHeight - el.clientHeight > 1;
+    if (!overflowing) return;
+    const currentPx = parseFloat(getComputedStyle(el).fontSize);
+    if (currentPx > MIN_FONT_PX + 0.5) setStep((s) => s + 1);
+  }, [step, text, singleLine]);
+
+  const scale = Math.pow(STEP_DOWN_RATIO, step);
+  const baseFontSize = style.fontSize;
+  const fontSize = baseFontSize && step > 0 ? `max(${MIN_FONT_PX}px, calc(${baseFontSize} * ${scale}))` : baseFontSize;
+
+  const fitStyle: React.CSSProperties = singleLine
+    ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+    : {
+        display: '-webkit-box',
+        WebkitLineClamp: maxLines,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
+      };
+
+  return React.createElement(
+    Tag,
+    { ref, className, style: { ...style, ...(fontSize ? { fontSize } : {}), minHeight: 0, ...fitStyle } },
+    text
+  );
+};
+
+/** Cover/interior slide kicker label. Guards against runaway source text — e.g. a
+ *  lead's ENTIRE LinkedIn headline landing in the kicker slot when a generator omits
+ *  slide.kicker and the caller falls back to the profile headline prop. Caps to a
+ *  short label (<=3 words, <=maxChars) or drops to `fallback` (the "n / total"
+ *  counter style used on interior slides) when the source text doesn't qualify. */
+function safeKicker(raw: string | undefined, fallback: string, maxChars = 40): string {
+  const s = (raw || '').trim();
+  if (!s) return fallback;
+  if (s.length > maxChars) return fallback;
+  const words = s.split(/\s+/);
+  return words.length > 3 ? words.slice(0, 3).join(' ') : s;
 }
 
 interface Props {
@@ -214,19 +290,24 @@ const LinkedInCarouselCard: React.FC<Props> = ({
                   )}
                 </span>
               );
+              // Kicker/heading/body/figure are each their own guarded box, stacked in a
+              // flex column with a fixed gap — never absolutely-positioned, never able to
+              // intersect a sibling. The slide root clips (overflow hidden) as the last-resort
+              // net; FitText's per-block clamp + step-down is what actually keeps them off it.
               if (role === 'cover') {
                 return (
-                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
-                    <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>
-                      {slide.kicker || headline}
+                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px`, overflow: 'hidden' }}>
+                    <div className="flex flex-col" style={{ gap: 16, minHeight: 0, overflow: 'hidden' }}>
+                      <FitText as="div" maxLines={1} text={safeKicker(slide.kicker, `${clampedIndex + 1} / ${total}`)}
+                        style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }} />
+                      <span aria-hidden style={{ display: 'block', width: 44, height: 4, background: safeAccent }} />
+                      <FitText as="h4" maxLines={3} text={slide.heading}
+                        style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2.1rem, 8.5vw, 3.4rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: slideInk }} />
+                      {slide.body && (
+                        <FitText as="p" maxLines={4} text={slide.body}
+                          style={{ fontFamily: bodyFont, fontSize: 'clamp(1.05rem, 4.2vw, 1.4rem)', lineHeight: 1.55, color: slideSub, maxWidth: '30ch' }} />
+                      )}
                     </div>
-                    <span aria-hidden style={{ display: 'block', width: 44, height: 4, background: safeAccent, marginTop: 14 }} />
-                    <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2.1rem, 8.5vw, 3.4rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: slideInk, marginTop: 20 }}>
-                      {slide.heading}
-                    </h4>
-                    {slide.body && (
-                      <p style={{ fontFamily: bodyFont, fontSize: 'clamp(1.05rem, 4.2vw, 1.4rem)', lineHeight: 1.55, color: slideSub, marginTop: 18, maxWidth: '30ch' }}>{slide.body}</p>
-                    )}
                     <div className="absolute flex items-center" style={{ left: pad, right: pad, bottom: 20, borderTop: `1px solid ${slideHair}`, paddingTop: 10 }}>
                       <LogoChip />
                     </div>
@@ -234,18 +315,22 @@ const LinkedInCarouselCard: React.FC<Props> = ({
                 );
               }
               if (role === 'action') {
+                const actionKicker = slide.kicker ? safeKicker(slide.kicker, '') : '';
                 return (
-                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
-                    {slide.kicker && (
-                      <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>{slide.kicker}</div>
-                    )}
-                    <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2rem, 8vw, 3.2rem)', lineHeight: 1.08, letterSpacing: '-0.018em', color: slideInk, marginTop: slide.kicker ? 16 : 0 }}>
-                      {slide.heading}
-                    </h4>
-                    {slide.body && (
-                      <p style={{ fontFamily: bodyFont, fontSize: 'clamp(1.1rem, 4.5vw, 1.5rem)', lineHeight: 1.6, color: slideSub, marginTop: 20, maxWidth: '30ch' }}>{slide.body}</p>
-                    )}
-                    <span aria-hidden style={{ display: 'block', width: 44, height: 4, background: safeAccent, marginTop: 22 }} />
+                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px`, overflow: 'hidden' }}>
+                    <div className="flex flex-col" style={{ gap: 16, minHeight: 0, overflow: 'hidden' }}>
+                      {actionKicker && (
+                        <FitText as="div" maxLines={1} text={actionKicker}
+                          style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }} />
+                      )}
+                      <FitText as="h4" maxLines={3} text={slide.heading}
+                        style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2rem, 8vw, 3.2rem)', lineHeight: 1.08, letterSpacing: '-0.018em', color: slideInk }} />
+                      {slide.body && (
+                        <FitText as="p" maxLines={4} text={slide.body}
+                          style={{ fontFamily: bodyFont, fontSize: 'clamp(1.1rem, 4.5vw, 1.5rem)', lineHeight: 1.6, color: slideSub, maxWidth: '30ch' }} />
+                      )}
+                      <span aria-hidden style={{ display: 'block', width: 44, height: 4, background: safeAccent }} />
+                    </div>
                     <div className="flex items-center" style={{ marginTop: 14 }}>
                       <LogoChip size={24} />
                     </div>
@@ -255,21 +340,21 @@ const LinkedInCarouselCard: React.FC<Props> = ({
               // point / proof
               const isProof = role === 'proof' || (role === 'point' && Boolean(slide.figure));
               return (
-                <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
-                  <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>
-                    {slide.kicker || `${clampedIndex + 1} / ${total}`}
+                <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px`, overflow: 'hidden' }}>
+                  <div className="flex flex-col" style={{ gap: 16, minHeight: 0, overflow: 'hidden' }}>
+                    <FitText as="div" maxLines={1} text={safeKicker(slide.kicker, `${clampedIndex + 1} / ${total}`)}
+                      style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(11px, 2.8vw, 14px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }} />
+                    {isProof && slide.figure && (
+                      <FitText as="div" maxLines={1} text={slide.figure}
+                        style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(3.2rem, 16vw, 5.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: safeAccent }} />
+                    )}
+                    <FitText as="h4" maxLines={isProof ? 2 : 3} text={slide.heading}
+                      style={{ fontFamily: headingFont, fontWeight: 800, fontSize: isProof ? 'clamp(1.6rem, 6vw, 2.4rem)' : 'clamp(2.1rem, 8vw, 3.4rem)', lineHeight: 1.1, letterSpacing: '-0.015em', color: slideInk }} />
+                    {slide.body && (
+                      <FitText as="p" maxLines={4} text={slide.body}
+                        style={{ fontFamily: bodyFont, fontSize: 'clamp(1.1rem, 4.5vw, 1.5rem)', lineHeight: 1.6, color: slideSub, maxWidth: '30ch' }} />
+                    )}
                   </div>
-                  {isProof && slide.figure && (
-                    <div style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(3.2rem, 16vw, 5.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: safeAccent, marginTop: 16 }}>
-                      {slide.figure}
-                    </div>
-                  )}
-                  <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: isProof ? 'clamp(1.6rem, 6vw, 2.4rem)' : 'clamp(2.1rem, 8vw, 3.4rem)', lineHeight: 1.1, letterSpacing: '-0.015em', color: slideInk, marginTop: 18 }}>
-                    {slide.heading}
-                  </h4>
-                  {slide.body && (
-                    <p style={{ fontFamily: bodyFont, fontSize: 'clamp(1.1rem, 4.5vw, 1.5rem)', lineHeight: 1.6, color: slideSub, marginTop: 20, maxWidth: '30ch' }}>{slide.body}</p>
-                  )}
                   <div className="absolute flex items-center" style={{ left: pad, right: pad, bottom: 20, borderTop: `1px solid ${slideHair}`, paddingTop: 10 }}>
                     <LogoChip size={18} />
                   </div>
