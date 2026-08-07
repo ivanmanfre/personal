@@ -14,8 +14,12 @@ import truly from './scanlab/truly-office-branzio.json';
 // audit v3 (2026-08-07): the REAL panthervision v3 row — buckets, google ads evidence,
 // brand-wide meta sweep, competitor strip, homepage+PDP screenshots.
 import pantherV3 from './scanlab/panther-v3.json';
+// Data-loss state: same row with EVERY v3 evidence arm stripped (google/meta_sweep/
+// competitors/screenshots gone, buckets kept) — the page must stay coherent, deal shape
+// intact, zero empty shells. This is the fixture that proves the fallback contract.
+import pantherV3Degraded from './scanlab/panther-v3-degraded.json';
 
-const FIXTURES: Record<string, any> = { rodial, apple, gopure, truly, 'panther-v3': pantherV3 };
+const FIXTURES: Record<string, any> = { rodial, apple, gopure, truly, 'panther-v3': pantherV3, 'panther-v3-degraded': pantherV3Degraded };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';
