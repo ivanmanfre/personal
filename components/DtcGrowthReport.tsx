@@ -713,31 +713,15 @@ function AdEvidenceSpread({
   }
   const fmtTotal = fmts.reduce((a, b) => a + b.v, 0);
 
-  // The dated strip: one bar per sampled creative, placed by its own first-shown and
-  // last-shown dates on a shared axis that ends on the day the record was read.
+  // Tiles carry each creative's own first→last span in the caption (the separate per-creative
+  // timeline was cut 08-07 — three renderings of the same six creatives read as padding).
   const gCreatives: any[] = Array.isArray(g?.creatives) ? g.creatives.slice(0, 6) : [];
-  const spanStart = dayMs(g?.oldest_first_shown) ?? Math.min(...gCreatives.map((c) => dayMs(c.first_shown) ?? Infinity));
-  const spanEnd = dayMs(gRead) ?? Math.max(...gCreatives.map((c) => dayMs(c.last_shown) ?? -Infinity));
-  const spanOk = Number.isFinite(spanStart) && Number.isFinite(spanEnd) && spanEnd > spanStart;
-  const pos = (iso?: string | null) => {
-    const m = dayMs(iso);
-    if (m == null || !spanOk) return null;
-    return Math.max(0, Math.min(100, ((m - (spanStart as number)) / ((spanEnd as number) - (spanStart as number))) * 100));
-  };
-  const fmtFill = (f: string) => (f === 'video' ? 'rgba(255,255,255,.80)' : f === 'image' ? 'rgba(255,255,255,.52)' : 'rgba(255,255,255,.26)');
-  // Year ticks inside the drawn span, so the strip reads as a calendar and not a bar chart.
-  const yearTicks: Array<{ y: number; p: number }> = [];
-  if (spanOk) {
-    const y0 = new Date(spanStart as number).getUTCFullYear();
-    const y1 = new Date(spanEnd as number).getUTCFullYear();
-    for (let y = y0 + 1; y <= y1; y++) {
-      const p = pos(`${y}-01-01`);
-      if (p != null && p > 2 && p < 98) yearTicks.push({ y, p });
-    }
-  }
 
   // Competitor recency axis: left is the oldest sampled start date, right is the read date.
-  const compAges = compCreatives.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
+  // Three tiles carry the point (08-07 length cut); the axis and the fresher-than count stay
+  // computed over the SHOWN set so the drawn claim always matches the visible tiles.
+  const compShown = compCreatives.slice(0, 3);
+  const compAges = compShown.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
   const maxAge = compAges.length ? Math.max(...compAges, newestAge ?? 0) : newestAge ?? 0;
   const axisMax = Math.max(7, Math.ceil((maxAge + 4) / 5) * 5);
   const agePos = (d: number) => Math.max(0, Math.min(100, (1 - d / axisMax) * 100));
@@ -788,7 +772,8 @@ function AdEvidenceSpread({
                   {gCount.n} on Google.{' '}
                 </>
               ) : null}
-              {showMeta ? <span style={{ color: accent }}>Zero on Meta.</span> : null}
+              {/* The headline absolute is page-confirmed-only (same rule as the statement below). */}
+              {pageZero ? <span style={{ color: accent }}>Zero on Meta.</span> : null}
             </h2>
           </div>
           <div className="lg:col-span-4">
@@ -824,6 +809,17 @@ function AdEvidenceSpread({
               ) : null}
             </div>
 
+            {/* The read, STATED (Ivan, 08-07: "what's the point of telling them what they
+                already know") — an archive dump is vanilla; the page's job is the claim the
+                dates add up to. Deterministic, from the two ages already on screen, and only
+                rendered when they actually carry an argument (a brand with fresh creative
+                gets no manufactured drama). */}
+            {newestAge != null && lastAge != null && newestAge >= 60 && lastAge <= 14 ? (
+              <p className="mt-9 text-[1.2rem] sm:text-[1.35rem] leading-[1.45] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}`, maxWidth: '58ch' }}>
+                {`The record shows ads served as recently as ${lastAge === 0 ? 'today' : `${lastAge} days ago`} and nothing new entering it for ${newestAge} days. The spend is riding on creative from ${isoDay(g.newest_first_shown)} or older.`}
+              </p>
+            ) : null}
+
             {/* Format split, drawn against its own sum. */}
             {fmts.length > 0 && fmtTotal > 0 ? (
               <div className="mt-12">
@@ -847,49 +843,9 @@ function AdEvidenceSpread({
               </div>
             ) : null}
 
-            {/* The strip: each sampled creative drawn between its own two dates. */}
-            {spanOk && gCreatives.length > 0 ? (
-              <div className="mt-14">
-                <div className="cedt-gan cedt-gan-head" aria-hidden="true">
-                  <span />
-                  <span className="trk">
-                    {yearTicks.map((t) => (
-                      <span key={t.y} className="yr" style={{ left: `${t.p}%` }}>{t.y}</span>
-                    ))}
-                  </span>
-                </div>
-                {gCreatives.map((c, i) => {
-                  const a = pos(c.first_shown);
-                  const b = pos(c.last_shown);
-                  const left = a == null ? null : a;
-                  const width = a == null || b == null ? null : Math.max(1.2, b - a);
-                  return (
-                    <div key={i} className="cedt-gan">
-                      <span className="lbl">{String(c.format || 'ad')}</span>
-                      <span className="trk">
-                        {left != null && width != null ? (
-                          <span className="bar" style={{ left: `${left}%`, width: `${width}%`, background: fmtFill(String(c.format)) }} />
-                        ) : null}
-                        <span className="dts">
-                          {isoDay(c.first_shown) ? <b>{isoDay(c.first_shown)}</b> : null}
-                          {isoDay(c.last_shown) ? <b>{isoDay(c.last_shown)}</b> : null}
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-                <div className="cedt-gan cedt-gan-foot">
-                  <span />
-                  <span className="trk">
-                    <b style={{ left: 0 }}>{isoDay(g.oldest_first_shown) || ''}</b>
-                    <b style={{ right: 0 }}>{gRead || ''}</b>
-                  </span>
-                </div>
-                <p className="mt-6 text-[0.86rem] leading-relaxed" style={{ color: surface, opacity: 0.55, maxWidth: '62ch' }}>
-                  {`${gCreatives.length} of those creatives, drawn between their own first-shown and last-shown dates.`}
-                </p>
-              </div>
-            ) : null}
+            {/* (The per-creative timeline rows were cut 08-07: formats bar + timeline + tiles
+                rendered the same six creatives three times — Ivan: "this goes quite long".
+                The tiles below now carry each creative's full first→last span instead.) */}
 
             {/* The creatives themselves. Imageless ones stay in the strip as dated tiles. */}
             {gCreatives.length > 0 ? (
@@ -915,7 +871,11 @@ function AdEvidenceSpread({
                       <EvidenceImg src={src} alt={`${String(c.format || 'ad')} creative first shown ${first || ''}`} ratio="4 / 3" fallback={fallback} />
                       <figcaption className="mt-2 text-[0.6rem] font-bold uppercase tracking-[0.14em] tabular-nums" style={{ fontFamily: headingFont, color: surface, opacity: 0.55 }}>
                         {String(c.format || 'ad')}
-                        {first ? <span className="block mt-0.5" style={{ opacity: 0.85 }}>{first}</span> : null}
+                        {first ? (
+                          <span className="block mt-0.5" style={{ opacity: 0.85 }}>
+                            {first}{isoDay(c.last_shown) && isoDay(c.last_shown) !== first ? ` → ${isoDay(c.last_shown)}` : ''}
+                          </span>
+                        ) : null}
                       </figcaption>
                     </figure>
                   );
@@ -941,8 +901,15 @@ function AdEvidenceSpread({
                 </div>
               </div>
               <div className="lg:col-span-8">
+                {/* Claim strength follows evidence strength (SENSE incident, 08-07): the absolute
+                    sentence is licensed ONLY by a page-confirmed zero (their identity-confirmed
+                    page, Meta's own "isn't running ads"). A sweep-only zero is a sample fact —
+                    a generic brand name can hide in a keyword sample — so it states exactly what
+                    was measured and nothing more. */}
                 <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
-                  {`Meta's Ad Library shows zero ads for this brand as of ${metaReadDate}.`}
+                  {pageZero
+                    ? `Meta's Ad Library shows zero ads for this brand as of ${metaReadDate}.`
+                    : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to this brand.`}
                 </p>
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
                   {pageZero ? (
@@ -976,7 +943,7 @@ function AdEvidenceSpread({
               </span>
               {Array.isArray(comp?.keywords) ? (
                 <span className="flex flex-wrap gap-2">
-                  {comp.keywords.slice(0, 5).map((k: string) => (
+                  {comp.keywords.slice(0, 3).map((k: string) => (
                     <span
                       key={k}
                       className="text-[0.72rem] font-semibold px-2.5 py-1 rounded-full"
@@ -1002,7 +969,7 @@ function AdEvidenceSpread({
             </div>
 
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {compCreatives.slice(0, 6).map((c, i) => {
+              {compShown.map((c, i) => {
                 const src = creativeImageSrc(c);
                 const start = isoDay(c.start_date);
                 const fallback = (
@@ -1039,7 +1006,7 @@ function AdEvidenceSpread({
                   Start dates, drawn back from the read
                 </div>
                 <div className="cedt-axis">
-                  {compCreatives.map((c, i) =>
+                  {compShown.map((c, i) =>
                     typeof c.age_days === 'number' ? (
                       <span key={i} className="dot" style={{ left: `${agePos(c.age_days)}%` }} title={`${clean(String(c.advertiser))}, ${c.age_days} days`} />
                     ) : null,
@@ -1056,7 +1023,7 @@ function AdEvidenceSpread({
                 </div>
                 {fresherThanBrand != null && newestAge != null ? (
                   <p className="mt-7 text-[1.05rem] leading-relaxed" style={{ color: surface, opacity: 0.82, maxWidth: '66ch' }}>
-                    {`${fresherThanBrand} of the ${compCreatives.length} competitor creatives sampled carry a start date more recent than your newest first-shown date, which is ${newestAge} days back.`}
+                    {`${fresherThanBrand} of the ${compShown.length} competitor creatives shown carry a start date more recent than your newest first-shown date, which is ${newestAge} days back.`}
                   </p>
                 ) : null}
               </div>
