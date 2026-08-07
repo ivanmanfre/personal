@@ -699,33 +699,59 @@ export default function DeskReviewSurface({
         )}
       </Plate>
 
-      {/* Block 3: view toggle + the two filter axes (format row, then topic row). */}
+      {/* Block 3: view toggle. */}
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
-        <span aria-hidden style={{ width: 1, alignSelf: 'stretch', background: 'var(--cb-line)', margin: '0 4px' }} />
-        {CATS.map((c) => (catCount(c.id) > 0 || c.id === 'all') && (
-          <Pill key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>{c.label}</Pill>
-        ))}
       </div>
-      {topics.length > 0 && (
-        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Topic</span>
-          <Pill active={topic === 'all'} onClick={() => setTopic('all')}>All</Pill>
-          {topics.map((t) => (
-            <Pill key={t} active={topic === t} onClick={() => setTopic(t)}>{topicLabel(t)}</Pill>
-          ))}
-        </div>
-      )}
-      {AIMS.some((a) => aimCount(a) > 0) && (
-        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Aim</span>
-          <Pill active={aimSel === 'all'} onClick={() => setAim('all')}>All</Pill>
-          {AIMS.map((a) => aimCount(a) > 0 && (
-            <Pill key={a} active={aimSel === a} onClick={() => setAim(a)}>{a[0].toUpperCase() + a.slice(1)}</Pill>
-          ))}
-        </div>
-      )}
+
+      {/* Block 3b: filters — ONE aligned block, three labelled axes. No "All" pills:
+          a pill toggles, clicking the active one clears that axis; a single Clear link
+          resets everything. Labels share a fixed column so the rows scan as a unit. */}
+      {(() => {
+        const LBL: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', paddingTop: 7 };
+        const ROW: React.CSSProperties = { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' };
+        const anyFilter = cat !== 'all' || topic !== 'all' || aimSel !== 'all';
+        const clearAll = () => { setCatState('all'); setTopicState('all'); setAimState('all'); syncFilterUrl('all', 'all', 'all'); };
+        return (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--cb-line)', display: 'grid', gridTemplateColumns: '62px 1fr', rowGap: 7, columnGap: 12, alignItems: 'start' }}>
+            <span style={LBL}>Format</span>
+            <div style={ROW}>
+              {CATS.filter((c) => c.id !== 'all' && catCount(c.id) > 0).map((c) => (
+                <Pill key={c.id} active={cat === c.id} onClick={() => setCat(cat === c.id ? 'all' : c.id)}>{c.label}</Pill>
+              ))}
+            </div>
+            {topics.length > 0 && (
+              <>
+                <span style={LBL}>Topic</span>
+                <div style={ROW}>
+                  {topics.map((t) => (
+                    <Pill key={t} active={topic === t} onClick={() => setTopic(topic === t ? 'all' : t)}>{topicLabel(t)}</Pill>
+                  ))}
+                </div>
+              </>
+            )}
+            {AIMS.some((a) => aimCount(a) > 0) && (
+              <>
+                <span style={LBL}>Aim</span>
+                <div style={ROW}>
+                  {AIMS.map((a) => aimCount(a) > 0 && (
+                    <Pill key={a} active={aimSel === a} onClick={() => setAim(aimSel === a ? 'all' : a)}>{a[0].toUpperCase() + a.slice(1)}</Pill>
+                  ))}
+                  {anyFilter && (
+                    <button
+                      onClick={clearAll}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {view === 'calendar' ? (
         (foldCalendar && React.isValidElement(foldCalendar)
