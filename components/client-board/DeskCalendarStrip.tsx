@@ -59,19 +59,19 @@ const CAL_CSS = `
   display: none;
 }
 .cb-calstrip-more { font-size: 11.5px; font-weight: 800; color: var(--cb-ink-mute); display: none; }
-@container cb-calstrip (min-width: 560px) {
+@container cb-calstrip (min-width: 520px) {
   /* !important because the 58px base stays INLINE (it is the read-only layout, and the
      desk-review smoke test asserts it); only the width-gated title layout raises it. */
-  .cb-calstrip-cell { height: 82px !important; }
-  .cb-calstrip-title { display: -webkit-box; }
+  .cb-calstrip-cell { height: 118px !important; }
+  .cb-calstrip-title { display: -webkit-box; font-size: 12.5px; -webkit-line-clamp: 4; top: 26px; }
   .cb-calstrip-more { display: inline; }
 }
 @supports not (container-type: inline-size) {
   @media (min-width: 900px) {
     /* !important because the 58px base stays INLINE (it is the read-only layout, and the
      desk-review smoke test asserts it); only the width-gated title layout raises it. */
-  .cb-calstrip-cell { height: 82px !important; }
-    .cb-calstrip-title { display: -webkit-box; }
+  .cb-calstrip-cell { height: 118px !important; }
+    .cb-calstrip-title { display: -webkit-box; font-size: 12.5px; -webkit-line-clamp: 4; top: 26px; }
     .cb-calstrip-more { display: inline; }
   }
 }
@@ -107,7 +107,7 @@ function queueAsCalendarItem(q: QueueItem): CalendarItem {
 
 const MOVE_FAILED = 'That move did not save. Open the post to set its time.';
 
-export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMoveItem }: {
+export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMoveItem, queueFilter }: {
   board: Board;
   /** Opens the linked draft (or the planned-slot preview) — same callback CalendarSurface takes. */
   onOpenCal?: (item: CalendarItem) => void;
@@ -119,6 +119,9 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
    * draggable at all (preview boards stay read-only). Date is 'YYYY-MM-DD'.
    */
   onMoveItem?: (id: string, date: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Optional category filter (2026-08-07): when present, marks are limited to queue rows
+   *  that pass it; unlinked calendar entries (no queue row to judge) stay visible. */
+  queueFilter?: (q: QueueItem) => boolean;
 }) {
   const todayIso = isoOf(new Date());
   const [hoverKey, setHoverKey] = React.useState<string | null>(null);
@@ -127,9 +130,15 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   const dragRef = React.useRef<{ id: string; from: string } | null>(null);
 
   // ---- Marks: committed calendar entries + every dated queue post (no double count). ----
-  const calItems = (board.calendar?.items || []).filter((it) => it.date && CONTENT_KINDS.has(it.kind));
-  const linkedRefs = new Set(calItems.map((it) => it.ref).filter(Boolean) as string[]);
-  const queueItems = (board.queue || []).filter((q) => q.publish_date && !linkedRefs.has(q.id));
+  const calItemsAll = (board.calendar?.items || []).filter((it) => it.date && CONTENT_KINDS.has(it.kind));
+  const calItems = queueFilter
+    ? calItemsAll.filter((it) => {
+        const linked = it.ref ? (board.queue || []).find((q) => q.id === it.ref) : undefined;
+        return linked ? queueFilter(linked) : true;
+      })
+    : calItemsAll;
+  const linkedRefs = new Set(calItemsAll.map((it) => it.ref).filter(Boolean) as string[]);
+  const queueItems = (board.queue || []).filter((q) => q.publish_date && !linkedRefs.has(q.id) && (!queueFilter || queueFilter(q)));
 
   const marks: Mark[] = [
     ...calItems.map((it) => {
@@ -268,7 +277,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
         blurb={marks.length === 1 ? 'dated slot' : 'dated slots'}
       />
 
-      <div className="cb-calstrip-wrap" style={{ maxWidth: 660, marginTop: 14 }}>
+      <div className="cb-calstrip-wrap" style={{ marginTop: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.08em', color: 'var(--cb-ink-mute)', textAlign: 'center' }}>
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i}>{d}</div>)}
         </div>
@@ -370,7 +379,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
         </div>
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
-          {legendKey('var(--cb-ink)', undefined, 'out')}
+          {legendKey('var(--cb-ink)', undefined, 'published')}
           {legendKey('color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))', '1px solid var(--cb-accent)', 'scheduled')}
           {approvedShown && legendKey('var(--cb-accent)', undefined, 'approved')}
           {lmShown && legendKey('var(--cb-mint)', undefined, 'lead magnets')}

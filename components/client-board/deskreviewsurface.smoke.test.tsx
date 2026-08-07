@@ -22,6 +22,15 @@ import type { Board, QueueItem, HistoryEntry } from '../ClientBoardPage';
 
 const ACCENT = '#FFC71D';
 
+/** 2026-08-07 contract: Published / Changes log / Photo library start collapsed. Tests that
+ *  assert their CONTENT click the header open first (header itself always renders). */
+const openDisclosure = (container: HTMLElement, label: string) => {
+  const heads = Array.from(container.querySelectorAll('[role="button"][aria-expanded="false"]'));
+  const head = heads.find((el) => (el.textContent || '').includes(label));
+  if (head) fireEvent.click(head);
+};
+
+
 const SKIN_VARS: React.CSSProperties = {
   ['--cb-ink' as any]: '#111111',
   ['--cb-ink-soft' as any]: '#333333',
@@ -113,7 +122,7 @@ describe('DeskReviewSurface', () => {
     expect(html()).toContain('All content');
     expect(html()).toContain('in the pipeline');
     expect(html()).toContain('In buffer');
-    expect(html()).toContain('Out');
+    expect(html()).toContain('Published');
     expect(html()).toContain('List');
     expect(html()).toContain('Calendar');
 
@@ -127,6 +136,7 @@ describe('DeskReviewSurface', () => {
     expect(html()).not.toMatch(/<details[^>]*\bopen\b[^>]*>/);
 
     // Pipeline-first order: the buffer post appears before the published post in the markup.
+    openDisclosure(container, 'Published');
     const bufferIdx = html().indexOf('Buffer post title');
     const publishedIdx = html().indexOf('Published post title');
     expect(bufferIdx).toBeGreaterThan(-1);
@@ -141,6 +151,7 @@ describe('DeskReviewSurface', () => {
     expect(occurrences('Carousel: teardown')).toBe(1);
 
     // Wait for the fanned fetchHistory() Promise.all to resolve, then assert the diff drill.
+    openDisclosure(container, 'Changes log');
     await waitFor(() => expect(html()).toContain('changes on this board'));
     expect(html()).toContain('see the edit');
     expect(html()).toContain('characters');
@@ -161,6 +172,7 @@ describe('DeskReviewSurface', () => {
     const { container } = render(<Harness fetchHistory={fetchHistory} />);
     const html = () => container.innerHTML;
 
+    openDisclosure(container, 'Changes log');
     await waitFor(() => expect(html()).toContain('No changes recorded yet.'));
     // Zero history: no count number is shown next to the (absent) "changes on this board" line.
     expect(html()).not.toContain('changes on this board');
@@ -194,6 +206,7 @@ describe('DeskReviewSurface', () => {
     const html = () => container.innerHTML;
     const chipText = () => Array.from(container.querySelectorAll('.chip')).map((n) => n.textContent || '');
 
+    openDisclosure(container, 'Changes log');
     await waitFor(() => expect(html()).toContain('changes on this board'));
 
     // (a) identity: no email, no session id, no tooling name anywhere in a chip.
@@ -216,6 +229,9 @@ describe('DeskReviewSurface', () => {
     expect(html()).not.toContain(OPS_NOTE);
     expect(html()).not.toContain('XQ-77');
 
+    // Published section starts collapsed (2026-08-07 contract); open it so q-published-1's
+    // card (and its per-post log) is on screen before counting.
+    openDisclosure(container, 'Published');
     // Per-post history affordance: post A's card carries its own 2-entry log, collapsed.
     const postLogA = container.querySelector('[data-post-log="q-scheduled-1"]');
     expect(postLogA).not.toBeNull();
@@ -275,12 +291,14 @@ describe('DeskReviewSurface', () => {
     expect(html).not.toContain('<p');
   });
 
-  it('renders the photo library section (header + node) in list view when foldPhotos is passed', () => {
+  it('renders the photo library section header collapsed; node appears on open', () => {
     const { container } = render(<Harness foldPhotos={<div data-test-photos="" />} />);
-    const html = container.innerHTML;
-    expect(html).toContain('The photo library');
+    expect(container.innerHTML).toContain('The photo library');
+    // 2026-08-07 contract: starts collapsed — node absent until the header is clicked.
+    expect(container.querySelector('[data-test-photos]')).toBeNull();
+    openDisclosure(container, 'The photo library');
     expect(container.querySelector('[data-test-photos]')).not.toBeNull();
-    // Content-bearing block: the node is NOT buried inside a collapsed drill.
+    // Content-bearing block once open: NOT buried inside a <details> drill.
     const node = container.querySelector('[data-test-photos]')!;
     expect(node.closest('details')).toBeNull();
     cleanup();

@@ -282,6 +282,40 @@ export default function DeskReviewSurface({
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
   }
 
+  // ---- Category filter (2026-08-07, Ivan): pills + ?cat= deep link. 'personal' keys off
+  // taxonomy.register (plumbed by the queue sync); 'video' off the style/title the sync
+  // carries; 'lm' matches the same rule the calendar strip uses (launch/kind/gate).
+  type Cat = 'all' | 'personal' | 'post' | 'carousel' | 'video' | 'lm';
+  const CATS: { id: Cat; label: string }[] = [
+    { id: 'all', label: 'All' }, { id: 'personal', label: 'Personal' }, { id: 'post', label: 'Posts' },
+    { id: 'carousel', label: 'Carousels' }, { id: 'video', label: 'Videos' }, { id: 'lm', label: 'Lead magnets' },
+  ];
+  const catOf = (q: QueueItem): Cat => {
+    if (q.register === 'personal' || q.register === 'hybrid') return 'personal';
+    if (q.kind === 'lm' || q.lm_launch || q.lm_gate) return 'lm';
+    if ((q.style || '').toLowerCase() === 'video' || /^video[:\s]/i.test(q.title || '')) return 'video';
+    if (q.kind === 'carousel') return 'carousel';
+    return 'post';
+  };
+  const [cat, setCat] = useState<Cat>(() => {
+    try {
+      const c = new URLSearchParams(window.location.search).get('cat');
+      return (CATS.some((x) => x.id === c) && c !== 'all') ? (c as Cat) : 'all';
+    } catch { return 'all'; }
+  });
+  const inCat = (q: QueueItem) => cat === 'all' || catOf(q) === cat;
+  const catCount = (id: Cat) => id === 'all' ? board.queue.length : board.queue.filter((q) => catOf(q) === id).length;
+  const fUpNext = upNextRows.filter(inCat), fBuffer = bufferRows.filter(inCat), fDrafted = draftedRows.filter(inCat),
+    fPublished = publishedRows.filter(inCat), fReview = reviewRows.filter(inCat), fScheduled = scheduledRows.filter(inCat);
+
+  // ---- Collapsible sections (2026-08-07, Ivan): Published starts folded; the header row
+  // always renders, the rows toggle. ----
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const sectionOpen = (key: string) => openSections[key] ?? key !== 'published';
+  const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
+  const [logOpen, setLogOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+
   // ---- Block 6: changes log — fan fetchHistory across the queue, tagged with the post title.
   const [entries, setEntries] = useState<(HistoryEntry & { postId: string; postTitle: string })[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -499,12 +533,22 @@ export default function DeskReviewSurface({
 
   const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (
     <div key={key} style={{ marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)' }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--cb-ink)', flex: '1 1 auto' }}>{label}</div>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={sectionOpen(key)}
+        onClick={() => toggleSection(key)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection(key); } }}
+        style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)', cursor: 'pointer' }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--cb-ink)', flex: '1 1 auto' }}>
+          <span aria-hidden style={{ display: 'inline-block', width: 14, fontSize: 10, transform: sectionOpen(key) ? 'none' : 'translateY(-1px)' }}>{sectionOpen(key) ? '▾' : '▸'}</span>
+          {label}
+        </div>
         <Num size="row" inline style={{ fontSize: 19 }}>{count}</Num>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{blurb}</span>
       </div>
-      {rows}
+      {sectionOpen(key) ? rows : null}
     </div>
   ) : null;
 
@@ -561,26 +605,32 @@ export default function DeskReviewSurface({
       </Plate>
 
       {/* Block 3: view toggle. */}
-      <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
+        <span aria-hidden style={{ width: 1, alignSelf: 'stretch', background: 'var(--cb-line)', margin: '0 4px' }} />
+        {CATS.map((c) => (catCount(c.id) > 0 || c.id === 'all') && (
+          <Pill key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>{c.label}</Pill>
+        ))}
       </div>
 
       {view === 'calendar' ? (
-        foldCalendar || <Footnote>Calendar view not available yet.</Footnote>
+        (foldCalendar && React.isValidElement(foldCalendar)
+          ? React.cloneElement(foldCalendar as React.ReactElement<any>, { queueFilter: cat === 'all' ? undefined : inCat })
+          : foldCalendar) || <Footnote>Calendar view not available yet.</Footnote>
       ) : (
         <div>
           {/* Block 4: list view, pipeline-first (Up next/Scheduled → In buffer → Published). */}
           {live ? (
             <>
-              {section('Scheduled', upNextRows.length, 'posts, dated and queued', upNextRows.map((q) => renderRow(q, 'upnext')), 'upnext')}
-              {section('In buffer', bufferRows.length, 'written, no date yet', bufferRows.map((q) => renderRow(q, 'buffer')), 'buffer')}
-              {section('Drafting', draftedRows.length, 'Being written now. They move to your review when ready.', draftedRows.map(renderDraftedRow), 'drafted')}
-              {section('Out', publishedRows.length, 'published, newest first', [
-                ...publishedRows.slice(-6).reverse().map((q) => renderRow(q, 'published')),
-                publishedRows.length > 6 ? (
-                  <Drill key="earlier-out" label="open it" summaryLeft={<>Earlier: <b>{publishedRows.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
-                    {publishedRows.slice(0, -6).reverse().map((q, i) => (
+              {section('Scheduled', fUpNext.length, 'posts, dated and queued', fUpNext.map((q) => renderRow(q, 'upnext')), 'upnext')}
+              {section('In buffer', fBuffer.length, 'written, no date yet', fBuffer.map((q) => renderRow(q, 'buffer')), 'buffer')}
+              {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
+              {section('Published', fPublished.length, 'published, newest first', [
+                ...fPublished.slice(-6).reverse().map((q) => renderRow(q, 'published')),
+                fPublished.length > 6 ? (
+                  <Drill key="earlier-out" label="open it" summaryLeft={<>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
+                    {fPublished.slice(0, -6).reverse().map((q, i) => (
                       <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: '1px solid var(--cb-line)' }}>
                         <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
                         <button onClick={() => onOpen(q)} style={{ flex: '1 1 200px', minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{stripBrand(q.hook || q.title) || 'Untitled'}</button>
@@ -589,14 +639,17 @@ export default function DeskReviewSurface({
                   </Drill>
                 ) : null,
               ], 'published')}
+              {cat !== 'all' && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
+                <Footnote style={{ marginTop: 16 }}>Nothing in this category yet.</Footnote>
+              )}
             </>
           ) : (
             <>
               {section('Ideas', ideas.length, "The engine's upcoming idea bank. Each one drafts when it reaches its slot.", ideas.map(renderIdeaRow), 'ideas')}
-              {section('Your review', reviewRows.length, 'Approve, or say what to change in plain words.', reviewRows.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer')), 'review')}
-              {section('Drafting', draftedRows.length, 'Being written now. They move to your review when ready.', draftedRows.map(renderDraftedRow), 'drafted')}
-              {section('Scheduled', scheduledRows.length, 'Approved and queued to publish on their dates.', scheduledRows.map((q) => renderRow(q, 'upnext')), 'scheduled')}
-              {section('Published', publishedRows.length, 'How live posts will report here once posting starts.', publishedRows.map((q) => renderRow(q, 'published')), 'published')}
+              {section('Your review', fReview.length, 'Approve, or say what to change in plain words.', fReview.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer')), 'review')}
+              {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
+              {section('Scheduled', fScheduled.length, 'Approved and queued to publish on their dates.', fScheduled.map((q) => renderRow(q, 'upnext')), 'scheduled')}
+              {section('Published', fPublished.length, 'How live posts will report here once posting starts.', fPublished.map((q) => renderRow(q, 'published')), 'published')}
             </>
           )}
           {publishedRows.length > 0 && <Footnote style={{ marginTop: 14 }}>Reach and rate per post live on Performance.</Footnote>}
@@ -609,20 +662,27 @@ export default function DeskReviewSurface({
           folded. Same whitelist, same identity mapping as before. */}
       {fetchHistory && (
         <div style={{ marginTop: 26 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)' }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}>Changes log</div>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={logOpen}
+            onClick={() => setLogOpen((v) => !v)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLogOpen((v) => !v); } }}
+            style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
+          >
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{logOpen ? '▾' : '▸'}</span>Changes log</div>
             {entries !== null && entries.length > 0 && <Num size="row" inline style={{ fontSize: 13 }}>{entries.length}</Num>}
             {entries !== null && entries.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>changes on this board</span>}
             {entries !== null && entries.length > 0 && (
-              <div style={{ display: 'flex', gap: 6, marginLeft: 6 }}>
+              <div style={{ display: 'flex', gap: 6, marginLeft: 6 }} onClick={(e) => e.stopPropagation()}>
                 <Pill active={who === 'all'} onClick={() => setWho('all')}>All</Pill>
                 {founderFirst && <Pill active={who === 'founder'} onClick={() => setWho('founder')}>{founderFirst}&rsquo;s</Pill>}
               </div>
             )}
           </div>
-          {historyLoading && <Footnote style={{ marginTop: 10 }}>reading the log…</Footnote>}
-          {!historyLoading && entries !== null && entries.length === 0 && <Footnote style={{ marginTop: 10 }}>No changes recorded yet.</Footnote>}
-          {!historyLoading && filteredEntries.length > 0 && (
+          {logOpen && historyLoading && <Footnote style={{ marginTop: 10 }}>reading the log…</Footnote>}
+          {logOpen && !historyLoading && entries !== null && entries.length === 0 && <Footnote style={{ marginTop: 10 }}>No changes recorded yet.</Footnote>}
+          {logOpen && !historyLoading && filteredEntries.length > 0 && (
             <>
               {/* 3 recent entries visible; everything else folds. */}
               {filteredEntries.slice(0, 3).map((h, i) => {
@@ -685,10 +745,17 @@ export default function DeskReviewSurface({
           wrapped in a drill: it is content-bearing, so it stays visible on the list view. */}
       {foldPhotos != null && view !== 'calendar' && (
         <div style={{ marginTop: 26 }}>
-          <div style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)' }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>The photo library</div>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={photosOpen}
+            onClick={() => setPhotosOpen((v) => !v)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPhotosOpen((v) => !v); } }}
+            style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
+          >
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>The photo library</div>
           </div>
-          <div style={{ marginTop: 12 }}>{foldPhotos}</div>
+          {photosOpen && <div style={{ marginTop: 12 }}>{foldPhotos}</div>}
         </div>
       )}
 

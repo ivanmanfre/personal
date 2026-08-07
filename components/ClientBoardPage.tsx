@@ -170,6 +170,9 @@ interface QueueItem {
   /** Audience aim for the post (reach / trust / buyers), plumbed from
    *  carousel_drafts.funnel_stage by the queue sync. Absent on older items. */
   funnel_stage?: string;
+  /** Personal-lane register (personal / hybrid), plumbed from carousel_drafts.taxonomy.register
+   *  by the queue sync (2026-08-07). Absent on tactical posts. */
+  register?: string;
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string; time?: string; stage?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
