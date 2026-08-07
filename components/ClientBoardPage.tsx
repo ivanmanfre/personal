@@ -6536,7 +6536,6 @@ function PhotosSurface({ board: _board, accent, slug, compact = false, onDeleteP
             <div style={{ fontFamily: SERIF, fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>
               {count} {count === 1 ? 'photo' : 'photos'} uploaded
             </div>
-            <div className="mt-1.5 text-[12.5px]" style={{ color: FAINT }}>20 to 30 is the sweet spot.</div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <button
