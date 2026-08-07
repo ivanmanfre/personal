@@ -11,8 +11,11 @@ import rodial from './scanlab/rodial-com.json';
 import apple from './scanlab/apple-com.json';
 import gopure from './scanlab/gopure-com.json';
 import truly from './scanlab/truly-office-branzio.json';
+// audit v3 (2026-08-07): the REAL panthervision v3 row — buckets, google ads evidence,
+// brand-wide meta sweep, competitor strip, homepage+PDP screenshots.
+import pantherV3 from './scanlab/panther-v3.json';
 
-const FIXTURES: Record<string, any> = { rodial, apple, gopure, truly };
+const FIXTURES: Record<string, any> = { rodial, apple, gopure, truly, 'panther-v3': pantherV3 };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';
