@@ -282,28 +282,64 @@ export default function DeskReviewSurface({
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
   }
 
-  // ---- Category filter (2026-08-07, Ivan): pills + ?cat= deep link. 'personal' keys off
-  // taxonomy.register (plumbed by the queue sync); 'video' off the style/title the sync
-  // carries; 'lm' matches the same rule the calendar strip uses (launch/kind/gate).
-  type Cat = 'all' | 'personal' | 'post' | 'carousel' | 'video' | 'lm';
+  // ---- Category filters (2026-08-07, Ivan): two separate axes so they never overlap.
+  // FORMAT (?cat=) is what the item looks like on LinkedIn (post/carousel/video/LM);
+  // TOPIC (?topic=) is the pillar the engine tagged it with (taxonomy.pillar via the queue
+  // sync), with the personal lane keyed off taxonomy.register so a hybrid post still counts
+  // as personal. They compose — "Carousels × Teardown" is a real view.
+  type Cat = 'all' | 'post' | 'carousel' | 'video' | 'lm';
   const CATS: { id: Cat; label: string }[] = [
-    { id: 'all', label: 'All' }, { id: 'personal', label: 'Personal' }, { id: 'post', label: 'Posts' },
+    { id: 'all', label: 'All' }, { id: 'post', label: 'Posts' },
     { id: 'carousel', label: 'Carousels' }, { id: 'video', label: 'Videos' }, { id: 'lm', label: 'Lead magnets' },
   ];
   const catOf = (q: QueueItem): Cat => {
-    if (q.register === 'personal' || q.register === 'hybrid') return 'personal';
     if (q.kind === 'lm' || q.lm_launch || q.lm_gate) return 'lm';
     if ((q.style || '').toLowerCase() === 'video' || /^video[:\s]/i.test(q.title || '')) return 'video';
     if (q.kind === 'carousel') return 'carousel';
     return 'post';
   };
-  const [cat, setCat] = useState<Cat>(() => {
-    try {
-      const c = new URLSearchParams(window.location.search).get('cat');
-      return (CATS.some((x) => x.id === c) && c !== 'all') ? (c as Cat) : 'all';
-    } catch { return 'all'; }
+  const topicOf = (q: QueueItem): string | null => {
+    if (q.register === 'personal' || q.register === 'hybrid') return 'personal';
+    return q.pillar || null;
+  };
+  // Topic pills come from the rows themselves (the canon pillar labels live on the data —
+  // never a hardcoded list here). Personal leads, then the client's core pillars, then rest
+  // by count.
+  const TOPIC_ORDER = ['personal', 'teardown', 'authority', 'demand', 'case_study'];
+  const topicCounts: Record<string, number> = {};
+  board.queue.forEach((q) => { const t = topicOf(q); if (t) topicCounts[t] = (topicCounts[t] || 0) + 1; });
+  const topics = Object.keys(topicCounts).sort((a, b) => {
+    const ia = TOPIC_ORDER.indexOf(a), ib = TOPIC_ORDER.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    return topicCounts[b] - topicCounts[a];
   });
-  const inCat = (q: QueueItem) => cat === 'all' || catOf(q) === cat;
+  const topicLabel = (t: string) => t.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  const readParam = (k: string) => { try { return new URLSearchParams(window.location.search).get(k); } catch { return null; } };
+  const [cat, setCatState] = useState<Cat>(() => {
+    const c = readParam('cat');
+    if (c === 'personal') return 'all'; // legacy deep link from before the topic axis existed
+    return (CATS.some((x) => x.id === c) && c !== 'all') ? (c as Cat) : 'all';
+  });
+  const [topic, setTopicState] = useState<string>(() => {
+    const t = readParam('topic');
+    if (t) return t;
+    return readParam('cat') === 'personal' ? 'personal' : 'all';
+  });
+  // Filter clicks write the URL (shareable view) and tell the panel shell on
+  // resources.risedtc.com to swap its pretty path (/panel/content/<x>/). The message carries
+  // only the two filter ids — nothing sensitive crosses the frame boundary.
+  const syncFilterUrl = (c: Cat, t: string) => {
+    try {
+      const u = new URL(window.location.href);
+      if (c === 'all') u.searchParams.delete('cat'); else u.searchParams.set('cat', c);
+      if (t === 'all') u.searchParams.delete('topic'); else u.searchParams.set('topic', t);
+      window.history.replaceState(null, '', u.toString());
+      if (window.parent !== window) window.parent.postMessage({ type: 'cb-filter', cat: c, topic: t }, '*');
+    } catch { /* URL sync is best-effort; the filter itself already applied */ }
+  };
+  const setCat = (c: Cat) => { setCatState(c); syncFilterUrl(c, topic); };
+  const setTopic = (t: string) => { setTopicState(t); syncFilterUrl(cat, t); };
+  const inCat = (q: QueueItem) => (cat === 'all' || catOf(q) === cat) && (topic === 'all' || topicOf(q) === topic);
   const catCount = (id: Cat) => id === 'all' ? board.queue.length : board.queue.filter((q) => catOf(q) === id).length;
   const fUpNext = upNextRows.filter(inCat), fBuffer = bufferRows.filter(inCat), fDrafted = draftedRows.filter(inCat),
     fPublished = publishedRows.filter(inCat), fReview = reviewRows.filter(inCat), fScheduled = scheduledRows.filter(inCat);
@@ -505,6 +541,52 @@ export default function DeskReviewSurface({
     );
   };
 
+  // ---- LinkedIn-style card (2026-08-07, Ivan): the Personal topic renders drafts the way
+  // they'll actually look in the feed — founder header, the full copy, the image — two to a
+  // row. No title line, no hook/copy split, no drill.
+  const renderLiCard = (q: QueueItem, bucket: Bucket) => {
+    const img = cardImageUrlLocal(q, board);
+    const chip = bucket === 'published' ? { label: 'published' } : statusChipFor(stageOf(q), q, live, todayIso);
+    const dateLabel = bucket === 'buffer' ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
+    const fName = (board.founder?.name || '').trim() || 'Founder';
+    const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+    return (
+      <div key={q.id} style={{ border: '1px solid var(--cb-line)', borderRadius: 14, background: 'var(--cb-paper)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div
+          role="button" tabIndex={0}
+          onClick={() => onOpen(q)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
+          style={{ padding: '14px 16px 0', cursor: 'pointer', flex: '1 1 auto' }}
+        >
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div aria-hidden style={{ flex: 'none', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 }}>{initials}</div>
+            <div style={{ flex: '1 1 100px', minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--cb-ink)' }}>{fName}</div>
+              {board.founder?.headline && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{board.founder.headline}</div>}
+            </div>
+            {chip && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>}
+          </div>
+          <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line' }}>{stripBrand(q.body || q.hook || q.title)}</div>
+        </div>
+        {img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px 13px', borderTop: img ? undefined : '1px solid var(--cb-line)', marginTop: img ? 0 : 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
+          {bucket !== 'published' && (
+            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
+              <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+              <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+  /** The Personal topic reads as a 2-up feed of LinkedIn-style cards; every other view keeps rows. */
+  const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
+    topic === 'personal'
+      ? <div className="cb-licard-grid">{list.map((q) => renderLiCard(q, bucket))}</div>
+      : list.map((q) => renderRow(q, bucket));
+
   const renderDraftedRow = (q: QueueItem) => (
     <div key={q.id} style={{ padding: '18px 14px 12px', borderBottom: '1px solid var(--cb-line)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
       {cardImageUrlLocal(q, board) && <Thumb src={cardImageUrlLocal(q, board)!} size="lg" />}
@@ -559,6 +641,10 @@ export default function DeskReviewSurface({
 
   return (
     <div data-surface="review">
+      <style>{`
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
+        @media (max-width: 640px) { .cb-licard-grid { grid-template-columns: 1fr; } }
+      `}</style>
 
       {/* Block 1: computed headline. */}
       <Eyebrow>All content</Eyebrow>
@@ -604,7 +690,7 @@ export default function DeskReviewSurface({
         )}
       </Plate>
 
-      {/* Block 3: view toggle. */}
+      {/* Block 3: view toggle + the two filter axes (format row, then topic row). */}
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
@@ -613,21 +699,30 @@ export default function DeskReviewSurface({
           <Pill key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>{c.label}</Pill>
         ))}
       </div>
+      {topics.length > 0 && (
+        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Topic</span>
+          <Pill active={topic === 'all'} onClick={() => setTopic('all')}>All</Pill>
+          {topics.map((t) => (
+            <Pill key={t} active={topic === t} onClick={() => setTopic(t)}>{topicLabel(t)}</Pill>
+          ))}
+        </div>
+      )}
 
       {view === 'calendar' ? (
         (foldCalendar && React.isValidElement(foldCalendar)
-          ? React.cloneElement(foldCalendar as React.ReactElement<any>, { queueFilter: cat === 'all' ? undefined : inCat })
+          ? React.cloneElement(foldCalendar as React.ReactElement<any>, { queueFilter: (cat === 'all' && topic === 'all') ? undefined : inCat })
           : foldCalendar) || <Footnote>Calendar view not available yet.</Footnote>
       ) : (
         <div>
           {/* Block 4: list view, pipeline-first (Up next/Scheduled → In buffer → Published). */}
           {live ? (
             <>
-              {section('Scheduled', fUpNext.length, 'posts, dated and queued', fUpNext.map((q) => renderRow(q, 'upnext')), 'upnext')}
-              {section('In buffer', fBuffer.length, 'written, no date yet', fBuffer.map((q) => renderRow(q, 'buffer')), 'buffer')}
+              {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
+              {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer')}
               {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
               {section('Published', fPublished.length, 'published, newest first', [
-                ...fPublished.slice(-6).reverse().map((q) => renderRow(q, 'published')),
+                <React.Fragment key="recent-out">{rowsFor(fPublished.slice(-6).reverse(), 'published')}</React.Fragment>,
                 fPublished.length > 6 ? (
                   <Drill key="earlier-out" label="open it" summaryLeft={<>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
                     {fPublished.slice(0, -6).reverse().map((q, i) => (
@@ -639,17 +734,17 @@ export default function DeskReviewSurface({
                   </Drill>
                 ) : null,
               ], 'published')}
-              {cat !== 'all' && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
+              {(cat !== 'all' || topic !== 'all') && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
                 <Footnote style={{ marginTop: 16 }}>Nothing in this category yet.</Footnote>
               )}
             </>
           ) : (
             <>
               {section('Ideas', ideas.length, "The engine's upcoming idea bank. Each one drafts when it reaches its slot.", ideas.map(renderIdeaRow), 'ideas')}
-              {section('Your review', fReview.length, 'Approve, or say what to change in plain words.', fReview.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer')), 'review')}
+              {section('Your review', fReview.length, 'Approve, or say what to change in plain words.', topic === 'personal' ? <div className="cb-licard-grid">{fReview.map((q) => renderLiCard(q, isScheduledLocal(q) ? 'upnext' : 'buffer'))}</div> : fReview.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer')), 'review')}
               {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
-              {section('Scheduled', fScheduled.length, 'Approved and queued to publish on their dates.', fScheduled.map((q) => renderRow(q, 'upnext')), 'scheduled')}
-              {section('Published', fPublished.length, 'How live posts will report here once posting starts.', fPublished.map((q) => renderRow(q, 'published')), 'published')}
+              {section('Scheduled', fScheduled.length, 'Approved and queued to publish on their dates.', rowsFor(fScheduled, 'upnext'), 'scheduled')}
+              {section('Published', fPublished.length, 'How live posts will report here once posting starts.', rowsFor(fPublished, 'published'), 'published')}
             </>
           )}
           {publishedRows.length > 0 && <Footnote style={{ marginTop: 14 }}>Reach and rate per post live on Performance.</Footnote>}
