@@ -19,7 +19,7 @@ import { pillarMixTargets } from '../../../lib/strategyConfig';
  * surface says so honestly — never a hardcoded fallback list.
  */
 
-const PILLAR_ORDER = ['Translator', 'Methodology', 'Teardown', 'Case Study', 'Personal'];
+const PILLAR_ORDER = ['Demand', 'Authority', 'Teardown', 'Case Study', 'Personal'];
 const PILLAR_WINDOW_DAYS = 30;
 const RECENT_DAYS = 7;
 

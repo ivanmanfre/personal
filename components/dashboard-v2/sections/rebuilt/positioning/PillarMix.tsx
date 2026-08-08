@@ -5,7 +5,7 @@ import { pillarMixTargets, contentStrategyLinks } from '../../../../../lib/strat
 import { useContentLibrary, type CarouselDraft } from '../../../../../hooks/useContentLibrary';
 
 const REPO_ROOT = '/Users/ivanmanfredi/Desktop/personal-site';
-const PILLAR_ORDER = ['Translator', 'Methodology', 'Teardown', 'Case Study', 'Personal'];
+const PILLAR_ORDER = ['Demand', 'Authority', 'Teardown', 'Case Study', 'Personal'];
 const PILLAR_WINDOW_DAYS = 30;
 
 // The proven ink tonal ramp (the reference pattern the pillar-bar fix shipped).

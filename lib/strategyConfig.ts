@@ -179,7 +179,7 @@ export interface ContentStrategyLink {
 // This Week's Plan — repurposing flywheel pattern from C10
 export const contentStrategyThisWeek: ThisWeekItem[] = [
   { day: 'Mon', format: 'Long-text', description: 'Anchors the week — 1,400-1,800 chars, seeds Tue + Wed' },
-  { day: 'Tue', format: 'Precondition Cut video', description: 'Methodology pillar, 60-90s 9:16 native upload @ 09:00 ET', isAnchor: true },
+  { day: 'Tue', format: 'Precondition Cut video', description: 'Authority pillar, 60-90s 9:16 native upload @ 09:00 ET', isAnchor: true },
   { day: 'Wed', format: 'PDF carousel', description: 'Saves day — 7-9 slides @ 08:00 ET + self-comment within 30 min' },
   { day: 'Thu', format: 'Tactical post', description: 'Auto-pull live tooling/algo news (or banked C2 idea fallback)' },
   { day: 'Fri', format: 'Experimental slot', description: 'Alternates image-carousel (durable) and video (POV/experimental)' },
@@ -219,11 +219,11 @@ export const preconditionEpisodes: PrecondictionEpisode[] = [
 
 // Pillar mix — 2026-07-17 storefront cutover (30/25/15/20/10): Case Study is the
 // weekly public-case-study FLAGSHIP (one episode/wk, the storefront's proof pillar).
-// Mirrors content_prompts post-generation v26. actualPct stays null here; live
+// Mirrors content_prompts post-generation (pillar names unified 2026-08-08: translator->demand, methodology->authority). actualPct stays null here; live
 // actuals are computed from carousel_drafts (published, taxonomy.pillar).
 export const pillarMixTargets: PillarTarget[] = [
-  { pillar: 'Translator',  targetPct: 30, actualPct: null },
-  { pillar: 'Methodology', targetPct: 25, actualPct: null },
+  { pillar: 'Demand',      targetPct: 30, actualPct: null },
+  { pillar: 'Authority',   targetPct: 25, actualPct: null },
   { pillar: 'Teardown',    targetPct: 15, actualPct: null },
   { pillar: 'Case Study',  targetPct: 20, actualPct: null },
   { pillar: 'Personal',    targetPct: 10, actualPct: null },

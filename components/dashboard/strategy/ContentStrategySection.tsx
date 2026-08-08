@@ -12,7 +12,7 @@ import { pillarMixTargets, contentStrategyLinks } from '../../../lib/strategyCon
 import { useContentLibrary, type CarouselDraft } from '../../../hooks/useContentLibrary';
 
 const REPO_ROOT = '/Users/ivanmanfredi/Desktop/personal-site';
-const PILLAR_ORDER = ['Translator', 'Methodology', 'Teardown', 'Case Study', 'Personal'];
+const PILLAR_ORDER = ['Demand', 'Authority', 'Teardown', 'Case Study', 'Personal'];
 const PILLAR_WINDOW_DAYS = 30;
 
 // Black Box register: differentiate pillar segments by an INK tonal ramp (no
