@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
 import {
-  FunnelChip, fmtDay, inkOn,
+  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf,
 } from '../ClientBoardPage';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
@@ -552,6 +552,11 @@ export default function DeskReviewSurface({
   // row. No title line, no hook/copy split, no drill.
   const renderLiCard = (q: QueueItem, bucket: Bucket) => {
     const img = cardImageUrlLocal(q, board);
+    /* A carousel is a multi-page document, and this card is the only place the Personal topic
+       shows it. Rendering just the cover made a 9-slide deck look like one dead image with no
+       way through it, so a deck gets the pager (swipe, drag, dots, arrow keys) and everything
+       else keeps the flat image. */
+    const deck = docPagesOf(q);
     const chip = bucket === 'published' ? { label: 'published' } : statusChipFor(stageOf(q), q, live, todayIso);
     const dateLabel = bucket === 'buffer' ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
     const fName = (board.founder?.name || '').trim() || 'Founder';
@@ -574,8 +579,10 @@ export default function DeskReviewSurface({
           </div>
           <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line' }}>{stripBrand(q.body || q.hook || q.title)}</div>
         </div>
-        {img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px 13px', borderTop: img ? undefined : '1px solid var(--cb-line)', marginTop: img ? 0 : 12 }}>
+        {deck.length >= 2
+          ? <div style={{ marginTop: 12 }}><DocCarousel slides={deck} title={q.title || q.hook} accent={accent} /></div>
+          : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px 13px', borderTop: (img || deck.length >= 2) ? undefined : '1px solid var(--cb-line)', marginTop: (img || deck.length >= 2) ? 0 : 12 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
           {bucket !== 'published' && (
             <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>

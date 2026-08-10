@@ -311,6 +311,40 @@ describe('DeskReviewSurface', () => {
     cleanup();
   });
 
+  // The Personal topic swaps the ledger rows for LinkedIn-style cards. A carousel used to
+  // render there as its cover image alone: nine slides behind one dead frame, nothing to
+  // swipe, nothing to click. The card has to page a deck.
+  it('pages a carousel on the Personal topic instead of showing a dead cover', () => {
+    const slides = Array.from({ length: 9 }, (_, i) => `https://example.com/deck/slide-0${i + 1}.png`);
+    const board = makeBoard();
+    board.queue = [
+      { id: 'q-personal-deck', kind: 'carousel', stage: 'review', register: 'personal',
+        title: 'Carousel: The Year Ladder', hook: 'Hook', body: 'Body '.repeat(20),
+        image_urls: slides } as unknown as QueueItem,
+    ];
+    window.history.replaceState(null, '', '/client/test?topic=personal');
+    const { container } = render(
+      <div data-skin="desk" style={SKIN_VARS}>
+        <DeskReviewSurface
+          board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf}
+          onOpen={noop} onOpenIdea={noop} onApprove={noop} onRemove={noop}
+          flashId={null} view="list" setView={noop} skips={{}} live
+          foldPhotos={null} foldCalendar={<div />}
+        />
+      </div>,
+    );
+    const html = container.innerHTML;
+    // Every page is mounted in a snapping track, page 1 is current, and the pager is reachable.
+    expect(html).toContain('1 / 9');
+    expect(html).toContain('aria-label="Next page"');
+    expect((html.match(/slide-0\d\.png/g) || []).length).toBe(9);
+    const track = container.querySelector('.no-scrollbar') as HTMLElement | null;
+    expect(track).not.toBeNull();
+    expect(track!.children).toHaveLength(9);
+    window.history.replaceState(null, '', '/');
+    cleanup();
+  });
+
   it('renders nothing for the changes log when fetchHistory is absent (preview boards)', () => {
     const { container } = render(<Harness />);
     const html = container.innerHTML;
