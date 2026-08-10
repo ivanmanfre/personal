@@ -7180,7 +7180,12 @@ export default function ClientBoardPage() {
   // Company name for the pre-render states (generating / failed): the placeholder row
   // carries it before the full board jsonb exists, so the building screen can name it.
   const [pendingCompany, setPendingCompany] = useState<string>('');
-  const [tab, setTab] = useState<TabId>('week');
+  // The panel shell's pretty paths (/panel/content/personal/, /panel/content/posts/, ...)
+  // arrive as ?cat= / ?topic= / ?aim= on the framed board. Those three axes live on the ALL
+  // CONTENT ledger, so a filtered link has to land there: booting on This week left the
+  // filter sitting on a tab nobody had opened yet, and /panel/content/personal/ looked
+  // identical to /panel/. DeskReviewSurface reads the same params for the pill state.
+  const [tab, setTab] = useState<TabId>(() => (params.get('cat') || params.get('topic') || params.get('aim')) ? 'review' : 'week');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
   const [detailEditing, setDetailEditing] = useState(false);
