@@ -4,9 +4,10 @@
 // the client relies on when reviewing a deck.
 //
 // Static assertions only (renderToStaticMarkup, the convention in this repo — there is no
-// jsdom dependency). Covered: every page mounted, one visible, page-1 start, 4:5 frame,
-// "n / total" counter, pager affordances present/clamped at page 1, keyboard reachability.
-// NOT covered here: the click/arrow paging transitions, which need a live DOM.
+// jsdom dependency). Covered: every page mounted, one current page, page-1 start, 4:5 frame,
+// the snapping scroll track that makes the deck swipeable, "n / total" counter, pager
+// affordances present/clamped at page 1, keyboard reachability.
+// NOT covered here: the click/arrow/drag paging transitions, which need a live DOM.
 import { describe, expect, it } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -25,16 +26,29 @@ describe('DocCarousel — LinkedIn document preview', () => {
     }
   });
 
-  it('shows exactly one page, and starts on page 1', () => {
-    // Pages 2..6 are mounted but display:none; page 1 is the only one shown.
-    const hidden = html.match(/display:none/g) || [];
+  it('marks exactly one current page, and starts on page 1', () => {
+    // Pages 2..6 sit off to the side of the track and are aria-hidden; page 1 is the current
+    // one. Match the page wrapper itself — the chevron glyph is aria-hidden too.
+    const pages = html.match(/scroll-snap-stop:\s*always"/g) || [];
+    expect(pages).toHaveLength(6);
+    const hidden = html.match(/scroll-snap-stop:\s*always"\s*aria-hidden="true"/g) || [];
     expect(hidden).toHaveLength(5);
-    const firstImg = html.slice(html.indexOf('slide-1.png'));
-    expect(firstImg.slice(0, 400)).not.toContain('display:none');
+    const firstPage = html.slice(0, html.indexOf('slide-1.png'));
+    expect(firstPage.slice(firstPage.lastIndexOf('<div'))).not.toContain('aria-hidden');
   });
 
   it('frames the page at 4:5, the geometry that actually publishes', () => {
     expect(html).toMatch(/aspect-ratio:\s*4\s*\/\s*5/);
+  });
+
+  it('lays the pages out in a snapping scroll track, so the deck can be swiped', () => {
+    // The whole point: a touch swipe or trackpad swipe is the browser's own scroll. Without
+    // the track the only way to page was the two 30px chevrons, and a drag did nothing.
+    expect(html).toMatch(/overflow-x:\s*auto/);
+    expect(html).toMatch(/scroll-snap-type:\s*x mandatory/);
+    expect((html.match(/scroll-snap-align:\s*start/g) || []).length).toBe(6);
+    // A swipe past the last page must not hand the gesture to the browser's back navigation.
+    expect(html).toMatch(/overscroll-behavior-x:\s*contain/);
   });
 
   it('counts pages as "n / total"', () => {
@@ -46,9 +60,9 @@ describe('DocCarousel — LinkedIn document preview', () => {
     expect(html).not.toContain('aria-label="Previous page"');
   });
 
-  it('is keyboard reachable and announces its position', () => {
+  it('is keyboard reachable and announces its position and its gestures', () => {
     expect(html).toContain('tabindex="0"');
-    expect(html).toMatch(/aria-label="Document preview, page 1 of 6[^"]*arrow keys/);
+    expect(html).toMatch(/aria-label="Document preview, page 1 of 6[^"]*Swipe, drag, or use arrow keys/);
   });
 
   it('carries one dot per page', () => {
@@ -61,8 +75,8 @@ describe('DocCarousel — LinkedIn document preview', () => {
   });
 
   it('loads every page eagerly, so a swipe never lands on a blank frame', () => {
-    // The inactive pages are display:none. A lazy hidden image is not fetched until revealed,
-    // which measured 1-of-6 loaded on the real board and blanked each swipe.
+    // The other pages sit off-screen in the track. A lazy off-screen image is not fetched until
+    // it scrolls in, which measured 1-of-6 loaded on the real board and blanked each swipe.
     expect(html).not.toContain('loading="lazy"');
     expect((html.match(/loading="eager"/g) || []).length).toBe(6);
   });

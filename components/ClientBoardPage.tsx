@@ -673,13 +673,33 @@ function PagerChevron({ dir }: { dir: 'l' | 'r' }) {
  *  the uploaded filename, so the live post can read differently. */
 export function DocCarousel({ slides, title, accent }: { slides: string[]; title?: string; accent: string }) {
   const [i, setI] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const total = slides.length;
   const idx = Math.min(i, total - 1);
-  const go = (n: number) => setI(Math.max(0, Math.min(total - 1, n)));
+  const reduce = useReducedMotion();
+  /* The pages live in a real horizontal scroller, so the deck slides the way the document
+     post does: touch swipe and trackpad two-finger swipe are the browser's own, with its
+     inertia and its snap. Buttons, dots and arrow keys drive the SAME scroller — nothing
+     keeps a private idea of the page. Before this the only way to page was the two 30px
+     chevrons; a drag or a swipe did nothing at all. */
+  const track = useRef<HTMLDivElement | null>(null);
+  /* Mouse click-drag is the one gesture no browser gives a scroller for free, so it is the
+     only one we hand-drive: scrollLeft follows the pointer, snapping is off for the pull
+     (mandatory snap would yank each frame back mid-drag), then we settle on the nearest page. */
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const swallowClick = useRef(false);
+  const pageOf = (el: HTMLDivElement) => (el.clientWidth ? Math.round(el.scrollLeft / el.clientWidth) : 0);
+  const clamp = (n: number) => Math.max(0, Math.min(total - 1, n));
+  const go = (n: number) => {
+    const to = clamp(n);
+    setI(to);
+    const el = track.current;
+    if (el) el.scrollTo({ left: to * el.clientWidth, behavior: reduce ? 'auto' : 'smooth' });
+  };
   return (
     <div
       tabIndex={0}
-      aria-label={`Document preview, page ${idx + 1} of ${total}. Use arrow keys to page.`}
+      aria-label={`Document preview, page ${idx + 1} of ${total}. Swipe, drag, or use arrow keys to page.`}
       /* Paging is NOT "open this post". Every control below stops the click from reaching the
          card wrapper, which is a click-to-open target: without this, one tap on Next both
          advanced the page and threw the reader into the edit view. Arrow keys stop too, or
@@ -688,24 +708,77 @@ export function DocCarousel({ slides, title, accent }: { slides: string[]; title
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); go(idx + 1); }
         if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); go(idx - 1); }
       }}
+      /* A mouse drag ends in a click. That click would bubble to the card wrapper and open the
+         edit view, so the gesture that paged the deck would also leave it. Eat exactly one. */
+      onClickCapture={(e) => {
+        if (!swallowClick.current) return;
+        swallowClick.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       style={{ border: `1px solid ${LINE}`, borderRadius: 6, overflow: 'hidden', background: '#F0F2F5', outlineColor: accent }}
     >
       <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
-        {slides.map((u, n) => (
-          <img
-            key={u}
-            src={u}
-            alt={`Page ${n + 1} of ${total}`}
-            /* Eager on every page, not just the cover. The inactive pages are display:none, and a
-               lazy hidden image is never fetched until it is revealed — measured 1 of 6 loaded on
-               the real board — so each swipe landed on an empty frame while that page downloaded.
-               A deck is six modest PNGs on a review surface; paying for them up front is the
-               whole point of previewing it as a document. */
-            loading="eager"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', display: n === idx ? 'block' : 'none' }}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-          />
-        ))}
+        <div
+          ref={track}
+          className="no-scrollbar absolute flex"
+          /* The index follows the SCROLL, never the other way round: a half-swipe that snaps
+             back leaves the counter and dots telling the truth. */
+          onScroll={() => { const el = track.current; if (el) setI((p) => { const n = clamp(pageOf(el)); return p === n ? p : n; }); }}
+          onPointerDown={(e) => {
+            const el = track.current;
+            if (!el || e.pointerType !== 'mouse' || e.button !== 0 || total < 2) return;
+            drag.current = { x: e.clientX, left: el.scrollLeft, moved: false };
+            setDragging(true);
+            el.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            const d = drag.current, el = track.current;
+            if (!d || !el) return;
+            const dx = e.clientX - d.x;
+            if (Math.abs(dx) > 3) d.moved = true;
+            el.scrollLeft = d.left - dx;
+          }}
+          onPointerUp={(e) => {
+            const d = drag.current, el = track.current;
+            drag.current = null;
+            setDragging(false);
+            if (!d || !el) return;
+            if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+            if (!d.moved) return;
+            swallowClick.current = true;
+            e.stopPropagation();
+            go(pageOf(el));
+          }}
+          onPointerCancel={() => { drag.current = null; setDragging(false); }}
+          style={{
+            inset: 0,
+            overflowX: 'auto', overflowY: 'hidden',
+            scrollSnapType: dragging ? 'none' : 'x mandatory',
+            /* Contain the horizontal overscroll or a swipe past the last page triggers the
+               browser's back gesture and the reader loses the board. */
+            overscrollBehaviorX: 'contain',
+            cursor: total > 1 ? (dragging ? 'grabbing' : 'grab') : 'default',
+          }}
+        >
+          {slides.map((u, n) => (
+            <div key={`${u}#${n}`} className="relative" style={{ flex: '0 0 100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }} aria-hidden={n === idx ? undefined : true}>
+              <img
+                src={u}
+                alt={`Page ${n + 1} of ${total}`}
+                /* Eager on every page, not just the cover. A lazy off-screen image is never
+                   fetched until it scrolls in — measured 1 of 6 loaded on the real board — so
+                   each swipe landed on an empty frame while that page downloaded. A deck is six
+                   modest PNGs on a review surface; paying for them up front is the whole point
+                   of previewing it as a document. */
+                loading="eager"
+                draggable={false}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+              />
+            </div>
+          ))}
+        </div>
         <span className="absolute rounded-full px-2 py-0.5 text-[11.5px] font-semibold tabular-nums" style={{ top: 8, right: 8, background: 'rgba(0,0,0,.55)', color: '#fff', backdropFilter: 'blur(2px)' }}>
           {idx + 1} / {total}
         </span>
