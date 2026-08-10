@@ -133,6 +133,10 @@ interface QueueItem {
    *  reads image_urls[0] as the card image so an attached image is always VISIBLE for review
    *  before it publishes (media_url/cover_url are the older single-image fields). */
   image_urls?: string[] | null;
+  /** Instagram cut of an over-cap deck (IG hard-caps a carousel at 10 items). Stamped on
+   *  carousel_drafts.ig_slide_urls and plumbed by the queue sync; the edit sheet renders
+   *  it as a small strip ONLY when the LinkedIn deck runs past 10 pages. */
+  ig_slide_urls?: string[] | null;
   image?: string | null;
   title?: string;
   promise?: string;
@@ -615,6 +619,35 @@ function SlideStrip({ item }: { item: QueueItem }) {
           <span className="absolute bottom-0.5 right-1 rounded px-1 text-[9px] font-semibold tabular-nums" style={{ background: 'rgba(255,255,255,.85)', color: '#555' }}>{i + 1}</span>
         </a>
       ))}
+    </div>
+  );
+}
+
+/** The Instagram cut of an over-cap deck, as a compact labelled strip. Instagram stores at
+ *  most 10 items per carousel, so a 12-page LinkedIn deck cannot mirror as-is; when a
+ *  10-slide cut exists (queue.ig_slide_urls) and the LinkedIn deck really is over the cap,
+ *  this shows the exact slides that go to IG. Decks at 10 or under render nothing here —
+ *  their IG post is the same deck. */
+function IgVersionStrip({ item }: { item: QueueItem }) {
+  const liCount = (item.image_urls || []).filter(Boolean).length;
+  const igSlides = (item.ig_slide_urls || []).filter(Boolean);
+  if (liCount <= 10 || igSlides.length < 2) return null;
+  return (
+    <div className="mt-4 rounded-xl p-4" style={{ border: `1px solid ${LINE}` }}>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: DIM }}>
+        Instagram version · {igSlides.length} slides
+      </div>
+      <p className="mt-1 text-[12px] leading-relaxed" style={{ color: FAINT }}>
+        Instagram stores 10 slides per carousel, so the {liCount}-page LinkedIn deck runs long for it. These are the slides that post on IG.
+      </p>
+      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+        {igSlides.map((u, i) => (
+          <a key={u} href={u} target="_blank" rel="noreferrer" className="relative shrink-0" title={`IG slide ${i + 1} of ${igSlides.length}`}>
+            <img src={u} alt={`IG slide ${i + 1}`} loading="lazy" className="rounded-md object-cover" style={{ width: 64, height: 80, border: `1px solid ${LINE}` }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <span className="absolute bottom-0.5 right-1 rounded px-1 text-[9px] font-semibold tabular-nums" style={{ background: 'rgba(255,255,255,.85)', color: '#555' }}>{i + 1}</span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
@@ -3523,6 +3556,10 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </div>
             )}
           </div>
+
+          {/* Instagram cut of an over-cap deck: visible in preview AND edit mode so an
+              over-10 carousel can be eyeballed for IG right where the post is reviewed. */}
+          <IgVersionStrip item={item} />
 
           {/* Photo attach (live): a first-class action on the opened post, no longer buried
               under the copy editor. Video slots excluded — autoPhoto owns their artwork. */}
