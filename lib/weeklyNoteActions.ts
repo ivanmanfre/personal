@@ -2,8 +2,9 @@
 // Talks to the n8n workflow "CLIENT Rise DTC - Weekly Note Draft"
 // (IHOpAedk4gJFNQo4) via its manual webhook, guarded by the shared ?k= key
 // (house pattern, same as Client Board Queue Sync). WhatsApp stays the
-// second approval path; the Monday poll treats an already-cleared pending
-// as done, so approving here is safe at any time.
+// second approval path; the 30-minute Approval Poll treats an already-cleared
+// pending as done, so approving here is safe at any time. Since 2026-08-10
+// nothing reaches the client board without one of these two approvals.
 
 const WEEKLY_NOTE_WEBHOOK = 'https://n8n.ivanmanfredi.com/webhook/risedtc-weekly-note';
 const WEEKLY_REPORT_VIEWER = 'https://n8n.ivanmanfredi.com/webhook/risedtc-weekly-report';
