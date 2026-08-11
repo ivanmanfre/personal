@@ -1423,7 +1423,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         @media (max-width: 640px) {
           .cedt-sig-row { flex-wrap: wrap; }
           .cedt-close-btn { width: 100%; margin-left: 0 !important; }
-          .cedt-sig-avatar { width: 58px !important; height: 58px !important; border-radius: 16px !important; }
+          .cedt-sig-avatar { width: 76px !important; height: 76px !important; border-radius: 18px !important; }
         }
         /* Receipt line: label with dotted leader, value, source tag. */
         .cedt-rcl { display: grid; grid-template-columns: minmax(0,1fr) auto 132px; align-items: baseline; column-gap: 14px; padding: 7px 0; }
@@ -1568,7 +1568,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 height={639}
                 loading="lazy"
                 decoding="async"
-                style={{ width: 44, height: 44, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 12, border: `1px solid ${ink}1f` }}
+                style={{ width: 64, height: 64, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 16, border: `1px solid ${ink}1f` }}
               />
               <div>
                 <div className="font-bold" style={{ color: ink }}>Mattan Danino</div>
@@ -2034,11 +2034,21 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
           <div className="my-8 text-left p-6 sm:p-7" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
             <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.6)' }}>How RISE charges</div>
-            <p className="mt-4 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.85)' }}>
-              Growth Model. Base from $2,000 per month plus a percentage of ad spend, senior strategist included.
-            </p>
-            <p className="mt-3 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.85)' }}>
-              Performance Model, for qualifying brands only. Low or $0 base fee. RISE earns a share of net growth above an agreed baseline, typically 20%, measured in your own ad account and Shopify. No growth above the baseline means no performance fee.
+            {/* Performance leads and carries the accent: it is the model this page is selling.
+                The qualifying gate stays — RISE's own pricing publishes it as gated, never
+                universal (content_prompts rise-company-facts). */}
+            <div className="mt-5 p-5 sm:p-6" style={{ background: 'rgba(255,199,29,.09)', borderLeft: `3px solid ${accent}`, borderRadius: 2 }}>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-[1.05rem]" style={{ fontFamily: headingFont, fontWeight: 800, color: accent }}>Performance Model</span>
+                <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.55)' }}>for qualifying brands</span>
+              </div>
+              <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
+                Low or $0 base fee. RISE earns a share of growth above your baseline, typically 20%, measured in your own ad account and Shopify. No growth, no performance fee.
+              </p>
+            </div>
+            <p className="mt-4 text-[0.95rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.7)' }}>
+              <span style={{ fontFamily: headingFont, fontWeight: 700, color: 'rgba(255,255,255,.85)' }}>Growth Model.</span>{' '}
+              Base from $2,000 per month plus a percentage of ad spend, senior strategist included.
             </p>
             <p className="mt-4 text-[0.875rem]" style={{ color: 'rgba(255,255,255,.55)' }}>
               Which model fits your brand gets settled on the call.
@@ -2061,7 +2071,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               height={639}
               loading="lazy"
               decoding="async"
-              style={{ width: 66, height: 66, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 18, border: '1px solid rgba(255,255,255,.18)', flexShrink: 0 }}
+              style={{ width: 96, height: 96, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 22, border: '1px solid rgba(255,255,255,.18)', flexShrink: 0 }}
             />
             <div>
               <div style={{ fontFamily: headingFont, fontWeight: 700, color: '#ffffff' }}>Mattan Danino</div>

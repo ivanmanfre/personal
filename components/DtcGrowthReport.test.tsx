@@ -123,9 +123,12 @@ function assertConversionLayer(html: string) {
   expect(html).toContain('Want this math on');
   expect(html).toContain('your real numbers?');
   expect(html).toContain('How RISE charges');
-  expect(html).toContain('Growth Model. Base from $2,000 per month');
-  expect(html).toContain('for qualifying brands only');
-  expect(html).toContain('No growth above the baseline means no performance fee.');
+  // Performance leads the fee card (Ivan 2026-08-11): accent-highlighted, gate intact.
+  expect(html).toContain('Performance Model');
+  expect(html).toContain('for qualifying brands');
+  expect(html).toContain('No growth, no performance fee.');
+  expect(html).toContain('Base from $2,000 per month');
+  expect(html.indexOf('Performance Model')).toBeLessThan(html.indexOf('Growth Model'));
   expect(html).toContain('Which model fits your brand gets settled on the call.');
   expect(html).toContain('Direct with Mattan and the team. No pitch deck.');
   expect(html).toContain('Walk my scan with Mattan');
