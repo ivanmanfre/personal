@@ -25,13 +25,8 @@ export interface CommentCard {
   model_reason: string | null;
 }
 
-// A ugcPost numeric is NOT an activity id — rewrapping it links a different
-// post. /feed/update/ accepts both urn kinds, so pass the urn through as-is.
-const postLink = (urn: string) => {
-  const s = String(urn ?? '').trim();
-  const full = /^urn:li:(activity|ugcPost):\d+$/.test(s) ? s : `urn:li:activity:${s.split(':').pop()}`;
-  return `https://www.linkedin.com/feed/update/${full}/`;
-};
+const postLink = (urn: string) =>
+  `https://www.linkedin.com/feed/update/urn:li:activity:${String(urn).split(':').pop()}/`;
 
 const ago = (iso: string) => {
   const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3.6e6);

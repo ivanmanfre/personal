@@ -3199,8 +3199,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // The gated wins that belong to a chapter, rendered as observed entries with the build.
   // A win whose observation already fills the pillar table's "found" cell (the fallback
   // path when the builder emits no cs.pillars) is skipped here — never printed twice.
-  const winRowCount = (k: PillarKey) =>
-    winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found).length;
   const WinRows = ({ k }: { k: PillarKey }) => {
     const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
     return rows.length ? (
@@ -3277,11 +3275,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
               {PILLARS.map((p) => (
                 <div className="ptab-r" key={p.key}>
-                  {/* The outbound chapter suppresses itself when it has no exhibit, so its
-                      pillar name drops the jump link rather than becoming a dead click. */}
-                  <div>{p.key === 'outbound' && !engager && winRowCount('outbound') === 0
-                    ? <span className="ptab-a">{p.name}</span>
-                    : <a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a>}</div>
+                  <div><a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a></div>
                   <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
                   <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
                 </div>
@@ -3509,13 +3503,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <ChapterCta line={<>The asset is built in your brand, {who}. The call decides where it lives.</>} />
         </Rev>
 
-        {/* ── CHAPTER 03 · WARM OUTBOUND ────────
-            Gated on having something to show. engager_outreach is model-emitted and
-            unvalidated upstream, so it drops on roughly a quarter of scans; without this
-            gate the chapter rendered as a headline plus a Book-a-call button and nothing
-            in between, which reads worse to a buyer than no chapter at all. Every other
-            evidence-backed block on this page already suppresses itself when empty. */}
-        {(engager || winRowCount('outbound') > 0) && (
+        {/* ── CHAPTER 03 · WARM OUTBOUND ──────── */}
         <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
@@ -3535,7 +3523,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           )}
           <ChapterCta line={<>This lane opens in week one, {who}.</>} />
         </Rev>
-        )}
 
         {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
