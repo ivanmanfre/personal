@@ -1576,7 +1576,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               </div>
             </div>
             <p className="mt-2 text-[0.95rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
-              My team ran this scan on {companyName}'s public data. The call puts your live Shopify and ad numbers next to it.
+              My team ran this scan on {companyName}'s public data. The call puts your live store and ad numbers next to it.
             </p>
             <a href="https://risedtc.com" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-[0.8rem] underline underline-offset-4" style={{ color: ink, opacity: 0.55 }}>
               risedtc.com
@@ -2029,7 +2029,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             Want this math on <span style={{ color: accent }}>your real numbers?</span>
           </h2>
           <p className="mx-auto mt-5 text-[1.0625rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.74)', maxWidth: '52ch' }}>
-            From week one we run this on live Shopify and ad data. On the call Mattan walks this exact page with you and runs the Profit Gap on your real CAC and margins.
+            From week one we run this on live store and ad data. On the call Mattan walks this exact page with you and runs the Profit Gap on your real CAC and margins.
           </p>
 
           <div className="my-8 text-left p-6 sm:p-7" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
@@ -2043,7 +2043,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.55)' }}>for qualifying brands</span>
               </div>
               <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
-                Low or $0 base fee. RISE earns a share of growth above your baseline, typically 20%, measured in your own ad account and Shopify. No growth, no performance fee.
+                Low or $0 base fee. RISE earns a share of growth above your baseline, typically 20%, measured in your own ad account and store backend. No growth, no performance fee.
               </p>
             </div>
             <p className="mt-4 text-[0.95rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.7)' }}>
