@@ -71,16 +71,29 @@ function sourceLabel(url: string): string {
 // only. Rendered as a rounded rectangle, NEVER a circle.
 const MATTAN_PHOTO = 'https://resources.risedtc.com/tools/assets/mattan.jpg';
 
-function fmtMoney(n: number): string {
+// The store's own currency, read off its storefront by the collector. A EUR catalogue printed
+// in dollars is the tell that costs the reader's trust before he reaches a finding (B.me,
+// 2026-08-12: a Dutch founder got "$11.90 to $200" for a €-priced range). Falls back to "$"
+// so every pre-currency scan row renders byte-identical to what it already shipped.
+const CUR_SYMBOL: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', CAD: 'CA$', AUD: 'A$', NZD: 'NZ$', JPY: '¥', CHF: 'CHF ',
+  SEK: 'SEK ', NOK: 'NOK ', DKK: 'DKK ', PLN: 'PLN ', INR: '₹', BRL: 'R$', MXN: 'MX$', ZAR: 'R',
+};
+function curSymbol(code?: string | null): string {
+  if (!code) return '$';
+  return CUR_SYMBOL[code.toUpperCase()] || code.toUpperCase() + ' ';
+}
+
+function fmtMoneyBase(n: number, sym = '$'): string {
   const sign = n < 0 ? '-' : '';
-  return `${sign}$${Math.abs(n).toFixed(2)}`;
+  return `${sign}${sym}${Math.abs(n).toFixed(2)}`;
 }
 
 // Receipt price formatting: whole prices stay whole, fractional prices get two decimals,
 // thousands get separators, so the receipt states a value the way the findings prose does
 // ("$1,285", never "$1285").
-function fmtPrice(v: number): string {
-  return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(v) ? 0 : 2 });
+function fmtPrice(v: number, sym = '$'): string {
+  return sym + v.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(v) ? 0 : 2 });
 }
 
 function escapeRe(s: string): string {
@@ -176,6 +189,7 @@ function ProfitGapSpread({
   ctaHref,
   adsEmpty,
   metaSweepZero,
+  currency,
 }: {
   seedAov: number | null;
   sourceNote: string;
@@ -188,7 +202,12 @@ function ProfitGapSpread({
   // audit v3: true only when a brand-wide meta_sweep proved the zero. Gates the wording so a
   // pre-v3 row (no sweep) keeps the exact original sentence, byte-identical to the floor.
   metaSweepZero?: boolean;
+  currency?: string | null;
 }) {
+  // Local shadow so every fmtMoney call in this component prints the store's own currency
+  // without threading a symbol through thirteen call sites.
+  const _sym = curSymbol(currency);
+  const fmtMoney = (n: number) => fmtMoneyBase(n, _sym);
   const [aov, setAov] = useState(seedAov ?? 68);
   // seed_aov is number|null and the 68 above is a placeholder, so every "seeded from your
   // catalog" sentence gates on this: prose must never claim a public seed that was not read.
@@ -1297,17 +1316,18 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       rest.push({ signal: 'shopify', label: 'Average discount depth', value: `${shopData.discount_depth_pct}%`, source: 'products.json' });
     }
     const band = shopData.price_band;
+    const shopSym = curSymbol(shopData.currency);
     if (
       band &&
       (citedAmount(haysShopify, band.min) ||
         citedAmount(haysShopify, band.max) ||
         /price band/i.test(haysShopify))
     ) {
-      rest.push({ signal: 'shopify', label: 'Price band, low to high', value: `${fmtPrice(band.min)} to ${fmtPrice(band.max)}`, source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Price band, low to high', value: `${fmtPrice(band.min, shopSym)} to ${fmtPrice(band.max, shopSym)}`, source: 'products.json' });
     }
     // The median is what seeds the calculator, so a rendered Profit Gap binds it on its own.
     if (band && band.median != null && (pgSeeded || citedAmount(haysShopify, band.median))) {
-      rest.push({ signal: 'shopify', label: 'Median price', value: fmtPrice(band.median), source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Median price', value: fmtPrice(band.median, shopSym), source: 'products.json' });
     }
     if (shopData.oos_pct != null && (cited(haysShopify, `${shopData.oos_pct}%`) || /out[- ]of[- ]stock/i.test(haysShopify))) {
       rest.push({ signal: 'shopify', label: 'Out of stock', value: `${shopData.oos_pct}%`, source: 'products.json' });
@@ -1973,6 +1993,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           ctaHref={ctaUrl('profitgap')}
           adsEmpty={adsEmpty}
           metaSweepZero={sweepZero}
+          currency={(d.shopify?.data as any)?.currency ?? null}
         />
       ) : null}
 

@@ -229,9 +229,13 @@ export interface DtcGrowth {
   // Per-signal SignalMeta-wrapped blocks. Renderer gates each on `.status === 'present'`
   // (or 'empty' for a negative finding). Anything else collapses.
   shopify?: DtcSignalMeta<{
-    catalog_size: number; price_band: { min: number; max: number; median: number } | null;
+    catalog_size: number;
+    price_band: { min: number; max: number; median: number; priced_products?: number } | null;
     variant_depth_avg: number | null; oos_pct: number | null; new_products_90d: number | null;
     has_subscription: boolean | null; discount_depth_pct: number | null; products_on_discount?: number;
+    // Gift-card rows excluded from price reads; currency read off the storefront. Both optional:
+    // scan rows written before 2026-08-12 carry neither and must keep rendering unchanged.
+    gift_cards?: number; currency?: string | null;
     note?: string;
   }>;
   ads?: {
