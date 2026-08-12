@@ -295,7 +295,7 @@ function ProfitGapSpread({
     { key: 'returns', name: 'Returns allowance', sub: `${returnsPct}% of orders come back`, v: returnsSeg, swatch: 'rgba(255,255,255,.20)' },
     { key: 'cogs', name: 'Cost of goods', sub: `${cogsPct}% after returns`, v: cogsSeg, swatch: HATCH_CSS },
     { key: 'shipping', name: 'Shipping', sub: 'flat per order', v: shippingSeg, swatch: 'rgba(255,255,255,.30)' },
-    { key: 'proc', name: 'Payment processing', sub: `${procPct.toFixed(1)}% plus $0.30`, v: processingSeg, swatch: 'rgba(255,255,255,.46)' },
+    { key: 'proc', name: 'Payment processing', sub: `${procPct.toFixed(1)}% plus ${_sym}0.30`, v: processingSeg, swatch: 'rgba(255,255,255,.46)' },
     { key: 'contribution', name: 'Contribution per order', sub: 'before any ad spend', v: contribution, swatch: accent, gold: true },
     { key: 'cac', name: 'CAC', sub: cacSub, v: cac, swatch: 'transparent', dashed: true },
   ];
@@ -320,11 +320,11 @@ function ProfitGapSpread({
             <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: surface, opacity: 0.8 }}>
               {adsEmpty
                 ? metaSweepZero
-                  ? 'This is the first number RISE looks at. The public Meta Ad Library shows zero ads on record for your brand, so the seed carries $0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.'
-                  : 'This is the first number RISE looks at. The public Meta Ad Library shows no active ads on your brand right now, so the seed carries $0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.'
+                  ? `This is the first number RISE looks at. The public Meta Ad Library shows zero ads on record for your brand, so the seed carries ${_sym}0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.`
+                  : `This is the first number RISE looks at. The public Meta Ad Library shows no active ads on your brand right now, so the seed carries ${_sym}0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.`
                 : seeded
-                  ? 'This is the first number RISE looks at on any brand. AOV is seeded from your public catalog. CAC starts at $0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.'
-                  : 'This is the first number RISE looks at on any brand. AOV starts at a placeholder, so type your real number in. CAC starts at $0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.'}
+                  ? `This is the first number RISE looks at on any brand. AOV is seeded from your public catalog. CAC starts at ${_sym}0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.`
+                  : `This is the first number RISE looks at on any brand. AOV starts at a placeholder, so type your real number in. CAC starts at ${_sym}0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.`}
             </p>
 
             <div className="mt-10" data-calc="1">
