@@ -8271,6 +8271,13 @@ export default function ClientBoardPage() {
     if (hit) setDetail(hit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, viewBoard]);
+  // Mirror the opened post into the panel shell's address bar (cb-filter's sibling
+  // message): the wrapper rewrites /panel/?post=<id> so a client can share a URL that
+  // lands straight in this window. id=null on close so the bar returns to /panel/.
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.parent === window) return;
+    window.parent.postMessage({ type: 'cb-post', id: detail ? detail.id : null }, '*');
+  }, [detail]);
   // The bench for a slot: its seeded alternates; once an angle is picked, the ORIGINAL
   // topic joins the bench (the rejected angle is benched, never lost).
   const benchFor = (id: string): AltAngle[] => {
