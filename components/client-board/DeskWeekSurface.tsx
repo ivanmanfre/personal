@@ -15,8 +15,10 @@
  *                INSIDE the plate (Ivan 08-02: "it could be inside that gray queue square
  *                up next"). Below 900px it stacks under the up-next block, still inside.
  *      then a full-width footer line under both columns closes the plate.
- *   3  the week-at-a-glance rail: one tile a day, carrying the real cover. It is ALSO the
- *      second control on the day selector (08-02) and it marks lead-magnet days in mint.
+ *   3  the week-at-a-glance rail: one tile a day, carrying the real cover — or, for a text
+ *      post that has no artwork, its own opening line on an accent-washed ground (08-15).
+ *      It is ALSO the second control on the day selector (08-02) and it marks lead-magnet
+ *      days in mint.
  *   4  day-by-day rows, compressed to a single line (day, title, status, Open post) since
  *      the rail above already carries the artwork; each row keeps its collapsed drill
  *   5  the stat footer
@@ -242,6 +244,10 @@ const WEEK_CSS = `
   [data-skin="desk"] .cb-week-plate:hover { transform: none !important; box-shadow: none !important; }
 }
 .cb-weekrail-tile:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: 2px; }
+/* The coverless tile's opening line. Clamped here rather than inline because the count has
+   to drop on a phone, where seven tiles across leave ~44px and four lines is one word each. */
+.cb-glance-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+@media (max-width: 599px) { .cb-glance-clamp { -webkit-line-clamp: 2; } }
 @media (prefers-reduced-motion: no-preference) {
   .cb-weekrail-tile { transition: transform .16s ease, filter .16s ease; }
   .cb-weekrail-tile:hover { transform: translateY(-2px); filter: brightness(1.04); }
@@ -744,12 +750,15 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           tile selects its day too; the preview area then renders its own honest weekend /
           nothing-scheduled state, which already existed.
 
-          THE THREE SIGNALS, kept on separate layers so they can all be true at once:
+          THE SIGNALS, kept on separate layers so they can all be true at once:
             border   — what KIND of day it is (lead magnet mint, today ink, weekend dashed)
             inset ring — which day is SELECTED (accent, drawn inside so the row never widens
                        and the tiles never reflow when the selection moves)
             mint band  — the lead magnet again, in shape as well as colour, so the tile still
-                       reads as one at 390px where a 2px border is nearly nothing. */}
+                       reads as one at 390px where a 2px border is nearly nothing
+            ground   — WHETHER the day carries anything: a cover, or (text post, no artwork)
+                       an accent-washed tile carrying the post's own opening line. Before
+                       this, a text-post day drew identically to an empty one. */}
       <div style={{ marginTop: 22 }}>
         <Eyebrow>The week at a glance</Eyebrow>
         <div data-viz style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -757,6 +766,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             const dayPosts = postsOnDay(d);
             const post = dayPosts[0];
             const cover = post ? cardImageUrl(post) : undefined;
+            // A text-only post has no artwork, so a cover-only tile drew it EXACTLY like an
+            // empty day: same sunk ground, same lone weekday letter (Ivan 08-15, ARCH — four
+            // scheduled text posts read as an empty week). Coverless days get the post's own
+            // words on a tinted ground instead: the tint carries "something lands here" at
+            // 390px where the type is too small to read, the type says what it is above that.
+            const textOnly = !!post && !cover;
+            const glanceLine = textOnly ? stripBrand(post!.hook || post!.title) : '';
             const weekend = isWeekendDay(d);
             const isToday = d === today;
             const on = d === selectedDay;
@@ -785,7 +801,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 style={{
                   flex: '1 1 0', minWidth: 0, padding: 0, cursor: 'pointer',
                   height: 'clamp(78px, 17vw, 128px)', position: 'relative', overflow: 'hidden',
-                  borderRadius: 7, display: 'block', background: 'var(--cb-paper-sunk)',
+                  borderRadius: 7, display: 'block',
+                  background: textOnly ? 'color-mix(in srgb, var(--cb-accent) 9%, var(--cb-paper))' : 'var(--cb-paper-sunk)',
                   border: lm ? '2px solid var(--cb-mint)'
                     : isToday ? '2px solid var(--cb-ink)'
                     : weekend ? '1px dashed var(--cb-line-bold)'
@@ -809,6 +826,25 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                      chip under the dark funnel tag, deliberately smaller than it. */
                   <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 23 : 5, fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.9)', borderRadius: 4, padding: '0px 4px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {prettyPillar(post.pillar)}
+                  </span>
+                )}
+                {textOnly && (
+                  /* The post's own opening line, clamped. Sits UNDER whatever tags are
+                     drawn (funnel, then pillar) and ABOVE the weekday band, so the three
+                     signals stack instead of overlapping on a narrow tile. */
+                  <span data-glance-line="" style={{
+                    position: 'absolute', left: 5, right: 5,
+                    top: post!.funnel_stage && post!.pillar ? 39 : (post!.funnel_stage || post!.pillar) ? 23 : 6,
+                    bottom: lm ? 24 : 20,
+                    overflow: 'hidden', textAlign: 'left', whiteSpace: 'normal',
+                    fontSize: 10.5, lineHeight: 1.3, fontWeight: 600, letterSpacing: '-0.005em',
+                    color: 'var(--cb-ink)',
+                  }}>
+                    {/* The clamp lives on a STATIC inner box: an absolutely positioned element
+                        is blockified, which drops `-webkit-box` (measured: display computed to
+                        flow-root and the line clamp never applied, so long hooks ran under the
+                        weekday band). */}
+                    <span className="cb-glance-clamp">{glanceLine}</span>
                   </span>
                 )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}

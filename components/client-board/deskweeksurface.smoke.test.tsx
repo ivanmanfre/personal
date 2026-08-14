@@ -150,6 +150,23 @@ const lmItem: QueueItem = {
 /** Same board, plus one lead-magnet day: proves the mint tint and the legend token. */
 const lmBoard: Board = { ...board, queue: [...board.queue, lmItem] };
 
+/** A scheduled TEXT post — no media_url, no image_urls, no cover. It gets its own weekday so
+ *  the glance tile can be told apart from the still-empty weekdays beside it. */
+const TEXT_DAY = [1, 2, 3, 4, 5, 6].map(D).find((d) => !isWeekend(d) && d !== CAROUSEL_DAY && d !== LM_DAY) as string;
+const TEXT_HOOK = 'The creator is almost never the slow part';
+const textItem: QueueItem = {
+  id: 'q-text',
+  kind: 'post',
+  style: 'text',
+  stage: 'review',
+  hook: TEXT_HOOK,
+  title: 'The creator is not the slow part',
+  body: 'We send a pitch list. Then it sits.',
+  publish_date: TEXT_DAY,
+  scheduled_at: `${TEXT_DAY}T09:00:00Z`,
+};
+const textBoard: Board = { ...board, queue: [...board.queue, textItem] };
+
 const emptyBoard: Board = {
   company_name: 'Fresh Brand',
   queue: [],
@@ -307,6 +324,42 @@ describe('DeskWeekSurface', () => {
     expect(pressed).toContain('box-shadow:inset 0 0 0 2px var(--cb-accent)');
     // …and it is the only day selector: the on-plate pills are gone (round 3).
     expect(html).not.toContain('data-day-pills');
+  });
+
+  /** Ivan 08-15 (ARCH): a week of text posts drew an empty rail, because the tile carried
+   *  the cover and a text post has none. A coverless day now shows its own opening line on a
+   *  tinted ground; an empty day keeps the bare sunk tile, so the two can never look alike. */
+  it('draws a coverless text post on its glance tile, and leaves an empty day bare', () => {
+    const textHtml = render(textBoard);
+    const rail = railOf(textHtml);
+    /** One whole tile, opening tag through its contents — the rail's buttons never nest. */
+    const wholeTile = (day: string) =>
+      (rail.match(new RegExp(`<button[^>]*data-glance-tile="${day}"[\\s\\S]*?</button>`)) || [''])[0];
+
+    const textTile = wholeTile(TEXT_DAY);
+    // The tint is the signal that survives at 390px, where the type is too small to read.
+    expect(textTile).toContain('color-mix(in srgb, var(--cb-accent) 9%, var(--cb-paper))');
+    // …and the words themselves are on the tile, clamped, not just in the rows below it.
+    expect(textTile).toContain('data-glance-line=""');
+    expect(textTile).toContain(TEXT_HOOK);
+    // Clamped from the scoped stylesheet, so the count can drop on a phone where seven
+    // tiles across leave ~44px each.
+    expect(textTile).toContain('cb-glance-clamp');
+    expect(textHtml).toContain('.cb-glance-clamp { display: -webkit-box');
+    expect(textHtml).toMatch(/@media \(max-width: 599px\) \{ \.cb-glance-clamp \{ -webkit-line-clamp: 2/);
+
+    // An empty weekday is still honestly empty: no tint, no line.
+    const emptyDay = [1, 2, 3, 4, 5, 6].map(D).find((d) => !isWeekend(d) && d !== CAROUSEL_DAY && d !== TEXT_DAY && d !== LM_DAY) as string;
+    const emptyTile = wholeTile(emptyDay);
+    expect(emptyTile).toContain('background:var(--cb-paper-sunk)');
+    expect(emptyTile).not.toContain('--cb-accent) 9%');
+    expect(emptyTile).not.toContain('data-glance-line');
+
+    // A post WITH artwork keeps the cover, never the typeset fallback.
+    const coverTile = wholeTile(CAROUSEL_DAY);
+    expect(coverTile).toContain('background:var(--cb-paper-sunk)');
+    expect(coverTile).toContain('slide-01.png');
+    expect(coverTile).not.toContain('data-glance-line');
   });
 
   it('tints a lead-magnet day mint and only then prints the legend token', () => {
