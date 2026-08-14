@@ -292,10 +292,25 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const today = todayIsoLA();
   const cal = board.calendar;
-  // Rolling "next 7 days": the synced calendar.start is a static Monday that goes stale by
-  // the weekend, so the window starts at today unless the synced start is still ahead.
-  // A board with no calendar still gets a real window (the original rendered nothing).
-  const startIso = cal && cal.start > today ? cal.start : today;
+  // Calendar-week window (Ivan ruling 2026-08-14): the glance shows a real Mon-Sun week,
+  // not a rolling 7-day strip that starts mid-week. While the current week still has
+  // something unpublished scheduled from today onward, show the current week; once the
+  // rest of the week is empty (a Friday with nothing left), show the FULL next week.
+  // A synced calendar.start further ahead than the anchor still wins (explicit window).
+  const mondayOfToday = (() => {
+    const d = new Date(today + 'T12:00:00Z');
+    const dow = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
+    return new Date(d.getTime() - dow * 86400000).toISOString().slice(0, 10);
+  })();
+  const curSunday = shiftDays(mondayOfToday, 6);
+  // "Work" = anything dated today or later this week, INCLUDING a post that went out
+  // today (hiding "Out today" by jumping ahead reads as a missing post). Only a truly
+  // empty rest-of-week rolls the window forward.
+  const restOfWeekHasWork = board.queue.some(
+    (q) => !!q.publish_date && q.publish_date >= today && q.publish_date <= curSunday && !skips[q.id],
+  );
+  const weekAnchor = restOfWeekHasWork ? mondayOfToday : shiftDays(mondayOfToday, 7);
+  const startIso = cal && cal.start > weekAnchor ? cal.start : weekAnchor;
   const days = useMemo(() => weekDayList(startIso), [startIso]);
   const daySet = useMemo(() => new Set(days), [days]);
   const windowEnd = days[days.length - 1];
