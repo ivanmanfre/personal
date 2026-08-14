@@ -1171,7 +1171,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         const didFold = folded !== item.body;
         return (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{folded}</div>
+            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{withMentions(folded)}</div>
             {didFold ? <span style={{ fontSize: bodyPx, color: '#666' }}>…see more</span> : null}
           </div>
         );
@@ -1736,6 +1736,29 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
 
 /** Body preview that never forces long scrolling: clamps to a few lines, expands on tap.
  *  Short posts show in full with no toggle. Used on the live content ledger rows. */
+/** LinkedIn-faithful mention rendering. Names on this list publish as REAL mentions
+ *  (the Buffer Publisher's mention passthrough, keyed the same way in
+ *  integration_config.<client>_post_mentions), so the board preview shows them the way
+ *  the live feed will: semibold LinkedIn blue, profile link — never plain prose. */
+const MENTION_RENDER: { name: string; url: string }[] = [
+  { name: 'Chad Janis', url: 'https://www.linkedin.com/in/chadjanis/' },
+];
+function withMentions(text: string): React.ReactNode {
+  const hits = MENTION_RENDER.filter((m) => text.includes(m.name));
+  if (!hits.length) return text;
+  const re = new RegExp(`(${hits.map((m) => m.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+  return text.split(re).map((part, i) => {
+    const m = hits.find((h) => h.name === part);
+    return m ? (
+      <a key={i} href={m.url} target="_blank" rel="noreferrer"
+         onClick={(e) => e.stopPropagation()}
+         style={{ color: '#0a66c2', fontWeight: 600, textDecoration: 'none' }}>
+        {part}
+      </a>
+    ) : part;
+  });
+}
+
 function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const lines = text.split('\n').length;
@@ -1752,7 +1775,7 @@ function CollapsibleBody({ text, onOpen }: { text: string; onOpen?: () => void }
             : {}),
         }}
       >
-        {text}
+        {withMentions(text)}
       </div>
       {longEnough && (
         <button
