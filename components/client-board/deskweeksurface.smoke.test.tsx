@@ -23,11 +23,11 @@
  * The window is built relative to the client-timezone "today" the surface itself derives,
  * so the assertions hold on any day of the week.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import DeskWeekSurface from './DeskWeekSurface';
-import { boardDayOf } from '../ClientBoardPage';
+import { boardDayOf, setBoardZone } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage } from '../ClientBoardPage';
 
 const CLIENT_TZ = 'America/Los_Angeles';
@@ -500,4 +500,63 @@ describe('DeskWeekSurface', () => {
       expect(tile(shift(todayLA, 1))).not.toContain('Late slot deck');
     });
   });
+
+  /* 2026-08-14, Ivan: "we want to use europe time for this board... can we use europe time
+     zagreb". The board timezone is per-client (BOARD_ZONES). ARCH reads Europe/Zagreb, and
+     every existing board is untouched on America/Los_Angeles — the SAME instant therefore
+     lands on a different square for each, which is the whole point. */
+  describe('a board reads its own client timezone', () => {
+    beforeAll(() => setBoardZone('arch-agency'));
+    afterAll(() => setBoardZone(undefined));
+
+    it('puts the ARCH deck on the Zagreb day, not the Los Angeles one', () => {
+      // 2026-08-18T01:00Z is Tue 18 Aug 03:00 in Zagreb — and Mon 17 Aug 18:00 in LA.
+      expect(boardDayOf('2026-08-18T01:00:00Z')).toBe('2026-08-18');
+      // …and an 18:00 Zagreb slot is Monday, where the same wall clock in LA is Tuesday 01:00Z.
+      expect(boardDayOf('2026-08-17T16:00:00Z')).toBe('2026-08-17');
+    });
+
+    it('labels the time in the client city, on a 24h clock, never PT', () => {
+      const zagrebSix = '2026-08-17T16:00:00Z'; // 18:00 Zagreb
+      const zagrebBoard: Board = {
+        ...emptyBoard,
+        calendar: { start: todayZagreb(), weeks: 4, items: [] },
+        queue: [{
+          id: 'q-zagreb', kind: 'post', stage: 'review',
+          hook: 'The Zagreb slot', title: 'The Zagreb slot', body: 'Body.',
+          funnel_stage: 'reach',
+          publish_date: todayZagreb(),
+          // Same wall clock (18:00) as the fixed instant above, on the board's today.
+          scheduled_at: zagrebWall(todayZagreb(), '18:00'),
+        }],
+      };
+      const zagrebHtml = render(zagrebBoard);
+      expect(zagrebHtml).toContain('18:00 Zagreb');
+      expect(zagrebHtml).not.toContain(' PT');
+      expect(zagrebHtml).not.toContain('6:00 PM');
+      // The fixed instant reads the same way through the same formatter.
+      expect(boardDayOf(zagrebSix)).toBe('2026-08-17');
+    });
+  });
+
+  it('leaves every other board on Los Angeles time', () => {
+    // The default zone is untouched by the ARCH entry: same instant, PT label, LA day.
+    expect(boardDayOf('2026-08-18T01:00:00Z')).toBe('2026-08-17');
+    expect(html).toContain(' PT');
+  });
 });
+
+/** Today in Zagreb (the surface derives its window in the ACTIVE board zone). */
+function todayZagreb(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zagreb' }).format(new Date());
+}
+/** A Zagreb wall clock as a real UTC instant — the editor's own conversion, other zone. */
+function zagrebWall(dateIso: string, hhmm: string): string {
+  const probe = new Date(`${dateIso}T12:00:00Z`);
+  const offMin = Math.round(
+    (new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' })).getTime()
+      - new Date(probe.toLocaleString('en-US', { timeZone: 'Europe/Zagreb' })).getTime()) / 60000,
+  );
+  const [hh, mm] = hhmm.split(':').map((n) => parseInt(n, 10));
+  return new Date(new Date(`${dateIso}T00:00:00Z`).getTime() + (hh * 60 + mm + offMin) * 60000).toISOString();
+}

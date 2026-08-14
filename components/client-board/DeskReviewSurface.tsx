@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
 import {
-  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf,
+  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz,
 } from '../ClientBoardPage';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
@@ -31,8 +31,6 @@ import {
  * with ReviewSurface (so the integrator can pass the exact same object through both surfaces),
  * but this file does not invoke them. See the build report for the full list.
  */
-
-const CLIENT_TZ = 'America/Los_Angeles';
 
 /** Mirrors ClientBoardPage's (unexported) isScheduled: a post has a real forward slot once it
  *  carries either a full timestamp or a bare publish date. */
@@ -92,8 +90,8 @@ function fmtWhen(iso?: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  const day = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, day: 'numeric', month: 'short' });
-  const time = d.toLocaleTimeString('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit' });
+  const day = d.toLocaleDateString('en-GB', { timeZone: clientTz(), day: 'numeric', month: 'short' });
+  const time = d.toLocaleTimeString('en-GB', { timeZone: clientTz(), hour: '2-digit', minute: '2-digit' });
   return `${day} ${time}`;
 }
 
@@ -166,8 +164,8 @@ function authorOf(by: string | null | undefined, board: Pick<Board, 'founder' | 
 function rescheduleMove(before?: string | null, after?: string | null): string | null {
   const isStamp = (s?: string | null): s is string => !!s && /^\d{4}-\d{2}-\d{2}T/.test(s) && !Number.isNaN(new Date(s).getTime());
   if (!isStamp(before) || !isStamp(after)) return null;
-  const day = (s: string) => new Date(s).toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, day: 'numeric', month: 'short' });
-  const time = (s: string) => new Date(s).toLocaleTimeString('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit' });
+  const day = (s: string) => new Date(s).toLocaleDateString('en-GB', { timeZone: clientTz(), day: 'numeric', month: 'short' });
+  const time = (s: string) => new Date(s).toLocaleTimeString('en-GB', { timeZone: clientTz(), hour: '2-digit', minute: '2-digit' });
   return day(before) === day(after)
     ? `${day(before)} ${time(before)} → ${time(after)}`
     : `${fmtWhen(before)} → ${fmtWhen(after)}`;

@@ -47,16 +47,15 @@ import {
   Num, Stat, StatStrip, StatBlank, Chip, Pill,
   Drill, SlideStrip, Blank,
 } from './desk-kit';
-import { FeedPreview, FunnelChip, fmtDay } from '../ClientBoardPage';
+import { FeedPreview, FunnelChip, fmtDay, clientTz, boardZone } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
 
 /* ────────────────────────── local pure helpers ────────────────────────── */
 
-const CLIENT_TZ = 'America/Los_Angeles';
-
-/** Today as YYYY-MM-DD in the client's timezone (never browser-local). */
+/** Today as YYYY-MM-DD in the board's own timezone (never browser-local, never another
+ *  client's — the zone comes from BOARD_ZONES in ClientBoardPage). */
 function todayIsoLA(): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ }).format(new Date());
+  return new Intl.DateTimeFormat('en-CA', { timeZone: clientTz() }).format(new Date());
 }
 /**
  * Seven consecutive ISO dates starting at `startIso`.
@@ -91,17 +90,18 @@ function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boole
 /** Weekend in the client's timezone. The cadence is weekdays only. */
 function isWeekendDay(iso?: string): boolean {
   if (!iso) return false;
-  const wd = new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: CLIENT_TZ, weekday: 'short' });
+  const wd = new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: clientTz(), weekday: 'short' });
   return wd === 'Sat' || wd === 'Sun';
 }
-/** A scheduled instant as "Tue 21 Jul, 10:00 AM PT", falling back to the bare date. */
+/** A scheduled instant as "Tue 21 Jul, 10:00 AM PT" ("18:00 Zagreb" on a European board),
+ *  falling back to the bare date. */
 function fmtSchedLA(scheduledAt?: string, publishDate?: string): string {
   if (scheduledAt) {
     const d = new Date(scheduledAt);
     if (!Number.isNaN(d.getTime())) {
-      const day = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
-      const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
-      return `${day}, ${time} PT`;
+      const day = d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
+      const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
+      return `${day}, ${time} ${boardZone().label}`;
     }
   }
   return fmtDay(publishDate);

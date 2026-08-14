@@ -143,7 +143,7 @@ interface QueueItem {
   cover_url?: string;
   publish_date?: string;
   /** Full scheduled timestamp (carousel_drafts.scheduled_at), when the post has a real
-   *  slot. Rendered in Mattan's timezone (America/Los_Angeles) wherever a time shows. */
+   *  slot. Rendered in the board's own timezone (BOARD_ZONES) wherever a time shows. */
   scheduled_at?: string;
   /** Honest, concrete provenance for the source chip (see SourceDetail). */
   source_detail?: SourceDetail;
@@ -451,17 +451,39 @@ function fmtDay(iso?: string): string {
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
-/** Mattan's timezone for every scheduled time on the board. Never browser-local. */
-const CLIENT_TZ = 'America/Los_Angeles';
+/** The board's OWN timezone — every scheduled time on a board (the editor's wall clock, the
+ *  day a card sits on, and every label) is read in the client's zone, never the browser's
+ *  and never another client's. ARCH is a Zagreb agency and was being told its posts go out
+ *  "6:00 PM PT" (Ivan, 2026-08-14). Adding a client is ONE line in BOARD_ZONES.
+ *  `label` is written out rather than read from Intl on purpose: `timeZoneName: 'short'`
+ *  gives "PDT" for LA but "GMT+2" for Zagreb in en-US, and "CEST" but "GMT-7" the other way
+ *  round in en-GB — no single locale labels both well. */
+export type BoardZone = { tz: string; label: string; hour12: boolean };
+const DEFAULT_ZONE: BoardZone = { tz: 'America/Los_Angeles', label: 'PT', hour12: true };
+const BOARD_ZONES: Record<string, BoardZone> = {
+  'arch-agency': { tz: 'Europe/Zagreb', label: 'Zagreb', hour12: false },
+};
+/** The zone the formatters below read. A board page renders exactly ONE board, and this is
+ *  set from the route slug before anything renders, so a module-level value is honest here
+ *  and saves threading a zone through ~40 call sites in four files. */
+let activeZone: BoardZone = DEFAULT_ZONE;
+/** Point the board at its client's zone. Called by the page from the route slug; the desk
+ *  smoke tests call it directly (and reset it) to render a board in another zone. */
+export function setBoardZone(slug?: string | null): void {
+  activeZone = (slug && BOARD_ZONES[slug]) || DEFAULT_ZONE;
+}
+export function boardZone(): BoardZone { return activeZone; }
+/** This board's IANA timezone. */
+export function clientTz(): string { return activeZone.tz; }
 /** A scheduled timestamp as "Tue 21 Jul, 10:00 AM PT" in the client's timezone. Falls
  *  back to a date-only string (from publish_date) when no full timestamp exists yet. */
 function fmtSchedLA(scheduledAt?: string, publishDate?: string): string {
   if (scheduledAt) {
     const d = new Date(scheduledAt);
     if (!Number.isNaN(d.getTime())) {
-      const day = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
-      const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
-      return `${day}, ${time} PT`;
+      const day = d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
+      const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
+      return `${day}, ${time} ${boardZone().label}`;
     }
   }
   return fmtDay(publishDate);
@@ -472,15 +494,15 @@ function fmtSchedParts(scheduledAt?: string, publishDate?: string): { day: strin
   if (scheduledAt) {
     const d = new Date(scheduledAt);
     if (!Number.isNaN(d.getTime())) {
-      const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: CLIENT_TZ });
+      const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: clientTz() });
       const now = new Date();
       const today = dayKey(now);
       const tmrw = dayKey(new Date(now.getTime() + 86400000));
       const target = dayKey(d);
-      const dateLabel = d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
+      const dateLabel = d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
       const day = target === today ? `Today · ${dateLabel}` : target === tmrw ? `Tomorrow · ${dateLabel}` : dateLabel;
-      const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
-      return { day, time: `${time} PT` };
+      const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
+      return { day, time: `${time} ${boardZone().label}` };
     }
   }
   return { day: fmtDay(publishDate), time: '' };
@@ -512,11 +534,11 @@ function SchedChip({ scheduledAt, publishDate, scheduled, accent }: { scheduledA
 }
 
 /** Turn an LA wall-clock date (YYYY-MM-DD) + time (HH:MM) into a real UTC ISO instant.
- *  The client always enters + reads time in America/Los_Angeles; the offset is read from
- *  the zone so it stays correct across DST. */
+ *  The client always enters + reads time in the BOARD'S zone; the offset is read from
+ *  that zone so it stays correct across DST. */
 function laWallToUtcISO(dateStr: string, timeStr: string): string {
   const probe = new Date(`${dateStr}T12:00:00Z`);
-  const asLA = new Date(probe.toLocaleString('en-US', { timeZone: CLIENT_TZ }));
+  const asLA = new Date(probe.toLocaleString('en-US', { timeZone: clientTz() }));
   const asUTC = new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' }));
   const offMin = Math.round((asUTC.getTime() - asLA.getTime()) / 60000); // +420 for PDT
   const [hh, mm] = timeStr.split(':').map((n) => parseInt(n, 10));
@@ -526,8 +548,8 @@ function laWallToUtcISO(dateStr: string, timeStr: string): string {
 /** The LA date parts (YYYY-MM-DD) + time (HH:MM) of a UTC instant, for prefilling inputs. */
 function laParts(scheduledAt?: string): { date: string; time: string } {
   const d = scheduledAt ? new Date(scheduledAt) : new Date();
-  const date = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-  const time = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: clientTz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: clientTz(), hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
   return { date, time };
 }
 /** The DAY SQUARE a scheduled instant belongs on (YYYY-MM-DD), read in the client's
@@ -541,21 +563,21 @@ export function boardDayOf(scheduledAt?: string | null): string | undefined {
   if (!scheduledAt) return undefined;
   const d = new Date(scheduledAt);
   if (Number.isNaN(d.getTime())) return undefined;
-  return new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: clientTz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
-/** Just the LA clock time ("10:00 AM PT") for compact chips. */
+/** Just the clock time in the board's zone ("10:00 AM PT", "18:00 Zagreb") for chips. */
 function fmtTimeLA(scheduledAt?: string): string {
   if (!scheduledAt) return '';
   const d = new Date(scheduledAt);
   if (Number.isNaN(d.getTime())) return '';
-  return `${d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' })} PT`;
+  return `${d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 })} ${boardZone().label}`;
 }
 /** Long weekday in LA tz for a full timestamp (e.g. "Tuesday"). */
 function weekdayLA(scheduledAt?: string): string {
   if (!scheduledAt) return '';
   const d = new Date(scheduledAt);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'long' });
+  return d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'long' });
 }
 /** True once a post has a real scheduled slot (not sitting undated in the buffer). */
 function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boolean {
@@ -566,7 +588,7 @@ function isScheduled(q: Pick<QueueItem, 'scheduled_at' | 'publish_date'>): boole
  *  midnight-boundary date drift. */
 function isWeekendDay(iso?: string): boolean {
   if (!iso) return false;
-  const wd = new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: CLIENT_TZ, weekday: 'short' });
+  const wd = new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: clientTz(), weekday: 'short' });
   return wd === 'Sat' || wd === 'Sun';
 }
 /** Resolve a lead-magnet launch post to its asset (cover + landing/resource link). Joins
@@ -2555,7 +2577,7 @@ function LmLaunchCard({ lm, accent }: { lm: { title: string; landing: string; re
   );
 }
 
-/** Inline date + time editor, entered and shown in the client's timezone (LA / PT). Saves
+/** Inline date + time editor, entered and shown in the board's own timezone. Saves
  *  the real UTC instant through onSave (client_board_set_schedule). Used directly on the
  *  week card so the client changes the time without digging into a modal. */
 function ScheduleTimeEditor({ scheduledAt, accent, onSave, onCancel }: {
@@ -2579,7 +2601,7 @@ function ScheduleTimeEditor({ scheduledAt, accent, onSave, onCancel }: {
   };
   return (
     <div className="rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }} onClick={(e) => e.stopPropagation()}>
-      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE, marginBottom: 6 }}>Date &amp; time (your time, PT)</div>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE, marginBottom: 6 }}>Date &amp; time (your time, {boardZone().label})</div>
       <div className="flex flex-wrap items-center gap-2">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
         <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
@@ -2682,7 +2704,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   // stale by the weekend (a Friday visit showed an empty week while next week's scheduled
   // posts sat invisible). Start the window at today (client wall clock, LA) unless the
   // synced start is still in the future (first-week preview boards keep their preview week).
-  const todayLA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+  const todayLA = new Intl.DateTimeFormat('en-CA', { timeZone: clientTz() }).format(new Date());
   const days = cal ? weekDayList(cal.start > todayLA ? cal.start : todayLA) : [];
   const daySet = new Set(days);
 
@@ -3410,8 +3432,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     if (!src) return { d: '', t: '09:00' };
     const dd = new Date(src);
     if (Number.isNaN(dd.getTime())) return { d: '', t: '09:00' };
-    const d = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dd);
-    const t = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(dd);
+    const d = new Intl.DateTimeFormat('en-CA', { timeZone: clientTz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(dd);
+    const t = new Intl.DateTimeFormat('en-GB', { timeZone: clientTz(), hour: '2-digit', minute: '2-digit', hour12: false }).format(dd);
     return { d, t };
   };
   const [schedOpen, setSchedOpen] = useState(initialSchedOpen);
@@ -3424,7 +3446,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // is read from the zone so it stays correct across DST.
   const laOffsetMinutes = (dateStr: string): number => {
     const probe = new Date(`${dateStr}T12:00:00Z`);
-    const asLA = new Date(probe.toLocaleString('en-US', { timeZone: CLIENT_TZ }));
+    const asLA = new Date(probe.toLocaleString('en-US', { timeZone: clientTz() }));
     const asUTC = new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' }));
     return Math.round((asUTC.getTime() - asLA.getTime()) / 60000); // +420 for PDT
   };
@@ -3781,8 +3803,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                         const src = item.scheduled_at;
                         if (src) {
                           const d = new Date(src);
-                          const parts = new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-                          const t = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+                          const parts = new Intl.DateTimeFormat('en-CA', { timeZone: clientTz(), year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+                          const t = new Intl.DateTimeFormat('en-GB', { timeZone: clientTz(), hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
                           setSchedDate(parts); setSchedTime(t);
                         }
                         setSchedErr(''); setSchedOpen(true);
@@ -3794,7 +3816,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </div>
                 ) : (
                   <div>
-                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>New date &amp; time (LA / PT)</div>
+                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>New date &amp; time ({boardZone().label})</div>
                     <div className="mt-2 flex flex-wrap items-center gap-2.5">
                       <input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
                       <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
@@ -5785,13 +5807,13 @@ function fmtWindowLA(iso?: string | null): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const now = new Date();
-  const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: CLIENT_TZ });
-  const time = d.toLocaleTimeString('en-US', { timeZone: CLIENT_TZ, hour: 'numeric', minute: '2-digit' });
+  const dayKey = (x: Date) => x.toLocaleDateString('en-CA', { timeZone: clientTz() });
+  const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
   const today = dayKey(now);
   const tmrw = dayKey(new Date(now.getTime() + 86400000));
   const target = dayKey(d);
-  const label = target === today ? 'Today' : target === tmrw ? 'Tomorrow' : d.toLocaleDateString('en-GB', { timeZone: CLIENT_TZ, weekday: 'short', day: 'numeric', month: 'short' });
-  return `${label} ${time} PT`;
+  const label = target === today ? 'Today' : target === tmrw ? 'Tomorrow' : d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
+  return `${label} ${time} ${boardZone().label}`;
 }
 
 /** Plain source label for a queued prospect's lane key. */
@@ -7275,6 +7297,10 @@ export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacemen
 
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
+  // Point every time formatter at THIS client's zone before anything below renders. Derived
+  // purely from the route and idempotent, so a re-render (or StrictMode's double one) cannot
+  // land it anywhere else. One board renders per page, so there is nothing to race.
+  setBoardZone(slug);
   const [params] = useSearchParams();
   const token = params.get('k') || '';
   // ?intro=1 force-replays the opening choreography (clears the played flag before the fetch).
@@ -8873,7 +8899,7 @@ export default function ClientBoardPage() {
           const q = viewBoard.queue;
           const notOut = q.filter((x) => stageOf(x) !== 'published');
           const dated = notOut.filter((x) => isScheduled(x)).sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
-          const todayIso = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' });
+          const todayIso = new Date().toLocaleDateString('sv-SE', { timeZone: clientTz() });
           const todays = dated.find((x) => x.publish_date === todayIso);
           const next = todays || dated.find((x) => (x.publish_date || '') > todayIso);
           const bufferN = notOut.length - dated.length;
