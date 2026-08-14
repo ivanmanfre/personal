@@ -530,6 +530,19 @@ function laParts(scheduledAt?: string): { date: string; time: string } {
   const time = new Intl.DateTimeFormat('en-GB', { timeZone: CLIENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
   return { date, time };
 }
+/** The DAY SQUARE a scheduled instant belongs on (YYYY-MM-DD), read in the client's
+ *  timezone — the same zone the schedule editor enters date + time in (laParts /
+ *  laWallToUtcISO). Every surface buckets a post by publish_date, and publish_date used to
+ *  be the raw UTC date slice of scheduled_at. So a slot picked late in the client's day
+ *  (2026-08-17 18:00 PT = 2026-08-18T01:00Z) kept its "Mon 17 Aug, 6:00 PM PT" label while
+ *  its card jumped to the Tuesday square: changing only the TIME moved the post to another
+ *  day (Ivan, 2026-08-14). The day the client picked is the day it stays on. */
+export function boardDayOf(scheduledAt?: string | null): string | undefined {
+  if (!scheduledAt) return undefined;
+  const d = new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: CLIENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
 /** Just the LA clock time ("10:00 AM PT") for compact chips. */
 function fmtTimeLA(scheduledAt?: string): string {
   if (!scheduledAt) return '';
@@ -3427,7 +3440,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setSchedBusy(false);
     if (!r.ok) { setSchedErr(r.error === 'bad_date' ? 'Pick a date within the next year.' : (r.error || 'Could not save that. Try again.')); return; }
     item.scheduled_at = iso;
-    item.publish_date = iso.slice(0, 10);
+    // The square follows the day the client picked (client tz), never the UTC date slice.
+    item.publish_date = boardDayOf(iso) || iso.slice(0, 10);
     setSchedLabel(fmtSchedLA(iso));
     setSchedOpen(false);
   };
@@ -8236,7 +8250,13 @@ export default function ClientBoardPage() {
   // the Scheduled stage). Applied before angle-swap resolution so swaps stay honest.
   const withSchedule = (q: QueueItem): QueueItem => {
     const s = schedule[q.id];
-    if (!s) return q;
+    // No overlay row, but the synced queue carries a slot: the same client-timezone day
+    // rule applies, so the card cannot sit on a square its own time label contradicts.
+    if (!s) {
+      return q.scheduled_at && q.stage !== 'published'
+        ? { ...q, publish_date: boardDayOf(q.scheduled_at) || q.publish_date }
+        : q;
+    }
     // Explicitly unscheduled (client put it back in the buffer): strip the slot so it
     // drops off the week grid + up-next and rejoins the buffer bucket. The board jsonb may
     // still carry a stale publish_date; this overlay is the live truth.
@@ -8248,8 +8268,15 @@ export default function ClientBoardPage() {
     // client's timezone) and refresh publish_date from it. Only a draft the operator moved
     // to the 'scheduled' status flips stage; a review-stage buffer draft with a slot keeps
     // its stage (it is scheduled-for-display, still yours to change).
+    // publish_date is the DAY SQUARE, and it is read in the client's timezone — the zone the
+    // client picked the slot in. The raw UTC slice sent an evening pick to the next day's
+    // square while the card still read "6:00 PM PT" (Ivan, 2026-08-14). A PUBLISHED post
+    // keeps the UTC slice: its publish_date is the join key for the performance rows
+    // (published_at.slice(0,10), UTC), and moving it would break the reads/URL match.
+    const isPublished = s.status === 'published' || q.stage === 'published';
+    const day = isPublished ? s.scheduled_at.slice(0, 10) : (boardDayOf(s.scheduled_at) || s.scheduled_at.slice(0, 10));
     const flip = s.status === 'scheduled' && q.stage !== 'published';
-    return { ...q, scheduled_at: s.scheduled_at, publish_date: s.scheduled_at.slice(0, 10), ...(flip ? { stage: 'scheduled' as Stage } : {}) };
+    return { ...q, scheduled_at: s.scheduled_at, publish_date: day, ...(flip ? { stage: 'scheduled' as Stage } : {}) };
   };
   // Auto lifestyle photos (live, display-only, NO write): rotate the client's photo pool
   // onto ~60% of eligible solo TEXT posts, deterministically by draft id so it is stable

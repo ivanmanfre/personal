@@ -27,6 +27,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import DeskWeekSurface from './DeskWeekSurface';
+import { boardDayOf } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage } from '../ClientBoardPage';
 
 const CLIENT_TZ = 'America/Los_Angeles';
@@ -444,6 +445,59 @@ describe('DeskWeekSurface', () => {
       // and renders it when it can
       expect(html).toContain('reads, ');
       expect(html).toContain('1,852');
+    });
+  });
+
+  /* 2026-08-14 regression (Ivan: "when i change the time on that carousel it moves away from
+     the monday"). The day square a card sits on came from the RAW UTC date slice of
+     scheduled_at, while the card's own time label was rendered in the client's timezone. So
+     any slot late in the client's day — the ARCH deck at 17 Aug 18:00 PT = 2026-08-18T01:00Z —
+     read "Mon 17 Aug, 6:00 PM PT" on a TUESDAY square. Changing only the TIME moved the post
+     to another day. The day the client picked is the day it stays on. */
+  describe('a slot late in the client day stays on the day it was picked', () => {
+    /** The UTC instant of an LA wall-clock date + time (the editor's own conversion). */
+    const laWall = (dateIso: string, hhmm: string): string => {
+      const probe = new Date(`${dateIso}T12:00:00Z`);
+      const offMin = Math.round(
+        (new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' })).getTime()
+          - new Date(probe.toLocaleString('en-US', { timeZone: CLIENT_TZ })).getTime()) / 60000,
+      );
+      const [hh, mm] = hhmm.split(':').map((n) => parseInt(n, 10));
+      return new Date(new Date(`${dateIso}T00:00:00Z`).getTime() + (hh * 60 + mm + offMin) * 60000).toISOString();
+    };
+
+    it('reads the day in the client timezone, never the UTC date slice', () => {
+      // The live row that broke: ARCH's Wargaming deck, picked for Monday evening.
+      expect(boardDayOf('2026-08-18T01:00:00Z')).toBe('2026-08-17');
+      // Only the TIME changes across a client day — the day never does.
+      expect(boardDayOf(laWall('2026-08-17', '09:00'))).toBe('2026-08-17');
+      expect(boardDayOf(laWall('2026-08-17', '18:00'))).toBe('2026-08-17');
+      expect(boardDayOf(laWall('2026-08-17', '23:30'))).toBe('2026-08-17');
+      // …and the UTC slice of that last one really is the next day (the premise of the bug).
+      expect(laWall('2026-08-17', '23:30').slice(0, 10)).toBe('2026-08-18');
+      expect(boardDayOf(undefined)).toBeUndefined();
+      expect(boardDayOf('not a date')).toBeUndefined();
+    });
+
+    it('renders the card on the picked day tile, not the next one', () => {
+      const lateIso = laWall(todayLA, '23:30');
+      const lateItem: QueueItem = {
+        id: 'q-late',
+        kind: 'carousel',
+        style: 'carousel',
+        stage: 'review',
+        hook: 'Two campaigns, one number',
+        title: 'Late slot deck',
+        body: 'The deck that goes out tonight.',
+        funnel_stage: 'reach',
+        // Derived the way the board derives it — the fix under test.
+        publish_date: boardDayOf(lateIso),
+        scheduled_at: lateIso,
+      };
+      const lateHtml = render({ ...emptyBoard, queue: [lateItem] });
+      const tile = (d: string) => (new RegExp(`data-glance-tile="${d}"[^>]*`).exec(lateHtml) || [''])[0];
+      expect(tile(todayLA)).toContain('Late slot deck');
+      expect(tile(shift(todayLA, 1))).not.toContain('Late slot deck');
     });
   });
 });
