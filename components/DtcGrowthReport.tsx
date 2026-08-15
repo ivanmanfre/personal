@@ -1340,7 +1340,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       typeof shopData.catalog_size === 'number' &&
       (cited(haysShopify, String(shopData.products_on_discount)) || depthCited)
     ) {
-      rest.push({ signal: 'shopify', label: 'On discount', value: `${shopData.products_on_discount} of ${shopData.catalog_size}`, source: 'products.json' });
+      // Merch denominator, matching the finding. Mixing a merch numerator with a raw row count
+      // ships "73 of 78" in the rail under "every one of your 73 live products" in the finding,
+      // and the reader has to decide which of our own two numbers to believe.
+      rest.push({ signal: 'shopify', label: 'On discount', value: `${shopData.products_on_discount} of ${(shopData as any).merch_catalog_size ?? shopData.catalog_size}`, source: 'products.json' });
     }
     if (shopData.discount_depth_pct != null && depthCited) {
       rest.push({ signal: 'shopify', label: 'Average discount depth', value: `${shopData.discount_depth_pct}%`, source: 'products.json' });
