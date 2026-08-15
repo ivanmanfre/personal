@@ -62,9 +62,32 @@ function sourceLabel(url: string): string {
   try {
     const u = new URL(url);
     if (u.hostname.includes('facebook.com')) return 'see this in the Meta Ad Library';
-    if (u.pathname.includes('/products/')) return 'see this on your product page';
+    if (u.pathname.endsWith('.js') || u.pathname.includes('/products/')) return 'see this on your product page';
   } catch {}
   return 'see this on your storefront';
+}
+
+// Where the PROOF LINK sends a human. `source_url` is provenance and must stay verbatim in the
+// evidence table ("products.json" is the honest answer to "where did you read this"), but it is
+// the wrong thing to put behind "see this on your storefront": the Safecourt scan (2026-08-15)
+// pointed four findings at a 430KB raw JSON payload that a founder's browser either renders as
+// a wall of text or downloads. Same read, human surface: /collections/all is the standard
+// Shopify route showing the same catalogue with prices, sale badges and sold-out states, which
+// is exactly what the discount, price-band and out-of-stock findings claim. A per-product `.js`
+// URL gets the same treatment: strip the extension and it is that product's page.
+function proofHref(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.pathname.endsWith('/products.json')) return `${u.origin}/collections/all`;
+    if (u.pathname.endsWith('.js') && u.pathname.includes('/products/')) {
+      return `${u.origin}${u.pathname.replace(/\.js$/, '')}`;
+    }
+    if (u.pathname.endsWith('.json') && u.pathname.includes('/products/')) {
+      return `${u.origin}${u.pathname.replace(/\.json$/, '')}`;
+    }
+    if (/sitemap[^/]*\.xml$/.test(u.pathname)) return u.origin;
+  } catch {}
+  return url;
 }
 
 // Mattan photo, used in the hero byline card and the close-band signature row. Remote asset
@@ -797,9 +820,16 @@ function AdEvidenceSpread({
           </div>
           <div className="lg:col-span-4">
             <p className="text-[0.98rem] leading-relaxed" style={{ color: surface, opacity: 0.7 }}>
-              {gReadLong && metaReadDate
+              {/* Count the archives this section actually RENDERS, not the ones we tried to read.
+                  `gReadLong` comes off `google.fetched_at`, which is stamped on every attempt —
+                  including the ones that return nothing renderable, where `g` stays null and no
+                  Google strip appears. Safecourt (2026-08-15) shipped "Two public ad archives"
+                  above a section citing only the Meta Ad Library. Same reason the date now
+                  follows the archive being shown: printing the Google fetch date over a
+                  Meta-only strip attributes the read to a source the reader cannot see. */}
+              {g && showMeta
                 ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
-                : `A public ad archive, read on ${gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
+                : `A public ad archive, read on ${(g ? gReadLong : metaReadDate) || gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
             </p>
           </div>
         </div>
@@ -1779,7 +1809,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               ) : null;
 
               const sourceLink = f.source_url ? (
-                <a href={f.source_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.6 }}>
+                <a href={proofHref(f.source_url)} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.6 }}>
                   {sourceLabel(f.source_url)}
                 </a>
               ) : null;

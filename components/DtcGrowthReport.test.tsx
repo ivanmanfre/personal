@@ -472,4 +472,51 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('https://example.com/book?ref=abc&amp;utm_source=scan');
     expect(html).not.toContain('book?ref=abc?utm_source');
   });
+  // ── 2026-08-15 accuracy pass (audit of scan/safecourt-kitchen-f8 vs its live sources) ──
+  it('proof links land on a page a founder can read, not the raw JSON payload', () => {
+    // The shipped Safecourt report pointed four findings at a 430KB products.json dump. The
+    // evidence-table provenance stays "products.json"; only the human link moves.
+    const { html } = renderFixture('rodial-com.json');
+    expect(html).toContain('href="https://rodial.com/collections/all"');
+    expect(html).not.toMatch(/href="https:\/\/rodial\.com\/products\.json"/);
+    // label is unchanged, so the reader still knows where they are going
+    expect(html).toContain('see this on your storefront');
+    // provenance is untouched in the evidence rail
+    expect(html).toContain('shopify products.json');
+  });
+
+  it('a per-product .js probe URL links to the product page and labels it as one', () => {
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).findings[0].source_url = 'https://rodial.com/products/spf-50-drops-mini.js';
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).toContain('href="https://rodial.com/products/spf-50-drops-mini"');
+    expect(html).not.toContain('spf-50-drops-mini.js"');
+    expect(html).toContain('see this on your product page');
+  });
+
+  it('the ad-archive count describes archives RENDERED, not archives attempted', () => {
+    // gReadLong comes off google.fetched_at, stamped on every attempt including the ones that
+    // render nothing. Safecourt shipped "Two public ad archives" above a Meta-only section.
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    // google ATTEMPTED (fetched_at stamped) but nothing renderable came back, while the meta
+    // sweep did render — the exact Safecourt shape.
+    (dtc as any).ads = {
+      ...((dtc as any).ads || {}),
+      google: { status: 'blocked', fetched_at: '2026-08-15T09:00:00Z' },
+      // meta page READ fine (806 active ads) — this is what made metaReadDate truthy on the
+      // shipped page, so the old `gReadLong && metaReadDate` test said "two".
+      meta: { status: 'present', fetched_at: '2026-08-15T09:00:00Z',
+              data: { active_ad_count: 806, oldest_active_run_days: 80, distinct_angles: 22 } },
+    };
+    // competitor creatives are what makes the section render at all (hasAdEvidence)
+    (dtc as any).competitors = {
+      status: 'present', checked_at: '2026-08-15T09:00:00Z',
+      data: { creatives: [{ advertiser: 'Solara Home', start_date: '2026-07-17', keyword: 'air fry' }] },
+    };
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).not.toContain('Two public ad archives');
+    expect(html).toContain('A public ad archive');
+  });
 });
