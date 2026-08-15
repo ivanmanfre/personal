@@ -519,4 +519,18 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).not.toContain('Two public ad archives');
     expect(html).toContain('A public ad archive');
   });
+  it('the vitals row never sources the subscription verdict to products.json', () => {
+    // products.json cannot express selling_plan_groups, so it must not appear as the source of
+    // "none found" in the evidence rail even though it sources every other catalogue line.
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).shopify.data.has_subscription = false;
+    (dtc as any).shopify.data.subscription_source_url = 'https://rodial.com/products/x.js';
+    (dtc as any).findings[0].evidence += ' No subscription option we could find on the page.';
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).toContain('Subscription option');
+    const row = html.slice(html.indexOf('Subscription option'), html.indexOf('Subscription option') + 400);
+    expect(row).not.toContain('products.json');
+    expect(row).toContain('product .js');
+  });
 });

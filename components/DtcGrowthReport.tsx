@@ -1362,10 +1362,15 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     if (shopData.oos_pct != null && (cited(haysShopify, `${shopData.oos_pct}%`) || /out[- ]of[- ]stock/i.test(haysShopify))) {
       rest.push({ signal: 'shopify', label: 'Out of stock', value: `${shopData.oos_pct}%`, source: 'products.json' });
     }
+    // 🔴 products.json has NEVER carried selling_plan_groups at any Shopify version, so it is
+    // the one row in this table it cannot source. The verdict is read from /products/{handle}.js;
+    // the vitals line has to say so or it re-tells the 08-12 lie in the evidence rail while the
+    // finding above it cites the right endpoint.
+    const subSrc = shopData.subscription_source_url ? 'product .js' : 'storefront';
     if (shopData.has_subscription === false && /subscri/i.test(haysShopify)) {
-      rest.push({ signal: 'shopify', label: 'Subscription option', value: 'none found', source: 'products.json', none: true });
+      rest.push({ signal: 'shopify', label: 'Subscription option', value: 'none found', source: subSrc, none: true });
     } else if (shopData.has_subscription === true && /subscri/i.test(haysShopify)) {
-      rest.push({ signal: 'shopify', label: 'Subscription option', value: 'live', source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Subscription option', value: 'live', source: subSrc });
     }
     // Catalog size renders ONLY when a finding cites the count itself, exactly like every
     // other line, so the foot's binding claim stays true by construction (slop pass, 07-31).
