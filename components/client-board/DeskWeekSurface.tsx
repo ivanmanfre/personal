@@ -370,6 +370,24 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     const refs = new Set(board.queue.filter((q) => q.publish_date === day).map((q) => q.id));
     return (cal?.items || []).filter((it) => it.date === day && (!it.ref || !refs.has(it.ref)) && !board.queue.some((q) => q.id === it.ref));
   };
+  /* ---- funnel mix, target vs observed (2-2-1 rule, Ivan 2026-08-17): 2 reach / 2 trust /
+     1 buyers per 5-post week. Display-and-warn ONLY — nothing here blocks a schedule.
+     Counts read the live week window (including already-published posts: a half-shipped
+     week still shows its full shape), never a stored plan. ---- */
+  const FUNNEL_TARGET: Record<string, number> = { reach: 2, trust: 2, buyers: 1 };
+  const weekMix = useMemo(() => {
+    const posts = days.flatMap((d) => postsOnDay(d)).filter((q) => !skips[q.id]);
+    const cnt: Record<string, number> = { reach: 0, trust: 0, buyers: 0 };
+    let untagged = 0;
+    for (const q of posts) {
+      if (q.funnel_stage && cnt[q.funnel_stage] !== undefined) cnt[q.funnel_stage]++;
+      else untagged++;
+    }
+    const anyInferred = posts.some((q) => q.funnel_stage && q.funnel_source === 'inferred');
+    return { cnt, untagged, anyInferred, total: posts.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days.join(','), board.queue, skips]);
+
   const defaultDay = (days.includes(today) && postsOnDay(today).length ? today : days.find((d) => postsOnDay(d).length)) || days[0];
   const [pickedDay, setPickedDay] = useState<string | null>(null);
   const selectedDay = pickedDay && daySet.has(pickedDay) ? pickedDay : defaultDay;
@@ -556,7 +574,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 13 }}>
           <Chip>{kickerOf(q)}</Chip>
-          <FunnelChip stage={q.funnel_stage} accent={accent} />
+          <FunnelChip stage={q.funnel_stage} accent={accent} source={q.funnel_source} />
           {q.pillar && <Chip>{noDash(q.pillar)}</Chip>}
           {prov && <Chip>{noDash(prov.label)}</Chip>}
           {swapped && <Chip>fresh idea, same slot</Chip>}
@@ -742,6 +760,41 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <Eyebrow>This week · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
+      {/* 1b — the week's funnel mix against the 2-2-1 target (2 reach / 2 trust / 1 buyers).
+          Off-target tiers render in amber: a warning to read, never a gate. Only drawn once
+          the week actually carries posts, so an empty preview board stays quiet. */}
+      {weekMix.total > 0 && (
+        <div data-viz style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
+          {([['reach', 'Reach · Top'], ['trust', 'Trust · Mid'], ['buyers', 'Buyers · Bottom']] as const).map(([key, label]) => {
+            const got = weekMix.cnt[key];
+            const want = FUNNEL_TARGET[key];
+            const off = got !== want;
+            return (
+              <span
+                key={key}
+                title={`Target for a 5-post week: ${want} ${label.toLowerCase()} post${want === 1 ? '' : 's'}`}
+                style={{
+                  fontSize: 11.5, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase',
+                  color: off ? '#b45309' : 'var(--cb-dim, #6b6b66)',
+                }}
+              >
+                {label} {got}/{want}
+              </span>
+            );
+          })}
+          {weekMix.untagged > 0 && (
+            <span style={{ fontSize: 11.5, color: 'var(--cb-dim, #6b6b66)' }}>
+              {weekMix.untagged} untagged
+            </span>
+          )}
+          {weekMix.anyInferred && (
+            <span style={{ fontSize: 11, color: 'var(--cb-dim, #6b6b66)', fontStyle: 'italic' }}>
+              hollow-dot tags are estimated
+            </span>
+          )}
+        </div>
+      )}
+
       {/* 2 — the week at a glance, ABOVE the plate (Ivan 08-02 round 3): one tile a day, carrying the real cover. It is also the
           artwork the compressed day rows below no longer repeat, AND the second control on
           the day selector (Ivan 08-02: "when u touch on any of the week at a glance it shows
@@ -901,7 +954,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 <div style={{ marginTop: 11, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <Chip tone="accent">{statusOf(stageItem)}{isScheduled(stageItem) ? `, ${fmtSchedLA(stageItem.scheduled_at, stageItem.publish_date)}` : ''}</Chip>
                   <Chip tone="plate">{kickerOf(stageItem)}</Chip>
-                  {stageItem.funnel_stage && <Chip tone="plate">{stageItem.funnel_stage}</Chip>}
+                  {stageItem.funnel_stage && <Chip tone="plate">{({ reach: 'Reach · Top', trust: 'Trust · Mid', buyers: 'Buyers · Bottom' } as Record<string, string>)[stageItem.funnel_stage] || stageItem.funnel_stage}</Chip>}
                 </div>
                 <div data-upnext-actions="" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {stagePublished ? (
