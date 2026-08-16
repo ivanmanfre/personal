@@ -5,6 +5,7 @@ import { usePulse } from '../../../lib/usePulse';
 import { useChangelog, type ChangelogItem } from '../../../lib/useChangelog';
 import { useCountUp } from '../primitives/useCountUp';
 import { WeeklyNoteCard } from './WeeklyNoteCard';
+import { ArchBallotCard } from './ArchBallotCard';
 import type { SectionId } from '../types';
 
 /**
@@ -176,6 +177,9 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
           {/* RISE weekly note ops inbox card — renders only while a Sunday
               draft is pending (k-gated n8n status webhook). */}
           <WeeklyNoteCard />
+          {/* ARCH biweekly lead ballot — same contract, renders only while a
+              cycle draft is pending. */}
+          <ArchBallotCard />
           {feeds.loading ? (
             <p className="ec-note">Reading the pipeline…</p>
           ) : lead.length === 0 ? (
