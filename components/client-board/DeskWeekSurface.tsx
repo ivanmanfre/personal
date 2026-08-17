@@ -678,9 +678,9 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             {statusChip(q)}
           </div>
           {q.funnel_stage && FUNNEL_WHY[q.funnel_stage] && (
-            <p style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.4, color: 'var(--cb-ink-mute)' }}>
+            <div style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.4, color: 'var(--cb-ink-mute)' }}>
               {FUNNEL_WHY[q.funnel_stage]}
-            </p>
+            </div>
           )}
           <Drill label="Open post" ruled={false} summaryStyle={{ padding: '5px 0 0' }}>{rowDrillBody(q)}</Drill>
         </div>
