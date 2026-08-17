@@ -533,4 +533,47 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(row).not.toContain('products.json');
     expect(row).toContain('product .js');
   });
+
+  // Noisy Clan (2026-08-17) shipped "504 days since the most recent competitor start date"
+  // computed over ONE dated creative, while the same public archive held competitor starts
+  // newer than the brand's own newest. A most-recent-X over a population of 1 is not a
+  // population claim — below three dated creatives the corpus recency stats render as silence.
+  it('corpus recency claims are silent when fewer than three competitor creatives carry dates', () => {
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).competitors = {
+      status: 'present', checked_at: '2026-08-17T09:00:00Z',
+      data: {
+        advertisers_seen: 81, sampled_items: 109, keywords: ['music stand'],
+        creatives: [{ advertiser: 'Theaheng Music', start_date: '2025-03-31', age_days: 504, keyword: 'music stand' }],
+      },
+    };
+    const html = renderDtc(dtc, fixture.company_name);
+    // the honest parts stay: the sweep counts and the tile with its own per-creative age
+    expect(html).toContain('separate advertisers seen on those keywords');
+    expect(html).toContain('Theaheng Music');
+    // the population claims go silent
+    expect(html).not.toContain('since the most recent competitor start date');
+    expect(html).not.toContain('competitor creatives shown carry a start date');
+    expect(html).not.toContain('Start dates, drawn back from the read');
+  });
+
+  it('corpus recency claims render once three dated competitor creatives back them', () => {
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).competitors = {
+      status: 'present', checked_at: '2026-08-17T09:00:00Z',
+      data: {
+        advertisers_seen: 44, sampled_items: 120, keywords: ['blender'],
+        creatives: [
+          { advertiser: 'Rival One', start_date: '2026-08-01', age_days: 16, keyword: 'blender' },
+          { advertiser: 'Rival Two', start_date: '2026-07-20', age_days: 28, keyword: 'blender' },
+          { advertiser: 'Rival Three', start_date: '2026-06-30', age_days: 48, keyword: 'blender' },
+        ],
+      },
+    };
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).toContain('since the most recent competitor start date');
+    expect(html).toContain('Start dates, drawn back from the read');
+  });
 });

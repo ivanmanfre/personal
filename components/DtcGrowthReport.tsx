@@ -764,6 +764,13 @@ function AdEvidenceSpread({
   // computed over the SHOWN set so the drawn claim always matches the visible tiles.
   const compShown = compCreatives.slice(0, 3);
   const compAges = compShown.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
+  // Corpus-level recency claims ("N days since the most recent competitor start", the drawn
+  // axis, the fresher-than sentence) need a minimum population of DATED creatives. Noisy Clan
+  // (08-17) shipped "504 days since the most recent competitor start date" computed over ONE
+  // dated creative while the same archive held starts newer than the brand's own — a
+  // most-recent-X over a population of 1 is not a population claim. Below the floor the tiles
+  // still render (each states only its own age); the corpus stats render as silence.
+  const compDatedEnough = compAges.length >= 3;
   const maxAge = compAges.length ? Math.max(...compAges, newestAge ?? 0) : newestAge ?? 0;
   const axisMax = Math.max(7, Math.ceil((maxAge + 4) / 5) * 5);
   const agePos = (d: number) => Math.max(0, Math.min(100, (1 - d / axisMax) * 100));
@@ -1012,7 +1019,7 @@ function AdEvidenceSpread({
               {typeof comp?.sampled_items === 'number' ? (
                 <Stat {...countParts(comp.sampled_items, comp.capped)} label="ads read across the sweep" />
               ) : null}
-              {compAges.length > 0 ? (
+              {compDatedEnough ? (
                 <Stat n={String(Math.min(...compAges))} unit="days" label="since the most recent competitor start date" />
               ) : null}
             </div>
@@ -1049,7 +1056,7 @@ function AdEvidenceSpread({
             </div>
 
             {/* Shared recency axis: the counterpoint, drawn. */}
-            {compAges.length > 0 ? (
+            {compDatedEnough ? (
               <div className="mt-14">
                 <div className="text-[0.62rem] font-bold uppercase tracking-[0.24em] mb-4" style={{ fontFamily: headingFont, color: surface, opacity: 0.5 }}>
                   Start dates, drawn back from the read
