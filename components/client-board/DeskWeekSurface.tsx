@@ -624,6 +624,16 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   );
 
   /**
+   * Plain-words read on each funnel tier, shown as a tiny line under every dated post
+   * (Ivan 08-17: "so me and mattan can always understand this"). One sentence, no jargon.
+   */
+  const FUNNEL_WHY: Record<string, string> = {
+    reach: 'Why reach (top): made to get seen by people who don’t know RISE yet.',
+    trust: 'Why trust (mid): shows people already following that we know our stuff.',
+    buyers: 'Why buyers (bottom): proof for brands close to reaching out.',
+  };
+
+  /**
    * One dated post row, compressed to a single line: day, title, status, and the collapsed
    * "Open post" drill that still carries every write path. The cover thumbnail is gone on
    * purpose — the glance rail directly above draws the same artwork a day at a time, and the
@@ -667,6 +677,11 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 72)}</button>
             {statusChip(q)}
           </div>
+          {q.funnel_stage && FUNNEL_WHY[q.funnel_stage] && (
+            <p style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.4, color: 'var(--cb-ink-mute)' }}>
+              {FUNNEL_WHY[q.funnel_stage]}
+            </p>
+          )}
           <Drill label="Open post" ruled={false} summaryStyle={{ padding: '5px 0 0' }}>{rowDrillBody(q)}</Drill>
         </div>
       </div>
