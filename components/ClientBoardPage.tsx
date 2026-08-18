@@ -7734,7 +7734,9 @@ export default function ClientBoardPage() {
       if (resp.error) return { ok: false, error: resp.error.message };
       const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
       if (out.ok) {
-        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, media_url: url || null } : q) } : b);
+        // Clear image_urls/image too: the card renders image_urls[0] ahead of the cover
+        // fallbacks, so patching media_url alone leaves a removed photo on screen.
+        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, media_url: url || null, image: url || null, image_urls: url ? [url] : [] } : q) } : b);
       }
       return out;
     } catch (e) {
