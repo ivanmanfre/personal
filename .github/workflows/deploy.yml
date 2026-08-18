@@ -174,9 +174,11 @@ jobs:
   rise-scan-mirror:
     runs-on: ubuntu-latest
     # A hung runner here leaves a freshly-generated scan 404 on Rise's domain while its
-    # DM is already drafted (seen 2026-08-18: playwright install stalled 28min, default
-    # 6h job timeout). Fail loudly at 20min instead so the run shows red and can be re-run.
-    timeout-minutes: 20
+    # DM is already drafted (seen 2026-08-18: playwright install stalled 28min under the
+    # default 6h job timeout, so the run just sat there looking healthy). The individual
+    # steps carry their own bounds; this is the outer backstop that turns a wedge into a
+    # red run instead of an invisible one.
+    timeout-minutes: 45
     concurrency:
       group: rise-scan-mirror
       cancel-in-progress: false
@@ -190,7 +192,19 @@ jobs:
 
       - run: npm ci
 
-      - run: npx playwright install chromium --with-deps
+      # 2026-08-18: this step stalled 28min on a runner (apt/download wedged), and with no
+      # job timeout the whole run sat "in_progress" looking healthy while a freshly generated
+      # scan stayed 404 on Rise's domain — with its DM already drafted. Bound each attempt
+      # and retry rather than letting a wedged download decide whether a prospect link works.
+      - name: Install chromium (bounded + retried)
+        run: |
+          for i in 1 2 3; do
+            if timeout 360 npx playwright install chromium --with-deps; then exit 0; fi
+            echo "::warning::playwright install attempt $i failed or stalled — retrying"
+            sleep 15
+          done
+          echo "::error::playwright install failed 3x — scans will not publish"
+          exit 1
 
       - run: npm run build && RISE_SCAN_MIRROR=1 node scripts/prerender.mjs
         env:
@@ -236,3 +250,30 @@ jobs:
             git pull --rebase origin main
           done
           git push origin main
+
+      # A green mirror job is not proof a prospect can open the link: the push can succeed
+      # while Pages lags, or the prerender can silently drop a route. Every dtc_growth scan
+      # link gets sent to a real prospect, so assert the newest ones actually resolve 200 on
+      # Rise's domain before this job is allowed to report success.
+      - name: Verify newest scans resolve on resources.risedtc.com
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          slugs=$(curl -s "${SUPABASE_URL}/rest/v1/scans?status=eq.complete&matched_offer=eq.dtc_growth&company_slug=not.is.null&select=company_slug&order=created_at.desc&limit=5" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            | grep -oE '"company_slug":"[^"]+"' | cut -d'"' -f4)
+          if [ -z "$slugs" ]; then echo "::warning::could not enumerate scans — skipping liveness check"; exit 0; fi
+          for slug in $slugs; do
+            ok=""
+            # Pages needs ~30-60s after the mirror push; poll rather than fail on the race.
+            for attempt in 1 2 3 4 5 6 7 8; do
+              code=$(curl -sL -o /dev/null -w '%{http_code}' "https://resources.risedtc.com/scan/${slug}/")
+              if [ "$code" = "200" ]; then ok=1; echo "live: $slug"; break; fi
+              sleep 30
+            done
+            if [ -z "$ok" ]; then
+              echo "::error::scan ${slug} is NOT live at https://resources.risedtc.com/scan/${slug} — its DM link is dead"
+              exit 1
+            fi
+          done
