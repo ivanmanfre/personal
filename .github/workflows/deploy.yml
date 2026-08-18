@@ -173,6 +173,10 @@ jobs:
   # remote Rise logo + per-brand OG, never /ivan-portrait* or /content-system/*.
   rise-scan-mirror:
     runs-on: ubuntu-latest
+    # A hung runner here leaves a freshly-generated scan 404 on Rise's domain while its
+    # DM is already drafted (seen 2026-08-18: playwright install stalled 28min, default
+    # 6h job timeout). Fail loudly at 20min instead so the run shows red and can be re-run.
+    timeout-minutes: 20
     concurrency:
       group: rise-scan-mirror
       cancel-in-progress: false
