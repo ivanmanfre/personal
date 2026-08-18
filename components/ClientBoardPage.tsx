@@ -3433,6 +3433,10 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [err, setErr] = useState('');
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review';
+  // Rescheduling stays available after a post is armed: the set_schedule RPC accepts
+  // status in (review, scheduled), and the card-level "Edit time" link opens this modal
+  // for scheduled posts expecting the scheduler to be here.
+  const canSched = stage === 'review' || stage === 'scheduled';
 
   // Reschedule (live): the client picks a new date + LA time; setSchedule writes
   // carousel_drafts.scheduled_at server-side. The date/time inputs are entered as LA wall
@@ -3805,7 +3809,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               )}
             </div>
             {/* Reschedule (live): change this post's date/time, shown + entered in LA time. */}
-            {isLive && canAct && setSchedule && (
+            {isLive && canSched && setSchedule && (
               <div className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}` }}>
                 {!schedOpen ? (
                   <div className="flex flex-wrap items-center gap-3">
