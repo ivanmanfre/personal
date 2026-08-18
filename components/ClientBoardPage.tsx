@@ -138,6 +138,10 @@ interface QueueItem {
    *  it as a small strip ONLY when the LinkedIn deck runs past 10 pages. */
   ig_slide_urls?: string[] | null;
   image?: string | null;
+  /** Explicit "remove photo" was clicked (set by the set_media RPC on clear). Opts the
+   *  post out of the display-only auto-photo rotation, which would otherwise re-decorate
+   *  any imageless text post and make the remove look like it never worked. */
+  no_photo?: boolean;
   title?: string;
   promise?: string;
   cover_url?: string;
@@ -7740,7 +7744,7 @@ export default function ClientBoardPage() {
       if (out.ok) {
         // Clear image_urls/image too: the card renders image_urls[0] ahead of the cover
         // fallbacks, so patching media_url alone leaves a removed photo on screen.
-        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, media_url: url || null, image: url || null, image_urls: url ? [url] : [] } : q) } : b);
+        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, media_url: url || null, image: url || null, image_urls: url ? [url] : [], no_photo: !url } : q) } : b);
       }
       return out;
     } catch (e) {
@@ -8332,7 +8336,7 @@ export default function ClientBoardPage() {
     if (!board || photoPool.length === 0) return map;
     const hashStr = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
     const eligible = board.queue
-      .filter((q) => q.kind === 'post' && q.style !== 'video' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url)
+      .filter((q) => q.kind === 'post' && q.style !== 'video' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url && !q.no_photo)
       .slice()
       .sort((a, b) => a.id.localeCompare(b.id));
     let ri = 0;
