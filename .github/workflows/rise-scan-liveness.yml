@@ -1,0 +1,90 @@
+name: Rise scan liveness watchdog
+
+# Every completed dtc_growth scan has its URL pasted into a prospect DM the moment the scan
+# finishes, but the page only exists after the rise-scan-mirror job in deploy.yml publishes it.
+# On 2026-08-18 that job wedged on a chromium install and a live prospect link 404'd for half
+# an hour with the DM already drafted. deploy.yml now bounds and verifies that job; this is the
+# backstop for every OTHER way publishing can silently not happen (cancelled run, queue starved,
+# Pages build stuck, scan row created while no deploy is scheduled).
+#
+# Self-heals: if any scan older than the grace window is not live, re-dispatch the deploy and
+# fail the run so the failure is visible instead of accumulating dead links.
+
+on:
+  schedule:
+    - cron: '5,35 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Find dtc_growth scans that do not resolve on resources.risedtc.com
+        id: probe
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          # A scan published in the last 25min may still legitimately be mid-deploy (build +
+          # prerender + Pages ~10min), so only judge scans past that grace window — otherwise
+          # the watchdog fights the deploy it is meant to guard.
+          cutoff=$(date -u -d '25 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          rows=$(curl -sS --get "${SUPABASE_URL}/rest/v1/scans" \
+            --data-urlencode 'status=eq.complete' \
+            --data-urlencode 'matched_offer=eq.dtc_growth' \
+            --data-urlencode 'company_slug=not.is.null' \
+            --data-urlencode "created_at=lt.${cutoff}" \
+            --data-urlencode 'select=company_slug' \
+            --data-urlencode 'order=created_at.desc' \
+            --data-urlencode 'limit=200' \
+            -H "apikey: ${SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          slugs=$(printf '%s' "$rows" | jq -r '.[].company_slug' | grep -v '^scan-engine-selftest$' || true)
+          if [ -z "$slugs" ]; then
+            echo "::warning::no scans enumerated (Supabase unreachable or empty) — nothing checked"
+            echo "missing=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          missing=""
+          checked=0
+          for slug in $slugs; do
+            checked=$((checked + 1))
+            code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 20 "https://resources.risedtc.com/scan/${slug}/" || echo 000)
+            if [ "$code" != "200" ]; then
+              # One retry — a single blip should not trigger a deploy.
+              sleep 5
+              code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 20 "https://resources.risedtc.com/scan/${slug}/" || echo 000)
+            fi
+            if [ "$code" != "200" ]; then
+              echo "DEAD ($code): https://resources.risedtc.com/scan/${slug}"
+              missing="${missing}${slug} "
+            fi
+          done
+          echo "checked ${checked} scans"
+          echo "missing=${missing}" >> "$GITHUB_OUTPUT"
+
+      - name: Re-publish the mirror
+        if: steps.probe.outputs.missing != ''
+        env:
+          # GITHUB_TOKEN cannot trigger another workflow run (GitHub blocks recursive
+          # dispatch), so the mirror PAT does it.
+          DISPATCH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/dispatch.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${DISPATCH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches \
+            -d '{"ref":"main"}')
+          echo "dispatch HTTP ${code}"
+          if [ "$code" != "204" ]; then cat /tmp/dispatch.json; echo "::error::could not re-dispatch the deploy"; fi
+
+      - name: Fail so the dead links are visible
+        if: steps.probe.outputs.missing != ''
+        run: |
+          echo "::error::scans not live on resources.risedtc.com: ${{ steps.probe.outputs.missing }}"
+          exit 1
