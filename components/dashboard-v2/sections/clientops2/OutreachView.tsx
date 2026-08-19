@@ -392,6 +392,15 @@ const CSS = `
 .ec .co3-kind--reply { background:var(--ec-red); }
 .ec .co3-kind--dm1 { color:var(--ec-mutedc); background:none; border:1px solid var(--ec-rule-strong); }
 .ec .co3-scanchip { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; padding:0.14rem 0.42rem; color:var(--ec-ink); border:1px solid var(--ec-ink); }
+/* Answerability gate: the draft answered something rise-company-facts does not cover.
+   Warning only. Approve & send stays enabled, and the Ask Mattan button is optional. */
+.ec .co4-gapchip { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; padding:0.14rem 0.42rem; color:var(--ec-paper); background:var(--ec-red); }
+.ec .co4-gap { border:1px solid var(--ec-red); border-left:3px solid var(--ec-red); padding:0.55rem 0.7rem; display:flex; flex-direction:column; gap:0.35rem; }
+.ec .co4-gap-hd { font-family:var(--ec-sans); font-size:12px; font-weight:700; line-height:1.5; color:var(--ec-ink); }
+.ec .co4-gap-q { font-family:var(--ec-clinical); font-style:italic; font-size:12.5px; line-height:1.5; color:var(--ec-body); }
+.ec .co4-gap-row { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.15rem; }
+.ec .co4-gap-link { font-family:var(--ec-sans); font-size:11px; color:var(--ec-ink); text-decoration:underline; }
+.ec .co4-gap-note { font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
 .ec .co3-trigger { border-left:2px solid var(--ec-ink); padding:0.1rem 0 0.1rem 0.6rem; }
 .ec .co3-trigger-l { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
 .ec .co3-trigger-t { font-family:var(--ec-clinical); font-style:italic; font-size:12.5px; line-height:1.5; color:var(--ec-body); margin-top:0.15rem; }

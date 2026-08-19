@@ -326,6 +326,9 @@ export function useClientOutreach(clientId: string | null) {
 // dispatcher then sends from the client's seat. Double-gated server-side
 // (operator_gate_ok + risedtc_reply_send_armed), so a stray click cannot dispatch.
 export interface PendingDraftInbound { text: string | null; at: string | null }
+/** Answerability gate (2026-08-19). Present when the drafter answered something
+ *  rise-company-facts does not cover. ADVISORY: the draft is still approvable as normal. */
+export interface PendingDraftGap { question: string | null; why: string | null; at: string | null }
 export interface PendingDraft {
   message_id: string;
   prospect_id: string;
@@ -342,6 +345,9 @@ export interface PendingDraft {
   created_at: string | null;
   inbound: PendingDraftInbound | null;
   thread?: { direction: string; text: string | null; at: string | null }[] | null;
+  context_gap?: PendingDraftGap | null;
+  chat_url?: string | null;
+  escalated?: boolean;
 }
 export function useClientPendingDrafts(clientId: string | null) {
   const [drafts, setDrafts] = useState<PendingDraft[] | null>(null);
@@ -364,6 +370,15 @@ export function useClientPendingDrafts(clientId: string | null) {
  *  Mattan's seat). Returns the server note so the surface can show honest state. */
 export async function approveRiseDraft(messageId: string): Promise<{ ok: boolean; note?: string; error?: string }> {
   const { data, error } = await supabase.rpc('operator_approve_rise_draft', { p_gate: GATE, p_message_id: messageId });
+  if (error) return { ok: false, error: error.message };
+  const r = (data as { ok?: boolean; note?: string; error?: string }) || {};
+  return { ok: !!r.ok, note: r.note, error: r.error };
+}
+
+/** Optional: queue the "what do I tell them" question for Mattan in the Ops inbox, carrying the
+ *  LinkedIn conversation URL. Never sends anything itself, and never blocks approving the draft. */
+export async function escalateRiseDraft(messageId: string): Promise<{ ok: boolean; note?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('operator_escalate_rise_draft', { p_gate: GATE, p_message_id: messageId });
   if (error) return { ok: false, error: error.message };
   const r = (data as { ok?: boolean; note?: string; error?: string }) || {};
   return { ok: !!r.ok, note: r.note, error: r.error };
