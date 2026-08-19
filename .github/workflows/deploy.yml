@@ -192,18 +192,26 @@ jobs:
 
       - run: npm ci
 
-      # 2026-08-18: this step stalled 28min on a runner (apt/download wedged), and with no
-      # job timeout the whole run sat "in_progress" looking healthy while a freshly generated
-      # scan stayed 404 on Rise's domain — with its DM already drafted. Bound each attempt
-      # and retry rather than letting a wedged download decide whether a prospect link works.
-      - name: Install chromium (bounded + retried)
+      # 2026-08-18: this step stalled 28min on a runner (apt wedged) and, with no job timeout, the
+      # run sat "in_progress" looking healthy while a freshly generated scan stayed 404 on Rise's
+      # domain with its DM already drafted. 2026-08-19: bounding it was right, but killing
+      # `--with-deps` mid-apt left dpkg half-configured, so both retries died instantly on apt
+      # code 100 — the retry turned a slow runner into a failed one. The same command passed in
+      # all three sibling jobs of that very run, so the apt step is what's fragile, not the
+      # download. Repair dpkg and fall back to a browser-only install: the runner image already
+      # ships the shared libs, which is why the siblings pass.
+      - name: Install chromium (bounded, apt-free fallback)
         run: |
-          for i in 1 2 3; do
-            if timeout 360 npx playwright install chromium --with-deps; then exit 0; fi
-            echo "::warning::playwright install attempt $i failed or stalled — retrying"
-            sleep 15
+          if timeout 420 npx playwright install chromium --with-deps; then exit 0; fi
+          echo "::warning::--with-deps failed or stalled — repairing dpkg, retrying browser-only"
+          sudo dpkg --configure -a || true
+          sudo apt-get -f install -y || true
+          for i in 1 2; do
+            if timeout 300 npx playwright install chromium; then exit 0; fi
+            echo "::warning::browser-only install attempt $i failed — retrying"
+            sleep 20
           done
-          echo "::error::playwright install failed 3x — scans will not publish"
+          echo "::error::chromium install failed — scans will not publish"
           exit 1
 
       - run: npm run build && RISE_SCAN_MIRROR=1 node scripts/prerender.mjs
