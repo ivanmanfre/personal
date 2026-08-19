@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import {
   approveRiseDraft,
+  escalateRiseDraft,
   editRiseDraft,
   gateBlocking,
   fmtDate,
@@ -471,6 +472,18 @@ function InlineDraft({ draft, company, name, afterWrite }: {
   const [text, setText] = useState(draft.text || '');
   const [body, setBody] = useState(draft.text || '');
   const [note, setNote] = useState('');
+  // Answerability gate: advisory band + optional escalation. Approving is never blocked by it.
+  const gap = draft.context_gap || null;
+  const [asked, setAsked] = useState(!!draft.escalated);
+  const [asking, setAsking] = useState(false);
+  const ask = async () => {
+    if (asking || asked) return;
+    setAsking(true); setNote('');
+    const r = await escalateRiseDraft(draft.message_id);
+    setAsking(false);
+    if (r.ok) { setAsked(true); setNote(r.note || 'Queued for Mattan.'); }
+    else setNote(r.error || 'Could not queue that.');
+  };
 
   const send = async () => {
     if (busy || done || editing) return;
@@ -500,8 +513,24 @@ function InlineDraft({ draft, company, name, afterWrite }: {
       <div className="co4-draft-top">
         <span className={`co3-kind co3-kind--${draft.kind}`}>{DRAFT_KIND_LABEL[draft.kind]}</span>
         {draft.has_link && <span className="co3-scanchip">scan link ✓</span>}
+        {gap && <span className="co4-gapchip">unverified answer</span>}
         <span className="co4-draft-l">Drafted for you</span>
       </div>
+      {gap && (
+        <div className="co4-gap">
+          <div className="co4-gap-hd">This answers something our RISE notes do not cover{gap.why ? `: ${gap.why}` : '.'}</div>
+          {gap.question && <div className="co4-gap-q">For Mattan: {gap.question}</div>}
+          <div className="co4-gap-row">
+            <button className="co3-edit-btn" disabled={asking || asked} onClick={ask}>
+              {asked ? 'Asked Mattan ✓' : asking ? 'Queueing…' : 'Ask Mattan'}
+            </button>
+            {draft.chat_url && (
+              <a className="co4-gap-link" href={draft.chat_url} target="_blank" rel="noreferrer">open the conversation</a>
+            )}
+            <span className="co4-gap-note">Optional. You can approve and send the draft as it is.</span>
+          </div>
+        </div>
+      )}
       {editing ? (
         <textarea
           className="co3-draft-edit"
