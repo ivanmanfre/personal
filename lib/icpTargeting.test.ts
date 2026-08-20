@@ -1,6 +1,6 @@
 // lib/icpTargeting.test.ts
 import { describe, it, expect } from 'vitest';
-import { deriveIcpTargeting, reasonFor, MIN_SAMPLE_LEADS, MAX_HEADLINE_CHARS, buyerDefinitionWords, LEGACY_BUYER_WORDS } from './icpTargeting';
+import { deriveIcpTargeting, reasonFor, MIN_SAMPLE_LEADS, MAX_HEADLINE_CHARS, buyerDefinitionWords, LEGACY_BUYER_WORDS, deriveColdOutbound } from './icpTargeting';
 
 // Written as an escape so this test file itself carries no em dash character in its source,
 // while still feeding the real one through the sanitiser it exists to cover.
@@ -240,5 +240,70 @@ describe('buyerDefinitionWords', () => {
     expect(LEGACY_BUYER_WORDS).toBe(
       'a decision maker at a consumer brand: founder, CMO, or head of growth',
     );
+  });
+});
+
+describe('deriveColdOutbound', () => {
+  const full = {
+    note: 'We build a fresh list of store owners who have never met you.',
+    sources: [
+      { label: 'Engagers of rival Klaviyo agencies', detail: 'They already want this result' },
+      { label: 'Brands running Meta ads now', detail: 'Live spend means live budget' },
+      { label: 'Shops hiring email or CRM staff', detail: 'Retention is a live priority' },
+    ],
+    filters: ['Other email agencies', 'Dormant stores'],
+  };
+
+  it('returns the lane when it is complete', () => {
+    const d = deriveColdOutbound(full);
+    expect(d?.sources.length).toBe(3);
+    expect(d?.filters).toEqual(['Other email agencies', 'Dormant stores']);
+  });
+
+  it('returns null when absent', () => {
+    expect(deriveColdOutbound(undefined)).toBeNull();
+  });
+
+  it('returns null without a note, because the lane needs its own sentence', () => {
+    expect(deriveColdOutbound({ ...full, note: '   ' })).toBeNull();
+  });
+
+  it('returns null below the source floor', () => {
+    expect(deriveColdOutbound({ ...full, sources: full.sources.slice(0, 1) })).toBeNull();
+    expect(deriveColdOutbound({ ...full, sources: [] })).toBeNull();
+  });
+
+  // Order matters: filter the blanks first, then count. Counting first would let a list of
+  // three entries where two are blank clear a floor that only one real source reached.
+  it('drops blank-label sources before checking the floor', () => {
+    const padded = { ...full, sources: [full.sources[0], { label: '  ', detail: 'x' }, { label: '', detail: 'y' }] };
+    expect(deriveColdOutbound(padded)).toBeNull();
+  });
+
+  it('renders without filters rather than inventing one', () => {
+    const d = deriveColdOutbound({ ...full, filters: [] });
+    expect(d).not.toBeNull();
+    expect(d?.filters).toEqual([]);
+  });
+
+  it('normalises em dashes out of every string', () => {
+    const d = deriveColdOutbound({
+      note: 'We build the list — you never touch it',
+      sources: [
+        { label: 'Rival agencies — their engagers', detail: 'a — b' },
+        { label: 'Live ad spend', detail: 'c' },
+      ],
+      filters: ['peers — and lookalikes'],
+    });
+    const all = JSON.stringify(d);
+    expect(all).not.toContain('—');
+  });
+
+  it('keeps a source that has no detail', () => {
+    const d = deriveColdOutbound({ ...full, sources: [{ label: 'Rival engagers' }, { label: 'Live ad spend' }] });
+    expect(d?.sources).toEqual([
+      { label: 'Rival engagers', detail: '' },
+      { label: 'Live ad spend', detail: '' },
+    ]);
   });
 });

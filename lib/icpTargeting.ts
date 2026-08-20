@@ -84,6 +84,45 @@ function cleanHeadline(raw?: string): string {
   return `${stem}…`;
 }
 
+// ── COLD LANE ────────────────────────────────────────────────────────────────
+// A different lane from the warm one. Chapter 03 works the audience the founder already
+// has; this is the list we build for them from strangers. Kept fail-closed for the same
+// reason as the targeting block: a source line that does not describe the reader's own
+// market reads as boilerplate, and boilerplate on a paid page costs the meeting.
+
+// Two sources is the floor. One source reads as a single trick rather than a lane, and the
+// chapter's whole claim is that we come at their market from several directions at once.
+export const MIN_COLD_SOURCES = 2;
+
+export interface ColdOutbound {
+  note: string;
+  sources?: { label?: string; detail?: string }[];
+  filters?: string[];
+}
+
+export interface DerivedColdOutbound {
+  note: string;
+  sources: { label: string; detail: string }[];
+  filters: string[];
+}
+
+export function deriveColdOutbound(cold: ColdOutbound | undefined): DerivedColdOutbound | null {
+  if (!cold) return null;
+  const note = cleanText(cold.note);
+  if (!note) return null;
+
+  const sources = (cold.sources ?? [])
+    .map((s) => ({ label: cleanText(s?.label), detail: cleanText(s?.detail) }))
+    .filter((s) => s.label.length > 0);
+  if (sources.length < MIN_COLD_SOURCES) return null;
+
+  // Filters are the only optional part: the lane still reads honestly without them, and an
+  // invented exclusion is worse than a missing one.
+  const filters = (cold.filters ?? []).map((f) => cleanText(f)).filter((f) => f.length > 0);
+
+  return { note, sources, filters };
+}
+
 // The audience audit used to classify every prospect's audience against one hardcoded
 // rubric: decision makers at consumer brands. Since 2026-08-20 it derives the buyer per
 // prospect, so the page has to name whatever THAT audit counted rather than assert a

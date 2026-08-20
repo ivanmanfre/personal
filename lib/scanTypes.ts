@@ -90,6 +90,15 @@ export interface ContentSystem {
       segments?: { label: string; note?: string }[];
       pool_sources?: ('engagers' | 'competitor_engagers' | 'network' | 'signals')[];
     };
+    // Chapter 04. Describes the list we BUILD for them, so unlike icp_targeting it needs no
+    // audience data and can render on scans where no audit ever ran. Sources are niche
+    // derivations of three fixed families: competitor harvest, a live spend signal, a hiring
+    // signal. Absent -> the whole chapter drops. Never their own engagers: that is Chapter 03.
+    cold_outbound?: {
+      note: string;
+      sources?: { label?: string; detail?: string }[];
+      filters?: string[];
+    };
     lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number>;
       // Brand-mirror data — the prospect's own accent/logo/fonts, so the engine-tour
       // mockups (newsletter, follow-ups, outreach) read as THEIR asset, not a template.

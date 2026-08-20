@@ -16,7 +16,8 @@ import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
 import IcpTargetingBlock from './ui/IcpTargetingBlock';
-import { deriveIcpTargeting, buyerDefinitionWords } from '../lib/icpTargeting';
+import ColdOutboundBlock from './ui/ColdOutboundBlock';
+import { deriveIcpTargeting, deriveColdOutbound, buyerDefinitionWords } from '../lib/icpTargeting';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -2193,8 +2194,21 @@ const RECORD_CSS = `
 .bbrec .icp-name{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);line-height:1.25;color:var(--ink);}
 .bbrec .icp-headline{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.5;color:var(--sec);}
 .bbrec .icp-reason{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;line-height:1.35;color:var(--muted);white-space:nowrap;text-align:right;}
+.bbrec .cold-block{border-top:1px solid var(--ink);padding-top:clamp(18px,2.4vw,26px);}
+.bbrec .cold-k{display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .cold-lead{max-width:56ch;}
+.bbrec .cold-note{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);margin-top:10px;}
+.bbrec .cold-srcs{margin-top:clamp(20px,2.6vw,30px);list-style:none;margin-bottom:0;padding:0;border-top:1px solid var(--ink);}
+.bbrec .cold-srcs li{display:grid;grid-template-columns:auto 1fr 1.25fr;gap:clamp(10px,1.6vw,22px);align-items:baseline;padding:clamp(13px,1.8vw,17px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .cold-srcs li:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .cold-src-n{font-family:var(--grotesk);font-weight:700;font-size:10px;letter-spacing:0.09em;color:var(--muted);}
+.bbrec .cold-src-label{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.012em;font-size:clamp(14px,1.6vw,16.5px);line-height:1.25;color:var(--ink);}
+.bbrec .cold-src-detail{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.5;color:var(--sec);}
+.bbrec .cold-cut{margin-top:clamp(20px,2.8vw,32px);}
+.bbrec .cold-cut-list{margin-top:12px;list-style:none;margin-bottom:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+.bbrec .cold-cut-list li{padding:clamp(12px,1.7vw,15px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(13px,1.4vw,14.5px);line-height:1.4;color:var(--ink);}
 .bbrec .icp-gov{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.55;color:var(--sec);margin-top:clamp(18px,2.2vw,24px);max-width:58ch;}
-@media(max-width:640px){.bbrec .icp-lead-row{grid-template-columns:1fr;gap:5px;padding:15px 0;}.bbrec .icp-reason{white-space:normal;text-align:left;margin-top:3px;}.bbrec .icp-headline{font-size:13px;}.bbrec .icp-segs{grid-template-columns:1fr;}}
+@media(max-width:640px){.bbrec .cold-srcs li{grid-template-columns:auto 1fr;gap:4px 12px;}.bbrec .cold-src-detail{grid-column:2;}.bbrec .cold-cut-list{grid-template-columns:1fr;}.bbrec .icp-lead-row{grid-template-columns:1fr;gap:5px;padding:15px 0;}.bbrec .icp-reason{white-space:normal;text-align:left;margin-top:3px;}.bbrec .icp-headline{font-size:13px;}.bbrec .icp-segs{grid-template-columns:1fr;}}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -3104,6 +3118,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // needs `aud`, which is not declared until this line. Fails closed inside
   // deriveIcpTargeting: no icp_line or fewer than 3 named people -> null.
   const icpTargeting = deriveIcpTargeting(cs.sample_output?.icp_targeting, aud);
+  // The cold lane needs no audience data at all: it describes a list we build rather than
+  // one they already have, which is exactly why it can carry a chapter on the thin scans
+  // where no audit ever ran and Chapter 03 stays dark.
+  const coldOutbound = deriveColdOutbound(cs.sample_output?.cold_outbound);
   const audClean = (t?: string) => (t || '').replace(/\s*—\s*/g, ', ').replace(/\s+/g, ' ').trim();
   const audNamed = (aud?.named ?? []).filter((n) => (n?.name || '').trim()).slice(0, 3);
   const audNetCount = aud?.network_icp_count ?? null;
@@ -3219,6 +3237,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     { key: 'inbound', name: 'Inbound', anchor: 'cs-ch-inbound' },
     { key: 'outbound', name: 'Warm outbound', anchor: 'cs-ch-outbound' },
   ];
+  // Chapter 04 is deliberately NOT in PILLARS. This table is the three-pillar spine of the
+  // offer and every row reads `pillars[key]`, which only holds those three; a fourth entry
+  // would render undefined. The cold lane is a chapter of the outbound pillar, not a pillar
+  // of its own, and the proof section below still says "the same three pillars".
   const pillars: Record<PillarKey, { found: string; projected: string }> = {
     content: pillarCell('content'), inbound: pillarCell('inbound'), outbound: pillarCell('outbound'),
   };
@@ -3583,6 +3605,25 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
           )}
           <ChapterCta line={<>This lane opens in week one, {who}.</>} />
+        </Rev>
+        )}
+
+        {/* ── CHAPTER 04 · COLD OUTBOUND ──
+            Chapter 03 works the audience they already have, which is small and finite. This
+            is the lane that builds a new one. Gated on its own derivation only, so it can
+            carry a chapter on scans where no audience audit ever ran. */}
+        {coldOutbound && (
+        <Rev el="section" className="sec" id="cs-ch-cold" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 04&nbsp;·&nbsp;Cold outbound</>}
+            title={<>The rest of your market, built into a list.</>}
+            {/* Deliberately short. The niche-specific version of this thought is the block's
+                own note one line below, written off their business; a long note here just
+                said the same sentence twice in a row. */}
+            note={<>Everything above runs on the audience you already have. This lane goes past it.</>}
+          />
+          <ColdOutboundBlock data={coldOutbound} who={who} />
+          <ChapterCta line={<>We build and run this list, {who}. You never touch it.</>} />
         </Rev>
         )}
 
