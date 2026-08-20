@@ -47,11 +47,25 @@ describe('deriveIcpTargeting', () => {
     ]);
   });
 
-  it('caps sample leads at four and drops entries with no name', () => {
-    const many = [...namedThree, { name: 'Ida Rhodes', headline: 'COO', source: 'engager' },
-      { name: 'Jean Bartik', headline: 'Founder', source: 'engager' }, { name: '  ', headline: 'x', source: 'engager' }];
+  it('drops a blank-named entry before capping at four, not after', () => {
+    // The blank entry sits at raw index 3, inside the first four raw positions. A
+    // slice-then-filter implementation would slice in the blank and then filter it
+    // out, leaving only 3 leads. A filter-then-slice implementation drops the blank
+    // first and fills the fourth slot from the next valid entry (Ida Rhodes).
+    const many = [
+      ...namedThree,
+      { name: '  ', headline: 'x', source: 'engager' },
+      { name: 'Ida Rhodes', headline: 'COO', source: 'engager' },
+      { name: 'Jean Bartik', headline: 'Founder', source: 'engager' },
+    ];
     const result = deriveIcpTargeting(fullTargeting, { named: many });
     expect(result!.leads).toHaveLength(4);
+    expect(result!.leads.map((l) => l.name)).toEqual([
+      'Ada Lovelace',
+      'Grace Hopper',
+      'Karen Sparck Jones',
+      'Ida Rhodes',
+    ]);
     expect(result!.leads.every((l) => l.name.trim().length > 0)).toBe(true);
   });
 });
