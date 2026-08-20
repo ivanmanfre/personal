@@ -45,8 +45,13 @@ const POOL_LABELS: Record<PoolSource, string> = {
 const NEUTRAL_REASON = 'In your audience';
 
 // `source` mirrors the vocabulary already used by the audience audit block.
+// `network_sample` is what the audit actually emits, verified 2026-08-20 against 40 live
+// scans: 17 named leads carried `network_sample` and 2 carried `engager`. Plain `network`
+// never occurs in production and is kept only so a future emitter change cannot regress
+// those rows to the neutral label.
 const REASONS: Record<string, string> = {
   engager: 'Engaged your posts',
+  network_sample: 'In your connections',
   network: 'In your connections',
 };
 

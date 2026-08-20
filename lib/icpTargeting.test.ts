@@ -192,3 +192,19 @@ describe('deriveIcpTargeting copy guarantees', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('reasonFor against production source values', () => {
+  it('labels network_sample as a connection, the value live scans actually emit', () => {
+    expect(reasonFor('network_sample')).toBe('In your connections');
+  });
+
+  it('still labels engager and legacy network correctly', () => {
+    expect(reasonFor('engager')).toBe('Engaged your posts');
+    expect(reasonFor('network')).toBe('In your connections');
+  });
+
+  it('falls back to the neutral label for anything unrecognised', () => {
+    expect(reasonFor('competitor_engager')).toBe('In your audience');
+    expect(reasonFor(undefined)).toBe('In your audience');
+  });
+});
