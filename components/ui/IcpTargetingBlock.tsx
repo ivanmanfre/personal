@@ -12,12 +12,34 @@ const IcpTargetingBlock: React.FC<{ data: DerivedIcpTargeting; who: string }> = 
       <p className="icp-line">{data.icpLine}</p>
     </div>
 
-    {data.poolLabels.length > 0 && (
-      <ul className="icp-pools">
-        {data.poolLabels.map((label) => (
-          <li key={label}>{label}</li>
+    {/* The niche cut. This is the only part of the block that changes shape with the
+        prospect's industry, so it earns its own register: an ecommerce agency's segments
+        and a mobile UA studio's segments should look nothing alike here. Segments are
+        optional upstream, so an empty list renders nothing rather than an empty frame. */}
+    {data.segments.length > 0 && (
+      <ol className="icp-segs">
+        {data.segments.map((seg, i) => (
+          <li key={`${i}-${seg.label}`}>
+            <span className="icp-seg-n">{String(i + 1).padStart(2, '0')}</span>
+            <span className="icp-seg-label">{seg.label}</span>
+            {seg.note && <span className="icp-seg-note">{seg.note}</span>}
+          </li>
         ))}
-      </ul>
+      </ol>
+    )}
+
+    {data.poolLabels.length > 0 && (
+      <div className="icp-pool-wrap">
+        {/* The pools are a fact about our delivery, identical for every client, which is
+            why they are set upstream rather than read off this prospect. The heading says
+            where we look, never how many we expect to find there. */}
+        <span className="icp-k">Where we find them</span>
+        <ul className="icp-pools">
+          {data.poolLabels.map((label) => (
+            <li key={label}>{label}</li>
+          ))}
+        </ul>
+      </div>
     )}
 
     <div className="icp-leads">
@@ -25,8 +47,8 @@ const IcpTargetingBlock: React.FC<{ data: DerivedIcpTargeting; who: string }> = 
           counted audience data; nothing here checks any one of them against the ICP line
           above, so this heading must not imply that it did. */}
       <span className="icp-k">Real people already around you, {who}</span>
-      {data.leads.map((lead) => (
-        <div className="icp-lead-row" key={lead.name}>
+      {data.leads.map((lead, i) => (
+        <div className="icp-lead-row" key={`${i}-${lead.name}`}>
           <span className="icp-name">{lead.name}</span>
           <span className="icp-headline">{lead.headline}</span>
           <span className="icp-reason">{lead.reason}</span>

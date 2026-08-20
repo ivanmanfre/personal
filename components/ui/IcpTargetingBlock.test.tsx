@@ -36,6 +36,29 @@ describe('IcpTargetingBlock', () => {
     expect(document.body.textContent || '').not.toContain('—');
   });
 
+  // The segments are the only niche-varying part of the block. They were derived by
+  // deriveIcpTargeting and then silently dropped on the floor by the first version of this
+  // component, so a UA studio and an ecommerce agency rendered an identical section.
+  it('renders every segment label and note', () => {
+    render(<IcpTargetingBlock data={data} who="Ada" />);
+    const text = document.body.textContent || '';
+    expect(text).toContain('DTC skincare');
+    expect(text).toContain('their current buyer');
+  });
+
+  it('renders a segment with no note, without printing undefined', () => {
+    const noNote = { ...data, segments: [{ label: 'Mobile game studios' }] };
+    render(<IcpTargetingBlock data={noNote} who="Ada" />);
+    const text = document.body.textContent || '';
+    expect(text).toContain('Mobile game studios');
+    expect(text).not.toContain('undefined');
+  });
+
+  it('renders nothing for segments when the list is empty', () => {
+    const { container } = render(<IcpTargetingBlock data={{ ...data, segments: [] }} who="Ada" />);
+    expect(container.querySelector('.icp-segs')).toBeNull();
+  });
+
   it('never claims the leads match the ICP line', () => {
     render(<IcpTargetingBlock data={data} who="Ada" />);
     const text = document.body.textContent || '';
