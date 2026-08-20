@@ -346,6 +346,7 @@ export interface PendingDraft {
   inbound: PendingDraftInbound | null;
   thread?: { direction: string; text: string | null; at: string | null }[] | null;
   context_gap?: PendingDraftGap | null;
+  draft_evidence?: DraftEvidence | null;
   chat_url?: string | null;
   escalated?: boolean;
 }
@@ -390,6 +391,73 @@ export async function editRiseDraft(messageId: string, text: string): Promise<{ 
   if (error) return { ok: false, error: error.message };
   const r = (data as { ok?: boolean; error?: string }) || {};
   return { ok: !!r.ok, error: r.error };
+}
+
+// ── Learned facts (2026-08-20) ───────────────────────────────────────────────
+// Mattan states facts in hand-typed replies that rise-company-facts does not carry. The Fact
+// Learner mines them from manual_mirror sends and queues them here; nothing reaches the drafter
+// until Ivan approves. Recency priority: approving supersedes older approved facts on the topic.
+export interface LearnedFact {
+  id: string;
+  topic: string;
+  fact_text: string;
+  status: 'pending' | 'approved';
+  prospect_name: string | null;
+  question: string | null;
+  quote: string;
+  source_sent_at: string;
+  chat_url: string | null;
+}
+
+/** What the drafter injected for a draft. Logged inputs, not a model self-report. */
+export interface DraftEvidenceFact {
+  id: string; fact: string; topic: string; at: string; from: string | null; message_id: string | null;
+}
+export interface DraftEvidenceExemplar {
+  they: string | null; reply: string | null; at: string | null; prospect: string | null;
+}
+export interface DraftEvidenceRow { slug: string; version: number | null; updated_at?: string | null }
+export interface DraftEvidence {
+  at?: string | null;
+  facts?: DraftEvidenceRow | null;
+  learned?: DraftEvidenceFact[] | null;
+  exemplars?: DraftEvidenceExemplar[] | null;
+  store_fact?: string | null;
+  anchor?: string | null;
+  scan_finding?: string | null;
+  scan_url?: string | null;
+  operator_note?: string | null;
+  voice_rows?: DraftEvidenceRow[] | null;
+}
+
+export function useClientLearnedFacts(clientId: string | null) {
+  const [facts, setFacts] = useState<LearnedFact[] | null>(null);
+  const [error, setError] = useState('');
+  const load = useCallback(async () => {
+    if (!clientId) { setFacts(null); return; }
+    setError('');
+    const { data, error: err } = await supabase.rpc('operator_learned_facts', { p_gate: GATE, p_client_id: clientId });
+    if (err || (data && data.ok === false)) {
+      setError(err?.message || data?.error || 'learned facts load failed');
+      setFacts((prev) => prev ?? null);
+      return;
+    }
+    setFacts((data?.facts || []) as LearnedFact[]);
+  }, [clientId]);
+  useEffect(() => { load(); }, [load]);
+  return { facts, error, reload: load };
+}
+
+/** decision: 'approve' | 'reject' | 'retire'. text optionally replaces the extracted wording. */
+export async function resolveLearnedFact(
+  factId: string, decision: 'approve' | 'reject' | 'retire', text?: string,
+): Promise<{ ok: boolean; note?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('operator_resolve_learned_fact', {
+    p_gate: GATE, p_fact_id: factId, p_decision: decision, p_text: text ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  const r = (data as { ok?: boolean; note?: string; error?: string }) || {};
+  return { ok: !!r.ok, note: r.note, error: r.error };
 }
 
 // ── Overview hook ────────────────────────────────────────────────────────────
