@@ -405,6 +405,8 @@ export interface LearnedFact {
   prospect_name: string | null;
   question: string | null;
   quote: string;
+  /** The judge's stated reasoning, written before its verdict. Shown so a bad inference is visible. */
+  reasoning: string | null;
   source_sent_at: string;
   chat_url: string | null;
 }

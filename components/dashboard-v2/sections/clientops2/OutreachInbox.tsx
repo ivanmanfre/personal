@@ -713,6 +713,12 @@ function LearnedFactsStrip({ clientId, company }: { clientId: string; company: s
           </div>
           {f.question && <div className="co4-lf-q">They asked: {f.question}</div>}
           <div className="co4-lf-quote">{f.quote}</div>
+          {f.reasoning && (
+            <details className="co4-ev">
+              <summary className="co4-ev-sum">Why it proposed this</summary>
+              <div className="co4-ev-body"><span className="co4-ev-fact">{f.reasoning}</span></div>
+            </details>
+          )}
           <div className="co4-lf-row">
             <button className="co3-send-btn" disabled={busy === f.id} onClick={() => resolve(f, 'approve')}>
               {busy === f.id ? 'Saving…' : 'Use this'}
