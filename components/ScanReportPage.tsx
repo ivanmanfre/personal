@@ -2170,6 +2170,25 @@ const RECORD_CSS = `
 .bbrec .ritem .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .ritem .rv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,54px);line-height:0.92;color:var(--ink);margin-top:10px;}
 .bbrec .ritem .rc{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.5;color:var(--sec);margin-top:10px;max-width:30ch;}
+/* ICP + targeting block (Chapter 03). Same ruled grammar as .afp and .aud-name: hairline
+   rows, grotesk only, no radius, no shadow, ink rule top and bottom. The lead row is a
+   three-column grid so name / headline / reason read as three separate fields rather than
+   running together, and it stacks with data-l labels under 640px the way .afp-r does. */
+.bbrec .icp-block{border-top:1px solid var(--ink);padding-top:clamp(18px,2.4vw,26px);}
+.bbrec .icp-k{display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .icp-lead{max-width:52ch;}
+.bbrec .icp-line{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);margin-top:10px;}
+.bbrec .icp-pools{margin-top:clamp(18px,2.4vw,26px);list-style:none;margin-bottom:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+.bbrec .icp-pools li{padding:clamp(12px,1.8vw,16px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(13px,1.4vw,15px);line-height:1.4;color:var(--ink);}
+.bbrec .icp-leads{margin-top:clamp(20px,2.8vw,32px);}
+.bbrec .icp-lead-row{display:grid;grid-template-columns:1fr 1.4fr auto;gap:clamp(10px,1.6vw,24px);align-items:baseline;padding:clamp(12px,1.7vw,16px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .icp-leads .icp-lead-row:first-of-type{border-top:1px solid var(--ink);margin-top:12px;}
+.bbrec .icp-leads .icp-lead-row:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .icp-name{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);line-height:1.25;color:var(--ink);}
+.bbrec .icp-headline{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.5;color:var(--sec);}
+.bbrec .icp-reason{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;line-height:1.35;color:var(--muted);white-space:nowrap;text-align:right;}
+.bbrec .icp-gov{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.55;color:var(--sec);margin-top:clamp(18px,2.2vw,24px);max-width:58ch;}
+@media(max-width:640px){.bbrec .icp-lead-row{grid-template-columns:1fr;gap:5px;padding:15px 0;}.bbrec .icp-reason{white-space:normal;text-align:left;margin-top:3px;}.bbrec .icp-headline{font-size:13px;}}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -2968,7 +2987,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
-    title: `An inbound service for ${displayCompany}`,
+    // scripts/prerender.mjs waits on this exact shape before baking the share tags for a
+    // /scan/:slug route. Its title regex carries every historical variant; add there first.
+    title: `LinkedIn as a revenue line for ${displayCompany}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
@@ -3207,6 +3228,13 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // path when the builder emits no cs.pillars) is skipped here — never printed twice.
   const winRowCount = (k: PillarKey) =>
     winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found).length;
+
+  // ONE value, read by both the Chapter 03 gate and the pillar table's jump link, so the
+  // chapter and its link can never disagree. They drifted once: the chapter counted the ICP
+  // block as an exhibit and the link did not, which left the flagship case (ICP block is the
+  // only exhibit) rendering a chapter whose pillar row was dead to the click.
+  const outboundChapterShows =
+    Boolean(engager) || Boolean(icpTargeting) || winRowCount('outbound') > 0;
   const WinRows = ({ k }: { k: PillarKey }) => {
     const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
     return rows.length ? (
@@ -3284,8 +3312,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               {PILLARS.map((p) => (
                 <div className="ptab-r" key={p.key}>
                   {/* The outbound chapter suppresses itself when it has no exhibit, so its
-                      pillar name drops the jump link rather than becoming a dead click. */}
-                  <div>{p.key === 'outbound' && !engager && winRowCount('outbound') === 0
+                      pillar name drops the jump link rather than becoming a dead click.
+                      Same `outboundChapterShows` the chapter itself reads. */}
+                  <div>{p.key === 'outbound' && !outboundChapterShows
                     ? <span className="ptab-a">{p.name}</span>
                     : <a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a>}</div>
                   <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
@@ -3520,8 +3549,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             unvalidated upstream, so it drops on roughly a quarter of scans; without this
             gate the chapter rendered as a headline plus a Book-a-call button and nothing
             in between, which reads worse to a buyer than no chapter at all. Every other
-            evidence-backed block on this page already suppresses itself when empty. */}
-        {(engager || icpTargeting || winRowCount('outbound') > 0) && (
+            evidence-backed block on this page already suppresses itself when empty.
+            `outboundChapterShows` is shared with the pillar table's jump link. */}
+        {outboundChapterShows && (
         <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
@@ -3605,7 +3635,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
             <div>
               <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into a revenue line: the posts, the comments under them, and the DMs, through to a booked call.</div>
-              <p className="op-b">It&rsquo;s an inbound service we run for you. Your posts and lead magnets go out every week, and every reader who engages lands on a list you keep. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
+              <p className="op-b">We run it for you every week. Your posts and lead magnets go out under your name, every reader who engages lands on a list you keep, and the warm ones get a message. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>

@@ -21,7 +21,10 @@ const IcpTargetingBlock: React.FC<{ data: DerivedIcpTargeting; who: string }> = 
     )}
 
     <div className="icp-leads">
-      <span className="icp-k">A few of them, {who}</span>
+      {/* Claims provenance, never a match. These names come from audience.named, which is
+          counted audience data; nothing here checks any one of them against the ICP line
+          above, so this heading must not imply that it did. */}
+      <span className="icp-k">Real people already around you, {who}</span>
       {data.leads.map((lead) => (
         <div className="icp-lead-row" key={lead.name}>
           <span className="icp-name">{lead.name}</span>
