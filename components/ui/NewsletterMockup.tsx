@@ -35,7 +35,7 @@ const NewsletterMockup: React.FC<Props> = ({ data, accent, who, logoUrl }) => {
 
   return (
     <motion.div
-      className="w-full max-w-[640px] mx-auto overflow-hidden"
+      className="w-full max-w-[560px] mx-auto overflow-hidden"
       initial={reduce ? false : { y: 20 }}
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
@@ -70,22 +70,23 @@ const NewsletterMockup: React.FC<Props> = ({ data, accent, who, logoUrl }) => {
 
       {/* Body */}
       <div className="px-5 sm:px-7 py-6">
-        <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 4vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{data.subject}</h3>
+        <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.15rem, 3vw, 1.45rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{data.subject}</h3>
         {data.preview && (
           <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.55)' }}>{data.preview}</p>
         )}
 
-        {/* Excerpt, not essay: two sections, each body clamped to three lines. The full
-            copy ships in the buyer's own brand; the exhibit only has to read as theirs. */}
-        <div className="mt-6 space-y-5">
-          {data.sections.slice(0, 2).map((s, i) => (
+        {/* Excerpt, not essay. Cut from two sections to one on 2026-08-20: the newsletter is
+            the least load-bearing exhibit on the page and it was taking the vertical space of
+            a chapter. One section still proves the voice and the format, which is all it owes. */}
+        <div className="mt-5">
+          {data.sections.slice(0, 1).map((s, i) => (
             <div key={i}>
               <div style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent, fontWeight: 600 }}>{s.h}</div>
-              <p className="mt-2 line-clamp-3" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>{s.body}</p>
+              <p className="mt-2 line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
             </div>
           ))}
-          {data.sections.length > 2 && (
-            <div style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>+{data.sections.length - 2} more in the issue</div>
+          {data.sections.length > 1 && (
+            <div className="mt-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>+{data.sections.length - 1} more in the issue</div>
           )}
         </div>
 

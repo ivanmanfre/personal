@@ -82,6 +82,23 @@ export interface ContentSystem {
     follow_ups?: { step: number; day: number; subject: string; body: string }[];
     // Then it books: reactions on the prospect's posts turned into personal DMs.
     engager_outreach?: { explainer: string; samples: { trigger: string; dm: string; engager?: { name?: string; headline?: string } }[] };
+    // ICP + targeting read (2026-08-20). Model-emitted from the prospect's own business,
+    // never from a paid harvest. Absent -> the ICP block does not render. Sample leads are
+    // drawn from `audience.named`, which is counted data, so no lead is ever invented here.
+    icp_targeting?: {
+      icp_line: string;
+      segments?: { label: string; note?: string }[];
+      pool_sources?: ('engagers' | 'competitor_engagers' | 'network' | 'signals')[];
+    };
+    // Chapter 04. Describes the list we BUILD for them, so unlike icp_targeting it needs no
+    // audience data and can render on scans where no audit ever ran. Sources are niche
+    // derivations of three fixed families: competitor harvest, a live spend signal, a hiring
+    // signal. Absent -> the whole chapter drops. Never their own engagers: that is Chapter 03.
+    cold_outbound?: {
+      note: string;
+      sources?: { label?: string; detail?: string }[];
+      filters?: string[];
+    };
     lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number>;
       // Brand-mirror data — the prospect's own accent/logo/fonts, so the engine-tour
       // mockups (newsletter, follow-ups, outreach) read as THEIR asset, not a template.
@@ -125,6 +142,11 @@ export interface ContentSystem {
     network_icp_count?: number | null;
     network_icp_density?: number | null;
     named?: { name?: string; headline?: string; source?: string }[];
+    // The rubric this audit actually counted against, in plain words. The audit derives it
+    // per prospect, so a mobile UA studio and an ecommerce agency get different buyers.
+    // Absent means the audit fell back to the legacy hardcoded DTC rubric, and every reader
+    // must fall back to the DTC sentence rather than describe the count some other way.
+    buyer_definition?: string | null;
     audited_at?: string;
   };
   // Profile audit embed (scan-build audit, 2026-07-18). Optional, additive. When present the

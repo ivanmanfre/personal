@@ -15,6 +15,9 @@ import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
+import IcpTargetingBlock from './ui/IcpTargetingBlock';
+import ColdOutboundBlock from './ui/ColdOutboundBlock';
+import { deriveIcpTargeting, deriveColdOutbound, buyerDefinitionWords } from '../lib/icpTargeting';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -2168,6 +2171,44 @@ const RECORD_CSS = `
 .bbrec .ritem .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .ritem .rv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,54px);line-height:0.92;color:var(--ink);margin-top:10px;}
 .bbrec .ritem .rc{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.5;color:var(--sec);margin-top:10px;max-width:30ch;}
+/* ICP + targeting block (Chapter 03). Same ruled grammar as .afp and .aud-name: hairline
+   rows, grotesk only, no radius, no shadow, ink rule top and bottom. The lead row is a
+   three-column grid so name / headline / reason read as three separate fields rather than
+   running together, and it stacks with data-l labels under 640px the way .afp-r does. */
+.bbrec .icp-block{border-top:1px solid var(--ink);padding-top:clamp(18px,2.4vw,26px);}
+.bbrec .icp-k{display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .icp-lead{max-width:52ch;}
+.bbrec .icp-line{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);margin-top:10px;}
+.bbrec .icp-segs{margin-top:clamp(20px,2.6vw,30px);list-style:none;margin-bottom:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));border-top:1px solid var(--ink);border-left:1px solid var(--hair);}
+.bbrec .icp-segs li{padding:clamp(14px,1.9vw,18px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .icp-seg-n{display:block;font-family:var(--grotesk);font-weight:700;font-size:10px;letter-spacing:0.09em;color:var(--muted);margin-bottom:9px;}
+.bbrec .icp-seg-label{display:block;font-family:var(--grotesk);font-weight:700;letter-spacing:-0.012em;font-size:clamp(14px,1.55vw,16px);line-height:1.25;color:var(--ink);}
+.bbrec .icp-seg-note{display:block;font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,13.5px);line-height:1.5;color:var(--sec);margin-top:7px;}
+.bbrec .icp-pool-wrap{margin-top:clamp(20px,2.8vw,32px);}
+.bbrec .icp-pools{margin-top:12px;list-style:none;margin-bottom:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+.bbrec .icp-pools li{padding:clamp(12px,1.8vw,16px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(13px,1.4vw,15px);line-height:1.4;color:var(--ink);}
+.bbrec .icp-leads{margin-top:clamp(20px,2.8vw,32px);}
+.bbrec .icp-lead-row{display:grid;grid-template-columns:1fr 1.4fr auto;gap:clamp(10px,1.6vw,24px);align-items:baseline;padding:clamp(12px,1.7vw,16px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .icp-leads .icp-lead-row:first-of-type{border-top:1px solid var(--ink);margin-top:12px;}
+.bbrec .icp-leads .icp-lead-row:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .icp-name{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);line-height:1.25;color:var(--ink);}
+.bbrec .icp-headline{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.5;color:var(--sec);}
+.bbrec .icp-reason{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;line-height:1.35;color:var(--muted);white-space:nowrap;text-align:right;}
+.bbrec .cold-block{border-top:1px solid var(--ink);padding-top:clamp(18px,2.4vw,26px);}
+.bbrec .cold-k{display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .cold-lead{max-width:56ch;}
+.bbrec .cold-note{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);margin-top:10px;}
+.bbrec .cold-srcs{margin-top:clamp(20px,2.6vw,30px);list-style:none;margin-bottom:0;padding:0;border-top:1px solid var(--ink);}
+.bbrec .cold-srcs li{display:grid;grid-template-columns:auto 1fr 1.25fr;gap:clamp(10px,1.6vw,22px);align-items:baseline;padding:clamp(13px,1.8vw,17px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .cold-srcs li:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .cold-src-n{font-family:var(--grotesk);font-weight:700;font-size:10px;letter-spacing:0.09em;color:var(--muted);}
+.bbrec .cold-src-label{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.012em;font-size:clamp(14px,1.6vw,16.5px);line-height:1.25;color:var(--ink);}
+.bbrec .cold-src-detail{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.5;color:var(--sec);}
+.bbrec .cold-cut{margin-top:clamp(20px,2.8vw,32px);}
+.bbrec .cold-cut-list{margin-top:12px;list-style:none;margin-bottom:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+.bbrec .cold-cut-list li{padding:clamp(12px,1.7vw,15px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(13px,1.4vw,14.5px);line-height:1.4;color:var(--ink);}
+.bbrec .icp-gov{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.55;color:var(--sec);margin-top:clamp(18px,2.2vw,24px);max-width:58ch;}
+@media(max-width:640px){.bbrec .cold-srcs li{grid-template-columns:auto 1fr;gap:4px 12px;}.bbrec .cold-src-detail{grid-column:2;}.bbrec .cold-cut-list{grid-template-columns:1fr;}.bbrec .icp-lead-row{grid-template-columns:1fr;gap:5px;padding:15px 0;}.bbrec .icp-reason{white-space:normal;text-align:left;margin-top:3px;}.bbrec .icp-headline{font-size:13px;}.bbrec .icp-segs{grid-template-columns:1fr;}}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -2966,7 +3007,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
-    title: `An inbound service for ${displayCompany}`,
+    // scripts/prerender.mjs waits on this exact shape before baking the share tags for a
+    // /scan/:slug route. Its title regex carries every historical variant; add there first.
+    title: `LinkedIn as a revenue line for ${displayCompany}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
@@ -3071,6 +3114,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // Every figure is counted from what was actually read, never extrapolated; the SN total
   // estimate (audience.network_total) is unstable and deliberately never shown.
   const aud = cs.audience;
+  // Placed here rather than beside the other sample_output derivations above because it
+  // needs `aud`, which is not declared until this line. Fails closed inside
+  // deriveIcpTargeting: no icp_line or fewer than 3 named people -> null.
+  const icpTargeting = deriveIcpTargeting(cs.sample_output?.icp_targeting, aud);
+  // The cold lane needs no audience data at all: it describes a list we build rather than
+  // one they already have, which is exactly why it can carry a chapter on the thin scans
+  // where no audit ever ran and Chapter 03 stays dark.
+  const coldOutbound = deriveColdOutbound(cs.sample_output?.cold_outbound);
   const audClean = (t?: string) => (t || '').replace(/\s*—\s*/g, ', ').replace(/\s+/g, ' ').trim();
   const audNamed = (aud?.named ?? []).filter((n) => (n?.name || '').trim()).slice(0, 3);
   const audNetCount = aud?.network_icp_count ?? null;
@@ -3084,6 +3135,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // good room read 4.6%); below it "buyers in your room" stops being a gift.
   const audNetDensity = aud?.network_icp_density ?? (audNetCount !== null && audNetSample ? Math.round((audNetCount / audNetSample) * 1000) / 10 : null);
   const audNetOk = audNetCount !== null && audNetSample !== null && audNetSample >= 30 && audNetCount >= 3 && (audNetDensity ?? 0) >= 2;
+  // What "buyer" meant for THIS audit. The audit derives the rubric per prospect, so the
+  // page cannot keep asserting consumer brands: for a mobile UA studio or a recruiting firm
+  // that sentence names a category nobody counted. The fallback is the literal legacy rubric
+  // and is correct for every row written before 2026-08-20, because those audits really did
+  // count decision makers at consumer brands.
+  const buyerWords = buyerDefinitionWords(aud?.buyer_definition);
   // Extrapolate over the full list only when the real connections_count is known (never the
   // unstable SN search total) and the sample covers at least a tenth of it. The counted
   // number stays on the page as the receipt either way.
@@ -3101,14 +3158,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
       ? (audEst
-        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`
-        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`)
-      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`,
+        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}. A buyer here means ${buyerWords}.`
+        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline. A buyer here means ${buyerWords}.`)
+      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline. A buyer here means ${buyerWords}.`,
     giftLine: roomMode === 'network'
       ? (audEst
         ? `${audNetCount} buyers verified by name in the ${audNetSample} connections we read; the full list likely holds around ${audEst}. Each of them said yes to you once.`
-        : `${audNetCount} decision makers at consumer brands already sit in your connections. Each of them said yes to you once.`)
-      : `${audEngIcp} ${audEngIcp === 1 ? 'decision maker at a consumer brand shows' : 'decision makers at consumer brands show'} up in your own comments and reactions. They come to you already.`,
+        : `${audNetCount} buyers already sit in your connections. Each of them said yes to you once.`)
+      : `${audEngIcp} ${audEngIcp === 1 ? 'buyer shows' : 'buyers show'} up in your own comments and reactions. They come to you already.`,
     gapLine: audEngagers > 0
       ? `Your last ${audPosts} posts drew ${audEngagers} ${audEngagers === 1 ? 'person' : 'people'}. ${audEngIcp === 0 ? 'Not one of them was a buyer.' : `${audEngIcp} ${audEngIcp === 1 ? 'was a buyer' : 'were buyers'}. The rest were not.`}`
       : `Your last ${audPosts} posts drew no reactions or comments we could read. The buyers above never hear from you.`,
@@ -3128,7 +3185,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     ? (roomMode === 'network'
       ? [
           audNetSample != null && { key: 'read', label: 'Connections read', value: audNetSample, cap: audNetTotal ? `of ${audNetTotal.toLocaleString('en-US')}, one headline at a time` : 'one headline at a time' },
-          audNetCount != null && { key: 'buyers', label: 'Buyers verified', value: audNetCount, cap: 'decision makers at consumer brands, named' },
+          audNetCount != null && { key: 'buyers', label: 'Buyers verified', value: audNetCount, cap: 'named one at a time from their own headline' },
           audNetDensity != null && { key: 'density', label: 'Buyer density', value: audNetDensity, suffix: '%', decimals: 1, mark: true, cap: 'a typical room reads 1 to 2%' },
         ]
       : [
@@ -3180,6 +3237,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     { key: 'inbound', name: 'Inbound', anchor: 'cs-ch-inbound' },
     { key: 'outbound', name: 'Warm outbound', anchor: 'cs-ch-outbound' },
   ];
+  // Chapter 04 is deliberately NOT in PILLARS. This table is the three-pillar spine of the
+  // offer and every row reads `pillars[key]`, which only holds those three; a fourth entry
+  // would render undefined. The cold lane is a chapter of the outbound pillar, not a pillar
+  // of its own, and the proof section below still says "the same three pillars".
   const pillars: Record<PillarKey, { found: string; projected: string }> = {
     content: pillarCell('content'), inbound: pillarCell('inbound'), outbound: pillarCell('outbound'),
   };
@@ -3199,6 +3260,15 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // The gated wins that belong to a chapter, rendered as observed entries with the build.
   // A win whose observation already fills the pillar table's "found" cell (the fallback
   // path when the builder emits no cs.pillars) is skipped here — never printed twice.
+  const winRowCount = (k: PillarKey) =>
+    winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found).length;
+
+  // ONE value, read by both the Chapter 03 gate and the pillar table's jump link, so the
+  // chapter and its link can never disagree. They drifted once: the chapter counted the ICP
+  // block as an exhibit and the link did not, which left the flagship case (ICP block is the
+  // only exhibit) rendering a chapter whose pillar row was dead to the click.
+  const outboundChapterShows =
+    Boolean(engager) || Boolean(icpTargeting) || winRowCount('outbound') > 0;
   const WinRows = ({ k }: { k: PillarKey }) => {
     const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
     return rows.length ? (
@@ -3275,7 +3345,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
               {PILLARS.map((p) => (
                 <div className="ptab-r" key={p.key}>
-                  <div><a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a></div>
+                  {/* The outbound chapter suppresses itself when it has no exhibit, so its
+                      pillar name drops the jump link rather than becoming a dead click.
+                      Same `outboundChapterShows` the chapter itself reads. */}
+                  <div>{p.key === 'outbound' && !outboundChapterShows
+                    ? <span className="ptab-a">{p.name}</span>
+                    : <a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a>}</div>
                   <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
                   <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
                 </div>
@@ -3503,13 +3578,21 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <ChapterCta line={<>The asset is built in your brand, {who}. The call decides where it lives.</>} />
         </Rev>
 
-        {/* ── CHAPTER 03 · WARM OUTBOUND ──────── */}
+        {/* ── CHAPTER 03 · WARM OUTBOUND ────────
+            Gated on having something to show. engager_outreach is model-emitted and
+            unvalidated upstream, so it drops on roughly a quarter of scans; without this
+            gate the chapter rendered as a headline plus a Book-a-call button and nothing
+            in between, which reads worse to a buyer than no chapter at all. Every other
+            evidence-backed block on this page already suppresses itself when empty.
+            `outboundChapterShows` is shared with the pillar table's jump link. */}
+        {outboundChapterShows && (
         <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
             title={<>The people who engage get a message.</>}
             note={<>Everyone who engages a post gets a message about that exact post. Useful, no pitch.</>}
           />
+          {icpTargeting && <IcpTargetingBlock data={icpTargeting} who={who} />}
           <WinRows k="outbound" />
           {engager && (
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
@@ -3523,6 +3606,26 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           )}
           <ChapterCta line={<>This lane opens in week one, {who}.</>} />
         </Rev>
+        )}
+
+        {/* ── CHAPTER 04 · COLD OUTBOUND ──
+            Chapter 03 works the audience they already have, which is small and finite. This
+            is the lane that builds a new one. Gated on its own derivation only, so it can
+            carry a chapter on scans where no audience audit ever ran. */}
+        {coldOutbound && (
+        <Rev el="section" className="sec" id="cs-ch-cold" style={{ scrollMarginTop: 76 }}>
+          {/* The note is deliberately short. The niche-specific version of this thought is
+              the block's own note one line below, written off their business; a longer note
+              here just said the same sentence twice in a row. */}
+          <SecHead
+            label={<>Chapter 04&nbsp;·&nbsp;Cold outbound</>}
+            title={<>The rest of your market, built into a list.</>}
+            note={<>Everything above runs on the audience you already have. This lane goes past it.</>}
+          />
+          <ColdOutboundBlock data={coldOutbound} who={who} />
+          <ChapterCta line={<>We build and run this list, {who}. You never touch it.</>} />
+        </Rev>
+        )}
 
         {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
@@ -3584,8 +3687,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
             </div>
             <div>
-              <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into content, lead magnets and an audience they own.</div>
-              <p className="op-b">It&rsquo;s an inbound service we run for you. Your posts and lead magnets go out every week, and every reader who engages lands on a list you keep. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
+              <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into a revenue line: the posts, the comments under them, and the DMs, through to a booked call.</div>
+              <p className="op-b">We run it for you every week. Your posts and lead magnets go out under your name, every reader who engages lands on a list you keep, and the warm ones get a message. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>

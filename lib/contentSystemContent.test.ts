@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE } from './contentSystemContent';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE, GOVERNANCE } from './contentSystemContent';
 
 describe('content-system page content', () => {
   it('has four reframe pillars, each with headline + benefit', () => {
@@ -32,5 +32,19 @@ describe('content-system page content', () => {
   it('has both in-scope and not-in-scope items', () => {
     expect(SCOPE.inScope.length).toBeGreaterThan(0);
     expect(SCOPE.notInScope.length).toBeGreaterThan(0);
+  });
+});
+
+describe('GOVERNANCE acceptance stats', () => {
+  it('carries the 2026-08-20 measured figures and not the retired ones', () => {
+    const blob = JSON.stringify(GOVERNANCE);
+    expect(blob).toContain('30%');
+    expect(blob).toContain('near 10%');
+    expect(blob).not.toContain('27%');
+    expect(blob).not.toContain('near 14');
+  });
+
+  it('states the sample size so the claim is checkable', () => {
+    expect(JSON.stringify(GOVERNANCE)).toContain('2,118');
   });
 });

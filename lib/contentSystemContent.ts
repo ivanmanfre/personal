@@ -92,14 +92,14 @@ export const ONGOING: { lead: string; items: string[] } = {
 };
 
 // Account-safety governance for the warm engager lane. Every number is a
-// measurement from Ivan's OWN live lanes (2026-07-07 outreach diagnosis),
-// framed as how we run it, never a promised client result. Update here if
-// the lanes drift. No em dashes, no AI tells (matches HONESTY RULE above).
+// measurement from Ivan's OWN live lanes, recomputed 2026-08-20 across both
+// tenants (2,118 connection invites). Update here if the lanes drift.
+// No em dashes, no AI tells (matches HONESTY RULE above).
 export interface GovernanceStat { value: string; label: string; }
 export const GOVERNANCE: { lead: string; stats: GovernanceStat[]; notes: string[] } = {
   lead: 'Automation on a personal LinkedIn account is a real risk, and the lane is governed like one. It messages only people who already engaged your content, and it runs under a hard weekly ceiling on your account.',
   stats: [
-    { value: '27%', label: 'acceptance rate on warm engagers in our own lanes. Cold prospecting sits near 14%, and a low rate is exactly what LinkedIn throttles.' },
+    { value: '30%', label: 'acceptance rate on warm engagers across 2,118 invites in our own lanes. Cold prospecting sits near 10%, and a low rate is exactly what LinkedIn throttles.' },
     { value: '20%+', label: 'the acceptance floor we hold by keeping every send warm and capped. Above it, the account stays in good standing.' },
     { value: '~15', label: 'connection requests a week, a fixed per-account cap. When the engager pool grows, we raise the fit bar and keep the cap.' },
   ],
