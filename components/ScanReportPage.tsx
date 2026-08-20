@@ -3604,7 +3604,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
             </div>
             <div>
-              <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into content, lead magnets and an audience they own.</div>
+              <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into a revenue line: the posts, the comments under them, and the DMs, through to a booked call.</div>
               <p className="op-b">It&rsquo;s an inbound service we run for you. Your posts and lead magnets go out every week, and every reader who engages lands on a list you keep. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
