@@ -3614,12 +3614,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             carry a chapter on scans where no audience audit ever ran. */}
         {coldOutbound && (
         <Rev el="section" className="sec" id="cs-ch-cold" style={{ scrollMarginTop: 76 }}>
+          {/* The note is deliberately short. The niche-specific version of this thought is
+              the block's own note one line below, written off their business; a longer note
+              here just said the same sentence twice in a row. */}
           <SecHead
             label={<>Chapter 04&nbsp;·&nbsp;Cold outbound</>}
             title={<>The rest of your market, built into a list.</>}
-            {/* Deliberately short. The niche-specific version of this thought is the block's
-                own note one line below, written off their business; a long note here just
-                said the same sentence twice in a row. */}
             note={<>Everything above runs on the audience you already have. This lane goes past it.</>}
           />
           <ColdOutboundBlock data={coldOutbound} who={who} />
