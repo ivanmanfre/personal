@@ -8,6 +8,9 @@ import {
   fmtDate,
   ageLabel,
   GATE,
+  useClientLearnedFacts,
+  resolveLearnedFact,
+  type LearnedFact,
   type OutreachPayload,
   type OutreachProspect,
   type OutreachMessage,
@@ -247,6 +250,7 @@ export function OutreachInbox({ clientId, company, data, pendingDrafts, reload, 
           Sending is paused, so nothing goes out on its own. Replies and connections still show here; anything you approve sends from {company}'s seat.
         </div>
       )}
+      <LearnedFactsStrip clientId={clientId} company={company} />
       <div className={`co4-inbox ${mobileOpen ? 'co4-inbox--mopen' : ''}`}>
           {/* ── LEFT: conversation list ─────────────────────────────── */}
           <div className="co4-list">
@@ -474,6 +478,8 @@ function InlineDraft({ draft, company, name, afterWrite }: {
   const [note, setNote] = useState('');
   // Answerability gate: advisory band + optional escalation. Approving is never blocked by it.
   const gap = draft.context_gap || null;
+  // What the drafter was given. Read-only, collapsed by default.
+  const ev = draft.draft_evidence || null;
   const [asked, setAsked] = useState(!!draft.escalated);
   const [asking, setAsking] = useState(false);
   const ask = async () => {
@@ -552,6 +558,63 @@ function InlineDraft({ draft, company, name, afterWrite }: {
           );
         })()
       )}
+      {ev && (
+        <details className="co4-ev">
+          <summary className="co4-ev-sum">Evidence</summary>
+          <div className="co4-ev-body">
+            {ev.learned && ev.learned.length > 0 && (
+              <div className="co4-ev-grp">
+                <span className="co4-ev-k">Learned from {company}</span>
+                {ev.learned.map((f) => (
+                  <div key={f.id} className="co4-ev-row">
+                    <span className="co4-ev-fact">{f.fact}</span>
+                    <span className="co4-ev-src">his own DM{f.from ? ` to ${f.from}` : ''}, {fmtDate(f.at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {ev.facts && (
+              <div className="co4-ev-grp">
+                <span className="co4-ev-k">Company notes</span>
+                <div className="co4-ev-row">
+                  <span className="co4-ev-fact">{ev.facts.slug}</span>
+                  <span className="co4-ev-src">
+                    v{ev.facts.version ?? '?'}{ev.facts.updated_at ? `, updated ${fmtDate(ev.facts.updated_at)}` : ''}
+                  </span>
+                </div>
+              </div>
+            )}
+            {(ev.store_fact || ev.anchor || ev.scan_finding) && (
+              <div className="co4-ev-grp">
+                <span className="co4-ev-k">Grounding</span>
+                {ev.store_fact && <div className="co4-ev-row"><span className="co4-ev-fact">{ev.store_fact}</span><span className="co4-ev-src">their store</span></div>}
+                {ev.anchor && <div className="co4-ev-row"><span className="co4-ev-fact">{ev.anchor}</span><span className="co4-ev-src">anchor client</span></div>}
+                {ev.scan_finding && <div className="co4-ev-row"><span className="co4-ev-fact">{ev.scan_finding}</span><span className="co4-ev-src">their scan</span></div>}
+              </div>
+            )}
+            {ev.operator_note && (
+              <div className="co4-ev-grp">
+                <span className="co4-ev-k">Your note</span>
+                <div className="co4-ev-row"><span className="co4-ev-fact">{ev.operator_note}</span></div>
+              </div>
+            )}
+            {ev.exemplars && ev.exemplars.length > 0 && (
+              <div className="co4-ev-grp">
+                <span className="co4-ev-k">Voice copied from ({ev.exemplars.length} real sends)</span>
+                {ev.exemplars.slice(0, 3).map((x, i) => (
+                  <div key={i} className="co4-ev-row">
+                    <span className="co4-ev-fact">{x.reply}</span>
+                    <span className="co4-ev-src">to {x.prospect || 'a lead'}, {fmtDate(x.at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <span className="co4-ev-foot">
+              These are the inputs the drafter was given, recorded when it wrote the draft. It is not the model's account of what it used.
+            </span>
+          </div>
+        </details>
+      )}
       <div className="co3-draft-row">
         {editing ? (
           <>
@@ -615,6 +678,57 @@ function Composer({ p, clientId, company, afterWrite }: {
 }
 
 // ── Scoped styles (co4- inbox layer; leans on co3- tokens under .ec) ──────────
+// ── Learned facts review strip (2026-08-20) ──────────────────────────────────
+// Mattan answers by hand on LinkedIn; the Fact Learner mines the fact and queues it here.
+// Nothing reaches the drafter until it is approved. Approving retires any older approved fact
+// on the same topic, so his most recent answer is the one the brain uses.
+function LearnedFactsStrip({ clientId, company }: { clientId: string; company: string }) {
+  const { facts, reload } = useClientLearnedFacts(clientId);
+  const pending = useMemo(() => (facts || []).filter((f) => f.status === 'pending'), [facts]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+
+  if (!pending.length) return null;
+
+  const resolve = async (f: LearnedFact, decision: 'approve' | 'reject') => {
+    if (busy) return;
+    setBusy(f.id); setNote('');
+    const r = await resolveLearnedFact(f.id, decision);
+    setBusy(null);
+    if (r.ok) { setNote(r.note || 'Saved.'); reload(); }
+    else setNote(r.error || 'Could not save that.');
+  };
+
+  return (
+    <div className="co4-lf">
+      <div className="co4-lf-hd">
+        {company} answered {pending.length === 1 ? 'something' : `${pending.length} things`} our notes do not cover
+      </div>
+      {pending.map((f) => (
+        <div key={f.id} className="co4-lf-item">
+          <div className="co4-lf-fact">{f.fact_text}</div>
+          <div className="co4-lf-src">
+            <b>{f.topic}</b> · he typed this to {f.prospect_name || 'a lead'} on {fmtDate(f.source_sent_at)}
+            {f.chat_url && <> · <a href={f.chat_url} target="_blank" rel="noreferrer">open the conversation</a></>}
+          </div>
+          {f.question && <div className="co4-lf-q">They asked: {f.question}</div>}
+          <div className="co4-lf-quote">{f.quote}</div>
+          <div className="co4-lf-row">
+            <button className="co3-send-btn" disabled={busy === f.id} onClick={() => resolve(f, 'approve')}>
+              {busy === f.id ? 'Saving…' : 'Use this'}
+            </button>
+            <button className="co3-edit-btn" disabled={busy === f.id} onClick={() => resolve(f, 'reject')}>
+              Discard
+            </button>
+            <span className="co4-gap-note">Approving replaces anything older we knew about {f.topic}.</span>
+          </div>
+        </div>
+      ))}
+      {note && <span className="co4-gap-note">{note}</span>}
+    </div>
+  );
+}
+
 const CSS = `
 .ec .co4-wrap { display:flex; flex-direction:column; gap:0.9rem; }
 .ec .co4-inbox { display:grid; grid-template-columns:minmax(260px,340px) 1fr; height:min(74vh,760px); border:1px solid var(--ec-rule-strong); background:var(--ec-paper); }

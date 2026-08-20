@@ -401,6 +401,29 @@ const CSS = `
 .ec .co4-gap-row { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.15rem; }
 .ec .co4-gap-link { font-family:var(--ec-sans); font-size:11px; color:var(--ec-ink); text-decoration:underline; }
 .ec .co4-gap-note { font-family:var(--ec-clinical); font-style:italic; font-size:11px; color:var(--ec-mutedc); }
+/* Evidence: what the drafter was actually given. Collapsed by default so the card stays quiet. */
+.ec .co4-ev { border-top:1px solid var(--ec-rule); padding-top:0.4rem; }
+.ec .co4-ev-sum { font-family:var(--ec-sans); font-size:10px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); cursor:pointer; list-style:none; }
+.ec .co4-ev-sum::-webkit-details-marker { display:none; }
+.ec .co4-ev-sum::before { content:'\\25B8\\00a0'; }
+.ec .co4-ev[open] .co4-ev-sum::before { content:'\\25BE\\00a0'; }
+.ec .co4-ev-body { display:flex; flex-direction:column; gap:0.5rem; padding:0.5rem 0 0.2rem; }
+.ec .co4-ev-grp { display:flex; flex-direction:column; gap:0.2rem; }
+.ec .co4-ev-k { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
+.ec .co4-ev-row { display:flex; flex-direction:column; gap:0.05rem; border-left:2px solid var(--ec-rule-strong); padding-left:0.5rem; }
+.ec .co4-ev-fact { font-family:var(--ec-clinical); font-size:11.5px; line-height:1.45; color:var(--ec-body); }
+.ec .co4-ev-src { font-family:var(--ec-sans); font-size:10px; color:var(--ec-mutedc); }
+.ec .co4-ev-foot { font-family:var(--ec-clinical); font-style:italic; font-size:10.5px; line-height:1.4; color:var(--ec-mutedc); }
+/* Learned facts awaiting approval. Nothing here has reached the drafter yet. */
+.ec .co4-lf { border:1px solid var(--ec-ink); border-left:3px solid var(--ec-ink); padding:0.7rem 0.8rem; display:flex; flex-direction:column; gap:0.6rem; margin-bottom:0.6rem; }
+.ec .co4-lf-hd { font-family:var(--ec-sans); font-size:12px; font-weight:800; letter-spacing:0.02em; color:var(--ec-ink); }
+.ec .co4-lf-item { display:flex; flex-direction:column; gap:0.25rem; border-top:1px solid var(--ec-rule); padding-top:0.5rem; }
+.ec .co4-lf-fact { font-family:var(--ec-clinical); font-size:13px; line-height:1.5; color:var(--ec-ink); font-weight:600; }
+.ec .co4-lf-src { font-family:var(--ec-sans); font-size:10.5px; color:var(--ec-mutedc); }
+.ec .co4-lf-src a { color:var(--ec-ink); text-decoration:underline; }
+.ec .co4-lf-q { font-family:var(--ec-clinical); font-style:italic; font-size:11.5px; color:var(--ec-body); }
+.ec .co4-lf-quote { font-family:var(--ec-clinical); font-size:11.5px; line-height:1.45; color:var(--ec-body); border-left:2px solid var(--ec-rule-strong); padding-left:0.5rem; }
+.ec .co4-lf-row { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.2rem; }
 .ec .co3-trigger { border-left:2px solid var(--ec-ink); padding:0.1rem 0 0.1rem 0.6rem; }
 .ec .co3-trigger-l { font-family:var(--ec-sans); font-weight:700; font-size:9.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
 .ec .co3-trigger-t { font-family:var(--ec-clinical); font-style:italic; font-size:12.5px; line-height:1.5; color:var(--ec-body); margin-top:0.15rem; }
