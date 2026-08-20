@@ -1,6 +1,6 @@
 // lib/icpTargeting.test.ts
 import { describe, it, expect } from 'vitest';
-import { deriveIcpTargeting, reasonFor, MIN_SAMPLE_LEADS, MAX_HEADLINE_CHARS } from './icpTargeting';
+import { deriveIcpTargeting, reasonFor, MIN_SAMPLE_LEADS, MAX_HEADLINE_CHARS, buyerDefinitionWords, LEGACY_BUYER_WORDS } from './icpTargeting';
 
 // Written as an escape so this test file itself carries no em dash character in its source,
 // while still feeding the real one through the sanitiser it exists to cover.
@@ -206,5 +206,39 @@ describe('reasonFor against production source values', () => {
   it('falls back to the neutral label for anything unrecognised', () => {
     expect(reasonFor('competitor_engager')).toBe('In your audience');
     expect(reasonFor(undefined)).toBe('In your audience');
+  });
+});
+
+// The page's buyer sentence defines what every counted number above it means, so a wrong
+// or empty value must never widen into a guess.
+describe('buyerDefinitionWords', () => {
+  it('uses the audited definition when the audit named one', () => {
+    expect(buyerDefinitionWords('a decision maker at a mobile game studio')).toBe(
+      'a decision maker at a mobile game studio',
+    );
+  });
+
+  it('falls back to the legacy DTC rubric when the audit named none', () => {
+    for (const empty of [undefined, null, '', '   ']) {
+      expect(buyerDefinitionWords(empty)).toBe(LEGACY_BUYER_WORDS);
+    }
+  });
+
+  it('falls back rather than emit a bare separator', () => {
+    // cleanText strips a lone em dash to nothing; without the fallback the page would read
+    // "A buyer here means ." on any audit that wrote a placeholder.
+    expect(buyerDefinitionWords('—')).toBe(LEGACY_BUYER_WORDS);
+  });
+
+  it('normalises em dashes the way the rest of the report does', () => {
+    expect(buyerDefinitionWords('a founder — or a growth lead')).toBe(
+      'a founder, or a growth lead',
+    );
+  });
+
+  it('keeps the legacy sentence byte-identical to what the page shipped before', () => {
+    expect(LEGACY_BUYER_WORDS).toBe(
+      'a decision maker at a consumer brand: founder, CMO, or head of growth',
+    );
   });
 });

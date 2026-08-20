@@ -84,6 +84,20 @@ function cleanHeadline(raw?: string): string {
   return `${stem}…`;
 }
 
+// The audience audit used to classify every prospect's audience against one hardcoded
+// rubric: decision makers at consumer brands. Since 2026-08-20 it derives the buyer per
+// prospect, so the page has to name whatever THAT audit counted rather than assert a
+// category nobody looked for. This is the exact legacy sentence, and it is the honest
+// reading of every audit row written before the change, all of which really were DTC.
+export const LEGACY_BUYER_WORDS =
+  'a decision maker at a consumer brand: founder, CMO, or head of growth';
+
+// Falls back whenever the audit could not name the buyer with confidence. Never widen this
+// to a guess: the sentence it feeds defines what every counted number on the page means.
+export function buyerDefinitionWords(raw?: string | null): string {
+  return cleanText(raw || '') || LEGACY_BUYER_WORDS;
+}
+
 export function deriveIcpTargeting(
   targeting: IcpTargeting | undefined,
   audience: { named?: { name?: string; headline?: string; source?: string }[] } | undefined,

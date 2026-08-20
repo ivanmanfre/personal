@@ -16,7 +16,7 @@ import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
 import IcpTargetingBlock from './ui/IcpTargetingBlock';
-import { deriveIcpTargeting } from '../lib/icpTargeting';
+import { deriveIcpTargeting, buyerDefinitionWords } from '../lib/icpTargeting';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -3117,6 +3117,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // good room read 4.6%); below it "buyers in your room" stops being a gift.
   const audNetDensity = aud?.network_icp_density ?? (audNetCount !== null && audNetSample ? Math.round((audNetCount / audNetSample) * 1000) / 10 : null);
   const audNetOk = audNetCount !== null && audNetSample !== null && audNetSample >= 30 && audNetCount >= 3 && (audNetDensity ?? 0) >= 2;
+  // What "buyer" meant for THIS audit. The audit derives the rubric per prospect, so the
+  // page cannot keep asserting consumer brands: for a mobile UA studio or a recruiting firm
+  // that sentence names a category nobody counted. The fallback is the literal legacy rubric
+  // and is correct for every row written before 2026-08-20, because those audits really did
+  // count decision makers at consumer brands.
+  const buyerWords = buyerDefinitionWords(aud?.buyer_definition);
   // Extrapolate over the full list only when the real connections_count is known (never the
   // unstable SN search total) and the sample covers at least a tenth of it. The counted
   // number stays on the page as the receipt either way.
@@ -3134,14 +3140,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
       ? (audEst
-        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`
-        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`)
-      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`,
+        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}. A buyer here means ${buyerWords}.`
+        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline. A buyer here means ${buyerWords}.`)
+      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline. A buyer here means ${buyerWords}.`,
     giftLine: roomMode === 'network'
       ? (audEst
         ? `${audNetCount} buyers verified by name in the ${audNetSample} connections we read; the full list likely holds around ${audEst}. Each of them said yes to you once.`
-        : `${audNetCount} decision makers at consumer brands already sit in your connections. Each of them said yes to you once.`)
-      : `${audEngIcp} ${audEngIcp === 1 ? 'decision maker at a consumer brand shows' : 'decision makers at consumer brands show'} up in your own comments and reactions. They come to you already.`,
+        : `${audNetCount} buyers already sit in your connections. Each of them said yes to you once.`)
+      : `${audEngIcp} ${audEngIcp === 1 ? 'buyer shows' : 'buyers show'} up in your own comments and reactions. They come to you already.`,
     gapLine: audEngagers > 0
       ? `Your last ${audPosts} posts drew ${audEngagers} ${audEngagers === 1 ? 'person' : 'people'}. ${audEngIcp === 0 ? 'Not one of them was a buyer.' : `${audEngIcp} ${audEngIcp === 1 ? 'was a buyer' : 'were buyers'}. The rest were not.`}`
       : `Your last ${audPosts} posts drew no reactions or comments we could read. The buyers above never hear from you.`,
@@ -3161,7 +3167,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     ? (roomMode === 'network'
       ? [
           audNetSample != null && { key: 'read', label: 'Connections read', value: audNetSample, cap: audNetTotal ? `of ${audNetTotal.toLocaleString('en-US')}, one headline at a time` : 'one headline at a time' },
-          audNetCount != null && { key: 'buyers', label: 'Buyers verified', value: audNetCount, cap: 'decision makers at consumer brands, named' },
+          audNetCount != null && { key: 'buyers', label: 'Buyers verified', value: audNetCount, cap: 'named one at a time from their own headline' },
           audNetDensity != null && { key: 'density', label: 'Buyer density', value: audNetDensity, suffix: '%', decimals: 1, mark: true, cap: 'a typical room reads 1 to 2%' },
         ]
       : [

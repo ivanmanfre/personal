@@ -133,6 +133,11 @@ export interface ContentSystem {
     network_icp_count?: number | null;
     network_icp_density?: number | null;
     named?: { name?: string; headline?: string; source?: string }[];
+    // The rubric this audit actually counted against, in plain words. The audit derives it
+    // per prospect, so a mobile UA studio and an ecommerce agency get different buyers.
+    // Absent means the audit fell back to the legacy hardcoded DTC rubric, and every reader
+    // must fall back to the DTC sentence rather than describe the count some other way.
+    buyer_definition?: string | null;
     audited_at?: string;
   };
   // Profile audit embed (scan-build audit, 2026-07-18). Optional, additive. When present the
