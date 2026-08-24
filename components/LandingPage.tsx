@@ -358,6 +358,7 @@ const PROBLEM_LINES = [
   'You know LinkedIn inbound works. But posting daily, on top of running the agency, never actually happens.',
   "You tried a ghostwriter or an agency. The posts didn't sound like you, and the pipeline stayed flat.",
   'A copywriter or content hire is $3k to $5k a month, and you still have to manage them.',
+  'Every deal starts with you. The month you stop selling, the pipeline stops with you.',
   'So your own feed, the thing that should be selling your agency, sits quiet.',
 ];
 
@@ -410,6 +411,19 @@ const ProblemSection: React.FC = () => (
       >
 A fully managed inbound service, building an audience you own.
       </motion.p>
+
+      <motion.p
+        initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.6, ease, delay: 0.35 }}
+        className="mt-6"
+        style={{ ...T.serif, fontSize: '17px', maxWidth: '56ch', color: 'rgba(26,26,26,0.72)' }}
+      >
+        No entry fee. Month to month. The audience and the email list we build
+        sit under your name from day one, so if you ever stop working with me,
+        the asset stays with you.
+      </motion.p>
     </div>
   </section>
 );
@@ -453,7 +467,8 @@ const EngineSection: React.FC = () => (
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
           You record your voice once. From there we handle the publishing week
           end to end, every format QA&rsquo;d against an anti-slop pass before it
-          goes out. The lead magnets pull in leads onto a list you own, and real
+          goes out, and a human signs off on every message before it leaves.
+          The lead magnets pull in leads onto a list you own, and real
           performance feeds back so next week&rsquo;s material gets sharper.
         </p>
       </motion.div>

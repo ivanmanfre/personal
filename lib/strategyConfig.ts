@@ -357,6 +357,26 @@ export const positioningObjections: Objection[] = [
     answer: 'Inbound compounds, so I hold to calls not deals: a few in month one building to roughly 8-12/mo by month three, and I will not fix a number on it because it rides on your audience. The $3k outbound tier is the one I put hard numbers on. A Sales Nav seat is 50 InMails plus ~400 safe connection requests a month, which lands ~4-8 booked calls/mo from month one on top of the inbound ramp. Batch one calibrates the real reply rate for your niche.',
     isNew: true,
   },
+  {
+    objection: "Another guy offered a system I'd own and run myself.",
+    answer: "That tier runs $5k/mo for 90 days on the market (Atticus), and the founder still works LinkedIn 30-60 minutes a day and answers every DM themselves. Price that half hour at their own billable rate and it adds $1.5-3k/mo on top of the fee. Here it is run for them end to end, a human signs off on every message before it leaves, and their only job is the calls.",
+    isNew: true,
+  },
+  {
+    objection: "Why can't I buy the system outright?",
+    answer: 'What pays is the audience, the list, and the captured leads, and those are theirs from day one. Owning the machine means operating the machine daily. If a buyer insists: custom one-time install, quoted $18-25k plus optional $1k/mo care, case by case, never listed. The high quote is the polite no that routes serious buyers back to $3k/mo.',
+    isNew: true,
+  },
+  {
+    objection: "I've been burned by an agency before.",
+    answer: 'No entry fee, month to month. The first weeks they see every draft in their own voice on the approval board before anything ships, and if they ever leave, the audience and the email list leave with them.',
+    isNew: true,
+  },
+  {
+    objection: 'What do the alternatives actually charge?',
+    answer: 'Atticus: $1.5k/mo group, $5k/mo done-with-you for 90 days where the founder answers their own DMs, $60k/yr 1:1. My Content Pal: one-off packs at $1,400 for 10 posts, $2,800 for 20, $4,500 for 40 with a strategy call. Content only, no DMs, no lead magnets, no list. Their warm outreach draws only on the client’s own engagers, which needs a big following already; ours also opens conversations with buyers active around the feeds they already read, which works at 1-5k followers.',
+    isNew: true,
+  },
 ];
 
 // What $2k replaces: the DIY tool stack a client would otherwise assemble (public prices, verified 2026-07).
