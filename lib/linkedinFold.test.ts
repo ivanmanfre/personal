@@ -73,4 +73,77 @@ describe('linkedInFold', () => {
     expect(linkedInFold('').folded).toBe(false);
     expect(linkedInFold('   ').folded).toBe(false);
   });
+
+  it('reports the character fallback under jsdom, where there is no canvas', () => {
+    // If this ever flips to true in the test env, the pixel path is being exercised
+    // untested — the guard in canvasMeasure() exists because jsdom returns width 0.
+    expect(linkedInFold('anything at all').measured).toBe(false);
+  });
+});
+
+/** The pixel path, driven by an injected measurer so it runs without a real canvas.
+ *  Caps and emoji are deliberately wide, which is the whole reason this path exists. */
+describe('linkedInFold — measured (pixel) path', () => {
+  const WIDTH = LI_FOLD.desktop.widthPx;
+  const measure: (s: string) => number = (s) =>
+    Array.from(s).reduce((w, ch) => {
+      if (/\p{Extended_Pictographic}/u.test(ch)) return w + 20;
+      if (/[A-Z]/.test(ch)) return w + 12;
+      if (ch === ' ') return w + 4;
+      return w + 7;
+    }, 0);
+
+  it('flags itself as measured', () => {
+    expect(linkedInFold('some copy', 'desktop', measure).measured).toBe(true);
+  });
+
+  it('folds a caps-heavy opener earlier than the same words in lower case', () => {
+    const words = 'this opener shouts every single word across the line so it wraps sooner '.repeat(6);
+    const loudVisible = linkedInFold(words.toUpperCase().trim(), 'desktop', measure).visible.length;
+    const quietVisible = linkedInFold(words.trim(), 'desktop', measure).visible.length;
+    // 12px a caps glyph against 7px a lower-case one, so roughly half the copy survives.
+    expect(loudVisible).toBeLessThan(quietVisible);
+  });
+
+  it('charges emoji their real width', () => {
+    const withEmoji = ('🚀 '.repeat(80) + 'tail copy that sits past the fold').trim();
+    const plain = ('ab '.repeat(80) + 'tail copy that sits past the fold').trim();
+    const r = linkedInFold(withEmoji, 'desktop', measure);
+    expect(r.folded).toBe(true);
+    // 24px an emoji+space against 18px for "ab ", so fewer tokens clear the fold.
+    expect(r.visible.length).toBeLessThan(linkedInFold(plain, 'desktop', measure).visible.length);
+  });
+
+  it('hard-breaks a single token wider than the box', () => {
+    const r = linkedInFold('x'.repeat(600), 'desktop', measure);
+    expect(r.folded).toBe(true);
+    // 7px per char into a 526px box = 75 chars a line, 3 lines.
+    expect(r.visible.length).toBe(Math.floor(WIDTH / 7) * 3);
+  });
+
+  it('still charges a blank line a full slot', () => {
+    const body = 'Short hook\n\nSecond beat\n\nEverything here is behind the fold and must not survive.';
+    const r = linkedInFold(body, 'desktop', measure);
+    expect(r.visible).toBe('Short hook\n\nSecond beat');
+    expect(r.hidden.startsWith('Everything here')).toBe(true);
+  });
+
+  it('leaves a visible chunk that itself fits the budget', () => {
+    // Soft wraps insert no newline, so the invariant is "re-folding it changes nothing",
+    // not "every \n-delimited line fits".
+    for (const body of ['word '.repeat(200).trim(), '🚀 '.repeat(90).trim(), 'ALL CAPS SHOUTING '.repeat(40).trim()]) {
+      const r = linkedInFold(body, 'desktop', measure);
+      expect(r.folded).toBe(true);
+      const again = linkedInFold(r.visible, 'desktop', measure);
+      expect(again.folded).toBe(false);
+      expect(again.totalLines).toBeLessThanOrEqual(LI_FOLD.desktop.lines);
+    }
+  });
+
+  it('folds tighter on mobile than desktop on the measured path too', () => {
+    const body = 'word '.repeat(200).trim();
+    const d = linkedInFold(body, 'desktop', measure).visible.length;
+    const m = linkedInFold(body, 'mobile', measure).visible.length;
+    expect(m).toBeLessThan(d);
+  });
 });
