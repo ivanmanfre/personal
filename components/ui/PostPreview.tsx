@@ -1,4 +1,5 @@
 import React from 'react';
+import { linkedInFold } from '../../lib/linkedinFold';
 
 /**
  * Renders a LinkedIn-style post preview from raw text:
@@ -7,7 +8,8 @@ import React from 'react';
  *   - #hashtags styled emerald
  *   - @mentions styled emerald
  *   - Unicode-bold/italic letters preserved (LinkedIn-style emphasis tricks)
- *   - Fold-line indicator at character 210 (LinkedIn feed truncation point)
+ *   - Fold rule drawn where the feed actually cuts (3 rendered lines, lib/linkedinFold),
+ *     with everything behind "…see more" dimmed
  *
  * Used in Carousel + LM editors to give Ivan a preview of how the caption will
  * render before publishing — closes the raw-textarea gap.
@@ -16,7 +18,6 @@ import React from 'react';
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
 const MENTION_RE = /(?:^|\s)(@[\p{L}\p{N}_.-]+)/gu;
-const FOLD_AT = 210;
 
 function tokenize(line: string): React.ReactNode[] {
   // Replace URLs/hashtags/mentions with markers, then split.
@@ -74,44 +75,33 @@ const PostPreview: React.FC<{ text: string; showFold?: boolean }> = ({ text, sho
     return <div className="text-sm text-zinc-600 italic">Nothing to preview yet.</div>;
   }
 
-  // Split into paragraphs by double-newline; within paragraph, render single \n as <br>
-  const paragraphs = text.replace(/\r\n/g, '\n').split(/\n\s*\n/);
+  const { visible, hidden, folded } = linkedInFold(text);
+  const drawFold = showFold && folded;
 
-  // Find which paragraph contains the fold (210 chars in)
-  let runningLen = 0;
-  let foldParaIdx = -1;
-  let foldOffset = -1;
-  if (showFold && text.length > FOLD_AT) {
-    for (let i = 0; i < paragraphs.length; i++) {
-      const pLen = paragraphs[i].length + (i > 0 ? 2 : 0);
-      if (runningLen + pLen >= FOLD_AT) {
-        foldParaIdx = i;
-        foldOffset = FOLD_AT - runningLen;
-        break;
-      }
-      runningLen += pLen;
-    }
-  }
+  // Split into paragraphs by double-newline; within paragraph, render single \n as <br>
+  const paras = (chunk: string, keyPrefix: string, dim: boolean) =>
+    chunk.replace(/\r\n/g, '\n').split(/\n\s*\n/).map((para, pi) => (
+      <p key={`${keyPrefix}-${pi}`} className={dim ? 'whitespace-pre-wrap opacity-40' : 'whitespace-pre-wrap'}>
+        {para.split('\n').map((line, li, arr) => (
+          <React.Fragment key={li}>
+            {tokenize(line)}
+            {li < arr.length - 1 && <br />}
+          </React.Fragment>
+        ))}
+      </p>
+    ));
 
   return (
     <div className="text-[13.5px] text-zinc-200 leading-relaxed font-sans space-y-3">
-      {paragraphs.map((para, pi) => (
-        <p key={pi} className="whitespace-pre-wrap">
-          {para.split('\n').map((line, li, arr) => (
-            <React.Fragment key={li}>
-              {tokenize(line)}
-              {li < arr.length - 1 && <br />}
-            </React.Fragment>
-          ))}
-        </p>
-      ))}
-      {showFold && foldParaIdx >= 0 && (
+      {paras(drawFold ? visible : text, 'v', false)}
+      {drawFold && (
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-zinc-500 -my-1.5">
           <div className="flex-1 h-px bg-amber-700/40" />
-          <span className="text-amber-500/80">…see more · LinkedIn truncates ~{FOLD_AT} chars</span>
+          <span className="text-amber-500/80">…see more · {visible.length} chars above the fold</span>
           <div className="flex-1 h-px bg-amber-700/40" />
         </div>
       )}
+      {drawFold && paras(hidden, 'h', true)}
     </div>
   );
 };

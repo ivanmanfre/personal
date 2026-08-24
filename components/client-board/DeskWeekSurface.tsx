@@ -1054,8 +1054,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   size="lg"
                   cover={selectedItem.generating ? 'render' : 'plate'}
                   live={live}
-                  /* 3 lines: LinkedIn's real desktop fold. 4 was the stacked layout's number. */
-                  clampLines={3}
                 />
               </div>
             </>

@@ -10,6 +10,7 @@ import {
   stripMagicLinkFragment,
   type BoardSession,
 } from '../lib/boardSession';
+import { linkedInFold } from '../lib/linkedinFold';
 import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
@@ -1178,16 +1179,16 @@ export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, clampLines }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false }: {
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none';
-  /** LinkedIn-faithful body fold: clamp to N lines the way the real feed folds a post.
-   *  The full copy stays one click away (the surface opens the post on click). */
-  clampLines?: number;
   /** Live board: the typographic plate is a preview fabrication — render the real
    *  generated image (media_url) or nothing. */
   live?: boolean;
 }) {
+  // The body always folds where LinkedIn folds it, so the hook a client signs off on is
+  // the hook the feed will actually show. "…see more" opens the rest in place.
+  const [bodyExpanded, setBodyExpanded] = useState(false);
   const founder = board.founder;
   const name = founder?.name || board.company_name;
   const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0];
@@ -1211,18 +1212,25 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         </span>
       </div>
       {item.body && (() => {
-        // LinkedIn-faithful fold: pre-fold text is truncated at a word boundary (the way
-        // the platform serves it), so the folded copy is really gone, in every register
-        // (visual, meter, screen reader) — never merely clipped by CSS.
-        const cap = clampLines ? clampLines * 88 : Infinity;
-        const folded = clampLines && item.body.length > cap
-          ? item.body.slice(0, item.body.lastIndexOf(' ', cap)).trimEnd()
-          : item.body;
-        const didFold = folded !== item.body;
+        // LinkedIn-faithful fold: the platform clamps the caption to 3 RENDERED LINES, so
+        // hard breaks decide the hook budget, not a character count (see lib/linkedinFold).
+        // Truncating rather than CSS-clipping keeps the folded copy really gone in every
+        // register — visual, meter, screen reader.
+        const { visible, folded } = linkedInFold(item.body);
+        const show = bodyExpanded ? item.body : visible;
         return (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{withMentions(folded)}</div>
-            {didFold ? <span style={{ fontSize: bodyPx, color: '#666' }}>…see more</span> : null}
+            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{withMentions(show)}</div>
+            {folded && !bodyExpanded ? (
+              // The card itself opens the post, so the fold toggle must not bubble.
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setBodyExpanded(true); }}
+                style={{ fontSize: bodyPx, color: '#666', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
+              >
+                …see more
+              </button>
+            ) : null}
           </div>
         );
       })()}
@@ -3666,8 +3674,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     {busy ? 'Saving…' : 'Save edit'}
                   </button>
                   <span className="text-[12px]" style={{ color: FAINT }}>Every edit is saved to the draft.</span>
-                  <span className="ml-auto text-[12px] tabular-nums" style={{ color: body.length > 210 ? '#b45309' : FAINT }}>
-                    {body.length} chars{body.length > 210 ? ' · past the LinkedIn fold' : ''}
+                  <span className="ml-auto text-[12px] tabular-nums" style={{ color: FAINT }}>
+                    {body.length} chars · {linkedInFold(body).visible.length} above the fold
                   </span>
                 </div>
                 {err && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
