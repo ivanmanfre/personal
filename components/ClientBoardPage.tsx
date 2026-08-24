@@ -10,7 +10,12 @@ import {
   stripMagicLinkFragment,
   type BoardSession,
 } from '../lib/boardSession';
-import { linkedInFold } from '../lib/linkedinFold';
+import { linkedInFold, type FoldSurface } from '../lib/linkedinFold';
+import { LinkedInCaption } from './ui/LinkedInCaption';
+
+/** The phone we preview the mobile fold against. iPhone 15 class, the middle of the range
+ *  we measured (375-430), so the budget shown is neither the kindest nor the harshest. */
+const PREVIEW_PHONE_WIDTH = 393;
 import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
@@ -1189,6 +1194,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   // The body always folds where LinkedIn folds it, so the hook a client signs off on is
   // the hook the feed will actually show. "…see more" opens the rest in place.
   const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [foldSurface, setFoldSurface] = useState<FoldSurface>('desktop');
   const founder = board.founder;
   const name = founder?.name || board.company_name;
   const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0];
@@ -1211,29 +1217,45 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · not scheduled yet' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
-      {item.body && (() => {
-        // LinkedIn-faithful fold: the platform clamps the caption to 3 RENDERED LINES, so
-        // hard breaks decide the hook budget, not a character count (see lib/linkedinFold).
-        // Truncating rather than CSS-clipping keeps the folded copy really gone in every
-        // register — visual, meter, screen reader.
-        const { visible, folded } = linkedInFold(item.body);
-        const show = bodyExpanded ? item.body : visible;
-        return (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: bodyPx, lineHeight: 1.55, color: '#111', whiteSpace: 'pre-line' }}>{withMentions(show)}</div>
-            {folded && !bodyExpanded ? (
-              // The card itself opens the post, so the fold toggle must not bubble.
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setBodyExpanded(true); }}
-                style={{ fontSize: bodyPx, color: '#666', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
-              >
-                …see more
-              </button>
-            ) : null}
-          </div>
-        );
-      })()}
+      {item.body && (
+        // The caption is drawn at LinkedIn's own geometry and scaled down, so the fold lands
+        // on the same word AND the copy holds the same shape it will hold in the feed. The
+        // card being smaller than a real feed column changes neither (see LinkedInCaption).
+        <div style={{ marginBottom: 12 }}>
+          <LinkedInCaption
+            body={item.body}
+            surface={foldSurface}
+            deviceWidth={foldSurface === 'mobile' ? PREVIEW_PHONE_WIDTH : undefined}
+            expanded={bodyExpanded}
+            onExpand={() => setBodyExpanded(true)}
+            renderText={withMentions}
+          />
+          {size === 'lg' && (
+            // Desktop is one fixed column, phone scales with the handset, so the two really
+            // are different hooks. Only the detail view offers the switch; list cards would
+            // be noise.
+            <div className="mt-1.5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              {(['desktop', 'mobile'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setFoldSurface(s)}
+                  aria-pressed={foldSurface === s}
+                  className="rounded-[4px] px-1.5 py-0.5 uppercase"
+                  style={{
+                    fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.1em',
+                    color: foldSurface === s ? '#111' : FAINT,
+                    background: foldSurface === s ? caWash(accent, 22) : 'transparent',
+                    border: `1px solid ${foldSurface === s ? caBorder(accent, 40) : 'transparent'}`,
+                  }}
+                >
+                  {s === 'desktop' ? 'desktop fold' : `phone fold · ${PREVIEW_PHONE_WIDTH}px`}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {docPages.length >= 2 ? (
         <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
       ) : (item.media_url || cardImageUrl(item, board)) ? (

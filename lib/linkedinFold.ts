@@ -35,12 +35,50 @@
 
 export type FoldSurface = 'desktop' | 'mobile';
 
-export const LI_FOLD: Record<FoldSurface, { lines: number; widthPx: number; charsPerLine: number }> = {
-  // charsPerLine is the fallback only, set to the centre of the measured ranges
-  // (desktop 73-85, mobile 49-60). widthPx is what the pixel path actually uses.
-  desktop: { lines: 3, widthPx: 526, charsPerLine: 80 },
-  mobile: { lines: 3, widthPx: 364, charsPerLine: 55 },
+export interface FoldBox {
+  lines: number;
+  /** Caption box width in CSS px — the only width that decides the cut. */
+  widthPx: number;
+  lineHeightPx: number;
+  /** Fallback only, for the no-canvas path. */
+  charsPerLine: number;
+}
+
+/** Desktop is ONE geometry. Measured identical at 1280 / 1440 / 1680 / 1920: the feed is a
+ *  fixed centre column, so the caption box never grows with the window. Mobile is the only
+ *  surface where size varies, and it varies exactly: box = device width - 26px, verified at
+ *  360 → 334, 390 → 364, 414 → 388, 430 → 404, 600 → 574.
+ *
+ *  charsPerLine is the centre of the measured ranges (desktop 73-85, mobile 49-60) and is
+ *  used only when no canvas exists. */
+export const LI_FOLD: Record<FoldSurface, FoldBox> = {
+  desktop: { lines: 3, widthPx: 526, lineHeightPx: 17.5, charsPerLine: 80 },
+  mobile: { lines: 3, widthPx: 364, lineHeightPx: 20, charsPerLine: 55 },
 };
+
+/** Padding the phone layout takes off the viewport, measured across five device widths. */
+export const MOBILE_GUTTER = 26;
+
+/** Real device widths worth previewing against, smallest and largest in common use. */
+export const LI_DEVICES: Record<string, number> = {
+  'iPhone SE': 375,
+  'iPhone 15': 393,
+  'iPhone 15 Pro Max': 430,
+  'Pixel 8': 412,
+};
+
+/** The caption box for a surface. `deviceWidth` applies to mobile only; desktop ignores it
+ *  because the desktop column is fixed. */
+export function foldBox(surface: FoldSurface = 'desktop', deviceWidth?: number): FoldBox {
+  if (surface !== 'mobile' || !deviceWidth) return LI_FOLD[surface];
+  const widthPx = Math.max(200, Math.round(deviceWidth - MOBILE_GUTTER));
+  return {
+    ...LI_FOLD.mobile,
+    widthPx,
+    // Scale the fallback with the box so the no-canvas path stays sane on odd widths.
+    charsPerLine: Math.max(20, Math.round((widthPx / LI_FOLD.mobile.widthPx) * LI_FOLD.mobile.charsPerLine)),
+  };
+}
 
 /** The feed's caption font, verbatim from getComputedStyle on a live post. */
 export const LI_CAPTION_FONT =
@@ -130,8 +168,8 @@ function charLines(seg: string, base: number, charsPerLine: number, out: Array<[
 
 /** Line spans of `text` once wrapped, honouring hard breaks. An empty line (the blank line
  *  between paragraphs) costs a full line slot, exactly as it does in the feed. */
-function lineSpans(text: string, surface: FoldSurface, measure: Measure | null): Array<[number, number]> {
-  const { widthPx, charsPerLine } = LI_FOLD[surface];
+function lineSpans(text: string, box: FoldBox, measure: Measure | null): Array<[number, number]> {
+  const { widthPx, charsPerLine } = box;
   const spans: Array<[number, number]> = [];
   let pos = 0;
   for (const seg of text.split('\n')) {
@@ -154,19 +192,32 @@ export interface FoldResult {
   totalLines: number;
   /** True when the cut came from measured glyph widths rather than the character fallback. */
   measured: boolean;
+  /** Lines the visible chunk occupies — what the preview needs to reserve height for. */
+  visibleLines: number;
+  /** The box the cut was computed against. */
+  box: FoldBox;
 }
 
-/** Split a post body at the LinkedIn fold.
- *  `measure` is injectable so a test can drive the pixel path without a real canvas. */
-export function linkedInFold(raw: string, surface: FoldSurface = 'desktop', measure?: Measure): FoldResult {
-  const { lines: budget } = LI_FOLD[surface];
-  const text = (raw || '').replace(/\r\n/g, '\n');
-  const m = measure ?? canvasMeasure();
-  if (!text.trim()) return { visible: text, hidden: '', folded: false, totalLines: 0, measured: !!m };
+export interface FoldOptions {
+  /** Injectable so a test can drive the pixel path without a real canvas. */
+  measure?: Measure;
+  /** Mobile only: the phone's CSS width. Desktop ignores it, the column is fixed. */
+  deviceWidth?: number;
+}
 
-  const spans = lineSpans(text, surface, m);
+/** Split a post body at the LinkedIn fold. */
+export function linkedInFold(raw: string, surface: FoldSurface = 'desktop', opts: FoldOptions = {}): FoldResult {
+  const box = foldBox(surface, opts.deviceWidth);
+  const budget = box.lines;
+  const text = (raw || '').replace(/\r\n/g, '\n');
+  const m = opts.measure ?? canvasMeasure();
+  if (!text.trim()) {
+    return { visible: text, hidden: '', folded: false, totalLines: 0, visibleLines: 0, measured: !!m, box };
+  }
+
+  const spans = lineSpans(text, box, m);
   if (spans.length <= budget) {
-    return { visible: text, hidden: '', folded: false, totalLines: spans.length, measured: !!m };
+    return { visible: text, hidden: '', folded: false, totalLines: spans.length, visibleLines: spans.length, measured: !!m, box };
   }
   const cut = spans[budget - 1][1];
   return {
@@ -174,11 +225,13 @@ export function linkedInFold(raw: string, surface: FoldSurface = 'desktop', meas
     hidden: text.slice(cut).trimStart(),
     folded: true,
     totalLines: spans.length,
+    visibleLines: budget,
     measured: !!m,
+    box,
   };
 }
 
 /** Characters the reader sees before "…see more" — the real hook budget for this body. */
-export function foldBudget(raw: string, surface: FoldSurface = 'desktop'): number {
-  return linkedInFold(raw, surface).visible.length;
+export function foldBudget(raw: string, surface: FoldSurface = 'desktop', deviceWidth?: number): number {
+  return linkedInFold(raw, surface, { deviceWidth }).visible.length;
 }
