@@ -1,7 +1,8 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
-import { avatarInitials, foldAtWordBoundary, safeHex, inkOnSurface, familyStack } from './LinkedInPostPreview';
+import { avatarInitials, safeHex, inkOnSurface, familyStack } from './LinkedInPostPreview';
 import type { BrandKitSpec, TextSlideSpec } from '../../lib/linkedinFeedSpec';
+import { linkedInFold } from '../../lib/linkedinFold';
 import { useGoogleFonts } from '../../hooks/useGoogleFonts';
 
 /** WCAG relative luminance of a #rrggbb color. */
@@ -25,7 +26,6 @@ function contrastRatio(a: string, b: string): number {
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
 const MENTION_RE = /(?:^|\s)(@[\p{L}\p{N}_.-]+)/gu;
-const FOLD_AT = 210;
 
 function tokenize(line: string): React.ReactNode[] {
   const matches: { i: number; end: number; node: React.ReactNode }[] = [];
@@ -245,8 +245,9 @@ const LinkedInCarouselCard: React.FC<Props> = ({
   const hasTextSlides = Array.isArray(textSlides) && textSlides.length > 0;
   const total = hasTextSlides ? textSlides!.length : slides.length;
   const clampedIndex = Math.min(index, Math.max(0, total - 1));
-  const truncate = showFold && text.length > FOLD_AT && !expanded;
-  const visibleText = truncate ? foldAtWordBoundary(text, FOLD_AT) : text;
+  const fold = linkedInFold(text);
+  const truncate = showFold && fold.folded && !expanded;
+  const visibleText = truncate ? fold.visible : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));

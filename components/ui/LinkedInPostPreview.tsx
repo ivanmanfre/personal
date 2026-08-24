@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 import type { BrandKitSpec, ImageCardSpec } from '../../lib/linkedinFeedSpec';
+import { linkedInFold } from '../../lib/linkedinFold';
 import { useGoogleFonts } from '../../hooks/useGoogleFonts';
 
 /** First letters of the first two words, for the no-photo avatar fallback. */
@@ -8,14 +9,6 @@ export function avatarInitials(name?: string): string {
   const parts = (name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '·';
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
-}
-
-/** LinkedIn's fold, cut at a word boundary — never mid-word. Falls back to the raw cut
- *  only when the visible window contains no space at all (one giant token). */
-export function foldAtWordBoundary(text: string, at: number): string {
-  const raw = text.slice(0, at);
-  const lastSpace = Math.max(raw.lastIndexOf(' '), raw.lastIndexOf('\n'));
-  return (lastSpace > at * 0.6 ? raw.slice(0, lastSpace) : raw).trimEnd();
 }
 
 /** Normalize a hex to #rrggbb, or undefined when invalid. */
@@ -101,7 +94,8 @@ export const BrandImageCard: React.FC<{ card: ImageCardSpec; brand?: BrandKitSpe
  *   - White card with LinkedIn-blue accents
  *   - Avatar + name + headline + post timestamp + "Edited" badge
  *   - Caption rendered with LinkedIn's exact line-height + 14px size
- *   - Truncates at the 210-char fold with a real "…see more" button (toggles)
+ *   - Folds where LinkedIn folds (3 rendered lines, lib/linkedinFold) with a real
+ *     "…see more" button (toggles)
  *   - Inline media slot (carousel cover / single image)
  *   - Reaction count strip with the 👍 emoji + visible likes/comments counts
  *   - Like / Comment / Repost / Send action bar
@@ -110,7 +104,6 @@ export const BrandImageCard: React.FC<{ card: ImageCardSpec; brand?: BrandKitSpe
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
 const MENTION_RE = /(?:^|\s)(@[\p{L}\p{N}_.-]+)/gu;
-const FOLD_AT = 210;
 
 function tokenize(line: string): React.ReactNode[] {
   const matches: { i: number; end: number; node: React.ReactNode }[] = [];
@@ -197,8 +190,9 @@ const LinkedInPostPreview: React.FC<Props> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   // Compact cards are always clamped via CSS — skip the JS fold logic.
-  const truncate = !compact && showFold && text.length > FOLD_AT && !expanded;
-  const visibleText = truncate ? foldAtWordBoundary(text, FOLD_AT) : text;
+  const fold = linkedInFold(text);
+  const truncate = !compact && showFold && fold.folded && !expanded;
+  const visibleText = truncate ? fold.visible : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));
