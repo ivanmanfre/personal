@@ -110,6 +110,16 @@ function addDays(d: Date, n: number): Date {
   x.setDate(x.getDate() + n);
   return x;
 }
+/** Same "counted <date>" convention DeskPerformanceSurface stamps on its live indicator
+ *  cards (en-GB, day + short month, no year — the board is a this-year surface). Used
+ *  wherever a number is sourced from board.outreach_truth, so a stale recompute is always
+ *  visible as a dated number rather than an unstamped one. */
+function fmtCounted(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
 
 /**
  * Channel/type -> send-kind classifier. Reads the `type`/`channel` columns OutreachLogMessage
@@ -290,9 +300,37 @@ export default function DeskOutreachSurface({
   // wrote back (real, entry-level so it matches the Leads journey number below) -> calls
   // booked (real once board.precall_briefs has rows, blank until then). ────────────────────
   const contactedCount = entries.filter((e) => (e.messages || []).some((m) => m.direction === 'outbound' && m.sent_at)).length;
-  const repliedCount = entries.filter((e) => e.replied).length;
-  const callsBookedCount = (board.precall_briefs || []).length;
+
+  // ── board.outreach_truth: the server-computed booked/replied truth (goal-run
+  // rise-panel-truth-2026-08-25). When present it is the source for the booked-calls count
+  // + list and the replied count; precall_briefs / entries[].replied stay the fallback,
+  // used unchanged when this key is absent (a board that predates the write). Every number
+  // sourced from it carries its own counted_at stamp — see fmtCounted() call sites below. ──
+  const ot = board.outreach_truth;
+  const otBooked = ot && Array.isArray(ot.booked) ? ot.booked : null;
+  const countedAt = ot?.counted_at ? fmtCounted(ot.counted_at) : '';
+  const repliedCount = ot && ot.funnel && typeof ot.funnel.replied_people === 'number'
+    ? ot.funnel.replied_people
+    : entries.filter((e) => e.replied).length;
+  const callsBookedCount = otBooked ? otBooked.length : (board.precall_briefs || []).length;
   const wroteBackPct = barPct(repliedCount, contactedCount);
+
+  // Normalized booked-calls rows: outreach_truth.booked (name/company/booked_at/brief_url/
+  // scan_url, and it can carry a hand-closed booking precall_briefs never sees) when present,
+  // else the original precall_briefs shape, unchanged.
+  type BookedRow = { id: string; name: string; company?: string | null; when_str?: string; booked_note?: string; brief_url?: string | null; scan_url?: string | null };
+  const bookedRows: BookedRow[] = otBooked
+    ? otBooked.map((b, i) => ({
+        id: b.prospect_id || `${b.name || 'booked'}-${i}`,
+        name: b.name || '(unnamed)',
+        company: b.company,
+        when_str: b.booked_at ? shortDateTime(new Date(b.booked_at)) : undefined,
+        brief_url: b.brief_url,
+        scan_url: b.scan_url,
+      }))
+    : (board.precall_briefs || []).map((b) => ({
+        id: b.id, name: b.name, company: b.company || b.domain, when_str: b.when_str, booked_note: b.booked_note, brief_url: b.brief_url, scan_url: b.scan_url,
+      }));
 
   // Accepts ARE tracked — not in the send log (an accept is not a message), but in
   // performance.outreach_indicators, captured by the program counter. Only an indicator with
@@ -483,6 +521,9 @@ export default function DeskOutreachSurface({
         <Footnote on="plate">
           A first touch is an invite with a note, a first DM, or an InMail. Follow-up messages live in the weekly bars above.
         </Footnote>
+        {ot && (
+          <Footnote on="plate">Wrote back and calls booked counted {countedAt}.</Footnote>
+        )}
       </Plate>
 
       {/* 3 — the send allowance, collapsed (the frag demoted it off the top of the tab). */}
@@ -533,18 +574,23 @@ export default function DeskOutreachSurface({
           left={{ value: repliedCount, label: 'Replies in play', sub: `as of ${shortDateTime(now)}` }}
           right={callsBookedCount > 0 ? { value: callsBookedCount, label: 'Calls booked' } : { label: 'Calls booked', blank: true }}
         />
+        {ot && <Footnote on="plate">counted {countedAt}</Footnote>}
       </Plate>
 
-      {/* 5 — Booked calls: the block ALWAYS renders. Rows once a real booking lands in
-          board.precall_briefs, and until then the reference's drawn honest empty state — a
-          dashed card that says the row is not here yet and what will fill it. Never a sample
-          row, never a fabricated booking. */}
+      {/* 5 — Booked calls: the block ALWAYS renders. Rows from outreach_truth.booked once
+          it exists (falls back to board.precall_briefs, unchanged, until then), and until a
+          real booking lands the reference's drawn honest empty state — a dashed card that
+          says the row is not here yet and what will fill it. Never a sample row, never a
+          fabricated booking. outreach_truth also surfaces bookings closed by hand off the
+          tracked link (no brief/scan link — never synthesized), which precall_briefs
+          structurally cannot see. */}
       <Card style={{ marginTop: 12, padding: '22px 26px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <Eyebrow>Booked calls</Eyebrow>
             <span style={{ fontFamily: 'var(--cb-mono)', fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', letterSpacing: '0.04em' }}>from your LinkedIn booking link</span>
           </div>
-          {(board.precall_briefs || []).length === 0 ? (
+          {ot && <Footnote style={{ marginTop: 4 }}>counted {countedAt}</Footnote>}
+          {bookedRows.length === 0 ? (
             <div style={{
               marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 25,
               background: 'var(--cb-paper-sunk)', padding: '30px 28px',
@@ -556,12 +602,12 @@ export default function DeskOutreachSurface({
             </div>
           ) : (
           <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(board.precall_briefs || []).map((b) => (
+            {bookedRows.map((b) => (
               <div key={b.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 12px', borderRadius: 14, background: 'var(--cb-paper-raise, #fff)', border: '1px solid var(--cb-line)', padding: '14px 16px' }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 }}>
                     <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{b.name}</span>
-                    {(b.company || b.domain) && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{b.company || b.domain}</span>}
+                    {b.company && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{b.company}</span>}
                   </div>
                   {b.when_str && <div style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{b.when_str}</div>}
                   {b.booked_note && <div style={{ fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{b.booked_note}</div>}

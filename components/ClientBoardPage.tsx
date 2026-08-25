@@ -248,6 +248,32 @@ interface OutreachStatus {
   next_window_at: string | null;
   up_next: OutreachQueueItem[];
 }
+/** One server-computed booked call inside board.outreach_truth.booked. Distinct from
+ *  precall_briefs: this one is keyed off outreach_prospects.call_booked_at, so a booking
+ *  Mattan closes by hand (no HubSpot Meetings object) still counts. brief_url/scan_url are
+ *  legitimately null for a hand-closed booking — never synthesize a link for those. */
+interface OutreachTruthBooked {
+  prospect_id?: string; name: string | null; company?: string | null;
+  booked_at?: string | null; brief_url?: string | null; scan_url?: string | null;
+}
+/** One person who replied in the trailing 7 days, board.outreach_truth.replied_7d. */
+interface OutreachTruthRepliedPerson {
+  name?: string | null; company?: string | null; linkedin_profile_id?: string | null;
+  last_reply_at?: string | null; reply_intent?: string | null;
+}
+/** board.outreach_truth — the single server-computed source of truth for booked/replied/
+ *  funnel numbers (goal-run rise-panel-truth-2026-08-25). Written by rise_outreach_truth_apply()
+ *  via the Performance Sync workflow, every 6h. Every number carries `counted_at`; a missing or
+ *  stale value should render as a ghost/blank rather than a wrong number. Absent on boards that
+ *  predate this write (falls back to precall_briefs / the live log's `replied` field). */
+interface OutreachTruth {
+  counted_at: string;
+  semantics_version?: string;
+  booked: OutreachTruthBooked[];
+  replied_7d: OutreachTruthRepliedPerson[];
+  replied_weekly: { week_monday: string; people: number }[];
+  funnel: { contacted: number; accepted: number; replied_people: number; booked: number };
+}
 interface OutreachSpec {
   note?: string;
   icp?: { label?: string; bar?: string[]; note?: string };
@@ -350,6 +376,11 @@ interface Board {
    *  booking watcher (n8n). brief_url = gated operator pre-call brief; scan_url =
    *  their public growth scan. Absent until the first tracked booking lands. */
   precall_briefs?: { id: string; name: string; company?: string; domain?: string; when_iso?: string; when_str?: string; booked_note?: string; brief_url?: string; scan_url?: string; added_at?: string }[];
+  /** Server-computed booked/replied/funnel truth (goal-run rise-panel-truth-2026-08-25).
+   *  When present, this is the panel's source for the booked-calls count/list and the
+   *  replied count — precall_briefs and the live log's `replied` field become the fallback,
+   *  used only when this key is absent (a board that predates the write). */
+  outreach_truth?: OutreachTruth;
   lm_ideas?: LmIdea[];
   strategy?: { total: number; period?: string; pillars: Pillar[]; cadence?: { headline: string; detail?: string; note?: string } };
   /** Monday plan note, written by the Weekly Plan Note workflow. Deterministic text
@@ -5977,6 +6008,28 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
     ? status.is_live
     : (log != null && log.length > 0) || (usage != null && (usage.connect_sent > 0 || usage.dm_sent > 0 || usage.inmail_used > 0));
 
+  // Server-computed booked/replied truth (goal-run rise-panel-truth-2026-08-25). Present ->
+  // it is the source for the booked-calls list + count and the replied count; absent -> the
+  // section falls back to precall_briefs unchanged, exactly as it rendered before this key
+  // existed. This is the SAME swap DeskOutreachSurface makes, so the ?skin= branch can never
+  // show a different booked/replied figure than the desk skin.
+  const ot = board.outreach_truth;
+  const otBooked = ot && Array.isArray(ot.booked) ? ot.booked : null;
+  const otRepliedPeople = ot && ot.funnel && typeof ot.funnel.replied_people === 'number' ? ot.funnel.replied_people : null;
+  type BookedRow = { id: string; name: string; company?: string | null; when_str?: string; booked_note?: string; brief_url?: string | null; scan_url?: string | null };
+  const bookedRows: BookedRow[] = otBooked
+    ? otBooked.map((b, i) => ({
+        id: b.prospect_id || `${b.name || 'booked'}-${i}`,
+        name: b.name || '(unnamed)',
+        company: b.company,
+        when_str: b.booked_at ? fmtDay(b.booked_at) : undefined,
+        brief_url: b.brief_url,
+        scan_url: b.scan_url,
+      }))
+    : (board.precall_briefs || []).map((b) => ({
+        id: b.id, name: b.name, company: b.company || b.domain, when_str: b.when_str, booked_note: b.booked_note, brief_url: b.brief_url, scan_url: b.scan_url,
+      }));
+
   return (
     <div className="pb-16">
       <div className="mb-7">
@@ -6225,18 +6278,26 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
         {foldLeads}
 
         {/* 07 — Booked calls: bookings that arrived through the tracked LinkedIn booking
-            page, written by the booking watcher into board.precall_briefs. Each row carries
-            the operator pre-call brief (gated n8n viewer) and their public scan. Section is
-            absent until the first tracked booking lands — no sample rows, ever. */}
-        {(board.precall_briefs || []).length > 0 && (<>
-          <LeadsBlockHead n="07" label="booked calls" sub="from your LinkedIn booking link" />
+            page, written by the booking watcher into board.precall_briefs. Once
+            board.outreach_truth exists it takes over as the source (it also carries
+            bookings closed by hand off-platform, invisible to precall_briefs — see
+            OutreachTruthBooked); precall_briefs is the fallback until then, unchanged.
+            Section is absent until the first tracked booking lands — no sample rows, ever. */}
+        {bookedRows.length > 0 && (<>
+          <LeadsBlockHead
+            n="07"
+            label="booked calls"
+            sub={ot ? (
+              <>from your LinkedIn booking link · counted {fmtDay(ot.counted_at)}{otRepliedPeople !== null ? <> · {otRepliedPeople} replied</> : null}</>
+            ) : 'from your LinkedIn booking link'}
+          />
           <div className="space-y-2.5">
-            {(board.precall_briefs || []).map((b) => (
+            {bookedRows.map((b) => (
               <div key={b.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{b.name}</span>
-                    {(b.company || b.domain) && <span className="text-[12px]" style={{ color: DIM }}>{b.company || b.domain}</span>}
+                    {b.company && <span className="text-[12px]" style={{ color: DIM }}>{b.company}</span>}
                   </div>
                   {b.when_str && <div style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE, marginTop: 2 }}>{b.when_str}</div>}
                   {b.booked_note && <div className="text-[11.5px]" style={{ fontFamily: BODY, color: FAINT, marginTop: 2 }}>{b.booked_note}</div>}
@@ -7342,7 +7403,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
  *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
  *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
 export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
-export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
+export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
 
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();

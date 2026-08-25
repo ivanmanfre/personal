@@ -413,4 +413,66 @@ it('post-patch feed: inbound-people count, the Accepted row with its definition 
   expect(html).toContain('Accepted counts the week the accept landed, not the week the invite went out');
 });
 
+it('board.outreach_truth present: booked count + list, funnel replied, and journey plate read from it, stamped with counted_at — precall_briefs ignored', () => {
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface
+      board={makeBoard({
+        // precall_briefs deliberately disagrees (1 row, different name) to prove
+        // outreach_truth wins outright rather than merging or falling back.
+        precall_briefs: [{ id: 'legacy1', name: 'Legacy Only Person', company: 'Old Co', when_str: 'Mon 1 Jan, 9:00 AM' }],
+        outreach_truth: {
+          counted_at: '2026-08-25T21:05:36Z',
+          semantics_version: 'clientweekpacket-2026-08-25',
+          booked: [
+            { prospect_id: 'p1', name: 'Stefan Hertzberg', company: 'Vivi Labs', booked_at: '2026-08-20T21:34:07.828Z', brief_url: null, scan_url: null },
+            { prospect_id: 'p2', name: 'Chas Waters', company: 'Cool Brand', booked_at: '2026-08-06T17:09:17.826Z', brief_url: 'https://example.com/brief', scan_url: 'https://example.com/scan' },
+          ],
+          replied_7d: [],
+          replied_weekly: [],
+          funnel: { contacted: 857, accepted: 203, replied_people: 19, booked: 2 },
+        },
+      } as any)}
+      accent="#4f46e5"
+      log={[]}
+    />
+  );
+  // booked rows come from outreach_truth, not precall_briefs
+  expect(html).toContain('Stefan Hertzberg');
+  expect(html).toContain('Chas Waters');
+  expect(html).not.toContain('Legacy Only Person');
+  // a hand-closed booking with no brief/scan link renders the name, no fabricated link
+  expect(html).toContain('Cool Brand');
+  // booked count (funnel step + journey plate) reads outreach_truth.booked.length, not 1
+  expect(html).toMatch(/>2</);
+  // funnel replied step + "Replies in play" both read funnel.replied_people (19), not
+  // entries.filter(e=>e.replied).length (0, since log is empty)
+  expect(html).toContain('Wrote back');
+  expect((html.match(/>19</g) || []).length).toBeGreaterThanOrEqual(2);
+  // every number sourced from outreach_truth carries the counted_at stamp
+  expect((html.match(/counted 25 Aug/g) || []).length).toBeGreaterThanOrEqual(3);
+});
+
+it('board.outreach_truth absent: falls back to precall_briefs for booked calls and entries[].replied for the funnel/journey replied count, no counted_at stamp', () => {
+  const log: OutreachLogEntry[] = [
+    {
+      prospect_id: 'f1', name: 'Fallback Replier', company: 'Brand F', lane: 'cold',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(thisMonday, 1).toISOString(),
+      messages: [outbound(lastMonday, 'connection_note', 'linkedin')],
+    },
+  ];
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface
+      board={makeBoard({
+        precall_briefs: [{ id: 'legacy1', name: 'Legacy Booked Person', company: 'Old Co', when_str: 'Mon 1 Jan, 9:00 AM' }],
+      })}
+      accent="#4f46e5"
+      log={log}
+    />
+  );
+  expect(html).toContain('Legacy Booked Person');
+  // 1 entry with replied:true -> funnel/journey replied count is 1, the old behaviour
+  expect(html).toContain('Replies in play');
+  expect(html).not.toContain('counted ');
+});
+
 });
