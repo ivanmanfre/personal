@@ -2624,7 +2624,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <div>
               <div className="op-h">I&rsquo;m Ivan. I build the systems agencies promise and never ship.</div>
               <p className="op-b">Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I&rsquo;ll build yours, run it on your real calls first, and you&rsquo;ll see exactly what it catches before you commit to anything.</p>
-              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
+              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://inboundonsteroids.com" target="_blank" rel="noopener noreferrer">inboundonsteroids.com</a></div>
             </div>
           </div>
         </Rev>
@@ -2651,7 +2651,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <Wordmark size={16} />
             <div className="foot-links">
               <a className="book" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
-              <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
+              <a href="https://inboundonsteroids.com" target="_blank" rel="noopener noreferrer">inboundonsteroids.com</a>
             </div>
           </div>
           <p className="foot-fine">Prepared for {companyName}. Built from a live scan of your public presence, scanned {scanDate}. The record above is projected; the open cells are honest.</p>
@@ -2960,7 +2960,15 @@ const LedgerBeforeAfter: React.FC<{ metrics: LedgerMetric[]; who: string }> = ({
     io.observe(el);
     return () => io.disconnect();
   }, [reduce]);
-  const find = (kw: RegExp) => metrics.find((m) => kw.test(m.label || ''));
+  // Every slot below renders at 58px in the `num` face, so only a metric carrying an actual
+  // figure belongs in one. The builder emits TWO metric shapes: the per-prospect arithmetic
+  // trio ("avg reactions · your last 9 posts" / "23"), and a qualitative fallback trio it
+  // swaps in when their engagement is too thin to do the math ("The lead magnet" / "turns
+  // readers into leads"). Matching on the label alone caught the fallback's "The lead magnet"
+  // and printed that sentence as the number, next to a bare hardcoded 0 with no companion
+  // figure — live on 15 of 40 scans before 2026-08-25. Require a digit, and the ledger falls
+  // through its own empty gate below and suppresses itself on the qualitative shape.
+  const find = (kw: RegExp) => metrics.find((m) => kw.test(m.label || '') && /\d/.test(m.value || ''));
   const reactions = find(/reaction/i);
   const readers = find(/reader/i);
   const leads = find(/lead/i);
@@ -3690,7 +3698,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="op-h">I&rsquo;m Iván. I turn a founder&rsquo;s LinkedIn into a revenue line: the posts, the comments under them, and the DMs, through to a booked call.</div>
               <p className="op-b">We run it for you every week. Your posts and lead magnets go out under your name, every reader who engages lands on a list you keep, and the warm ones get a message. I run my own LinkedIn on the same setup I&rsquo;d run for you.</p>
               <p className="cap">The same setup, built for {displayCompany}.</p>
-              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
+              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://inboundonsteroids.com" target="_blank" rel="noopener noreferrer">inboundonsteroids.com</a></div>
             </div>
           </div>
         </section>
@@ -3717,7 +3725,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <Wordmark size={16} />
             <div className="foot-links">
               <a className="book" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
-              <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
+              <a href="https://inboundonsteroids.com" target="_blank" rel="noopener noreferrer">inboundonsteroids.com</a>
             </div>
           </div>
           <p className="foot-fine">Prepared for {founderFull}. Read from a live scan of your public presence, {scanDate}. Every sample above was drafted from your own material and is ready to ship.</p>
