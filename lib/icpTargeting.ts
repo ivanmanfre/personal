@@ -154,11 +154,17 @@ export function deriveIcpTargeting(
       reason: reasonFor(p.source),
     }));
 
-  if (leads.length < MIN_SAMPLE_LEADS) return null;
+  // The floor is on the LEAD EXHIBIT, not on the block (2026-08-25). Naming the buyer and
+  // naming three real people around them are separate claims resting on separate evidence:
+  // the first is read off the prospect's own business, the second off an audience audit that
+  // returns nothing on a founder whose posts draw single-digit reactions. Failing the whole
+  // block on the second gate hid the first from every such prospect, which is most of them.
+  // Below the floor the exhibit drops and the buyer line still ships.
+  const shown = leads.length >= MIN_SAMPLE_LEADS ? leads : [];
 
   const poolLabels = (targeting.pool_sources ?? [])
     .filter((s): s is PoolSource => s in POOL_LABELS)
     .map((s) => POOL_LABELS[s]);
 
-  return { icpLine, segments: targeting.segments ?? [], leads, poolLabels };
+  return { icpLine, segments: targeting.segments ?? [], leads: shown, poolLabels };
 }

@@ -23,10 +23,19 @@ describe('deriveIcpTargeting', () => {
     expect(deriveIcpTargeting(undefined, { named: namedThree })).toBeNull();
   });
 
-  it('returns null when fewer than MIN_SAMPLE_LEADS named people exist', () => {
+  it('drops the lead exhibit but keeps the buyer line when fewer than MIN_SAMPLE_LEADS exist', () => {
     expect(MIN_SAMPLE_LEADS).toBe(3);
     const result = deriveIcpTargeting(fullTargeting, { named: namedThree.slice(0, 2) });
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result!.icpLine).toBe('DTC skincare founders running $100k to $1M a month');
+    expect(result!.leads).toEqual([]);
+  });
+
+  it('drops the lead exhibit when the audience audit named nobody', () => {
+    const result = deriveIcpTargeting(fullTargeting, { named: [] });
+    expect(result).not.toBeNull();
+    expect(result!.leads).toEqual([]);
+    expect(result!.segments.length).toBeGreaterThan(0);
   });
 
   it('returns null when icp_line is blank', () => {

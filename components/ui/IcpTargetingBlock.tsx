@@ -42,19 +42,24 @@ const IcpTargetingBlock: React.FC<{ data: DerivedIcpTargeting; who: string }> = 
       </div>
     )}
 
-    <div className="icp-leads">
-      {/* Claims provenance, never a match. These names come from audience.named, which is
-          counted audience data; nothing here checks any one of them against the ICP line
-          above, so this heading must not imply that it did. */}
-      <span className="icp-k">Real people already around you, {who}</span>
-      {data.leads.map((lead, i) => (
-        <div className="icp-lead-row" key={`${i}-${lead.name}`}>
-          <span className="icp-name">{lead.name}</span>
-          <span className="icp-headline">{lead.headline}</span>
-          <span className="icp-reason">{lead.reason}</span>
-        </div>
-      ))}
-    </div>
+    {/* Empty whenever the audience audit could not name enough real people; deriveIcpTargeting
+        drops the list below its floor rather than failing the whole block, so the buyer line
+        above still ships. An exhibit heading over one or two names invites the count. */}
+    {data.leads.length > 0 && (
+      <div className="icp-leads">
+        {/* Claims provenance, never a match. These names come from audience.named, which is
+            counted audience data; nothing here checks any one of them against the ICP line
+            above, so this heading must not imply that it did. */}
+        <span className="icp-k">Real people already around you, {who}</span>
+        {data.leads.map((lead, i) => (
+          <div className="icp-lead-row" key={`${i}-${lead.name}`}>
+            <span className="icp-name">{lead.name}</span>
+            <span className="icp-headline">{lead.headline}</span>
+            <span className="icp-reason">{lead.reason}</span>
+          </div>
+        ))}
+      </div>
+    )}
 
     <p className="icp-gov">
       Every profile gets a liveness check before it enters the send queue, and the lane runs
