@@ -311,9 +311,14 @@ interface OutreachSpec {
     people: { name: string; role?: string; company?: string; domain?: string; linkedin_url?: string; one_liner?: string; caveat?: string }[];
   };
   /** Named candidate list awaiting the client's bless (live boards). Every item is a REAL
-   *  sourced person — no samples here, ever. Groups map to lanes. */
+   *  sourced person — no samples here, ever. Groups map to lanes.
+   *  list_url + list_count: when the CURRENT full list lives on its own shared review
+   *  page (e.g. ARCH's cycle-1 page), the panel links there with that page's own count
+   *  instead of drilling into the in-blob excerpt, which goes stale between cycles.
+   *  Both keys absent -> the in-blob names render exactly as before. */
   candidates?: {
     title?: string; note?: string;
+    list_url?: string; list_count?: number;
     groups: {
       key?: string; name: string; badge?: string; note?: string;
       items: { name: string; role?: string; company?: string; domain?: string; note?: string; linkedin_url?: string }[];
@@ -6177,6 +6182,14 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
           <LeadsBlockHead n="05" label="the first list" sub="name by name" />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
+            {/* Same current-list pointer the desk skin renders, so the two branches
+                cannot show two different lists. */}
+            {o.candidates.list_url && (
+              <p className="mt-3 text-[13px] font-semibold" style={{ color: INK }}>
+                The current list: {typeof o.candidates.list_count === 'number' ? o.candidates.list_count : (o.candidates.groups || []).reduce((n, g) => n + (g.items || []).length, 0)} names, on your review page{' '}
+                <a href={o.candidates.list_url} target="_blank" rel="noreferrer" className="underline underline-offset-2" style={{ color: caText(accent) }}>open the list</a>
+              </p>
+            )}
             <div className="mt-4 space-y-2.5">
               {o.candidates.groups.map((g, gi) => (
                 <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>

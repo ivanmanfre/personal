@@ -745,8 +745,24 @@ export default function DeskOutreachSurface({
               );
             })}
 
-            {/* 8 — candidate Drill: names + companies only, never a fit/score chip. */}
-            {candidateRows.length > 0 && (
+            {/* 8 — the current list. When the full list lives on its own shared review
+                page (candidates.list_url), the row links straight there and carries that
+                page's own count: the in-blob excerpt goes stale between cycles, and a
+                stale count on this line is exactly the drift the review page exists to
+                prevent. No list_url -> the in-blob Drill renders unchanged. */}
+            {o.candidates?.list_url ? (
+              <a
+                href={o.candidates.list_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '9px 0', borderTop: '1px solid var(--cb-line)', textDecoration: 'none' }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-soft)', flex: '1 1 240px', minWidth: 0 }}>
+                  The current list: <b>{o.candidates.list_count ?? candidateRows.length}</b> name{(o.candidates.list_count ?? candidateRows.length) === 1 ? '' : 's'}, on your review page
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>open the list</span>
+              </a>
+            ) : candidateRows.length > 0 && (
               <Drill label="open it" summaryLeft={<>The current list: <b>{candidateRows.length}</b> name{candidateRows.length === 1 ? '' : 's'}</>}>
                 {candidateRows.map((r, i) => (
                   <div key={`${r.name}-${r.company || ''}-${i}`} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '8px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
