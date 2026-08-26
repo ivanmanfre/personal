@@ -366,6 +366,10 @@ interface Board {
   company_name: string;
   domain?: string;
   logo_url?: string;
+  /** Review mode (2026-08-26, ARCH first): live boards with this flag get the preview
+   *  Approve/Request-changes bar in the detail modal, server-hydrated approve ticks and
+   *  numbered edit versions. Absent (RISE) → the live board renders exactly as before. */
+  review_mode?: boolean;
   founder?: { name?: string; headline?: string; first_name?: string; avatar_url?: string };
   brand?: BoardBrand;
   site?: { nav?: string[]; phone?: string; cta?: string };
@@ -3442,7 +3446,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory, reviewMode = false, approved = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
@@ -3451,6 +3455,11 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   onHideBuffer?: (id: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: draft history from the insert-only actions audit. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
+  /** Review mode (board.review_mode): live board gets the Approve/Request-changes bar
+   *  and numbered edit versions. Approve marks — it NEVER schedules. */
+  reviewMode?: boolean;
+  /** Whether this draft already carries the client's approve mark. */
+  approved?: boolean;
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
@@ -3579,6 +3588,13 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id]);
+  // Review mode: number the edit chain so the client reads versions, not a log. The RPC
+  // returns newest-first; v1 is the original draft, each applied edit produces the next.
+  const editRows = (history || []).filter((x) => x.action === 'edit_copy');
+  const versionOf = (h: HistoryEntry): number | null => {
+    const k = editRows.indexOf(h);
+    return k < 0 ? null : editRows.length - k + 1;
+  };
   const historyLabel = (h: HistoryEntry): string => {
     if (h.action === 'edit_copy') return 'Copy edited';
     if (h.action === 'approve') return 'Approved';
@@ -3609,7 +3625,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Honest source chip for the modal (call quote included).
   const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = stage === 'review' ? (isLive
-      ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.'
+      ? (reviewMode
+          ? 'Approve it, edit it, or request a change. Approving marks it good to post — the date stays with your operator. Every change lands in the log.'
+          : 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.')
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
     : stage === 'scheduled' ? (isLive ? 'Scheduled. It publishes on its date.' : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
@@ -3931,7 +3949,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div key={i} className="flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
                     <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{historyLabel(h)}{h.by ? <span style={{ fontWeight: 400, color: DIM }}> · {h.by}</span> : null}</span>
+                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}{h.by ? <span style={{ fontWeight: 400, color: DIM }}> · {h.by}</span> : null}</span>
                       {h.note && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
                       {h.action === 'edit_copy' && h.after && (h.before ? (
                         openDiff === i ? (
@@ -3996,10 +4014,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             </div>
           </div>
         )}
-        {/* Preview: approve stays visible while the body scrolls. */}
-        {canAct && !isLive && (
+        {/* Preview boards + review-mode live boards: approve stays visible while the body
+            scrolls. On live, Approve MARKS for the operator — it never schedules or arms. */}
+        {canAct && (!isLive || reviewMode) && (
           <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
+              {isLive && approved ? (
+                <span className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 uppercase" style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', border: `1px solid ${caText(accent)}`, color: caText(accent), background: caWash(accent, 8) }}>
+                  Approved ✓
+                </span>
+              ) : (
               <motion.button
                 onClick={() => { onApprove(item.id); onClose(); }}
                 whileTap={{ scale: 0.98 }}
@@ -4011,6 +4035,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               >
                 Approve ✓
               </motion.button>
+              )}
               <button
                 onClick={() => setChanging(!changing)}
                 className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
@@ -7406,7 +7431,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
  *  import types + the platform-artifact components from here; the page imports the desk
  *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
  *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
-export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
+export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
 export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
 
 export default function ClientBoardPage() {
@@ -7530,6 +7555,9 @@ export default function ClientBoardPage() {
   // Live-mode flag readable from callbacks defined above the mode derivation (kept in sync
   // during render below). Live boards route actions through the real client_board_action RPC.
   const isLiveRef = useRef(false);
+  // Review-mode flag, same posture: set during render, read from the slot-state effect so
+  // approved hydration can never fire on a board without the flag (RISE stays untouched).
+  const reviewModeRef = useRef(false);
   const flashTimer = useRef<number>(0);
   const introTimers = useRef<number[]>([]);
   // Undo window after an action: toast with Z / click to restore the row.
@@ -7772,7 +7800,7 @@ export default function ClientBoardPage() {
         }
         if (cancelled) return;
         if (!sResp.error) {
-          const out = sResp.data as { ok?: boolean; removed?: string[]; replacements?: { ref: string; draft_id: string; title?: string; hook?: string }[]; left_empty?: string[] } | null;
+          const out = sResp.data as { ok?: boolean; removed?: string[]; replacements?: { ref: string; draft_id: string; title?: string; hook?: string }[]; left_empty?: string[]; approved?: string[] } | null;
           if (out?.ok) {
             const removed: Record<string, true> = {};
             (out.removed || []).forEach((id) => { removed[id] = true; });
@@ -7783,6 +7811,15 @@ export default function ClientBoardPage() {
             const empty: Record<string, true> = {};
             (out.left_empty || []).forEach((id) => { empty[id] = true; });
             setLeftEmpty(empty);
+            // Review mode only: approvals reconstructed from the actions audit, so the tick
+            // survives any device. Local state wins where this session already acted.
+            if (reviewModeRef.current && Array.isArray(out.approved) && out.approved.length > 0) {
+              setStageOverride((s) => {
+                const merged: Record<string, Stage> = {};
+                out.approved!.forEach((id) => { merged[id] = 'scheduled'; });
+                return { ...merged, ...s };
+              });
+            }
           }
         }
         if (!pResp.error) {
@@ -8534,6 +8571,8 @@ export default function ClientBoardPage() {
   // removal (Voice + standalone Photos), real RPC actions, and the pricing/pause hide.
   const isLive = !isPreview;
   isLiveRef.current = isLive;
+  const reviewMode = isLive && !!board?.review_mode;
+  reviewModeRef.current = reviewMode;
 
   // Per-board share metadata (mirrors ScanReportPage). Sets the title + a NEUTRAL OG about
   // a content preview built for this company — never Ivan's agency pitch — and an OG image
@@ -9193,6 +9232,8 @@ export default function ClientBoardPage() {
           setSchedule={isLive ? setScheduleRPC : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
+          reviewMode={reviewMode}
+          approved={approvedIds.has(detail.id)}
         />
       )}
       {ideaPreview && (
