@@ -7461,6 +7461,19 @@ export default function ClientBoardPage() {
   // filter sitting on a tab nobody had opened yet, and /panel/content/personal/ looked
   // identical to /panel/. DeskReviewSurface reads the same params for the pill state.
   const [tab, setTab] = useState<TabId>(() => (params.get('cat') || params.get('topic') || params.get('aim')) ? 'review' : 'week');
+  // Section deep links (2026-08-26): #<tab-id> opens that section directly and follows
+  // later hash changes, so /client/<slug>?k=...#calendar or #performance is shareable.
+  // The 404→SPA restore script already preserves the hash on deep-linked loads. The hash
+  // is written by goTab below via replaceState — navigation never spams history.
+  useEffect(() => {
+    const apply = () => {
+      const h = window.location.hash.replace(/^#/, '').toLowerCase();
+      if (h && TABS.some((t) => t.id === h)) setTab(h as TabId);
+    };
+    apply();
+    window.addEventListener('hashchange', apply);
+    return () => window.removeEventListener('hashchange', apply);
+  }, []);
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
   const [detailEditing, setDetailEditing] = useState(false);
@@ -8756,7 +8769,11 @@ export default function ClientBoardPage() {
   const scheduledCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id] && isScheduled(q)).length;
   const bufferCount = reviewCount - scheduledCount;
   const founderName = board.founder?.name || board.company_name;
-  const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
+  const goTab = (id: TabId) => {
+    setTab(id);
+    try { history.replaceState(null, '', `#${id}`); } catch { /* sandboxed iframe */ }
+    window.scrollTo({ top: 0 });
+  };
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
   // fold into the content surface). Team (self-serve invites) is live-only — preview
   // boards are demo funnels with no allow-list to manage.

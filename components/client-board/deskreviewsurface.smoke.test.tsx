@@ -22,17 +22,29 @@ import type { Board, QueueItem, HistoryEntry } from '../ClientBoardPage';
 
 const ACCENT = '#FFC71D';
 
-/* The calendar-strip span, derived exactly the way DeskCalendarStrip derives it: the Monday
-   on or before the first dated day (the fixture's engine start, 20 Jul) through the Sunday
-   that closes the LAST dated day — which is the fixture's ships-today post, i.e. today. */
+/* The calendar-strip span, derived exactly the way DeskCalendarStrip derives it after the
+   2026-08-26 history floor: marks older than 4 weeks are dropped (unless that would empty
+   the strip), the engine start may pull the span back only to the floor, then Monday on or
+   before the first surviving dated day through the Sunday closing the last one. Derived,
+   not typed, so the assertions track today's date instead of rotting. */
 const CAL_DAY_MS = 86400000;
 const calParse = (s: string) => new Date(`${s}T00:00:00`);
-const calTodayIso = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
-const CAL_SPAN_START = calParse('2026-07-20'); // a Monday, and the fixture's earliest dated day
-const CAL_LAST_DATED = [calTodayIso, '2026-08-06', '2026-07-22'].sort().pop() as string;
+const calIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const calMonday = (d: Date) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const calTodayIso = calIso(new Date());
+const CAL_ALL_DATED = [calTodayIso, '2026-08-06', '2026-07-22', '2026-07-20'];
+const CAL_FLOOR_ISO = calIso(calMonday(new Date(Date.now() - 28 * CAL_DAY_MS)));
+const calRecent = CAL_ALL_DATED.filter((d) => d >= CAL_FLOOR_ISO);
+const CAL_DATED = (calRecent.length ? calRecent : CAL_ALL_DATED).slice().sort();
+const CAL_ENGINE_START = '2026-07-20'; // the fixture's calendar.start
+const calSpanFrom = CAL_ENGINE_START < CAL_DATED[0] && CAL_ENGINE_START >= CAL_FLOOR_ISO ? CAL_ENGINE_START : CAL_DATED[0];
+const CAL_SPAN_START = calMonday(calParse(calSpanFrom));
+const CAL_LAST_DATED = CAL_DATED[CAL_DATED.length - 1];
 const CAL_WEEKS = Math.max(1, Math.min(10, Math.floor(Math.round((calParse(CAL_LAST_DATED).getTime() - CAL_SPAN_START.getTime()) / CAL_DAY_MS) / 7) + 1));
-const CAL_GRID_END = new Date(CAL_SPAN_START.getTime() + (CAL_WEEKS * 7 - 1) * CAL_DAY_MS)
-  .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const calShort = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const CAL_SPAN_LABEL = `Calendar · ${calShort(CAL_SPAN_START)} to ${calShort(new Date(CAL_SPAN_START.getTime() + (CAL_WEEKS * 7 - 1) * CAL_DAY_MS))}`;
+const CAL_MARK_COUNT = CAL_DATED.length;
+const CAL_GRID_END = calShort(new Date(CAL_SPAN_START.getTime() + (CAL_WEEKS * 7 - 1) * CAL_DAY_MS));
 
 /** 2026-08-07 contract: Published / Changes log / Photo library start collapsed. Tests that
  *  assert their CONTENT click the header open first (header itself always renders). */
@@ -287,20 +299,18 @@ describe('DeskReviewSurface', () => {
     );
 
     // Header: computed range + a real, gate-visible "dated slots" metric.
-    // The span is derived, not typed: the fixture's ships-today post is dated TODAY, so the
-    // strip grows a row every time the calendar week turns over. Hardcoding the end date
-    // ("9 Aug") made this assertion rot on 2026-08-10 — it is now read from the same rule
-    // the strip uses (Monday on/before the first dated day → Sunday closing the last one).
-    expect(html).toContain(`Calendar · 20 Jul to ${CAL_GRID_END}`);
+    // The span AND the mark count are derived through the same floor rule the strip uses
+    // (see the CAL_* block at the top of this file), so the assertions track today's date
+    // instead of rotting as fixture dates age past the 4-week history floor.
+    expect(html).toContain(CAL_SPAN_LABEL);
     expect(html).toContain('dated slots');
     expect(html).toContain('data-metric');
-    // 4 dated queue posts (today's, 6 Aug, 20 Jul published) + 1 committed calendar entry.
-    expect(html).toMatch(/>4</);
+    expect(html).toMatch(new RegExp(`>${CAL_MARK_COUNT}<`));
 
     // Marks, not words: drawn bars inside a data-viz grid, and a clickable day per item.
     expect(html).toContain('data-viz');
-    expect((html.match(/class="bar"/g) || []).length).toBe(4);
-    expect((html.match(/<button/g) || []).length).toBe(4);
+    expect((html.match(/class="bar"/g) || []).length).toBe(CAL_MARK_COUNT);
+    expect((html.match(/<button/g) || []).length).toBe(CAL_MARK_COUNT);
     // Whole week rows of 7 day cells, however many the derived span needs.
     expect((html.match(/height:58px/g) || []).length).toBe(CAL_WEEKS * 7);
     // Zero prose.

@@ -140,7 +140,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   const linkedRefs = new Set(calItemsAll.map((it) => it.ref).filter(Boolean) as string[]);
   const queueItems = (board.queue || []).filter((q) => q.publish_date && !linkedRefs.has(q.id) && (!queueFilter || queueFilter(q)));
 
-  const marks: Mark[] = [
+  const allMarks: Mark[] = [
     ...calItems.map((it) => {
       const linked = it.ref ? (board.queue || []).find((q) => q.id === it.ref) : undefined;
       return {
@@ -160,6 +160,17 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
     })),
   ].sort((a, b) => a.item.date.localeCompare(b.item.date));
 
+  // ---- History floor (2026-08-26). Boards that import the client's LinkedIn archive
+  // carry `published` marks dated years back (ARCH: May 2025). Spanning from the archive
+  // minimum, with the 10-row cap below, rendered ONLY the archive and cropped the actual
+  // plan clean off the grid ("Calendar · 26 May to 3 Aug" — of last year). This is a
+  // month strip: anything dated more than 4 weeks before today belongs to the list views.
+  // If every mark is older than the floor (stale demo board), fall back to the old span
+  // rather than claiming "no dated slots".
+  const floorIso = isoOf(mondayOf(new Date(Date.now() - 28 * DAY_MS)));
+  const recentMarks = allMarks.filter((m) => m.item.date >= floorIso);
+  const marks = recentMarks.length > 0 ? recentMarks : allMarks;
+
   if (marks.length === 0) {
     return (
       <div data-surface="calendar-strip" style={{ marginTop: 20 }}>
@@ -177,8 +188,12 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   // single stray date can never turn the strip into a wall. ----
   const firstDated = marks[0].item.date;
   const lastDated = marks[marks.length - 1].item.date;
+  // The engine start can pull the span back, but never past the history floor: a board
+  // whose engine started months ago would otherwise regrow the same stale wall the floor
+  // exists to prevent.
   const engineStart = board.calendar?.start;
-  const spanStart = mondayOf(parseIso(engineStart && engineStart < firstDated ? engineStart : firstDated));
+  const spanFrom = engineStart && engineStart < firstDated && engineStart >= floorIso ? engineStart : firstDated;
+  const spanStart = mondayOf(parseIso(spanFrom));
   // Math.round on the ms delta, never a raw divide: a DST boundary inside the span shifts
   // it by an hour and a bare ceil() would buy a whole empty row.
   const spanDays = Math.round((parseIso(lastDated).getTime() - spanStart.getTime()) / DAY_MS);
