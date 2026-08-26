@@ -107,12 +107,16 @@ describe('DeskOutreachSurface', () => {
     expect(html).toMatch(/<details class="drill"(?![^>]*open)[^>]*>/);
     expect(html).not.toMatch(/<details class="drill"[^>]*\bopen\b/);
 
-    // two full weeks of history -> the muted last-week row renders alongside the strong
-    // this-week row, for all four channel categories (invites/DMs/InMails/wrote back).
-    expect(html).toContain('2 live weeks of data: direction, not a trend');
-    // both rows carry explicit dated labels now (a Sunday 'this week' collided with the This-week tab)
+    // The log reaches back one closed week only, so the plate draws that closed week and
+    // prints the week in progress under it as a separate "so far" line. A part week is
+    // never drawn beside a full one (Ivan, 2026-08-26).
+    expect(html).toContain('1 closed week of sends so far');
+    expect(html).not.toContain('2 closed weeks side by side');
+    // both rows carry explicit dated labels (a Sunday 'this week' collided with the This-week tab)
     expect((html.match(/w\/ /g) || []).length).toBeGreaterThanOrEqual(8);
-    expect((html.match(/w\/ /g) || []).length).toBeGreaterThanOrEqual(4);
+    // the running week says how far into it we are, and never claims a pace
+    expect(html).toMatch(/of 5 send days in/);
+    expect(html).not.toMatch(/on pace/i);
 
     // foldLeads is folded in behind its own collapsed drill
     expect(html).toContain('FOLD LEADS');
@@ -134,12 +138,13 @@ describe('DeskOutreachSurface', () => {
       <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={log} />
     );
 
-    expect(html).toMatch(/w\/ \d+ \w+, Mon-Fri/);
-    // no two-week comparison chip, no muted "w/ <date>" rows
-    expect(html).not.toContain('2 live weeks of data: direction, not a trend');
-    // dated labels render on every row now; no-comparison means exactly one dated row per group (4), never two
+    expect(html).toMatch(/w\/ \d+ \w+, so far/);
+    // no closed-week comparison at all: nothing has closed yet
+    expect(html).not.toContain('2 closed weeks side by side');
+    expect(html).not.toContain('1 closed week of sends so far');
+    // exactly one dated row per group (4), the running week, never a closed-week bar
     expect((html.match(/w\/ \d+ \w+/g) || []).length).toBe(4);
-    expect(html).toContain("Less than 2 weeks of sends so far");
+    expect(html).toContain('Less than a full week of sends so far');
   });
 
   it('shows the honest not-started state on an empty log, never a fabricated zero', () => {
@@ -189,13 +194,14 @@ describe('DeskOutreachSurface', () => {
     const html = renderToStaticMarkup(
       <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={log} />
     );
-    // inside the weekly plate: exactly one non-zero width (last week's single invite, scaled
-    // to its own group max), the other seven bars — including both all-zero groups — at 0%.
+    // inside the weekly plate: one bar per group (only the closed week is drawn), exactly one
+    // non-zero width (the closed week's single invite, scaled to its own group max), the
+    // other three — including the all-zero groups — at 0%.
     const plate = html.slice(html.indexOf('Week against week'), html.indexOf('Everyone contacted so far'));
     const widths = (plate.match(/class="barfill"[^>]*?width:\s*([\d.]+)%/g) || [])
       .map((s) => parseFloat((s.match(/width:\s*([\d.]+)%/) as RegExpMatchArray)[1]));
-    expect(widths.length).toBe(8);
-    expect(widths.filter((w) => w === 0).length).toBe(7);
+    expect(widths.length).toBe(4);
+    expect(widths.filter((w) => w === 0).length).toBe(3);
     expect(widths.filter((w) => w === 100).length).toBe(1);
     // and a zero-width fill carries no min-width stub
     expect(html).toMatch(/width:0%;min-width:0/);
@@ -295,12 +301,14 @@ describe('DeskOutreachSurface', () => {
     expect(html).toContain('Pre-call brief');
   });
 
-  it('drops any numeric fit/score chip from the candidate list', () => {
+  it('prints the current-list count on one line and never the roster of names behind it', () => {
     const html = renderToStaticMarkup(
       <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={[]} />
     );
-    expect(html).toContain('Cole Haith');
-    expect(html).toContain('Heather Chan');
+    // Ivan cut the name-by-name dump 2026-08-26: the count survives, the directory does not
+    expect(html).toContain('The current list: <b>2</b> names sourced and cleared');
+    expect(html).not.toContain('Cole Haith');
+    expect(html).not.toContain('Heather Chan');
     expect(html).not.toMatch(/ICP/i);
     expect(html).not.toContain('co3-icp');
   });
@@ -410,9 +418,11 @@ it('post-patch feed: inbound-people count, the Accepted row with its definition 
   expect(html).toContain('Open profile messages');
   expect(html).toContain('free, no connection needed');
   expect(html).toContain('uses the monthly InMail allowance');
-  // connected_at present -> the Accepted row renders, with its landed-definition line
+  // connected_at present -> the Accepted row renders, with its landed-definition line, which
+  // also explains why the running week carries no comparison for that row
   expect(html).toContain('invites that turned into connections');
-  expect(html).toContain('Accepted counts the week the accept landed, not the week the invite went out');
+  expect(html).toContain('Accepted counts the week the accept landed');
+  expect(html).toContain('carries no comparison against last week');
 });
 
 it('board.outreach_truth present: booked count + list, funnel replied, and journey plate read from it, stamped with counted_at — precall_briefs ignored', () => {
@@ -475,6 +485,94 @@ it('board.outreach_truth absent: falls back to precall_briefs for booked calls a
   // 1 entry with replied:true -> funnel/journey replied count is 1, the old behaviour
   expect(html).toContain('Replies in play');
   expect(html).not.toContain('counted ');
+});
+
+/* ── Ivan's 2026-08-26 board review ─────────────────────────────────────────────────── */
+
+it('a switched-off campaign drops its lane, and switching it back on brings the lane back', () => {
+  const statusFor = (coldActive: boolean) => ({
+    is_live: true, any_active: true, dispatch_scheduled: true,
+    campaigns: [
+      { key: 'warm', name: 'Warm engagers', active: true },
+      { key: 'orbit', name: 'Client orbit', active: true },
+      { key: 'cold', name: 'Cold', active: coldActive },
+    ],
+    todays_sends: 0, daily_cap: 20, next_window_at: null, up_next: [],
+  }) as never;
+
+  const off = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={[]} status={statusFor(false)} />
+  );
+  expect(off).not.toContain('Pure cold');
+  expect(off).not.toContain('waiting in the queue');
+  expect(off).toContain('Client engager');
+
+  // nothing is hidden by name: flip the campaign back on and the lane returns on its own
+  const on = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={[]} status={statusFor(true)} />
+  );
+  expect(on).toContain('Pure cold');
+});
+
+it('the trail lists the people who said yes, not everyone we ever wrote to', () => {
+  const log: OutreachLogEntry[] = [
+    {
+      prospect_id: 'y1', name: 'Yes Person', company: 'Brand Y', lane: 'orbit',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(thisMonday, 1).toISOString(),
+      messages: [outbound(lastMonday, 'dm', 'linkedin')],
+    },
+    {
+      prospect_id: 'n1', name: 'No Thanks Person', company: 'Brand N', lane: 'orbit',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(thisMonday, 1).toISOString(),
+      messages: [outbound(lastMonday, 'dm', 'linkedin')],
+    },
+    {
+      prospect_id: 's1', name: 'Silent Person', company: 'Brand S', lane: 'orbit',
+      reply_count: 0, replied: false, last_sent_at: lastMonday.toISOString(), last_reply_at: null,
+      messages: [outbound(lastMonday, 'dm', 'linkedin')],
+    },
+  ];
+  const truth = {
+    counted_at: '2026-08-26T10:01:00Z',
+    booked: [],
+    replied_7d: [
+      { name: 'Yes Person', company: 'Brand Y', linkedin_profile_id: null, last_reply_at: addDays(thisMonday, 1).toISOString(), reply_intent: 'positive' },
+      { name: 'No Thanks Person', company: 'Brand N', linkedin_profile_id: null, last_reply_at: addDays(thisMonday, 1).toISOString(), reply_intent: 'negative' },
+    ],
+    replied_weekly: [],
+    funnel: { contacted: 3, accepted: 2, replied_people: 2, booked: 0 },
+  };
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard({ outreach_truth: truth } as any)} accent="#4f46e5" log={log} />
+  );
+  expect(html).toContain('The people who said yes: <b>1</b>');
+  // the trail itself carries only the positive replier; the roster above still names everyone
+  expect((html.match(/id="sendlog-yes-person"/g) || []).length).toBe(1);
+  expect(html).not.toContain('id="sendlog-no-thanks-person"');
+  expect(html).not.toContain('id="sendlog-silent-person"');
+});
+
+it('a board whose blob carries no reply intents keeps the whole send log', () => {
+  const log: OutreachLogEntry[] = [
+    {
+      prospect_id: 'u1', name: 'Unlabelled Person', company: 'Brand U', lane: 'orbit',
+      reply_count: 1, replied: true, last_sent_at: lastMonday.toISOString(), last_reply_at: addDays(thisMonday, 1).toISOString(),
+      messages: [outbound(lastMonday, 'dm', 'linkedin')],
+    },
+  ];
+  const truth = {
+    counted_at: '2026-08-26T10:01:00Z',
+    booked: [],
+    replied_7d: [{ name: 'Unlabelled Person', company: 'Brand U', linkedin_profile_id: null, last_reply_at: addDays(thisMonday, 1).toISOString(), reply_intent: null }],
+    replied_weekly: [],
+    funnel: { contacted: 1, accepted: 1, replied_people: 1, booked: 0 },
+  };
+  const html = renderToStaticMarkup(
+    <DeskOutreachSurface board={makeBoard({ outreach_truth: truth } as any)} accent="#4f46e5" log={log} />
+  );
+  expect(html).toContain('id="sendlog-unlabelled-person"');
+  expect(html).toContain('messages out');
+  expect(html).not.toContain('The people who said yes');
 });
 
 });

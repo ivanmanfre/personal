@@ -93,6 +93,76 @@ export function openSendLogFor(ev: React.MouseEvent, anchorId: string): void {
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+/* ══════════════════════════ positive repliers (shared) ══════════════════════════ */
+
+/**
+ * The people whose MOST RECENT inbound message reads as interested, keyed by the same
+ * send-log anchor id both branches already use. Ivan, reviewing the live board 2026-08-26:
+ * "we dont need full log just positive repliers" — so the per-person trail below the panel
+ * stops being a directory of all 871 people we ever wrote to and becomes the short list of
+ * the ones who said yes, with their message counts and which list they came from.
+ *
+ * Source is `board.outreach_truth.replied_7d`, the SAME server-computed blob the roster
+ * reads, so the trail and the call sheet can never disagree about who is interested. That
+ * blob is a trailing-7-day window, which is deliberately stated wherever this filter is
+ * rendered: a positive reply from three weeks ago is not hidden by us, it is outside the
+ * window the server counts.
+ */
+export function positiveReplierAnchors(ot?: OutreachTruth | null): Set<string> {
+  const out = new Set<string>();
+  for (const r of (ot?.replied_7d || [])) {
+    if ((r.reply_intent || '').toLowerCase() !== 'positive') continue;
+    const id = sendLogAnchorId(r.name);
+    if (id) out.add(id);
+  }
+  return out;
+}
+
+/**
+ * True when the blob actually carries reply intents. A board that predates the classifier
+ * (or any client whose blob has no labels yet) must keep the full send log rather than
+ * render an empty one: absence of a label is not evidence that nobody was interested.
+ */
+export function hasReplyIntents(ot?: OutreachTruth | null): boolean {
+  return (ot?.replied_7d || []).some((r) => !!r.reply_intent);
+}
+
+/**
+ * The send log, narrowed to the people the blob calls interested. Falls back to the
+ * unfiltered log whenever there is nothing to filter ON, so this can never blank a surface.
+ */
+export function positiveReplierLog<T extends { name?: string | null }>(
+  log: T[] | null | undefined, ot?: OutreachTruth | null,
+): T[] {
+  const entries = log || [];
+  if (!hasReplyIntents(ot)) return entries;
+  const keep = positiveReplierAnchors(ot);
+  if (keep.size === 0) return [];
+  return entries.filter((e) => keep.has(sendLogAnchorId(e.name)));
+}
+
+/* ══════════════════════════ live lanes (shared) ══════════════════════════ */
+
+/**
+ * Lanes the client is actually being worked through. Ivan, 2026-08-26: "dont show the cold
+ * lane since we dont use it". This is NOT a hardcoded hide — it reads the live campaign
+ * state the status RPC already ships (`status.campaigns[].active`, straight off
+ * outreach_campaigns.is_active), so a lane that is switched back on reappears on its own
+ * and no lane is ever singled out by name in the code.
+ *
+ * A lane with no matching campaign entry is left alone (we know nothing about it, so we
+ * claim nothing), and a missing/loading status leaves every lane exactly as it was.
+ */
+export function liveLanes<T extends { key?: string; name?: string }>(
+  lanes: T[], status?: { campaigns?: { key: string; active: boolean }[] } | null,
+): T[] {
+  const camps = status?.campaigns;
+  if (!Array.isArray(camps) || camps.length === 0) return lanes;
+  const off = new Set(camps.filter((c) => c.active === false).map((c) => (c.key || '').toLowerCase()));
+  if (off.size === 0) return lanes;
+  return lanes.filter((ln) => !off.has((ln.key || '').toLowerCase()));
+}
+
 /* ══════════════════════════ vendor scrub (shared) ══════════════════════════ */
 
 /**
@@ -445,7 +515,7 @@ export default function OutreachTopOfPanel({
           {intentsKnown === roster.length && roster.length > 0
             ? 'Every reply here has been read and sorted.'
             : `${intentsKnown} of ${roster.length} replies have been read and sorted so far; the rest carry no label yet.`}{' '}
-          Tap a name to see the messages that went out to them.
+          Each name opens what we hold on them: the messages we sent, or their profile.
         </Footnote>
         {roster.length === 0 ? (
           <Footnote>Nobody has written back in the last 7 days. Names land here the moment one does.</Footnote>

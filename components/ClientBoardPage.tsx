@@ -21,7 +21,10 @@ import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
-import OutreachTopOfPanel, { sendLogAnchorId, scrubVendor, laneName } from './client-board/OutreachTopOfPanel';
+import OutreachTopOfPanel, {
+  sendLogAnchorId, scrubVendor, laneName,
+  liveLanes, positiveReplierLog, hasReplyIntents,
+} from './client-board/OutreachTopOfPanel';
 import type { FunnelSignals } from './client-board/OutreachTopOfPanel';
 import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
@@ -6015,8 +6018,10 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
   }
   // Hide any retired / no-ratified-sequence source (e.g. the dead Network Activation
   // path) from the client view. Same filter on the message sequences so a dead source
-  // never surfaces a message-less shell.
-  const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
+  // never surfaces a message-less shell. liveLanes then drops any source whose campaign is
+  // switched off right now, read live off the status RPC — same call the desk skin makes,
+  // so neither branch can show a list the other one hides.
+  const lanes = liveLanes((o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms)), status);
   const seqChannels = (o.sequences?.channels || []).filter((ch) => !isDeadLane(ch.name));
   // Send state reads the committed campaign status (is_active + the scheduled first-send),
   // never send activity. Falls back to the send-activity heuristic only until status loads.
@@ -6179,54 +6184,21 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
 
         {/* 04 — Named candidate list: real sourced people. */}
         {o.candidates && (o.candidates.groups || []).length > 0 && (<>
-          <LeadsBlockHead n="05" label="the first list" sub="name by name" />
+          <LeadsBlockHead n="05" label="the first list" sub="how many are queued" />
           <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
             {o.candidates.note && <p className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.candidates.note}</p>}
-            {/* Same current-list pointer the desk skin renders, so the two branches
-                cannot show two different lists. */}
-            {o.candidates.list_url && (
-              <p className="mt-3 text-[13px] font-semibold" style={{ color: INK }}>
-                The current list: {typeof o.candidates.list_count === 'number' ? o.candidates.list_count : (o.candidates.groups || []).reduce((n, g) => n + (g.items || []).length, 0)} names, on your review page{' '}
-                <a href={o.candidates.list_url} target="_blank" rel="noreferrer" className="underline underline-offset-2" style={{ color: caText(accent) }}>open the list</a>
-              </p>
-            )}
-            <div className="mt-4 space-y-2.5">
-              {o.candidates.groups.map((g, gi) => (
-                <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
-                  <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{laneName(g.name)}</span>
-                    {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{scrubVendor(g.badge)}</span>}
-                    <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{g.items.length} names <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
-                  </summary>
-                  <div className="px-3.5 pb-3.5">
-                  {g.note && <p className="text-[12px] leading-snug" style={{ color: DIM }}>{g.note}</p>}
-                  <div className="mt-1">
-                    {g.items.map((it) => (
-                      <div key={it.name + (it.company || '')} className="-mx-2 flex flex-col gap-x-3 gap-y-0.5 rounded-md border-t px-2 py-2 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] sm:flex-row sm:items-baseline" style={{ borderColor: DIVIDE }}>
-                        {it.linkedin_url ? (
-                          <a
-                            href={it.linkedin_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="shrink-0 text-[13px] font-semibold underline-offset-2 hover:underline sm:w-44"
-                            style={{ color: INK }}
-                          >{it.name} <span aria-hidden style={{ color: FAINT }}>↗</span></a>
-                        ) : (
-                          <span className="shrink-0 text-[13px] font-semibold sm:w-44" style={{ color: INK }}>{it.name}</span>
-                        )}
-                        <span className="min-w-0 flex-1 text-[12.5px] leading-snug" style={{ color: DIM }}>
-                          {[it.role, it.company].filter(Boolean).join(' · ')}
-                          {it.domain && <> · <span style={{ fontFamily: MONO, fontSize: 11 }}>{it.domain}</span></>}
-                        </span>
-                        {it.note && <span className="shrink-0 text-[11px]" style={{ fontFamily: MONO, color: FAINT }}>{it.note}</span>}
-                      </div>
-                    ))}
-                  </div>
-                  </div>
-                </details>
-              ))}
-            </div>
+            {/* The count, on one line, with no roster behind it. Ivan cut the name-by-name
+                dump on 2026-08-26 — the panel answers who is talking to him, and a list of
+                people he has not met yet is a directory. Same shape the desk skin renders,
+                so the two branches cannot show two different lists. */}
+            <p className="mt-3 text-[13px] font-semibold" style={{ color: INK }}>
+              The current list: {typeof o.candidates.list_count === 'number' ? o.candidates.list_count : (o.candidates.groups || []).reduce((n, g) => n + (g.items || []).length, 0)} names
+              {o.candidates.list_url ? (
+                <>{' '}sourced and cleared, on your review page{' '}
+                  <a href={o.candidates.list_url} target="_blank" rel="noreferrer" className="underline underline-offset-2" style={{ color: caText(accent) }}>open the list</a>
+                </>
+              ) : <>{' '}sourced and cleared, waiting their turn</>}
+            </p>
           </div>
         </>)}
 
@@ -6341,15 +6313,23 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
             outreach_messages (never baked JSON). Honest empty until sends go live. This is
             also the trail a roster name click opens at the top of the panel: each row
             carries the shared anchor id, so no second trail component exists. */}
-        <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
+        <LeadsBlockHead
+          n="08"
+          label="send log"
+          sub={hasReplyIntents(ot) ? 'the people who said yes, and every message that went to them' : 'every message actually sent, from the live record'}
+        />
         <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
           {(!log || log.length === 0) ? (
             <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
               Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment sends go live, with the date it went out and whether they replied. This reads the live send record, not a sample.
             </p>
+          ) : positiveReplierLog(log, ot).length === 0 ? (
+            <p className="text-[12.5px] leading-relaxed" style={{ fontFamily: BODY, color: INK_MUTE }}>
+              Nobody has come back interested in the last 7 days. The moment someone does, their name and every message that went to them land here.
+            </p>
           ) : (
             <div className="space-y-2.5">
-              {log.map((entry) => {
+              {positiveReplierLog(log, ot).map((entry) => {
                 const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
                 return (
                   <details key={entry.prospect_id} id={sendLogAnchorId(entry.name) || undefined} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>

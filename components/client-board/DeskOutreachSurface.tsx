@@ -27,7 +27,10 @@ import {
   Cols, Card, PlateMute, PlateRule,
 } from './desk-kit';
 import type { FunnelStep } from './desk-kit';
-import OutreachTopOfPanel, { sendLogAnchorId, countedStamp, scrubVendor, laneName } from './OutreachTopOfPanel';
+import OutreachTopOfPanel, {
+  sendLogAnchorId, countedStamp, scrubVendor, laneName,
+  liveLanes, positiveReplierLog, hasReplyIntents,
+} from './OutreachTopOfPanel';
 import type { FunnelSignals } from './OutreachTopOfPanel';
 import { inkOn, caText } from '../ClientBoardPage';
 import type { Board, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus } from '../ClientBoardPage';
@@ -178,7 +181,10 @@ export default function DeskOutreachSurface({
     );
   }
 
-  const lanes = (o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms));
+  // Retired lanes are filtered by name; switched-off lanes are filtered by their LIVE
+  // campaign state (see liveLanes). Two different questions, two different sources, and
+  // neither one names a lane in code.
+  const lanes = liveLanes((o.lanes || []).filter((ln) => !isDeadLane(ln.name, ln.status, ln.arms)), status);
   const entries = log || [];
 
   // ── Flatten the live send log once: every real outbound/inbound message, across every
@@ -201,6 +207,21 @@ export default function DeskOutreachSurface({
   const thisWeekStart = mondayOf(now);
   const nextWeekStart = addDays(thisWeekStart, 7);
   const lastWeekStart = addDays(thisWeekStart, -7);
+  // The week before last. Ivan, 2026-08-26: "prob not a good way to show data against a
+  // current in process week tbh always will look lower." He is right — a full week beside a
+  // two-day week is a comparison that can only ever read as a fall. The plate now compares
+  // the two CLOSED weeks (like against like) and prints the open week separately, labelled
+  // with how far into it we are, exactly as the hero above already does.
+  const priorWeekStart = addDays(thisWeekStart, -14);
+  /** How many of the five send days of the open week have started, counting today. Sunday
+   *  belongs to the week that opened six days earlier, so its send days are all done. */
+  const sendDaysIn = (() => {
+    const d = now.getDay();
+    return d === 0 ? 5 : Math.min(d, 5);
+  })();
+  /** The same moment of last week, so a partial week is only ever compared with the same
+   *  slice of the week before it. Straight arithmetic on the week start, no clock drift. */
+  const samePointLastWeek = new Date(lastWeekStart.getTime() + (now.getTime() - thisWeekStart.getTime()));
 
   // ── board.outreach_truth: the server-computed booked/replied/funnel truth (goal-run
   // rise-panel-truth-2026-08-25, extended 2026-08-26). When present it is the ONLY source
@@ -230,9 +251,11 @@ export default function DeskOutreachSurface({
     const t = Date.parse(m.sent_at as string);
     if (!Number.isNaN(t)) earliestMs = Math.min(earliestMs, t);
   }
-  // Honesty gate: only show the two-week comparison when the log's earliest send actually
-  // reaches back into last week. Less history than that -> this-week counts alone.
+  // Honesty gate: only show the closed-week comparison when the log's earliest send
+  // actually reaches back that far. Two closed weeks of history -> the pair. One closed
+  // week -> that week alone. Less than that -> the open week's counts alone.
   const twoWeekCoverage = hasSends && earliestMs <= lastWeekStart.getTime();
+  const priorWeekCoverage = hasSends && earliestMs <= priorWeekStart.getTime();
 
   // ── Weekly "wrote back": PEOPLE, not messages, in two tiers. The shipped RPC hard-filters
   // `messages` to outbound-only, so counting inbound rows from it renders a FALSE 0 (verified
@@ -277,29 +300,38 @@ export default function DeskOutreachSurface({
     return n;
   };
 
-  const thisWeek = {
-    invites: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'invite'),
-    accepted: acceptsLanded(thisWeekStart, nextWeekStart),
-    dms: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'dm'),
-    inmails: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'inmail'),
-    openprofile: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'openprofile'),
-    wroteBack: weeklyFromBlob(thisWeekStart) ?? peopleWroteBack(thisWeekStart, nextWeekStart),
+  /** Every channel figure for one window. `wroteBack` prefers the blob's own week grid and
+   *  only falls back to the log when the blob has no row for that Monday. */
+  const windowCounts = (start: Date, end: Date) => ({
+    invites: countInWindow(outboundMsgs, start, end, 'invite'),
+    accepted: acceptsLanded(start, end),
+    dms: countInWindow(outboundMsgs, start, end, 'dm'),
+    inmails: countInWindow(outboundMsgs, start, end, 'inmail'),
+    openprofile: countInWindow(outboundMsgs, start, end, 'openprofile'),
+    wroteBack: weeklyFromBlob(start) ?? peopleWroteBack(start, end),
+  });
+  // The two closed weeks, which is what the plate compares. The open week is computed
+  // separately and never sits in the same comparison.
+  const priorWeek = windowCounts(priorWeekStart, lastWeekStart);
+  const lastWeek = windowCounts(lastWeekStart, thisWeekStart);
+  const thisWeek = windowCounts(thisWeekStart, nextWeekStart);
+  /** The same slice of last week, for the open week's comparator. Sends only: an accept
+   *  lands off invites sent days earlier, so a mid-week accept comparison is not like for
+   *  like, and "wrote back" is only counted whole-week by the server. Both of those print
+   *  their so-far number with no comparator rather than a misleading one. */
+  const samePoint: Partial<Record<keyof typeof thisWeek, number>> = {
+    invites: countInWindow(outboundMsgs, lastWeekStart, samePointLastWeek, 'invite'),
+    dms: countInWindow(outboundMsgs, lastWeekStart, samePointLastWeek, 'dm'),
+    inmails: countInWindow(outboundMsgs, lastWeekStart, samePointLastWeek, 'inmail'),
+    openprofile: countInWindow(outboundMsgs, lastWeekStart, samePointLastWeek, 'openprofile'),
   };
-  const lastWeek = {
-    invites: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'invite'),
-    accepted: acceptsLanded(lastWeekStart, thisWeekStart),
-    dms: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'dm'),
-    inmails: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'inmail'),
-    openprofile: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'openprofile'),
-    wroteBack: weeklyFromBlob(lastWeekStart) ?? peopleWroteBack(lastWeekStart, thisWeekStart),
-  };
-  /** True when the two "Wrote back" bars came off the blob rather than off the log, so the
+  /** True when the "Wrote back" figures came off the blob rather than off the log, so the
    *  row can carry the blob's counted_at instead of the log's read time. */
-  const wroteBackFromBlob = weeklyFromBlob(thisWeekStart) !== null;
+  const wroteBackFromBlob = weeklyFromBlob(lastWeekStart) !== null;
 
   // The open-profile row only earns its place once the lane has actually sent in either week —
   // never a permanent zero row. The Accepted row only exists once the feed carries the field.
-  const showOpenProfile = thisWeek.openprofile > 0 || lastWeek.openprofile > 0;
+  const showOpenProfile = thisWeek.openprofile > 0 || lastWeek.openprofile > 0 || priorWeek.openprofile > 0;
   const CATS: { key: keyof typeof thisWeek; label: string; note?: string }[] = [
     { key: 'invites', label: 'Connection invites' },
     ...(hasAcceptField ? [{ key: 'accepted' as const, label: 'Accepted', note: '· invites that turned into connections' }] : []),
@@ -399,6 +431,12 @@ export default function DeskOutreachSurface({
     ? countInWindow(inboundMsgs, todayStart, tomorrowStart)
     : peopleWroteBack(todayStart, tomorrowStart);
 
+  // ── The trail, narrowed to the people who said yes (Ivan, 2026-08-26). The full log was
+  // 871 people deep and answered a question nobody asked. Boards whose blob carries no
+  // reply intents keep the whole log, so this can never blank a surface. ─────────────────
+  const intentFiltered = hasReplyIntents(ot);
+  const trailEntries = positiveReplierLog(entries, ot);
+
   return (
     <div className="pb-16" data-surface="desk-outreach">
 
@@ -408,7 +446,7 @@ export default function DeskOutreachSurface({
           one stated period, and the stamp under it says when each was read. */}
       <DeskH2>
         {hasSends ? (
-          <>Week of {shortDate(thisWeekStart)} so far: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
+          <>Week of {shortDate(thisWeekStart)}, {sendDaysIn} of 5 send days in: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
         ) : (
           <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
         )}
@@ -491,30 +529,53 @@ export default function DeskOutreachSurface({
           <div style={{ marginTop: 16 }}>
             {CATS.map((cat, i) => {
               // Both bars in a group are scaled against that group's own max, so the two
-              // weeks stay comparable and a 0 draws NOTHING. A group where both weeks are 0
-              // (max 0) renders two empty tracks — the numerals carry it.
-              const groupMax = twoWeekCoverage ? Math.max(thisWeek[cat.key], lastWeek[cat.key]) : thisWeek[cat.key];
+              // CLOSED weeks stay comparable and a 0 draws NOTHING. A group where both weeks
+              // are 0 (max 0) renders two empty tracks — the numerals carry it. The open
+              // week is deliberately outside this scale: it has no bar at all, because a
+              // part-week bar beside a full-week bar is the exact false read Ivan flagged.
+              const groupMax = priorWeekCoverage
+                ? Math.max(lastWeek[cat.key], priorWeek[cat.key])
+                : lastWeek[cat.key];
+              const soFar = thisWeek[cat.key];
+              const vs = samePoint[cat.key];
               return (
               <div key={cat.key} style={{ marginTop: i > 0 ? 15 : 0 }}>
                 {i > 0 && <PlateRule gap={0} />}
                 <div style={{ marginTop: i > 0 ? 14 : 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-plate-ink)' }}>
                   {cat.label}{cat.note && <PlateMute style={{ fontWeight: 600 }}> {cat.note}</PlateMute>}
                 </div>
+                {priorWeekCoverage && (
+                  <BarRow
+                    on="plate"
+                    label={`w/ ${shortDate(priorWeekStart)}`}
+                    value={<Num size="row" inline tone="plate-mute">{priorWeek[cat.key]}</Num>}
+                    pct={barPct(priorWeek[cat.key], groupMax)}
+                  />
+                )}
                 {twoWeekCoverage && (
                   <BarRow
                     on="plate"
+                    tone="strong"
                     label={`w/ ${shortDate(lastWeekStart)}`}
-                    value={<Num size="row" inline tone="plate-mute">{lastWeek[cat.key]}</Num>}
+                    value={<Num size="big" inline tone="plate">{lastWeek[cat.key]}</Num>}
                     pct={barPct(lastWeek[cat.key], groupMax)}
                   />
                 )}
-                <BarRow
-                  on="plate"
-                  tone="strong"
-                  label={`w/ ${shortDate(thisWeekStart)}, Mon-Fri`}
-                  value={<Num size="big" inline tone="plate">{thisWeek[cat.key]}</Num>}
-                  pct={barPct(thisWeek[cat.key], groupMax)}
-                />
+                {/* The week in progress: a number, how far in it is, and the same slice of
+                    last week where that slice is a like-for-like read. No bar, no pace, no
+                    projection. */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 11, flexWrap: 'wrap', marginTop: 9 }}>
+                  <PlateMute style={{ flex: 'none', width: 114, fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    w/ {shortDate(thisWeekStart)}, so far
+                  </PlateMute>
+                  <span style={{ flex: 'none', width: 56, textAlign: 'right' }}>
+                    <Num size="row" inline tone="plate">{soFar}</Num>
+                  </span>
+                  <PlateMute style={{ fontSize: 12.5, fontWeight: 600 }}>
+                    {sendDaysIn} of 5 send days in
+                    {typeof vs === 'number' ? `, against ${vs} by this point last week` : ''}
+                  </PlateMute>
+                </div>
               </div>
               );
             })}
@@ -522,10 +583,12 @@ export default function DeskOutreachSurface({
         )}
 
         <div style={{ marginTop: 17 }}>
-          {twoWeekCoverage ? (
-            <Chip tone="plate">2 live weeks of data: direction, not a trend</Chip>
+          {priorWeekCoverage ? (
+            <Chip tone="plate">2 closed weeks side by side: direction, not a trend</Chip>
+          ) : twoWeekCoverage ? (
+            <Chip tone="plate">1 closed week of sends so far: the week in progress sits below it</Chip>
           ) : hasSends ? (
-            <Chip tone="plate">Less than 2 weeks of sends so far: this week's counts only</Chip>
+            <Chip tone="plate">Less than a full week of sends so far: the counts stand alone</Chip>
           ) : null}
         </div>
         {/* Density fold: the reference's middle clause here ("three ways a first message goes
@@ -533,7 +596,9 @@ export default function DeskOutreachSurface({
             definition the funnel plate's footnote carries one block below. Stating it once
             pays for the booked-calls empty state and the lane lines this tab was missing. */}
         <Footnote on="plate">
-          Full week, Mon&ndash;Fri. The funnel below counts invites and first messages only.
+          {hasSends ? <>The bars are closed weeks, Mon&ndash;Fri, so they are the same length as each other.
+          The line under them is the week still running. </> : null}
+          The funnel below counts invites and first messages only.
         </Footnote>
         {/* Every bar on this plate carries the moment its source was read: the send rows
             come off the live send record, the "Wrote back" rows come off the counted blob.
@@ -546,7 +611,14 @@ export default function DeskOutreachSurface({
         )}
         {hasSends && hasAcceptField && (
           <Footnote on="plate">
-            Accepted counts the week the accept landed, not the week the invite went out.
+            Accepted counts the week the accept landed, so an accept this week can belong to an invite
+            sent last week. That is why its running week carries no comparison against last week.
+          </Footnote>
+        )}
+        {hasSends && wroteBackFromBlob && (
+          <Footnote on="plate">
+            Wrote back is counted a whole week at a time, so the running week shows what has landed
+            so far and gets its comparison once the week closes.
           </Footnote>
         )}
       </Plate>
@@ -763,39 +835,44 @@ export default function DeskOutreachSurface({
                 <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>open the list</span>
               </a>
             ) : candidateRows.length > 0 && (
-              <Drill label="open it" summaryLeft={<>The current list: <b>{candidateRows.length}</b> name{candidateRows.length === 1 ? '' : 's'}</>}>
-                {candidateRows.map((r, i) => (
-                  <div key={`${r.name}-${r.company || ''}-${i}`} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '8px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
-                    <span style={{ flex: 'none', width: 20, fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
-                    {r.linkedinUrl ? (
-                      <a href={r.linkedinUrl} target="_blank" rel="noreferrer" style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-ink)' }}>{r.name}</a>
-                    ) : (
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-ink)' }}>{r.name}</span>
-                    )}
-                    <span style={{ fontSize: 13, color: 'var(--cb-ink-soft)', flex: '1 1 190px', minWidth: 0 }}>
-                      {[r.role, r.company].filter(Boolean).join(' · ')}{r.domain ? ` · ${r.domain}` : ''}
-                    </span>
-                    {r.note && <span style={{ flex: 'none', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-soft)', background: 'var(--cb-paper-sunk)', borderRadius: 999, padding: '3px 10px' }}>{r.note}</span>}
-                  </div>
-                ))}
-              </Drill>
+              // The count, on one line, with no roster behind it. Ivan cut the name-by-name
+              // dump on 2026-08-26: the panel's job is who is talking to him, and 81 names he
+              // has not met yet is a directory, not an answer. The number survives so the
+              // supply figure is still on the page.
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', padding: '13px 0', borderTop: '1px solid var(--cb-line)' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-soft)' }}>
+                  The current list: <b>{candidateRows.length}</b> name{candidateRows.length === 1 ? '' : 's'} sourced and cleared, waiting their turn
+                </span>
+              </div>
             )}
 
             {/* 9 — send log Drill: real per-lead outbound trail, honest empty. */}
             <Drill
               label="open it"
-              summaryLeft={hasSends ? <>Today&rsquo;s log: <b>{sentToday}</b> messages out &middot; <b>{repliesToday}</b> replies in</> : <>Send log: nothing sent yet</>}
+              summaryLeft={
+                !hasSends ? <>Send log: nothing sent yet</>
+                : intentFiltered ? <>The people who said yes: <b>{trailEntries.length}</b>, and every message that went to them</>
+                : <>Today&rsquo;s log: <b>{sentToday}</b> messages out &middot; <b>{repliesToday}</b> replies in</>
+              }
             >
               {!hasSends ? (
                 <Footnote>
                   Nothing sent yet. Every DM and InMail that goes out under your name lands here the moment sends go live, with the date it went out and whether they replied.
                 </Footnote>
+              ) : intentFiltered && trailEntries.length === 0 ? (
+                <Footnote style={{ marginTop: 0 }}>
+                  Nobody has come back interested in the last 7 days. The moment someone does, their name and
+                  every message that went to them land here. {sentToday} message{sentToday === 1 ? '' : 's'} went
+                  out today, read from your live send record at {shortDateTime(now)}.
+                </Footnote>
               ) : (
                 <div>
                   <Footnote style={{ marginTop: 0 }}>
-                    Today&rsquo;s two counts read from your live send record at {shortDateTime(now)}, on this device&rsquo;s clock.
+                    {intentFiltered
+                      ? <>Everyone whose latest reply reads as interested, counted {countedFull} over the trailing 7 days. {sentToday} message{sentToday === 1 ? '' : 's'} went out today and {repliesToday} came back, read from your live send record at {shortDateTime(now)}.</>
+                      : <>Today&rsquo;s two counts read from your live send record at {shortDateTime(now)}, on this device&rsquo;s clock.</>}
                   </Footnote>
-                  {entries.map((e) => {
+                  {trailEntries.map((e) => {
                     const sent = (e.messages || []).filter((m) => m.direction === 'outbound');
                     return (
                       // id: the target a roster name click opens. This IS the trail the
