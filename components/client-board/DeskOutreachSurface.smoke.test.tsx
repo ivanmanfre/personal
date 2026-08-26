@@ -218,7 +218,9 @@ describe('DeskOutreachSurface', () => {
     );
     expect(stamped).toContain('Accepted the invite');
     expect(stamped).toMatch(/>31</);
-    expect(stamped).toContain('counted across the whole program');
+    // the cumulative figure names its period AND carries the indicator's own captured_at,
+    // so it can never be read as the weekly report's windowed accepted count
+    expect(stamped).toContain('whole program to date, counted 1 Aug');
     // an unstamped indicator (calls booked, value 0, no captured_at) stays an honest blank
     expect(stamped).toContain('not tracked yet');
 

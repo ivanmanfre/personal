@@ -27,6 +27,8 @@ import {
   Cols, Card, PlateMute, PlateRule,
 } from './desk-kit';
 import type { FunnelStep } from './desk-kit';
+import OutreachTopOfPanel, { sendLogAnchorId, countedStamp, scrubVendor, laneName } from './OutreachTopOfPanel';
+import type { FunnelSignals } from './OutreachTopOfPanel';
 import { inkOn, caText } from '../ClientBoardPage';
 import type { Board, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus } from '../ClientBoardPage';
 
@@ -39,29 +41,11 @@ function isDeadLane(name?: string, status?: string, arms?: string): boolean {
 }
 
 /* ── Display-level vendor scrub ────────────────────────────────────────────────────────
- * Lane names in the live board JSON still carry the tool we source from
- * ("Pure cold: Sales Navigator"). Vendor vocabulary is on the client-facing ban list, so
- * every lane string is filtered on its way to the screen: name, detail, arms, status.
- * THE REAL FIX IS UPSTREAM — rename outreach.lanes[].name in the board JSON ("New founders")
- * so the data itself is client-safe. This function is only the presentation backstop that
- * guarantees a vendor name can never reach a client screen while that rename is pending.
- * It never mutates the data, and it deliberately leaves the dead-lane test above reading the
- * RAW strings (a lane retired under a vendor name must still be recognised as dead).
+ * scrubVendor/laneName now live in OutreachTopOfPanel so BOTH layout branches share one
+ * ban list (the ?skin= branch was leaking "Sales Navigator" into three places it renders).
+ * The scrub never mutates the data, and the dead-lane test above deliberately still reads
+ * the RAW strings: a lane retired under a vendor name must still be recognised as dead.
  */
-const VENDOR_RE = /\b(?:sales\s*nav(?:igator)?|apollo(?:\.io)?|linkedin\s*recruiter|unipile|smartlead|phantombuster|harvestapi|apify)\b/gi;
-function scrubVendor(s?: string): string {
-  if (!s) return '';
-  return s
-    .replace(VENDOR_RE, '')
-    .replace(/\(\s*\)/g, '')            // "(Sales Navigator)" -> "()" -> ""
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s*[:–—,;-]\s*$/, '')  // "Pure cold: " -> "Pure cold"
-    .replace(/^\s*[:–—,;-]\s*/, '')
-    .trim();
-}
-/** Lane name for display. If the scrub eats the whole name (a lane called nothing but its
- *  vendor) fall back to a neutral, non-fabricated label rather than leaking the original. */
-function laneName(name?: string): string { return scrubVendor(name) || 'Outreach lane'; }
 
 /** A lane status only earns a chip when it is a plain client-readable state. Anything
  *  carrying internal or vendor vocabulary is dropped rather than translated. */
@@ -168,7 +152,7 @@ function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?
 }
 
 export default function DeskOutreachSurface({
-  board, accent, usage = null, log = null, status = null, foldLeads = null,
+  board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null,
 }: {
   board: Board;
   accent: string;
@@ -176,6 +160,9 @@ export default function DeskOutreachSurface({
   log?: OutreachLogEntry[] | null;
   status?: OutreachStatus | null;
   foldLeads?: React.ReactNode;
+  /** Live funnel-instrument reads (client_board_funnel_signals). Progressive
+   *  enhancement: absent simply means the "who is looking" tile does not render. */
+  signals?: FunnelSignals | null;
 }) {
   const o = board.outreach;
 
@@ -214,6 +201,29 @@ export default function DeskOutreachSurface({
   const thisWeekStart = mondayOf(now);
   const nextWeekStart = addDays(thisWeekStart, 7);
   const lastWeekStart = addDays(thisWeekStart, -7);
+
+  // ── board.outreach_truth: the server-computed booked/replied/funnel truth (goal-run
+  // rise-panel-truth-2026-08-25, extended 2026-08-26). When present it is the ONLY source
+  // for anything about replies, accepts, bookings or the funnel; the live send log stays
+  // the source for what WE sent. Absent (a board that predates the write) -> every
+  // fallback below is the pre-blob behaviour, unchanged. Every number sourced from it
+  // carries its counted_at; every number computed here from the send log carries the time
+  // that log was read. No rendered count on this tab is left unstamped. ─────────────────
+  const ot = board.outreach_truth;
+  const otBooked = ot && Array.isArray(ot.booked) ? ot.booked : null;
+  const countedAt = ot?.counted_at ? fmtCounted(ot.counted_at) : '';
+  const countedFull = ot?.counted_at ? countedStamp(ot.counted_at) : '';
+  /** People who wrote back in the week starting `mondayLocal`, read off the blob's own
+   *  Monday-based UTC week grid. This REPLACES the old client-side last_reply_at
+   *  bucketing, which produced a different weekly figure than the client's weekly report
+   *  did (predecessor Fork 3). Returns null when the blob has no row for that week, and
+   *  the row then renders as a blank rather than as a zero. */
+  const weeklyFromBlob = (mondayLocal: Date): number | null => {
+    if (!ot || !Array.isArray(ot.replied_weekly)) return null;
+    const key = `${mondayLocal.getFullYear()}-${pad2(mondayLocal.getMonth() + 1)}-${pad2(mondayLocal.getDate())}`;
+    const row = ot.replied_weekly.find((w) => w.week_monday === key);
+    return row ? row.people : null;
+  };
 
   let earliestMs = Infinity;
   for (const m of outboundMsgs) {
@@ -273,7 +283,7 @@ export default function DeskOutreachSurface({
     dms: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'dm'),
     inmails: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'inmail'),
     openprofile: countInWindow(outboundMsgs, thisWeekStart, nextWeekStart, 'openprofile'),
-    wroteBack: peopleWroteBack(thisWeekStart, nextWeekStart),
+    wroteBack: weeklyFromBlob(thisWeekStart) ?? peopleWroteBack(thisWeekStart, nextWeekStart),
   };
   const lastWeek = {
     invites: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'invite'),
@@ -281,8 +291,11 @@ export default function DeskOutreachSurface({
     dms: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'dm'),
     inmails: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'inmail'),
     openprofile: countInWindow(outboundMsgs, lastWeekStart, thisWeekStart, 'openprofile'),
-    wroteBack: peopleWroteBack(lastWeekStart, thisWeekStart),
+    wroteBack: weeklyFromBlob(lastWeekStart) ?? peopleWroteBack(lastWeekStart, thisWeekStart),
   };
+  /** True when the two "Wrote back" bars came off the blob rather than off the log, so the
+   *  row can carry the blob's counted_at instead of the log's read time. */
+  const wroteBackFromBlob = weeklyFromBlob(thisWeekStart) !== null;
 
   // The open-profile row only earns its place once the lane has actually sent in either week —
   // never a permanent zero row. The Accepted row only exists once the feed carries the field.
@@ -299,20 +312,18 @@ export default function DeskOutreachSurface({
   // ── To-date funnel: people contacted (real) -> accepted (not in the log, honest blank) ->
   // wrote back (real, entry-level so it matches the Leads journey number below) -> calls
   // booked (real once board.precall_briefs has rows, blank until then). ────────────────────
-  const contactedCount = entries.filter((e) => (e.messages || []).some((m) => m.direction === 'outbound' && m.sent_at)).length;
-
-  // ── board.outreach_truth: the server-computed booked/replied truth (goal-run
-  // rise-panel-truth-2026-08-25). When present it is the source for the booked-calls count
-  // + list and the replied count; precall_briefs / entries[].replied stay the fallback,
-  // used unchanged when this key is absent (a board that predates the write). Every number
-  // sourced from it carries its own counted_at stamp — see fmtCounted() call sites below. ──
-  const ot = board.outreach_truth;
-  const otBooked = ot && Array.isArray(ot.booked) ? ot.booked : null;
-  const countedAt = ot?.counted_at ? fmtCounted(ot.counted_at) : '';
+  // The send-log contacted figure. Used for the funnel ONLY when the blob is absent: the
+  // blob's `contacted` counts the whole program from the prospect table, the log's counts
+  // the people this feed happens to carry, and mixing the two would put a percentage on
+  // the page whose numerator and denominator came from different populations.
+  const contactedFromLog = entries.filter((e) => (e.messages || []).some((m) => m.direction === 'outbound' && m.sent_at)).length;
+  const contactedCount = ot?.funnel && typeof ot.funnel.contacted === 'number' ? ot.funnel.contacted : contactedFromLog;
   const repliedCount = ot && ot.funnel && typeof ot.funnel.replied_people === 'number'
     ? ot.funnel.replied_people
     : entries.filter((e) => e.replied).length;
-  const callsBookedCount = otBooked ? otBooked.length : (board.precall_briefs || []).length;
+  const callsBookedCount = ot?.funnel && typeof ot.funnel.booked === 'number'
+    ? ot.funnel.booked
+    : otBooked ? otBooked.length : (board.precall_briefs || []).length;
   const wroteBackPct = barPct(repliedCount, contactedCount);
 
   // Normalized booked-calls rows: outreach_truth.booked (name/company/booked_at/brief_url/
@@ -332,27 +343,35 @@ export default function DeskOutreachSurface({
         id: b.id, name: b.name, company: b.company || b.domain, when_str: b.when_str, booked_note: b.booked_note, brief_url: b.brief_url, scan_url: b.scan_url,
       }));
 
-  // Accepts ARE tracked — not in the send log (an accept is not a message), but in
-  // performance.outreach_indicators, captured by the program counter. Only an indicator with
-  // a captured_at stamp is a real reading: a value with no stamp is an unfilled slot and
-  // still renders the honest blank. Whole-program count, so no weekly split exists and the
-  // weekly bar group above deliberately stays absent rather than inventing one.
+  // Accepts ARE tracked — not in the send log (an accept is not a message), but in the
+  // blob's funnel (whole program, counted server-side) and, on boards without the blob, in
+  // performance.outreach_indicators. Only an indicator with a captured_at stamp is a real
+  // reading: a value with no stamp is an unfilled slot and still renders the honest blank.
+  // Either way the figure is CUMULATIVE, which is why the label says "whole program" — the
+  // weekly report's accepted figure is windowed and the two must never be read as one.
   const acceptsInd = (board.performance?.outreach_indicators || []).find(
     (ind) => /accept/i.test(`${ind.key || ''} ${ind.label || ''}`) && !!ind.captured_at && typeof ind.value === 'number',
   );
-  const acceptsValue = acceptsInd ? (acceptsInd.value as number) : null;
+  const acceptsValue = ot?.funnel && typeof ot.funnel.accepted === 'number'
+    ? ot.funnel.accepted
+    : acceptsInd ? (acceptsInd.value as number) : null;
+  /** The stamp that belongs to the accepted figure, whichever source produced it. */
+  const acceptsStamp = ot?.funnel && typeof ot.funnel.accepted === 'number'
+    ? countedAt
+    : acceptsInd?.captured_at ? fmtCounted(acceptsInd.captured_at) : '';
 
   const funnelSteps: FunnelStep[] = [
-    { value: contactedCount, label: 'People contacted', note: '· first touch only, one per person', pct: barPct(contactedCount, contactedCount) },
+    { value: contactedCount, label: 'People contacted', note: '· first touch only, one per person, whole program', pct: barPct(contactedCount, contactedCount) },
     acceptsValue !== null
-      ? { value: acceptsValue, label: 'Accepted the invite', note: '· counted across the whole program', pct: barPct(acceptsValue, contactedCount) }
+      ? { value: acceptsValue, label: 'Accepted the invite', note: `· whole program to date${acceptsStamp ? `, counted ${acceptsStamp}` : ''}`, pct: barPct(acceptsValue, contactedCount) }
       : { label: 'Accepted the invite', blank: true },
     {
       value: repliedCount, label: 'Wrote back', pct: wroteBackPct, highlight: true,
+      note: '· people, whole program',
       delta: contactedCount > 0 ? `→ ${Math.round(wroteBackPct)}% of contacted` : undefined,
     },
     callsBookedCount > 0
-      ? { value: callsBookedCount, label: 'Calls booked', pct: barPct(callsBookedCount, callsBookedCount) }
+      ? { value: callsBookedCount, label: 'Calls booked', note: '· whole program', pct: barPct(callsBookedCount, callsBookedCount) }
       : { label: 'Calls booked', blank: true },
   ];
 
@@ -384,13 +403,27 @@ export default function DeskOutreachSurface({
     <div className="pb-16" data-surface="desk-outreach">
 
       <Eyebrow>Outreach</Eyebrow>
+      {/* The headline names its own window. The sends in it are the calendar week to date;
+          "wrote back" is the same week off the blob's week grid. Two different sources,
+          one stated period, and the stamp under it says when each was read. */}
       <DeskH2>
         {hasSends ? (
-          <>Week of {shortDate(thisWeekStart)}: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
+          <>Week of {shortDate(thisWeekStart)} so far: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
         ) : (
           <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
         )}
       </DeskH2>
+      {hasSends && (
+        <Footnote>
+          Sends read from your live send record at {shortDateTime(now)}.
+          {wroteBackFromBlob ? <> Replies counted {countedFull}.</> : null}
+        </Footnote>
+      )}
+
+      {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
+          graft). Renders only when board.outreach_truth exists; the blocks below stay as
+          they were for any board without it. Shared verbatim with the ?skin= branch. */}
+      <OutreachTopOfPanel board={board} accent={accent} log={log} signals={signals} />
 
       {/* 0 — up next: today's pace against the cap and the real named send queue.
           Desk-kit port of the original UpNextBlock (that one carries 9-10.5px type and
@@ -502,6 +535,15 @@ export default function DeskOutreachSurface({
         <Footnote on="plate">
           Full week, Mon&ndash;Fri. The funnel below counts invites and first messages only.
         </Footnote>
+        {/* Every bar on this plate carries the moment its source was read: the send rows
+            come off the live send record, the "Wrote back" rows come off the counted blob.
+            Two sources, two stamps, never one silent number. */}
+        {hasSends && (
+          <Footnote on="plate">
+            Invites, DMs, InMails and open profile messages read from your live send record at {shortDateTime(now)}.
+            {wroteBackFromBlob ? <> Wrote back counted {countedFull}.</> : null}
+          </Footnote>
+        )}
         {hasSends && hasAcceptField && (
           <Footnote on="plate">
             Accepted counts the week the accept landed, not the week the invite went out.
@@ -509,11 +551,15 @@ export default function DeskOutreachSurface({
         )}
       </Plate>
 
-      {/* 2 — everyone contacted so far, to date. */}
+      {/* 2 — everyone contacted so far, whole program. Every step here is cumulative and
+          says so, because the weekly report counts accepts inside a window and the two
+          figures are supposed to differ. */}
       <Plate style={{ marginTop: 22 }} pad="26px 26px 22px">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
           <Eyebrow on="plate">Everyone contacted so far</Eyebrow>
-          <PlateMute style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em' }}>as of {shortDateTime(now)}</PlateMute>
+          <PlateMute style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em' }}>
+            {ot ? `counted ${countedFull}` : `as of ${shortDateTime(now)}`}
+          </PlateMute>
         </div>
         <div style={{ marginTop: 18 }}>
           <Funnel steps={funnelSteps} on="plate" />
@@ -521,9 +567,11 @@ export default function DeskOutreachSurface({
         <Footnote on="plate">
           A first touch is an invite with a note, a first DM, or an InMail. Follow-up messages live in the weekly bars above.
         </Footnote>
-        {ot && (
-          <Footnote on="plate">Wrote back and calls booked counted {countedAt}.</Footnote>
-        )}
+        <Footnote on="plate">
+          {ot
+            ? <>All four numbers are whole-program totals, counted {countedFull}.</>
+            : <>All four numbers are whole-program totals, read from your live send record at {shortDateTime(now)}.</>}
+        </Footnote>
       </Plate>
 
       {/* 3 — the send allowance, collapsed (the frag demoted it off the top of the tab). */}
@@ -567,29 +615,26 @@ export default function DeskOutreachSurface({
         </Card>
       )}
 
-      {/* 4 — Leads: replies in play -> calls booked. */}
+      {/* 4 + 5 — Leads journey and Booked calls. Both are FALLBACKS now: when
+          board.outreach_truth exists, OutreachTopOfPanel above renders the same two facts
+          at the top of the panel, with names and stamps, and repeating them here would put
+          the same number on the page twice. Boards without the blob keep these blocks
+          exactly as they shipped. */}
+      {!ot && (<>
       <Eyebrow style={{ marginTop: 28 }}>Leads</Eyebrow>
       <Plate style={{ marginTop: 12 }} pad="28px 26px 24px">
         <JourneyPlate
           left={{ value: repliedCount, label: 'Replies in play', sub: `as of ${shortDateTime(now)}` }}
           right={callsBookedCount > 0 ? { value: callsBookedCount, label: 'Calls booked' } : { label: 'Calls booked', blank: true }}
         />
-        {ot && <Footnote on="plate">counted {countedAt}</Footnote>}
+        <Footnote on="plate">Read from your live send record at {shortDateTime(now)}.</Footnote>
       </Plate>
 
-      {/* 5 — Booked calls: the block ALWAYS renders. Rows from outreach_truth.booked once
-          it exists (falls back to board.precall_briefs, unchanged, until then), and until a
-          real booking lands the reference's drawn honest empty state — a dashed card that
-          says the row is not here yet and what will fill it. Never a sample row, never a
-          fabricated booking. outreach_truth also surfaces bookings closed by hand off the
-          tracked link (no brief/scan link — never synthesized), which precall_briefs
-          structurally cannot see. */}
       <Card style={{ marginTop: 12, padding: '22px 26px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <Eyebrow>Booked calls</Eyebrow>
             <span style={{ fontFamily: 'var(--cb-mono)', fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', letterSpacing: '0.04em' }}>from your LinkedIn booking link</span>
           </div>
-          {ot && <Footnote style={{ marginTop: 4 }}>counted {countedAt}</Footnote>}
           {bookedRows.length === 0 ? (
             <div style={{
               marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 25,
@@ -625,6 +670,7 @@ export default function DeskOutreachSurface({
           </div>
           )}
       </Card>
+      </>)}
 
       {/* 6 — The bar: who qualifies, driven entirely by board.outreach.icp. */}
       {o.icp && icpBar.length > 0 && (
@@ -726,14 +772,20 @@ export default function DeskOutreachSurface({
             >
               {!hasSends ? (
                 <Footnote>
-                  Nothing sent yet. Every DM and InMail the engine sends on your behalf lands here the moment sends go live, with the date it went out and whether they replied.
+                  Nothing sent yet. Every DM and InMail that goes out under your name lands here the moment sends go live, with the date it went out and whether they replied.
                 </Footnote>
               ) : (
                 <div>
+                  <Footnote style={{ marginTop: 0 }}>
+                    Today&rsquo;s two counts read from your live send record at {shortDateTime(now)}, on this device&rsquo;s clock.
+                  </Footnote>
                   {entries.map((e) => {
                     const sent = (e.messages || []).filter((m) => m.direction === 'outbound');
                     return (
-                      <details key={e.prospect_id} className="drill" style={{ marginTop: 8, borderRadius: 12, background: 'var(--cb-paper-sunk)', border: '1px solid var(--cb-line)' }}>
+                      // id: the target a roster name click opens. This IS the trail the
+                      // panel already had; the roster reuses it rather than shipping a
+                      // second one (mission instruction, critic F7).
+                      <details key={e.prospect_id} id={sendLogAnchorId(e.name) || undefined} className="drill" style={{ marginTop: 8, borderRadius: 12, background: 'var(--cb-paper-sunk)', border: '1px solid var(--cb-line)' }}>
                         <summary style={{ listStyle: 'none', cursor: 'pointer', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '12px 14px' }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-ink)' }}>{e.name || '(unnamed)'}</span>
                           {e.company && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{e.company}</span>}

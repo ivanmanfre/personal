@@ -21,6 +21,8 @@ import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
+import OutreachTopOfPanel, { sendLogAnchorId, scrubVendor, laneName } from './client-board/OutreachTopOfPanel';
+import type { FunnelSignals } from './client-board/OutreachTopOfPanel';
 import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
@@ -5798,7 +5800,7 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
         <>
           {/* Hairline-gap grid: 1px cell gaps over a line-colored bg read as clean dividers
            *  in both the 4-col desktop row and the 2-col mobile wrap — no per-cell borders. */}
-          <div className="mb-9 grid grid-cols-2 gap-px overflow-hidden rounded-xl sm:grid-cols-4" style={{ background: LINE, border: `1px solid ${LINE}` }}>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl sm:grid-cols-4" style={{ background: LINE, border: `1px solid ${LINE}` }}>
             {tiles.map((m) => (
               <div key={m.l} className="bg-white px-5 py-4">
                 <div style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1, color: INK }}>{m.n}</div>
@@ -5806,6 +5808,15 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false, usage = nu
               </div>
             ))}
           </div>
+          {/* These four are counted off the captured-leads list printed directly below
+              them, which is saved with the board rather than read live — so the strip
+              names its source instead of carrying a clock stamp it does not have.
+              Closes the last unstamped count on the panel (predecessor gate G3). */}
+          <p className="mb-9 mt-2 text-[11.5px]" style={{ fontFamily: BODY, color: FAINT }}>
+            {usingSample
+              ? 'Counted from the example list below. Real numbers land here when your first lead is captured.'
+              : 'Counted from the captured-leads list below, as saved on your board.'}
+          </p>
 
           {handRaisers.length > 0 && (
             <section className="mb-9">
@@ -5986,7 +5997,7 @@ function UpNextBlock({ status, accent }: { status: OutreachStatus | null; accent
  *  up-next queue, this month's allowance, the bar, the sources, the message sequences,
  *  the first list, the inbox, the client-engager play, orbit finds, and the live send log.
  *  Reads usage + status + the per-lead send log from live RPCs; nothing here is baked. */
-function OutreachSurface({ board, accent, usage = null, log = null, status = null, foldLeads = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null; foldLeads?: React.ReactNode }) {
+function OutreachSurface({ board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null; foldLeads?: React.ReactNode; signals?: FunnelSignals | null }) {
   const o = board.outreach;
   if (!o) {
     return (
@@ -6015,7 +6026,6 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
   // show a different booked/replied figure than the desk skin.
   const ot = board.outreach_truth;
   const otBooked = ot && Array.isArray(ot.booked) ? ot.booked : null;
-  const otRepliedPeople = ot && ot.funnel && typeof ot.funnel.replied_people === 'number' ? ot.funnel.replied_people : null;
   type BookedRow = { id: string; name: string; company?: string | null; when_str?: string; booked_note?: string; brief_url?: string | null; scan_url?: string | null };
   const bookedRows: BookedRow[] = otBooked
     ? otBooked.map((b, i) => ({
@@ -6044,6 +6054,11 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
       </div>
 
       <UpNextBlock status={status} accent={accent} />
+
+      {/* THE TOP OF THE PANEL — the same ballot winner the desk skin renders, from the same
+          component and the same blob, so this branch can never show a different hero,
+          roster or booked list than the default one does. */}
+      <OutreachTopOfPanel board={board} accent={accent} log={log} signals={signals} />
 
       <section className="mb-10">
         {/* This month's send allowance — real counts from the send log, caps from
@@ -6095,7 +6110,7 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
           <div className="grid gap-3 sm:grid-cols-2">
             {lanes.map((ln) => (
               <div key={ln.key || ln.name} className={`rounded-xl bg-white p-4 ${LIFT}`} style={{ border: `1px solid ${LINE}` }}>
-                <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ln.name}</div>
+                <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{laneName(ln.name)}</div>
                 {(typeof ln.count === 'number' || typeof ln.scanned === 'number') && (
                   <div className="mt-2.5 flex items-baseline gap-4">
                     {typeof ln.count === 'number' && (
@@ -6133,7 +6148,7 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
               {seqChannels.map((ch) => (
                 <details key={ch.key || ch.name} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-4 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{ch.name}</span>
+                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{laneName(ch.name)}</span>
                     {ch.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{ch.badge}</span>}
                     <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{ch.steps.length} {ch.steps.length === 1 ? 'message' : 'messages'} <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                   </summary>
@@ -6166,8 +6181,8 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
               {o.candidates.groups.map((g, gi) => (
                 <details key={g.key || g.name} open={gi === 0} className="group rounded-lg" style={{ border: `1px solid ${LINE}` }}>
                   <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
-                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{g.name}</span>
-                    {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{g.badge}</span>}
+                    <span className="text-[13px] font-semibold" style={{ color: INK }}>{laneName(g.name)}</span>
+                    {g.badge && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>{scrubVendor(g.badge)}</span>}
                     <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{g.items.length} names <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                   </summary>
                   <div className="px-3.5 pb-3.5">
@@ -6277,20 +6292,14 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
             one story instead of two tabs. */}
         {foldLeads}
 
-        {/* 07 — Booked calls: bookings that arrived through the tracked LinkedIn booking
-            page, written by the booking watcher into board.precall_briefs. Once
-            board.outreach_truth exists it takes over as the source (it also carries
-            bookings closed by hand off-platform, invisible to precall_briefs — see
-            OutreachTruthBooked); precall_briefs is the fallback until then, unchanged.
-            Section is absent until the first tracked booking lands — no sample rows, ever. */}
-        {bookedRows.length > 0 && (<>
-          <LeadsBlockHead
-            n="07"
-            label="booked calls"
-            sub={ot ? (
-              <>from your LinkedIn booking link · counted {fmtDay(ot.counted_at)}{otRepliedPeople !== null ? <> · {otRepliedPeople} replied</> : null}</>
-            ) : 'from your LinkedIn booking link'}
-          />
+        {/* 07 — Booked calls, FALLBACK ONLY. When board.outreach_truth exists the winner
+            block at the top of this panel already renders the booked list with names,
+            stamps and hand-closed bookings; repeating it here would put the same rows on
+            the page twice. Boards without the blob keep the precall_briefs rendering they
+            already had. Section is absent until the first tracked booking lands — no
+            sample rows, ever. */}
+        {!ot && bookedRows.length > 0 && (<>
+          <LeadsBlockHead n="07" label="booked calls" sub="from your LinkedIn booking link" />
           <div className="space-y-2.5">
             {bookedRows.map((b) => (
               <div key={b.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
@@ -6316,7 +6325,9 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
         </>)}
 
         {/* 08 — Send log: the real per-lead outbound trail + reply status, read live from
-            outreach_messages (never baked JSON). Honest empty until sends go live. */}
+            outreach_messages (never baked JSON). Honest empty until sends go live. This is
+            also the trail a roster name click opens at the top of the panel: each row
+            carries the shared anchor id, so no second trail component exists. */}
         <LeadsBlockHead n="08" label="send log" sub="every message actually sent, from the live record" />
         <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
           {(!log || log.length === 0) ? (
@@ -6328,11 +6339,11 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
               {log.map((entry) => {
                 const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
                 return (
-                  <details key={entry.prospect_id} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                  <details key={entry.prospect_id} id={sendLogAnchorId(entry.name) || undefined} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                     <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                       <span className="text-[13px] font-semibold" style={{ color: INK }}>{entry.name || '(unnamed)'}</span>
                       {entry.company && <span className="text-[12px]" style={{ color: DIM }}>{entry.company}</span>}
-                      {entry.lane && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{entry.lane}</span>}
+                      {scrubVendor(entry.lane) && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}`, padding: '1px 6px' }}>{scrubVendor(entry.lane)}</span>}
                       {entry.replied && <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: inkOn(accent), background: caText(accent), padding: '2px 6px' }}>replied</span>}
                       <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{sent.length} sent <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                     </summary>
@@ -7701,6 +7712,37 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token]);
 
+  // Funnel instruments (live): the profile-view three-way split and the buyers-post
+  // ledger, read straight off the live views (rise_funnel_daily /
+  // rise_buyers_post_ledger) through a read-only RPC. Deliberately NOT on the board blob:
+  // the blob is recomputed every 6h by a different writer, and a signal whose whole point
+  // is "who looked at you today" should not be able to go stale behind it. Same
+  // token/session posture as every other live read on this page.
+  const [funnelSignals, setFunnelSignals] = useState<FunnelSignals | null>(null);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_funnel_signals', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_funnel_signals_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; signals?: FunnelSignals | null } | null;
+        if (!out?.ok || !out.signals) return;
+        setFunnelSignals(out.signals);
+      } catch { /* the who-is-looking tile is progressive enhancement — absent = not shown */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
   // Slot state (live): a removed slot — and any replacement pulled into it — is
   // reconstructed from the insert-only action log so it SURVIVES a hard refresh (and
   // shows the same on any device). This is the server truth; localStorage is only a
@@ -8678,8 +8720,8 @@ export default function ClientBoardPage() {
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     outreach: skin === 'desk'
-      ? <DeskOutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
-      : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} foldLeads={null} />,
+      ? <DeskOutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: skin === 'desk'
       ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim />
