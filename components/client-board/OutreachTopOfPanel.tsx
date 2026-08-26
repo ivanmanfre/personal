@@ -206,8 +206,13 @@ type FunnelGates = { lanes?: GateLane[]; reading?: string; computed_at?: string;
  *  rise_buyers_post_ledger; this run never writes to either. */
 export interface FunnelSignals {
   computed_at: string;
-  first_capture_at?: string | null;
-  first_capture_day?: string | null;
+  /** Documents the counting grain, so a future reader cannot mistake these for the
+   *  daily view's per-day distincts (which do NOT sum across days). */
+  grain?: string;
+  /** First capture day on the view log for this seat, COMPUTED server-side. The organic
+   *  line's honesty label prints this date; hardcoding it would let the panel and the
+   *  weekly report claim two different start dates. */
+  tracking_started_on?: string | null;
   profile_views: {
     window_days: number;
     named: number; engine: number; organic_icp: number; other: number;
@@ -556,11 +561,16 @@ export default function OutreachTopOfPanel({
  *
  *  - the split LEADS with the number that is already moving (views from people we have
  *    already written to). The organic line is a brand-new instrument and its zero is a
- *    start date, not a miss, so it carries "tracking started Aug 26" in the row itself.
+ *    start date, not a miss, so the row carries the tracking start date, read live from
+ *    the log rather than typed in, so this line and the weekly report cannot disagree.
  *  - post engagement renders as COUNTS, never as a trend. The engager rows were
  *    backfilled and are all bunched on their harvest date, so a trend line drawn today
  *    would describe the backfill rather than the audience. A trend becomes readable from
  *    about 2 Sep, and the label says so.
+ *
+ * 🔴 Every people-count arriving here is a DISTINCT headcount computed off the source
+ * tables. rise_funnel_daily's people columns are per-day distincts and DO NOT sum: on
+ * 2026-08-26 the summed engager figure was 97 against a true headcount of 74.
  */
 export function OutreachSignalsTile({ signals, accent }: { signals?: FunnelSignals | null; accent: string }) {
   if (!signals || !signals.profile_views) return null;
@@ -569,10 +579,19 @@ export function OutreachSignalsTile({ signals, accent }: { signals?: FunnelSigna
   const posts = signals.posts || [];
   const stamp = countedStamp(signals.computed_at);
 
+  // Read off the log, never typed in: the weekly report prints the same date from the
+  // same read, so the two surfaces cannot claim two different start dates.
+  const startedOn = dayMonth(signals.tracking_started_on);
   const rows: { n: number; label: string; note?: string; lead?: boolean }[] = [
     { n: pv.engine, label: 'people we have already written to', note: 'they came back to look, which is a warm signal, not a new lead', lead: true },
     { n: pv.other, label: 'recruiters, agencies and other sellers', note: 'counted so they never inflate the line above' },
-    { n: pv.organic_icp, label: 'brand owners who found you on their own', note: 'tracking started Aug 26, so a zero here is a new instrument rather than a miss' },
+    {
+      n: pv.organic_icp,
+      label: 'brand owners who found you on their own',
+      note: startedOn
+        ? `tracking started ${startedOn}, so a zero here is a new instrument rather than a miss`
+        : 'a new line: a zero here is an instrument that has only just started, not a miss',
+    },
   ];
 
   return (
@@ -600,13 +619,14 @@ export function OutreachSignalsTile({ signals, accent }: { signals?: FunnelSigna
           ))}
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--cb-line)' }}>
-          <Chip>{pv.named_7d} named view{pv.named_7d === 1 ? '' : 's'} in the last 7 days</Chip>
+          <Chip>{pv.named_7d} named viewer{pv.named_7d === 1 ? '' : 's'} in the last 7 days</Chip>
           <Chip>{eg.new} people engaged your posts</Chip>
           <Chip>{eg.organic_icp} of them brand owners we had not written to</Chip>
         </div>
         <Footnote>
-          Engagement is shown as counts, not as a trend: the back-history was collected in one pass on 26 Aug, so a
-          trend line drawn today would describe the collection date. It reads as a trend from about 2 Sep.
+          Everyone above is counted once, however many times they looked or reacted. Engagement is shown as counts,
+          not as a trend: the back-history was collected in one pass{startedOn ? ` on ${startedOn}` : ''}, so a trend
+          line drawn today would describe the collection date. It reads as a trend from about 2 Sep.
         </Footnote>
       </Card>
 

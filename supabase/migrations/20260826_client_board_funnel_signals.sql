@@ -17,26 +17,66 @@ language sql
 stable
 set search_path to 'public'
 as $fn$
-with d as (
-  select * from public.rise_funnel_daily
+with pv as (
+  -- one row per named viewer per day, exactly the grain rise_funnel_daily's
+  -- `views` CTE groups on
+  select viewer_public_id, provenance,
+         coalesce(viewed_at::date, capture_day) as day
+  from public.profile_view_log
+  where seat = 'risedtc' and viewer_public_id is not null
 ),
-w30 as (
-  select coalesce(sum(profile_views_named),0)       as named,
-         coalesce(sum(profile_views_engine),0)      as engine,
-         coalesce(sum(profile_views_organic_icp),0) as organic_icp,
-         coalesce(sum(engagers_new),0)              as engagers_new,
-         coalesce(sum(engagers_organic_icp),0)      as engagers_organic_icp,
-         coalesce(sum(engagers_engine),0)           as engagers_engine,
-         coalesce(sum(triage_buyer_verdicts),0)     as buyer_dms,
-         coalesce(sum(posts_buyers),0)              as posts_buyers,
-         coalesce(sum(organic_thread_openers),0)    as organic_openers
-  from d where day > current_date - 30
+v30 as (
+  select
+    count(distinct viewer_public_id) as named,
+    count(distinct viewer_public_id) filter (where provenance = 'engine_touched') as engine,
+    count(distinct viewer_public_id) filter (where provenance = 'organic_icp') as organic_icp,
+    count(distinct viewer_public_id) filter (where provenance is distinct from 'engine_touched'
+                                               and provenance is distinct from 'organic_icp') as other
+  from pv where day > current_date - 30
 ),
-w7 as (
-  select coalesce(sum(profile_views_named),0)       as named,
-         coalesce(sum(profile_views_engine),0)      as engine,
-         coalesce(sum(profile_views_organic_icp),0) as organic_icp
-  from d where day > current_date - 7
+v7 as (
+  select
+    count(distinct viewer_public_id) as named,
+    count(distinct viewer_public_id) filter (where provenance = 'engine_touched') as engine,
+    count(distinct viewer_public_id) filter (where provenance = 'organic_icp') as organic_icp,
+    count(distinct viewer_public_id) filter (where provenance is distinct from 'engine_touched'
+                                               and provenance is distinct from 'organic_icp') as other
+  from pv where day > current_date - 7
+),
+eng as (
+  -- a person, not a reaction: one engager may react to several posts and may be
+  -- seen on several days
+  select coalesce(nullif(pe.member_id,''), nullif(pe.provider_id,''), nullif(pe.linkedin_url,''), pe.name) as person,
+         min(pe.provenance) as provenance
+  from public.post_engagers pe
+  join public.client_post_metrics m on m.social_id = pe.post_social_id and m.client_id = 'risedtc'
+  where pe.first_seen_at > current_date - 30
+  group by 1
+),
+e30 as (
+  select count(*) filter (where person is not null) as new_people,
+         count(*) filter (where provenance = 'organic_icp') as organic_icp,
+         count(*) filter (where provenance = 'engine_touched') as engine
+  from eng
+),
+other30 as (
+  select
+    (select count(*) from public.inbound_triage_log
+      where client_id = 'risedtc' and verdict = 'buyer' and decided_at > current_date - 30) as buyer_dms,
+    (select count(*) from public.client_post_metrics
+      where client_id = 'risedtc' and funnel_class = 'buyers'
+        and published_at is not null and published_at > current_date - 30) as posts_buyers,
+    (select count(distinct p.id)
+       from public.outreach_messages m
+       join public.outreach_prospects p on p.id = m.prospect_id
+       join public.outreach_campaigns c on c.id = p.campaign_id and c.client_id = 'risedtc'
+      where m.direction = 'inbound' and m.sent_at is not null
+        and (m.is_reaction is null or m.is_reaction = false)
+        and (m.channel is null or m.channel <> 'email')
+        and m.sent_at > current_date - 30
+        and not exists (select 1 from public.outreach_messages o
+                         where o.prospect_id = m.prospect_id and o.direction = 'outbound'
+                           and o.sent_at is not null and o.sent_at < m.sent_at)) as organic_openers
 ),
 posts as (
   select jsonb_agg(p order by p.published_at desc) as rows
@@ -48,41 +88,30 @@ posts as (
     limit 5
   ) p
 ),
-first_capture as (
-  select min(captured_at) as at, min(capture_day) as day
+started as (
+  select min(coalesce(capture_day, captured_at::date)) as day
   from public.profile_view_log where seat = 'risedtc'
 )
 select jsonb_build_object(
   'computed_at', to_char(now() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-  'first_capture_at', (select at from first_capture),
-  'first_capture_day', (select day from first_capture),
+  'grain', 'distinct people, computed off the source tables; the daily view is per-day distincts and does not sum',
+  'tracking_started_on', (select day from started),
   'profile_views', jsonb_build_object(
     'window_days', 30,
-    'named', w30.named,
-    'engine', w30.engine,
-    'organic_icp', w30.organic_icp,
-    -- everyone the classifier put in neither bucket. Today that is entirely
-    -- vendor_other (recruiters / agencies / tool sellers). Computed as the
-    -- remainder so the three parts always add back to `named`.
-    'other', greatest(w30.named - w30.engine - w30.organic_icp, 0),
-    'named_7d', w7.named,
-    'engine_7d', w7.engine,
-    'organic_icp_7d', w7.organic_icp,
-    'other_7d', greatest(w7.named - w7.engine - w7.organic_icp, 0)
+    'named', v30.named, 'engine', v30.engine, 'organic_icp', v30.organic_icp, 'other', v30.other,
+    'named_7d', v7.named, 'engine_7d', v7.engine, 'organic_icp_7d', v7.organic_icp, 'other_7d', v7.other
   ),
   'engagers', jsonb_build_object(
-    'window_days', 30,
-    'new', w30.engagers_new,
-    'organic_icp', w30.engagers_organic_icp,
-    'engine', w30.engagers_engine
+    'window_days', 30, 'new', e30.new_people, 'organic_icp', e30.organic_icp, 'engine', e30.engine
   ),
-  'buyer_dms_30d', w30.buyer_dms,
-  'organic_openers_30d', w30.organic_openers,
-  'posts_buyers_30d', w30.posts_buyers,
+  'buyer_dms_30d', other30.buyer_dms,
+  'organic_openers_30d', other30.organic_openers,
+  'posts_buyers_30d', other30.posts_buyers,
   'posts', coalesce((select rows from posts), '[]'::jsonb)
 )
-from w30, w7
+from v30, v7, e30, other30
 $fn$;
+
 
 create or replace function public.client_board_funnel_signals(p_slug text, p_token text)
 returns jsonb

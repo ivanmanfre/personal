@@ -53,10 +53,10 @@ const TRUTH = {
 
 const SIGNALS: FunnelSignals = {
   computed_at: '2026-08-26T07:51:01Z',
-  first_capture_at: '2026-08-25T23:48:00.921Z',
-  first_capture_day: '2026-08-25',
+  grain: 'distinct people, computed off the source tables',
+  tracking_started_on: '2026-08-25',
   profile_views: { window_days: 30, named: 20, engine: 17, organic_icp: 0, other: 3, named_7d: 4, engine_7d: 4, organic_icp_7d: 0, other_7d: 0 },
-  engagers: { window_days: 30, new: 97, organic_icp: 2, engine: 24 },
+  engagers: { window_days: 30, new: 74, organic_icp: 2, engine: 15 },
   buyer_dms_30d: 0,
   organic_openers_30d: 14,
   posts_buyers_30d: 11,
@@ -195,14 +195,21 @@ describe('OutreachSignalsTile — D-G funnel instruments', () => {
     expect(html).toContain('>20<');
   });
 
-  it('the organic line carries its start date, in the DOM', () => {
-    expect(render({ signals: SIGNALS })).toContain('tracking started Aug 26');
+  it('the organic line carries its start date, COMPUTED from the log, in the DOM', () => {
+    // 🔴 never hardcoded: rise_funnel_daily's first capture day for this seat is 25 Aug,
+    // and the weekly report prints the same value from the same read
+    expect(render({ signals: SIGNALS })).toContain('tracking started 25 Aug');
+    // no start date on the payload -> the row says a new line, it does not invent one
+    const noDate = render({ signals: { ...SIGNALS, tracking_started_on: null } });
+    expect(noDate).toContain('a new line: a zero here is an instrument that has only just started');
+    expect(noDate).not.toContain('tracking started');
   });
 
   it('engagement renders as counts, with the trend suppressed until early September', () => {
     const html = render({ signals: SIGNALS });
-    expect(html).toContain('97 people engaged your posts');
+    expect(html).toContain('74 people engaged your posts');
     expect(html).toContain('2 of them brand owners we had not written to');
+    expect(html).toContain('Everyone above is counted once, however many times they looked or reacted.');
     expect(html).toContain('It reads as a trend from about 2 Sep.');
   });
 
