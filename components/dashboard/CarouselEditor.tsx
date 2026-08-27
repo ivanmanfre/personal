@@ -54,6 +54,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // Seed from the post's current schedule so the field shows the real date and
   // the action becomes "Update" instead of silently auto-slotting a new one.
   const [when, setWhen] = useState(() => initialScheduleInput(draft.scheduledAt));
+  // Identity seed: the draft these fields were seeded from. run() refuses every
+  // mutation if the live prop ever diverges from it, and the schedule write
+  // re-verifies the seeded title server-side — so a surface that swaps the
+  // draft under a mounted editor (incident 2026-08-27: un-keyed sheet published
+  // the wrong post) fails loud instead of writing to a row the operator isn't
+  // looking at.
+  const [seed] = useState(() => ({ id: draft.id, title: draft.title }));
   const [busy, setBusy] = useState<string | null>(null);
   // Animated-video origin control (footer). Firing redoVideo() sets
   // video_status='generating' + fires video-gen-v2 → ivan-flow-video renders a
@@ -141,6 +148,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const visualLink = tax.visual_content_link as string | undefined;
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
+    if (draft.id !== seed.id) {
+      toastError(label, new Error('Editor is out of sync with the selected post — close and reopen it, then retry.'));
+      return;
+    }
     setBusy(label);
     userInitiatedRef.current = true;
     try { await fn(); toast.success(successMsg); onChanged(); }
@@ -804,7 +815,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                           setWhen(toDatetimeLocalString(slot));
                           toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
                         }
-                        run('schedule', () => scheduleCarousel(draft.id, iso), isScheduled ? 'Rescheduled' : 'Scheduled');
+                        run('schedule', () => scheduleCarousel(seed.id, iso, seed.title), isScheduled ? 'Rescheduled' : 'Scheduled');
                       }}
                     >
                       {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}

@@ -256,13 +256,22 @@ export async function setStatus(id: string, status: string) {
 
 // Schedule a post directly against Supabase. Bridge workflow yzXqLDIpuNzuhUQq
 // picks up status='scheduled' rows and INSERTs the publisher queue row.
-export async function scheduleCarousel(draft_id: string, scheduled_at: string) {
+// seenTitle, when provided, must match the row's current title or the update
+// hits 0 rows and we refuse — the caller proves it is scheduling the draft the
+// operator was actually looking at (incident 2026-08-27: a stale editor sheet
+// scheduled a different draft than the one displayed).
+export async function scheduleCarousel(draft_id: string, scheduled_at: string, seenTitle?: string) {
   const { supabase } = await import('./supabase');
-  const { error } = await supabase.from('carousel_drafts').update({
+  let q = supabase.from('carousel_drafts').update({
     status: 'scheduled',
     scheduled_at,
   }).eq('id', draft_id);
+  if (seenTitle !== undefined) q = q.eq('title', seenTitle);
+  const { data, error } = await q.select('id');
   if (error) throw new Error(`schedule failed: ${error.message}`);
+  if (!data || data.length === 0) {
+    throw new Error('Refused: this draft no longer matches what is on screen — close and reopen the post, then schedule again.');
+  }
   return { ok: true, draft_id, scheduled_at };
 }
 
