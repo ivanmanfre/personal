@@ -24,7 +24,7 @@
  */
 import React from 'react';
 import { Plate, Eyebrow, Num, Delta, Spark, Chip, Footnote, Card, Drill, PlateMute, PlateRule } from './desk-kit';
-import type { Board, OutreachLogEntry, OutreachTruth } from '../ClientBoardPage';
+import type { Board, OutreachLogEntry, OutreachTruth, OutreachTruthLead } from '../ClientBoardPage';
 
 /* ══════════════════════════ dates + numbers ══════════════════════════ */
 
@@ -323,6 +323,97 @@ function IntentChip({ intent }: { intent?: string | null }) {
   );
 }
 
+/* ══════════════════════════ the leads strip ══════════════════════════ */
+
+/**
+ * Every lead currently in play, name by name, off `board.outreach_truth.leads` (goal-run
+ * arch-panel-live-leads-2026-08-27). The ARCH compute() emits the key; the RISE compute()
+ * does not, and a blob without it renders NOTHING here, so risedtc-com stays byte-identical.
+ *
+ * Lane and stage arrive as internal tokens. Both are mapped to client-facing labels below;
+ * an unmapped lane renders NO chip rather than leaking the raw token. The status chip is
+ * derived, in priority order: booked, replied, accepted, InMail sent, invited, queued.
+ */
+const LEAD_LANE_LABEL: Record<string, string> = {
+  engager_warm: 'warm engager',
+  cold_games: 'cold: games',
+  cold_apps: 'cold: apps',
+  sponsor_team: 'sponsor',
+  sponsor_mined: 'sponsor',
+};
+
+function leadStatus(l: OutreachTruthLead): { label: string; at: string | null; strong: boolean } {
+  if (l.call_booked_at) return { label: 'booked', at: l.call_booked_at, strong: true };
+  if (l.last_reply_at) return { label: 'replied', at: l.last_reply_at, strong: true };
+  if ((l.stage || '') === 'connected') return { label: 'accepted', at: l.last_dm_sent_at || l.connection_sent_at || null, strong: false };
+  if (l.last_dm_sent_at && (l.stage || '') === 'dm_sent' && !l.connection_sent_at) return { label: 'InMail sent', at: l.last_dm_sent_at, strong: false };
+  if (l.connection_sent_at) return { label: 'invited', at: l.connection_sent_at, strong: false };
+  return { label: 'queued', at: null, strong: false };
+}
+
+/** "27 Aug" in Europe/Zagreb. The client reads from Zagreb and a UTC date can be
+ *  yesterday there, so this strip's dates are rendered in his day, dates only. */
+function zagrebDay(iso?: string | null): string {
+  const d = parseIso(iso);
+  if (!d) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/Zagreb' });
+}
+
+/** Rows past this count fold behind the "show all N" toggle. */
+const LEADS_FOLD = 12;
+
+export function LeadsStrip({ ot }: { ot?: OutreachTruth | null }) {
+  const leads = Array.isArray(ot?.leads) ? (ot?.leads as OutreachTruthLead[]) : [];
+  if (leads.length === 0) return null;
+  const stamp = countedStamp(ot?.counted_at);
+  const head = leads.slice(0, LEADS_FOLD);
+  const rest = leads.slice(LEADS_FOLD);
+  const row = (l: OutreachTruthLead, i: number) => {
+    const st = leadStatus(l);
+    const laneLabel = l.lane ? LEAD_LANE_LABEL[l.lane] : undefined;
+    const when = zagrebDay(st.at);
+    return (
+      <div key={`${l.name || 'lead'}-${i}`} style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', padding: '11px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
+        <span style={{ flex: 'none', width: 26, fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 12.5, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{pad2(i + 1)}</span>
+        <span style={{ flex: '1 1 200px', minWidth: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-ink)' }}>{l.name || '(unnamed)'}</span>
+          {l.company && <span style={{ fontSize: 12.5, color: 'var(--cb-ink-soft)', marginLeft: 8 }}>{l.company}</span>}
+        </span>
+        {laneLabel && <Chip style={{ flex: 'none', fontSize: 11.5, padding: '2px 10px' }}>{laneLabel}</Chip>}
+        {l.from_team && <Chip style={{ flex: 'none', fontSize: 11.5, padding: '2px 10px' }}>from your team</Chip>}
+        <Chip tone={st.strong ? 'accent' : 'default'} style={{ flex: 'none', fontSize: 11.5, padding: '2px 10px' }}>{st.label}</Chip>
+        <span style={{ flex: 'none', fontFamily: 'var(--cb-mono)', fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', minWidth: 52, textAlign: 'right' }}>{when}</span>
+      </div>
+    );
+  };
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginTop: 30, paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)' }}>
+        <Eyebrow style={{ flex: '1 1 auto' }}>Leads in play</Eyebrow>
+        <Num size="row" inline>{leads.length}</Num>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>latest activity first</span>
+      </div>
+      <Card style={{ marginTop: 12, padding: '18px 26px 14px' }}>
+        <Footnote style={{ marginTop: 0 }}>
+          Everyone on the list right now and where each one stands, counted {stamp}.
+          The date beside each name is their latest step, in your day.
+        </Footnote>
+        <div style={{ marginTop: 12 }}>
+          {head.map(row)}
+          {rest.length > 0 && (
+            <details className="drill" style={{ borderTop: '1px solid var(--cb-line)' }}>
+              <summary style={{ listStyle: 'none', cursor: 'pointer', padding: '11px 0', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
+                show all {leads.length}
+              </summary>
+              {rest.map((l, i) => row(l, i + LEADS_FOLD))}
+            </details>
+          )}
+        </div>
+      </Card>
+    </>
+  );
+}
+
 /* ══════════════════════════ the surface ══════════════════════════ */
 
 export default function OutreachTopOfPanel({
@@ -559,6 +650,10 @@ export default function OutreachTopOfPanel({
           </div>
         )}
       </Card>
+
+      {/* ═══ 3b — every lead in play, ARCH boards only (blob-gated: no `leads` key on the
+          blob, no strip, so RISE renders byte-identical). ═══ */}
+      <LeadsStrip ot={ot} />
 
       {/* ═══ 4 — the filters, lane by lane. Mattan asked to see them. ═══ */}
       {gateLanes.length > 0 && (

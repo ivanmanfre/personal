@@ -266,6 +266,16 @@ interface OutreachTruthRepliedPerson {
   name?: string | null; company?: string | null; linkedin_profile_id?: string | null;
   last_reply_at?: string | null; reply_intent?: string | null;
 }
+/** One in-play lead inside board.outreach_truth.leads (ARCH boards only today; the RISE
+ *  compute() does not emit the key and the strip renders nothing without it). Stage and
+ *  lane are INTERNAL tokens: the surface maps them to client-facing labels and drops
+ *  anything unmapped rather than leaking a raw token. */
+interface OutreachTruthLead {
+  name?: string | null; company?: string | null; lane?: string | null;
+  from_team?: boolean; stage?: string | null;
+  connection_sent_at?: string | null; last_dm_sent_at?: string | null;
+  last_reply_at?: string | null; call_booked_at?: string | null;
+}
 /** board.outreach_truth — the single server-computed source of truth for booked/replied/
  *  funnel numbers (goal-run rise-panel-truth-2026-08-25). Written by rise_outreach_truth_apply()
  *  via the Performance Sync workflow, every 6h. Every number carries `counted_at`; a missing or
@@ -278,6 +288,8 @@ interface OutreachTruth {
   replied_7d: OutreachTruthRepliedPerson[];
   replied_weekly: { week_monday: string; people: number }[];
   funnel: { contacted: number; accepted: number; replied_people: number; booked: number };
+  /** In-play leads, ARCH compute() only. Absent on RISE blobs by design. */
+  leads?: OutreachTruthLead[];
 }
 interface OutreachSpec {
   note?: string;
@@ -7432,7 +7444,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
  *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
  *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
 export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
-export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
+export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, OutreachTruthLead, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
 
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
