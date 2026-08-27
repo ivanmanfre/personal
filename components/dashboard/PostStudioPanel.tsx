@@ -695,12 +695,13 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
         {open && (open.isIdea
           ? (
             <IdeaDetail
+              key={open.id}
               draft={open}
               onClose={() => setOpenId(null)}
               onDecided={(cid) => { removeIdea(cid); refresh(); }}
             />
           )
-          : <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />
+          : <CarouselEditor key={open.id} draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />
         )}
       </Sheet>
       <ConfirmDialog

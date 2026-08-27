@@ -174,7 +174,7 @@ export function Calendar() {
 
       {/* Post editor sheet — only opens for kind='post'. */}
       <Sheet open={!!openPost} onClose={() => setOpenPostId(null)} size="full" title={openPost ? <span className="truncate">{openPost.title}</span> : ''}>
-        {openPost && <CarouselEditor draft={openPost} onClose={() => setOpenPostId(null)} onChanged={refreshPosts} />}
+        {openPost && <CarouselEditor key={openPost.id} draft={openPost} onClose={() => setOpenPostId(null)} onChanged={refreshPosts} />}
       </Sheet>
 
       <Sheet open={!!openLm} onClose={() => setOpenLmId(null)} size="full"

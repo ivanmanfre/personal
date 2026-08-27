@@ -560,10 +560,10 @@ const PostWorkSurface: React.FC = () => {
         title={detailDraft ? <span className="truncate">{detailDraft.isIdea ? 'Idea' : (detailDraft.title || 'Post')}</span> : ''}
       >
         {detailDraft && (detailDraft.isIdea ? (
-          <IdeaDetail draft={detailDraft} onClose={() => setDetailId(null)} onDecided={(cid) => { removeIdea(cid); refresh(); }} />
+          <IdeaDetail key={detailDraft.id} draft={detailDraft} onClose={() => setDetailId(null)} onDecided={(cid) => { removeIdea(cid); refresh(); }} />
         ) : (
           <Suspense fallback={<div className="ws-loading" style={{ padding: '2rem' }}>Loading detail…</div>}>
-            <CarouselEditor draft={detailDraft} onClose={() => setDetailId(null)} onChanged={refresh} />
+            <CarouselEditor key={detailDraft.id} draft={detailDraft} onClose={() => setDetailId(null)} onChanged={refresh} />
           </Suspense>
         ))}
       </Sheet>
