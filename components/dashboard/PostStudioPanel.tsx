@@ -625,7 +625,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           }}
           onDateChange={async (id, iso) => {
             // Preserve existing time-of-day if present, else default to 09:00 local.
-            const cur = drafts.find((d) => d.id === id)?.scheduledAt;
+            const curRow = drafts.find((d) => d.id === id);
+            const cur = curRow?.scheduledAt;
             let nextISO: string | null = null;
             if (iso) {
               const [y, m, d] = iso.split('-').map(Number);
@@ -637,15 +638,20 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             // Setting a future date must also promote status→'scheduled' so the Bridge
             // (yzXqLDIpuNzuhUQq) queues a scheduled_posts row; otherwise a 'review' post
             // gets a date but never publishes (incident-calendar-schedule-no-queue-2026-06-13).
-            const curStatus = drafts.find((d) => d.id === id)?.status;
+            const curStatus = curRow?.status;
             const SCHEDULABLE = new Set(['review', 'approved', 'scheduled']);
             const promote = !!(nextISO && curStatus && SCHEDULABLE.has(curStatus));
             const patch: { scheduled_at: string | null; status?: string } = { scheduled_at: nextISO };
             if (promote) patch.status = 'scheduled';
             applyOptimistic(id, { scheduledAt: nextISO, ...(promote ? { status: 'scheduled' } : {}) });
             try {
-              const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', id);
+              // Write-what-you-see guard (incident 2026-08-27): the update must land
+              // on the row still carrying this list row's title, else 0 rows → refuse.
+              let q = supabase.from('carousel_drafts').update(patch).eq('id', id);
+              if (curRow?.title) q = q.eq('title', curRow.title);
+              const { data: hit, error } = await q.select('id');
               if (error) throw error;
+              if (!hit || hit.length === 0) throw new Error('This post changed under you — refresh and retry.');
               toast.success(nextISO ? 'Rescheduled' : 'Date cleared');
             } catch (err) {
               toastError('reschedule', err);

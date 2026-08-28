@@ -35,6 +35,9 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  // Fire time this editor was OPENED with (mount snapshot, not the live prop —
+  // realtime keeps the prop fresh, which would defeat the guard below).
+  const [seedScheduledAt] = useState(post.scheduledAt);
 
   const uploadImage = async (file: File) => {
     if (!/^image\//.test(file.type)) { toast.error('Only image files are allowed'); return; }
@@ -60,8 +63,13 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
       if (when) patch.scheduled_at = new Date(when).toISOString();
       // Reviving a cancelled/failed post re-arms it for publishing.
       if (isDead) patch.status = 'pending';
-      const { error } = await supabase.from('scheduled_posts').update(patch).eq('id', post.id);
+      // Write-what-you-see guard (incident 2026-08-27): the row must still hold
+      // the fire time this editor was opened with, else 0 rows → refuse.
+      let q = supabase.from('scheduled_posts').update(patch).eq('id', post.id);
+      if (seedScheduledAt) q = q.eq('scheduled_at', seedScheduledAt);
+      const { data: hit, error } = await q.select('id');
       if (error) throw error;
+      if (!hit || hit.length === 0) throw new Error('This post changed or moved since you opened it — close, reopen, and retry.');
       toast.success(isDead ? 'Rescheduled — back on the calendar' : 'Saved');
       onChanged();
       onClose();

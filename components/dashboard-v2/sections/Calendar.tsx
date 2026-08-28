@@ -63,7 +63,8 @@ export function Calendar() {
   );
 
   const reschedulePost = useCallback(async (item: CalendarItem, isoDate: string) => {
-    const cur = posts.find((d) => d.id === item.id)?.scheduledAt;
+    const curRow = posts.find((d) => d.id === item.id);
+    const cur = curRow?.scheduledAt;
     let nextISO: string | null = null;
     if (isoDate) {
       const [y, m, d] = isoDate.split('-').map(Number);
@@ -76,15 +77,20 @@ export function Calendar() {
     // so the Bridge (yzXqLDIpuNzuhUQq) inserts the scheduled_posts queue row. Without
     // this the draft keeps its prior status (e.g. 'review') and the publisher never
     // sees it — the silent-drop bug (incident-calendar-schedule-no-queue-2026-06-13).
-    const curStatus = posts.find((d) => d.id === item.id)?.status;
+    const curStatus = curRow?.status;
     const SCHEDULABLE = new Set(['review', 'approved', 'scheduled']);
     const promote = !!(nextISO && curStatus && SCHEDULABLE.has(curStatus));
     const patch: { scheduled_at: string | null; status?: string } = { scheduled_at: nextISO };
     if (promote) patch.status = 'scheduled';
     applyOptimistic(item.id, { scheduledAt: nextISO, ...(promote ? { status: 'scheduled' } : {}) });
     try {
-      const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', item.id);
+      // Write-what-you-see guard (incident 2026-08-27): the update must land on
+      // the row still carrying the title this chip rendered, else 0 rows → refuse.
+      let q = supabase.from('carousel_drafts').update(patch).eq('id', item.id);
+      if (curRow?.title) q = q.eq('title', curRow.title);
+      const { data: hit, error } = await q.select('id');
       if (error) throw error;
+      if (!hit || hit.length === 0) throw new Error('This post changed under you — refresh the calendar and retry.');
       // Keep the publish queue in lockstep with the operator's intent. The bridge
       // workflow only re-syncs future-dated drafts on a 5-min cron; writing the
       // linked pending scheduled_posts row here makes the move instant and also
@@ -128,15 +134,18 @@ export function Calendar() {
       // posting/cancelled/failed row (mirrors the pending guard on the posts path).
       // .select() so we can tell an actual move from a 0-row no-op and not lie
       // with a success toast (the UI also locks these chips from dragging).
-      const { data, error } = await supabase
+      // The cur-time match is the write-what-you-see guard (incident 2026-08-27):
+      // the row must still hold the time this chip rendered, else refuse.
+      let q = supabase
         .from('scheduled_posts')
         .update({ scheduled_at: nextISO })
         .eq('id', item.id)
-        .in('status', ['pending', 'queued_v2'])
-        .select('id');
+        .in('status', ['pending', 'queued_v2']);
+      if (cur) q = q.eq('scheduled_at', cur);
+      const { data, error } = await q.select('id');
       if (error) throw error;
       if (!data || data.length === 0) {
-        toast.error('That post already went out or was cancelled — can’t reschedule it.');
+        toast.error('That post moved, already went out, or was cancelled — refresh and retry.');
         return;
       }
       toast.success('Rescheduled');
@@ -187,7 +196,7 @@ export function Calendar() {
       <Sheet open={!!openQueue} onClose={() => setOpenQueueId(null)} size="lg"
         title={openQueue ? 'Scheduled post' : ''}>
         {openQueue && (
-          <ScheduledPostEditor post={openQueue} onClose={() => setOpenQueueId(null)} onChanged={refreshQueue} />
+          <ScheduledPostEditor key={openQueue.id} post={openQueue} onClose={() => setOpenQueueId(null)} onChanged={refreshQueue} />
         )}
       </Sheet>
     </div>
