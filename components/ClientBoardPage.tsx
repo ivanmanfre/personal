@@ -3458,7 +3458,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, setMedia, setSchedule, slug, fetchHistory, reviewMode = false, approved = false }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, slug, fetchHistory, reviewMode = false, approved = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
@@ -3475,6 +3475,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live board: rename a deck's title (the name the document carries everywhere). */
+  editTitle?: (draftId: string, newTitle: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: attach/replace/clear a lifestyle photo on this post. */
   setMedia?: (draftId: string, url: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: change this post's date/time (writes carousel_drafts.scheduled_at). */
@@ -3484,6 +3486,11 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const reduce = useReducedMotion();
   const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
+  // Deck title (live): editable alongside the copy for document posts only — the title is
+  // what the deck viewer and the published document carry, so it must read like a post
+  // title, never an internal label.
+  const isDeck = docPagesOf(item).length >= 2;
+  const [deckTitle, setDeckTitle] = useState(item.title || '');
   // Photo attach (live): the chosen lifestyle image for this post, plus the pool picker.
   // Most queue rows carry their photo in image_urls with media_url unset (only the
   // set_media RPC writes media_url), so the current photo falls back to image_urls[0].
@@ -3653,9 +3660,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
       // Prefer the applying RPC: the edit lands on the draft + board immediately, with a
       // before/after row in the operator's edit log. Fallback keeps the log-only path.
       const r = editDraft ? await editDraft(item.id, body) : await act('edit_copy', item.id, { body });
-      setBusy(false);
-      if (!r.ok) { setErr(r.error || 'Could not save that. Try again.'); return; }
+      if (!r.ok) { setBusy(false); setErr(r.error || 'Could not save that. Try again.'); return; }
       item.body = body;
+      // Deck title rides the same save: only written when it actually changed.
+      const trimmed = deckTitle.trim();
+      if (isDeck && editTitle && trimmed && trimmed !== (item.title || '')) {
+        const rt = await editTitle(item.id, trimmed);
+        if (!rt.ok) { setBusy(false); setErr(rt.error || 'Copy saved, but the title did not save. Try again.'); return; }
+        item.title = trimmed;
+      }
+      setBusy(false);
     }
     setEditSaved(true);
     setEditing(false);
@@ -3750,6 +3764,20 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </div>
             ) : editing ? (
               <div>
+                {isDeck && (
+                  <div className="mb-3">
+                    <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide" style={{ color: FAINT }}>Document title</div>
+                    <input
+                      type="text"
+                      value={deckTitle}
+                      onChange={(e) => setDeckTitle(e.target.value)}
+                      maxLength={140}
+                      className="w-full rounded-lg p-3 text-[14px] font-semibold outline-none"
+                      style={{ border: `1.5px solid ${accent}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
+                    />
+                    <div className="mt-1 text-[12px]" style={{ color: FAINT }}>This is the name your carousel carries, on the board and on the published document.</div>
+                  </div>
+                )}
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
@@ -7887,6 +7915,31 @@ export default function ClientBoardPage() {
     }
   };
 
+  // Rename a deck's title (live). Same posture as editDraft: one RPC writes
+  // carousel_drafts.title + the cached board queue item, and logs an edit_title
+  // action with before/after for the operator. Local state updates in place.
+  const editTitle = async (draftId: string, newTitle: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_edit_title', { p_slug: slug, p_token: token, p_draft_id: draftId, p_title: newTitle });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_edit_title_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_title: newTitle });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
+      if (out.ok) {
+        setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === draftId ? { ...q, title: newTitle } : q) } : b);
+      }
+      return out;
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
   // Edit an LM's delivery email or keyword DM (live). Writes board.lead_magnets[i].promo via
   // the gated client_board_edit_lm_promo RPC + logs an edit_lm_promo action; updates local
   // board state so the edit shows at once. Same token/session routing as editDraft.
@@ -9240,6 +9293,7 @@ export default function ClientBoardPage() {
           isLive={isLive}
           act={act}
           editDraft={editDraft}
+          editTitle={editTitle}
           setMedia={isLive ? setMedia : undefined}
           setSchedule={isLive ? setScheduleRPC : undefined}
           slug={slug || ''}
