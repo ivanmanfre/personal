@@ -491,18 +491,27 @@ export default function OutreachTopOfPanel({
     { key: 'reply', label: 'to the first reply', unit: 'people' },
     { key: 'book', label: 'to a booked call', unit: 'calls' },
   ];
+  // A median of one or two readings is not a typical time, it is an anecdote wearing
+  // a statistic's clothes. Under three, the rung does not draw — so a young lane shows
+  // its rungs one at a time as evidence accumulates instead of claiming a pattern on
+  // its first accept. (ARCH sits at accept=4, reply=1, book=0 the day this shipped.)
+  const CLOCK_MIN_N = 3;
   const clock = clockRungs.flatMap((r) => {
     const s = speed?.[r.key];
     const parts = daysSplit(s?.median_days);
-    if (!s || !parts || !s.n) return [];
-    return [{ label: r.label, v: parts.v, u: parts.u, n: `${s.n} ${r.unit}` }];
+    if (!s || !parts || !s.n || s.n < CLOCK_MIN_N) return [];
+    return [{ label: r.label, v: parts.v, u: parts.u, n: `${s.n} ${s.n === 1 ? r.unit.replace(/s$/, '') : r.unit}` }];
   });
+  const bookShown = (speed?.book?.n || 0) >= CLOCK_MIN_N;
+  // Range and the unmeasured count belong to the booked rung; they say nothing on a
+  // board where that rung is still too thin to draw.
   const bookRange = (() => {
+    if (!bookShown) return null;
     const fast = daysPhrase(speed?.book?.fastest_days);
     const slow = daysPhrase(speed?.book?.slowest_days);
     return fast && slow ? { fast, slow } : null;
   })();
-  const bookUnmeasured = typeof speed?.book_unmeasured === 'number' ? speed.book_unmeasured : 0;
+  const bookUnmeasured = bookShown && typeof speed?.book_unmeasured === 'number' ? speed.book_unmeasured : 0;
 
   // ── the roster ──────────────────────────────────────────────────────────────────────
   // replied_7d is already blacklist-filtered server-side, and already carries the intent
@@ -631,7 +640,7 @@ export default function OutreachTopOfPanel({
         </div>
         <Footnote style={{ marginTop: 4 }}>
           Counted {stamp}. Includes calls booked off the link as well as on it.
-          {daysPhrase(speed?.book?.median_days) && (
+          {bookShown && daysPhrase(speed?.book?.median_days) && (
             <> Typical gap from the connection request to the booking: {daysPhrase(speed?.book?.median_days)}.</>
           )}
         </Footnote>
