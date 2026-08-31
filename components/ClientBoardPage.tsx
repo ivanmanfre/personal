@@ -129,6 +129,10 @@ interface SourceDetail {
   kind: 'call' | 'lm_launch' | 'own_posts' | 'strategy' | string;
   label?: string;
   call_title?: string | null;
+  /** Day the source call happened (YYYY-MM-DD) — a call-grounded post names its call. */
+  call_date?: string | null;
+  /** Day the topic entered the idea bank (YYYY-MM-DD, client_ideas.created_at). */
+  sourced_at?: string | null;
   quote?: string | null;
   lm_ref?: string | null;
 }
@@ -911,18 +915,28 @@ export function DocCarousel({ slides, title, accent }: { slides: string[]; title
 }
 
 /** The honest source chip for a post. Prefers the concrete source_detail; a call-grounded
- *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". */
-function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
+ *  post reads "From your sales call · <who>", never a vague "Picked by Ivan". The meta line
+ *  carries the dates (call day + the day the topic entered the idea bank). */
+function srcDay(s?: string | null): string {
+  if (!s) return '';
+  const d = new Date(`${s.slice(0, 10)}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null; meta?: string | null } | null {
   const sd = q.source_detail;
   if (sd) {
+    const meta = [
+      srcDay(sd.call_date) ? `Heard on the ${srcDay(sd.call_date)} call` : '',
+      srcDay(sd.sourced_at) ? `topic picked ${srcDay(sd.sourced_at)}` : '',
+    ].filter(Boolean).join(' · ') || null;
     if (sd.kind === 'call') {
-      const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
-      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote };
+      const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*(&[^-]*)?-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
+      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote, meta };
     }
     // 'strategy' is an editorial category, NOT a provenance — never render it as a source
     // chip (it would read like "this came from X" next to the real call / own-post chips).
     if (sd.kind === 'strategy') return null;
-    return { label: sd.label || '', quote: null };
+    return { label: srcLabelClient(sd.label) || '', quote: null, meta };
   }
   if (q.source_label) return { label: srcLabelClient(q.source_label), quote: null };
   return null;
@@ -3557,6 +3571,25 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [schedOpen, setSchedOpen] = useState(initialSchedOpen);
   const [schedDate, setSchedDate] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).d : '');
   const [schedTime, setSchedTime] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).t : '09:00');
+  // Busy-day awareness for the picker: every OTHER post on the calendar, bucketed by its
+  // client-tz day square, so a clash is visible before a slot is saved — picking a date
+  // blind was how two posts landed on the same day (Ivan, 2026-08-31).
+  const busyByDay = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const q of board.queue || []) {
+      if (q.id === item.id) continue;
+      const d = boardDayOf(q.scheduled_at) || q.publish_date;
+      if (!d) continue;
+      (m[d] = m[d] || []).push(q.hook || q.title || 'a post');
+    }
+    return m;
+  }, [board.queue, item.id]);
+  // The next 14 day squares starting today (client tz). Day arithmetic runs on a UTC-noon
+  // anchor so DST cannot shift a square.
+  const stripDays = useMemo(() => {
+    const base = Date.parse(`${laParts().date}T12:00:00Z`);
+    return Array.from({ length: 14 }, (_, i) => new Date(base + i * 86400000).toISOString().slice(0, 10));
+  }, []);
   const [schedBusy, setSchedBusy] = useState(false);
   const [schedErr, setSchedErr] = useState('');
   const [schedLabel, setSchedLabel] = useState<string | null>(null);
@@ -3938,6 +3971,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
                   <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{detailChip?.label || srcLabelClient(item.source_label!)}</div>
                   {detailChip?.quote && <p className="mt-1" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.55, color: INK_SOFT }}>“{detailChip.quote}”</p>}
+                  {detailChip?.meta && <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>{detailChip.meta}</div>}
                 </div>
               )}
             </div>
@@ -3971,6 +4005,37 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       <button onClick={applySchedule} disabled={schedBusy || !schedDate} className="inline-flex min-h-[38px] items-center rounded-[6px] px-4 text-[13px] font-semibold" style={{ background: accent, color: ctaInk, opacity: schedBusy || !schedDate ? 0.6 : 1 }}>{schedBusy ? 'Saving…' : 'Save time'}</button>
                       <button onClick={clearSchedule} disabled={schedBusy} className="text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Clear this day</button>
                       <button onClick={() => setSchedOpen(false)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                    {/* Busy-day strip: the next two weeks at a glance — a dotted day already
+                        carries content, so the open squares are the safe slots. Tapping a
+                        day fills the date input. */}
+                    <div className="mt-3">
+                      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: FAINT }}>Next 14 days · a dotted day already has content</div>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {stripDays.map((d) => {
+                          const n = (busyByDay[d] || []).length;
+                          const sel = schedDate === d;
+                          const dt = new Date(`${d}T12:00:00Z`);
+                          return (
+                            <button key={d} type="button" onClick={() => setSchedDate(d)} aria-label={`${d}${n ? `, ${n} post${n > 1 ? 's' : ''} already on it` : ', open'}`}
+                              className="flex flex-col items-center rounded-[7px] px-1.5 py-1"
+                              style={{ minWidth: 42, border: `1.5px solid ${sel ? caText(accent) : LINE}`, background: sel ? caWash(accent) : n ? PAPER_SUNK : '#fff', cursor: 'pointer' }}>
+                              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.08em', color: FAINT }}>{dt.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}</span>
+                              <span className="tabular-nums leading-tight" style={{ fontFamily: BODY, fontSize: 13.5, fontWeight: 700, color: INK }}>{dt.getUTCDate()}</span>
+                              <span className="leading-none" style={{ fontFamily: MONO, fontSize: 9, color: n ? caText(accent) : 'transparent' }} aria-hidden>{n > 1 ? `●${n}` : '●'}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {schedDate && (busyByDay[schedDate] || []).length > 0 && (
+                        <div className="mt-2 rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>Already on this day</div>
+                          {(busyByDay[schedDate] || []).slice(0, 3).map((t, i) => (
+                            <div key={i} className="mt-1 truncate text-[12.5px] font-medium" style={{ color: INK }}>{t}</div>
+                          ))}
+                          {(busyByDay[schedDate] || []).length > 3 && <div className="mt-1 text-[11.5px]" style={{ color: FAINT }}>and {(busyByDay[schedDate] || []).length - 3} more</div>}
+                        </div>
+                      )}
                     </div>
                     {schedErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{schedErr}</div>}
                   </div>
