@@ -9333,8 +9333,13 @@ export default function ClientBoardPage() {
             cta = { label: 'See the lead magnets →', go: () => goTab('lm') };
           } else if (activeTab === 'outreach') {
             const st = outreachStatus;
-            text = st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Sends run on weekdays under your name.</>;
-            cta = { label: 'See the leads →', go: () => scrollToText('leads') };
+            // 2026-08-31 (Ivan): the old fallback said "weekdays", which stopped being true on
+            // 2026-08-02 when Sunday re-opened as a full sending day. Window is 13:00-00:59 UTC
+            // (Connection Request Sender), moved to that floor on 08-25 so nothing lands 2-6am
+            // Pacific. 13:00Z = 6am PT under PDT. ⚠ Written as a literal, so it reads an hour
+            // early once the US falls back to PST in November - revisit or make it derived.
+            // Saturday is view-only on this seat, so every other day sends.
+            text = st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Invites go out 6am to 6pm PT, every day except Saturday.</>;
           } else if (activeTab === 'performance') {
             text = best ? <>{perfPosts.length} posts measured. Best: {(best.impressions as number).toLocaleString()} reads.</> : <>Numbers land here as posts publish.</>;
             cta = { label: 'Read the ledger →', go: () => scrollToText('the ledger') };
