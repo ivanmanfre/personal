@@ -3542,6 +3542,29 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setMediaUrlState(url);
     setPoolOpen(false);
   };
+  // One-time photo from the client's own device, for THIS post only. It uploads into
+  // <slug>/onepost/ — the pool and the Photos library list the folder root only, so it
+  // never joins the library — then lands on the draft through the same set_media RPC
+  // (same anon-upload posture as PhotosSurface: the bucket allows anon insert from the
+  // token-gated page).
+  const oneShotRef = useRef<HTMLInputElement>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const uploadOneShot = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (oneShotRef.current) oneShotRef.current.value = '';
+    if (!file || !slug || !setMedia || uploadBusy) return;
+    setMediaErr('');
+    if (!/^image\//.test(file.type)) { setMediaErr('That file is not an image. Pick a JPG, PNG or WebP.'); return; }
+    if (file.size > 15 * 1024 * 1024) { setMediaErr('That image is over 15 MB. Pick a smaller one.'); return; }
+    setUploadBusy(true);
+    const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').toLowerCase();
+    const path = `${slug}/onepost/${item.id.slice(0, 8)}-${Date.now()}-${safe}`;
+    const { error } = await supabase.storage.from('client-photos').upload(path, file, { upsert: false, contentType: file.type || undefined });
+    if (error) { setUploadBusy(false); setMediaErr(error.message || 'Upload did not go through. Try again.'); return; }
+    const url = supabase.storage.from('client-photos').getPublicUrl(path).data.publicUrl;
+    setUploadBusy(false);
+    await chooseMedia(url);
+  };
   const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
@@ -3903,6 +3926,14 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       Change photo
                     </button>
                     <button
+                      onClick={() => oneShotRef.current?.click()}
+                      disabled={uploadBusy || !!mediaBusy}
+                      className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: uploadBusy ? 0.6 : 1 }}
+                    >
+                      {uploadBusy ? 'Uploading…' : 'Upload your own'}
+                    </button>
+                    <button
                       onClick={() => void chooseMedia('')}
                       disabled={!!mediaBusy}
                       className="inline-flex min-h-[38px] items-center rounded-[6px] px-3 text-[13px] font-medium"
@@ -3923,7 +3954,21 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     Add a photo
                   </button>
                 )}
-                <span className="text-[12px]" style={{ color: FAINT }}>From your lifestyle library.</span>
+                {!mediaUrl && (
+                  <button
+                    onClick={() => oneShotRef.current?.click()}
+                    disabled={uploadBusy || !!mediaBusy}
+                    className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: uploadBusy ? 0.6 : 1 }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 16V4M6 10l6-6 6 6" /><path d="M4 20h16" />
+                    </svg>
+                    {uploadBusy ? 'Uploading…' : 'Upload your own'}
+                  </button>
+                )}
+                <span className="text-[12px]" style={{ color: FAINT }}>From your library, or a one-off from your computer (this post only).</span>
+                <input ref={oneShotRef} type="file" accept="image/*" className="hidden" onChange={(e) => void uploadOneShot(e)} />
               </div>
               {mediaErr && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{mediaErr}</div>}
               {poolOpen && (
