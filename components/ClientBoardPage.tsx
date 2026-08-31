@@ -3571,19 +3571,27 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [schedOpen, setSchedOpen] = useState(initialSchedOpen);
   const [schedDate, setSchedDate] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).d : '');
   const [schedTime, setSchedTime] = useState(initialSchedOpen ? schedPrefill(item.scheduled_at).t : '09:00');
-  // Busy-day awareness for the picker: every OTHER post on the calendar, bucketed by its
-  // client-tz day square, so a clash is visible before a slot is saved — picking a date
-  // blind was how two posts landed on the same day (Ivan, 2026-08-31).
+  // Busy-day awareness for the picker: every OTHER post on the calendar, bucketed the
+  // same way the week grid buckets its day squares — publish_date FIRST (the day the
+  // client picked; scheduled_at's tz-day can differ on late-evening slots and made the
+  // strip disagree with the calendar, Ivan 2026-08-31), plus any planned calendar items
+  // not yet drafted, so a clash is visible before a slot is saved.
   const busyByDay = useMemo(() => {
     const m: Record<string, string[]> = {};
+    const qIds = new Set<string>();
     for (const q of board.queue || []) {
+      qIds.add(q.id);
       if (q.id === item.id) continue;
-      const d = boardDayOf(q.scheduled_at) || q.publish_date;
+      const d = q.publish_date || boardDayOf(q.scheduled_at);
       if (!d) continue;
       (m[d] = m[d] || []).push(q.hook || q.title || 'a post');
     }
+    for (const c of board.calendar?.items || []) {
+      if (!c.date || (c.ref && (qIds.has(c.ref) || c.ref === item.id))) continue;
+      (m[c.date] = m[c.date] || []).push(c.label || 'a planned piece');
+    }
     return m;
-  }, [board.queue, item.id]);
+  }, [board.queue, board.calendar, item.id]);
   // The next 14 day squares starting today (client tz). Day arithmetic runs on a UTC-noon
   // anchor so DST cannot shift a square.
   const stripDays = useMemo(() => {
