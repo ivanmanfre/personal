@@ -264,6 +264,24 @@ interface OutreachStatus {
 interface OutreachTruthBooked {
   prospect_id?: string; name: string | null; company?: string | null;
   booked_at?: string | null; brief_url?: string | null; scan_url?: string | null;
+  /** When the connection request went out, and the gap from there to the booking in days.
+   *  Both null on a booking whose conversation started without an invite (InMail and
+   *  open-profile lanes never stamp connection_sent_at), and days_to_book is also null when
+   *  the booking predates its own invite stamp — the server drops those rather than
+   *  clamping them to a "same day" it cannot vouch for. */
+  connection_sent_at?: string | null; days_to_book?: number | null;
+}
+/** board.outreach_truth.speed — how long the lane takes, every rung measured from the same
+ *  zero: the moment the connection request goes out (2026-08-31). Medians, not means, and
+ *  each carries its own n. Computed once in rise_outreach_truth_compute() and read by both
+ *  this panel and the weekly report, so the two can never print different clocks. */
+interface OutreachTruthSpeed {
+  anchor?: string;
+  accept?: { n: number; median_days: number | null } | null;
+  reply?: { n: number; median_days: number | null } | null;
+  book?: { n: number; median_days: number | null; fastest_days: number | null; slowest_days: number | null } | null;
+  /** Booked people the clock cannot measure, so the reader can see the denominator. */
+  book_unmeasured?: number;
 }
 /** One person who replied in the trailing 7 days, board.outreach_truth.replied_7d. */
 interface OutreachTruthRepliedPerson {
@@ -292,6 +310,9 @@ interface OutreachTruth {
   replied_7d: OutreachTruthRepliedPerson[];
   replied_weekly: { week_monday: string; people: number }[];
   funnel: { contacted: number; accepted: number; replied_people: number; booked: number };
+  /** Absent on blobs written before 2026-08-31 and on the ARCH compute(), which does not
+   *  emit it — the clock strip renders nothing rather than a zero when the key is missing. */
+  speed?: OutreachTruthSpeed;
   /** In-play leads, ARCH compute() only. Absent on RISE blobs by design. */
   leads?: OutreachTruthLead[];
 }

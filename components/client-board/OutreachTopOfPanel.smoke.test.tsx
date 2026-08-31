@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import OutreachTopOfPanel, { plainGate, sendLogAnchorId, scrubVendor, laneName } from './OutreachTopOfPanel';
+import OutreachTopOfPanel, { plainGate, sendLogAnchorId, scrubVendor, laneName, daysPhrase } from './OutreachTopOfPanel';
 import type { FunnelSignals } from './OutreachTopOfPanel';
 import type { Board, OutreachLogEntry } from '../ClientBoardPage';
 
@@ -16,9 +16,18 @@ const TRUTH = {
   semantics_version: 'clientweekpacket-2026-08-25',
   funnel: { contacted: 863, accepted: 205, replied_people: 60, booked: 6 },
   booked: [
-    { prospect_id: 'p1', name: 'Waldemar Schlemmer', company: 'NAD&Me', booked_at: '2026-08-25T22:58:06.806Z', brief_url: 'https://resources.risedtc.com/brief/?id=115629505025', scan_url: null },
-    { prospect_id: 'p2', name: 'Stefan Hertzberg', company: 'Vivi Labs', booked_at: '2026-08-20T21:34:07.828Z', brief_url: null, scan_url: null },
+    { prospect_id: 'p1', name: 'Waldemar Schlemmer', company: 'NAD&Me', booked_at: '2026-08-25T22:58:06.806Z', brief_url: 'https://resources.risedtc.com/brief/?id=115629505025', scan_url: null, connection_sent_at: '2026-08-25T09:18:25.857Z', days_to_book: 0.57 },
+    // no invite ever went out on this one: the server sends both keys null and the row
+    // must stay silent about a gap rather than print a zero.
+    { prospect_id: 'p2', name: 'Stefan Hertzberg', company: 'Vivi Labs', booked_at: '2026-08-20T21:34:07.828Z', brief_url: null, scan_url: null, connection_sent_at: null, days_to_book: null },
   ],
+  speed: {
+    anchor: 'connection_sent_at',
+    accept: { n: 245, median_days: 0.24 },
+    reply: { n: 64, median_days: 1.16 },
+    book: { n: 8, median_days: 4.15, fastest_days: 0.16, slowest_days: 30.62 },
+    book_unmeasured: 1,
+  },
   replied_7d: [
     { name: 'Gita V.', company: 'Neeshi Wellness', reply_intent: 'positive', last_reply_at: '2026-08-26T00:40:05.671Z', linkedin_profile_id: 'ACoAAAAK4B0BrhJkiht1M8dyaT5Ygvpu7WMBW4I' },
     { name: 'Grace Lin', company: 'Kaged', reply_intent: 'negative', last_reply_at: '2026-08-25T17:13:40.839Z', linkedin_profile_id: 'ACoAAB-EKG8B5kaQoeBMBBdT7PMUAqgbKmrds2Q' },
@@ -313,5 +322,51 @@ describe('LeadsStrip — the ARCH in-play leads list (goal-run arch-panel-live-l
     expect(text).not.toMatch(/unipile|apollo|smartlead|n8n|apify/i);
     expect(text).not.toMatch(/\bauto(?:mat\w*)?\b|\bengine\b|\bAI\b/);
     expect(text).not.toContain('—');
+  });
+});
+
+describe('the clock: connection request to booked call (2026-08-31)', () => {
+
+  it('C1 all three rungs render off one anchor, each with its own n', () => {
+    const html = render();
+    expect(html).toContain('From the connection request');
+    expect(html).toContain('to accept the invite');
+    expect(html).toContain('245 people');
+    expect(html).toContain('to the first reply');
+    expect(html).toContain('64 people');
+    expect(html).toContain('to a booked call');
+    expect(html).toContain('8 calls');
+  });
+
+  it('C2 sub-day gaps read in hours, never as a decimal of a day', () => {
+    expect(daysPhrase(0.24)).toBe('6 hours');
+    expect(daysPhrase(1.16)).toBe('1 day');
+    expect(daysPhrase(4.15)).toBe('4.2 days');
+    expect(daysPhrase(30.62)).toBe('31 days');
+    expect(render()).not.toContain('0.24');
+  });
+
+  it('C3 the range and the unmeasured bookings are both disclosed, never hidden', () => {
+    const html = render();
+    expect(html).toContain('Fastest call booked 4 hours');
+    expect(html).toContain('slowest 31 days');
+    expect(html).toContain('One booked call is outside this measure');
+  });
+
+  it('C4 a booked row prints its own gap, and a row without one says nothing', () => {
+    const html = render();
+    expect(html).toContain('14 hours from the connection request');
+    // Stefan has no invite stamp: no gap sentence may be synthesized for him
+    const stefan = html.slice(html.indexOf('Stefan Hertzberg'), html.indexOf('Stefan Hertzberg') + 400);
+    expect(stefan).not.toContain('from the connection request');
+  });
+
+  it('C5 a blob written before the key existed renders no clock at all, never a zero', () => {
+    const { speed, ...older } = TRUTH as Record<string, unknown>;
+    const html = renderToStaticMarkup(
+      <OutreachTopOfPanel board={boardWith(older)} accent="#4f46e5" log={null} signals={null} />,
+    );
+    expect(html).not.toContain('From the connection request');
+    expect(html).not.toContain('Typical gap');
   });
 });

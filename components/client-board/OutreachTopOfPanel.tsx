@@ -61,6 +61,29 @@ function parseIso(iso?: string | null): Date | null {
 }
 const DAY_MS = 86400000;
 
+/**
+ * A gap in days, said the way a person would say it. Under a day reads in hours, because
+ * "0.2 days" is a number nobody has ever used out loud; a single day reads as "1 day", and
+ * anything longer keeps one decimal only while it is small enough for the decimal to mean
+ * something. Returns '' for a missing reading so a caller can drop the line entirely rather
+ * than print a zero it did not measure.
+ */
+export function daysSplit(d?: number | null): { v: string; u: string } | null {
+  if (typeof d !== 'number' || !Number.isFinite(d) || d < 0) return null;
+  if (d < 1 / 24) return { v: '<1', u: 'hour' };
+  if (d < 1) {
+    const h = Math.round(d * 24);
+    return { v: `${h}`, u: h === 1 ? 'hour' : 'hours' };
+  }
+  if (d < 2) return d < 1.5 ? { v: '1', u: 'day' } : { v: '1.5', u: 'days' };
+  if (d < 10) return { v: `${Math.round(d * 10) / 10}`, u: 'days' };
+  return { v: `${Math.round(d)}`, u: 'days' };
+}
+export function daysPhrase(d?: number | null): string {
+  const p = daysSplit(d);
+  return p ? `${p.v} ${p.u}` : '';
+}
+
 /* ══════════════════════════ roster ↔ send-log wiring ══════════════════════════ */
 
 /**
@@ -459,6 +482,28 @@ export default function OutreachTopOfPanel({
   // ── booked calls ────────────────────────────────────────────────────────────────────
   const booked = Array.isArray(ot.booked) ? ot.booked : [];
 
+  // ── the clock ───────────────────────────────────────────────────────────────────────
+  // Rows are built only for rungs the server actually measured, so a rung with no readings
+  // disappears instead of printing a zero, and the strip disappears whole on an older blob.
+  const speed = ot.speed;
+  const clockRungs: { key: 'accept' | 'reply' | 'book'; label: string; unit: string }[] = [
+    { key: 'accept', label: 'to accept the invite', unit: 'people' },
+    { key: 'reply', label: 'to the first reply', unit: 'people' },
+    { key: 'book', label: 'to a booked call', unit: 'calls' },
+  ];
+  const clock = clockRungs.flatMap((r) => {
+    const s = speed?.[r.key];
+    const parts = daysSplit(s?.median_days);
+    if (!s || !parts || !s.n) return [];
+    return [{ label: r.label, v: parts.v, u: parts.u, n: `${s.n} ${r.unit}` }];
+  });
+  const bookRange = (() => {
+    const fast = daysPhrase(speed?.book?.fastest_days);
+    const slow = daysPhrase(speed?.book?.slowest_days);
+    return fast && slow ? { fast, slow } : null;
+  })();
+  const bookUnmeasured = typeof speed?.book_unmeasured === 'number' ? speed.book_unmeasured : 0;
+
   // ── the roster ──────────────────────────────────────────────────────────────────────
   // replied_7d is already blacklist-filtered server-side, and already carries the intent
   // of each person's MOST RECENT inbound message (not the best one in the thread).
@@ -541,6 +586,39 @@ export default function OutreachTopOfPanel({
           ))}
         </div>
         <Footnote on="plate">All four counted {stamp}.</Footnote>
+
+        {/* ═══ the clock (2026-08-31, Ivan asked for connection-to-booking time) ═══
+            Three rungs off ONE zero — the moment the connection request goes out — so
+            they read as one journey instead of three unrelated stats. Server-computed in
+            rise_outreach_truth_compute(); a blob written before this key existed renders
+            nothing at all rather than a zero it never measured. */}
+        {clock.length > 0 && (
+          <>
+            <PlateRule />
+            <Eyebrow on="plate">From the connection request</Eyebrow>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(min(150px, 100%), 1fr))`, gap: 16, marginTop: 12 }}>
+              {clock.map((c) => (
+                <div key={c.label}>
+                  <Num size="big" tone="plate">
+                    {c.v}
+                    <span style={{ fontSize: '0.42em', fontWeight: 600, marginLeft: 5, letterSpacing: '0.01em' }}>{c.u}</span>
+                  </Num>
+                  <PlateMute as="div" style={{ fontSize: 12, fontWeight: 600, marginTop: 6, lineHeight: 1.35 }}>
+                    {c.label}
+                    <br />
+                    <span style={{ opacity: 0.72 }}>{c.n}</span>
+                  </PlateMute>
+                </div>
+              ))}
+            </div>
+            <Footnote on="plate">
+              Typical time, not average: one slow booking would drag an average into a number that
+              describes nobody.
+              {bookRange ? <> Fastest call booked {bookRange.fast} after the request went out, slowest {bookRange.slow}.</> : null}
+              {bookUnmeasured > 0 ? <> {bookUnmeasured === 1 ? 'One booked call is' : `${bookUnmeasured} booked calls are`} outside this measure, because {bookUnmeasured === 1 ? 'that conversation' : 'those conversations'} started without a connection request.</> : null}
+            </Footnote>
+          </>
+        )}
       </Plate>
 
       {/* ═══ 2 — booked calls, pinned above the roster ═══ */}
@@ -551,7 +629,12 @@ export default function OutreachTopOfPanel({
             {booked.length} to date
           </span>
         </div>
-        <Footnote style={{ marginTop: 4 }}>Counted {stamp}. Includes calls booked off the link as well as on it.</Footnote>
+        <Footnote style={{ marginTop: 4 }}>
+          Counted {stamp}. Includes calls booked off the link as well as on it.
+          {daysPhrase(speed?.book?.median_days) && (
+            <> Typical gap from the connection request to the booking: {daysPhrase(speed?.book?.median_days)}.</>
+          )}
+        </Footnote>
         {booked.length === 0 ? (
           <div style={{ marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 25, background: 'var(--cb-paper-sunk)', padding: '30px 28px' }}>
             <b style={{ display: 'block', fontFamily: 'var(--cb-serif)', fontSize: 19, fontWeight: 600, color: 'var(--cb-ink)', marginBottom: 8 }}>None yet.</b>
@@ -572,7 +655,14 @@ export default function OutreachTopOfPanel({
                     {b.company && <span style={{ fontSize: 12.5, color: 'var(--cb-ink-soft)' }}>{b.company}</span>}
                   </div>
                   {b.booked_at && (
-                    <div style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 3 }}>{stampUtc(b.booked_at)}</div>
+                    <div style={{ fontFamily: 'var(--cb-mono)', fontSize: 11.5, color: 'var(--cb-ink-mute)', marginTop: 3 }}>
+                      {stampUtc(b.booked_at)}
+                      {/* The gap only prints when the server measured it. A booking whose
+                          thread began without an invite carries no gap and says nothing. */}
+                      {daysPhrase(b.days_to_book) && (
+                        <> · {daysPhrase(b.days_to_book)} from the connection request</>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', flex: 'none', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
