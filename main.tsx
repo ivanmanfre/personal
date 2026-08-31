@@ -9,10 +9,17 @@ import App from './App';
 // keep running an old precached app on ANY route (incl. /scan/*) after a deploy —
 // prospects' fresh browsers are unaffected, but Ivan's own browser saw "Report not
 // available" twice. Three guards, all no-ops for uncontrolled (cold) visitors:
-const RELOAD_GUARD = 'sw-heal-reloaded';
+const RELOAD_GUARD = 'sw-heal-reloaded-at';
+// The guard used to be a once-per-session boolean, so a tab left open across TWO deploys
+// healed onto the first one and then refused to heal again — the board sat on a
+// middle bundle showing half the new build (Ivan, 2026-08-31). It is now a timestamp:
+// a reload inside the cooldown is a loop and is blocked, anything later is a real new
+// deploy and heals.
+const HEAL_COOLDOWN_MS = 15000;
 function healReload() {
-  if (sessionStorage.getItem(RELOAD_GUARD)) return; // never loop
-  sessionStorage.setItem(RELOAD_GUARD, '1');
+  const last = Number(sessionStorage.getItem(RELOAD_GUARD) || 0);
+  if (last && Date.now() - last < HEAL_COOLDOWN_MS) return; // never loop
+  sessionStorage.setItem(RELOAD_GUARD, String(Date.now()));
   window.location.reload();
 }
 // 1. A lazy chunk 404s (deploy replaced hashed files under a live tab) → one reload.
