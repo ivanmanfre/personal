@@ -775,7 +775,6 @@ export default function DeskOutreachSurface({
             <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 19, lineHeight: 1.3, color: 'var(--cb-ink)' }}>
               Who gets a message from your name
             </div>
-            <Footnote>{icpBar.length} check{icpBar.length === 1 ? '' : 's'}. A name that misses any of them never gets a message.</Footnote>
             <div style={{ marginTop: 15 }}>
               {icpBar.map((b, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 0', borderTop: '1px solid var(--cb-line)' }}>
