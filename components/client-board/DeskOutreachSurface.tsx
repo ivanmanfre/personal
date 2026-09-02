@@ -819,19 +819,9 @@ export default function DeskOutreachSurface({
                 page's own count: the in-blob excerpt goes stale between cycles, and a
                 stale count on this line is exactly the drift the review page exists to
                 prevent. No list_url -> the in-blob Drill renders unchanged. */}
-            {o.candidates?.list_url ? (
-              <a
-                href={o.candidates.list_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '9px 0', borderTop: '1px solid var(--cb-line)', textDecoration: 'none' }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-soft)', flex: '1 1 240px', minWidth: 0 }}>
-                  The current list: <b>{o.candidates.list_count ?? candidateRows.length}</b> name{(o.candidates.list_count ?? candidateRows.length) === 1 ? '' : 's'}, on your review page
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>open the list</span>
-              </a>
-            ) : candidateRows.length > 0 && (
+            {/* The review page itself is embedded at the top of the tab (2026-09-02), so no
+                stale 'current list: N names' line under the lanes. */}
+            {!o.candidates?.list_url && candidateRows.length > 0 && (
               // The count, on one line, with no roster behind it. Ivan cut the name-by-name
               // dump on 2026-08-26: the panel's job is who is talking to him, and 81 names he
               // has not met yet is a directory, not an answer. The number survives so the
