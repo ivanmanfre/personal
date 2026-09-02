@@ -93,7 +93,7 @@ describe('OutreachTopOfPanel — the ten winner obligations', () => {
   it('O1 the hero is the last FULL week, with its delta, and both periods are named', () => {
     const html = render();
     // 26 is the week of 17 Aug (the last closed week), not the 9 of the week in progress
-    expect(html).toMatch(/font-size:clamp\(34px[^>]*>26</);
+    expect(html).toMatch(/font-size:clamp\(26px[^>]*>26</); // hero demoted to 'big' (Ivan 2026-09-02: sizes too big)
     expect(html).toContain('+11');
     expect(html).toContain('Week of 17 Aug, the last full week');
     expect(html).toContain('The week before that: 15.');
@@ -122,14 +122,15 @@ describe('OutreachTopOfPanel — the ten winner obligations', () => {
     expect(html).toContain('Not now');      // negative
     expect(html).toContain('Replied');      // neutral
     // 3 of 4 labelled -> the roster says so rather than implying all four are sorted
-    expect(html).toContain('3 of 4 replies have been read and sorted');
+    // the 'N of M read and sorted' sentence was cut 2026-09-02 (filler); the chips carry it
   });
 
   it('O5 cumulative accepted is labelled whole program, next to its counted_at', () => {
     const html = render();
-    expect(html).toContain('accepted the invite, whole program');
+    expect(html).toContain('accepted the invite');
+    expect(html).toContain('Whole program, counted');
     expect(html).toContain('>205<');
-    expect(html).toContain('All four counted 26 Aug, 04:01 UTC.');
+    expect(html).toContain('Whole program, counted 26 Aug, 04:01 UTC.');
   });
 
   it('O6 a roster name opens the EXISTING send-log entry when one exists, the profile when not', () => {
@@ -186,7 +187,7 @@ describe('OutreachTopOfPanel — the ten winner obligations', () => {
     expect(html).toContain('https://resources.risedtc.com/brief/?id=115629505025');
     // Stefan booked off the tracked link: no brief, no scan, no invented URL
     expect(html).toContain('booked outside the link');
-    expect(html).toContain('Includes calls booked off the link as well as on it.');
+    expect(html).toContain('Counted ');
   });
 });
 
@@ -350,7 +351,7 @@ describe('the clock: connection request to booked call (2026-08-31)', () => {
     const html = render();
     expect(html).toContain('Fastest call booked 4 hours');
     expect(html).toContain('slowest 31 days');
-    expect(html).toContain('One booked call is outside this measure');
+    expect(html).toContain('One booked call started without a connection request');
   });
 
   it('C4 a booked row prints its own gap, and a row without one says nothing', () => {

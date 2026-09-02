@@ -167,7 +167,7 @@ describe('DeskOutreachSurface', () => {
     expect(html).toContain('Booked calls');
     expect(html).toContain('from your LinkedIn booking link');
     expect(html).toContain('None yet.');
-    expect(html).toContain('When someone books, the row lands here');
+    expect(html).toContain('Bookings land here with the pre-call brief');
     // …but no fabricated row: no buttons, no sample name
     expect(html).not.toContain('Pre-call brief');
     expect(html).not.toContain('Their scan');
@@ -421,8 +421,8 @@ it('post-patch feed: inbound-people count, the Accepted row with its definition 
   // connected_at present -> the Accepted row renders, with its landed-definition line, which
   // also explains why the running week carries no comparison for that row
   expect(html).toContain('invites that turned into connections');
-  expect(html).toContain('Accepted counts the week the accept landed');
-  expect(html).toContain('carries no comparison against last week');
+  expect(html).toContain('invites that turned into connections'); // the definition paragraph was cut 2026-09-02; the row note carries it
+  // 'carries no comparison against last week' explainer cut 2026-09-02 (filler)
 });
 
 it('board.outreach_truth present: booked count + list, funnel replied, and journey plate read from it, stamped with counted_at — precall_briefs ignored', () => {
@@ -459,9 +459,10 @@ it('board.outreach_truth present: booked count + list, funnel replied, and journ
   // funnel replied step + "Replies in play" both read funnel.replied_people (19), not
   // entries.filter(e=>e.replied).length (0, since log is empty)
   expect(html).toContain('Wrote back');
-  expect((html.match(/>19</g) || []).length).toBeGreaterThanOrEqual(2);
+  // once (2026-09-02): the whole-program funnel plate no longer repeats the top-of-panel's four numbers
+  expect((html.match(/>19</g) || []).length).toBeGreaterThanOrEqual(1);
   // every number sourced from outreach_truth carries the counted_at stamp
-  expect((html.match(/counted 25 Aug/g) || []).length).toBeGreaterThanOrEqual(3);
+  expect((html.match(/counted 25 Aug/g) || []).length).toBeGreaterThanOrEqual(2); // one fewer since the duplicate funnel plate went (2026-09-02)
 });
 
 it('board.outreach_truth absent: falls back to precall_briefs for booked calls and entries[].replied for the funnel/journey replied count, no counted_at stamp', () => {

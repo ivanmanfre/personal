@@ -418,8 +418,7 @@ export function LeadsStrip({ ot }: { ot?: OutreachTruth | null }) {
       </div>
       <Card style={{ marginTop: 12, padding: '18px 26px 14px' }}>
         <Footnote style={{ marginTop: 0 }}>
-          Everyone on the list right now and where each one stands, counted {stamp}.
-          The date beside each name is their latest step, in your day.
+          Counted {stamp}. The date beside each name is their latest step.
         </Footnote>
         <div style={{ marginTop: 12 }}>
           {head.map(row)}
@@ -546,7 +545,7 @@ export default function OutreachTopOfPanel({
                 href="#outreach-roster"
                 style={{ display: 'inline-flex', alignItems: 'baseline', textDecoration: 'none', borderBottom: `2px solid ${accent}`, paddingBottom: 2 }}
               >
-                <Num size="hero" tone="plate" inline>{heroValue}</Num>
+                <Num size="big" tone="plate" inline>{heroValue}</Num>
               </a>
               {delta !== null && (
                 <Delta on="plate" dir={delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}>
@@ -583,10 +582,10 @@ export default function OutreachTopOfPanel({
             and the two must never be read as the same measure. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(120px, 100%), 1fr))', gap: 16, marginTop: 16 }}>
           {[
-            { n: ot.funnel?.contacted, l: 'people contacted, whole program' },
-            { n: ot.funnel?.accepted, l: 'accepted the invite, whole program' },
-            { n: ot.funnel?.replied_people, l: 'have written back, whole program' },
-            { n: ot.funnel?.booked, l: 'booked a call, whole program' },
+            { n: ot.funnel?.contacted, l: 'people contacted' },
+            { n: ot.funnel?.accepted, l: 'accepted the invite' },
+            { n: ot.funnel?.replied_people, l: 'wrote back' },
+            { n: ot.funnel?.booked, l: 'booked a call' },
           ].map((s) => (
             <div key={s.l}>
               <Num size="big" tone="plate">{typeof s.n === 'number' ? s.n : '—'}</Num>
@@ -594,7 +593,7 @@ export default function OutreachTopOfPanel({
             </div>
           ))}
         </div>
-        <Footnote on="plate">All four counted {stamp}.</Footnote>
+        <Footnote on="plate">Whole program, counted {stamp}.</Footnote>
 
         {/* ═══ the clock (2026-08-31, Ivan asked for connection-to-booking time) ═══
             Three rungs off ONE zero — the moment the connection request goes out — so
@@ -620,12 +619,12 @@ export default function OutreachTopOfPanel({
                 </div>
               ))}
             </div>
+            {(bookRange || bookUnmeasured > 0) && (
             <Footnote on="plate">
-              Typical time, not average: one slow booking would drag an average into a number that
-              describes nobody.
-              {bookRange ? <> Fastest call booked {bookRange.fast} after the request went out, slowest {bookRange.slow}.</> : null}
-              {bookUnmeasured > 0 ? <> {bookUnmeasured === 1 ? 'One booked call is' : `${bookUnmeasured} booked calls are`} outside this measure, because {bookUnmeasured === 1 ? 'that conversation' : 'those conversations'} started without a connection request.</> : null}
+              {bookRange ? <>Fastest call booked {bookRange.fast} after the request went out, slowest {bookRange.slow}.</> : null}
+              {bookUnmeasured > 0 ? <> {bookUnmeasured === 1 ? 'One booked call' : `${bookUnmeasured} booked calls`} started without a connection request, so {bookUnmeasured === 1 ? 'it is' : 'they are'} outside this measure.</> : null}
             </Footnote>
+            )}
           </>
         )}
       </Plate>
@@ -639,17 +638,15 @@ export default function OutreachTopOfPanel({
           </span>
         </div>
         <Footnote style={{ marginTop: 4 }}>
-          Counted {stamp}. Includes calls booked off the link as well as on it.
+          Counted {stamp}.
           {bookShown && daysPhrase(speed?.book?.median_days) && (
             <> Typical gap from the connection request to the booking: {daysPhrase(speed?.book?.median_days)}.</>
           )}
         </Footnote>
         {booked.length === 0 ? (
-          <div style={{ marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 25, background: 'var(--cb-paper-sunk)', padding: '30px 28px' }}>
-            <b style={{ display: 'block', fontFamily: 'var(--cb-serif)', fontSize: 19, fontWeight: 600, color: 'var(--cb-ink)', marginBottom: 8 }}>None yet.</b>
-            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>
-              When someone books, the row lands here: who, company, when, with the pre-call brief and their store scan one tap away.
-            </div>
+          <div style={{ marginTop: 14, border: '1px dashed var(--cb-line-bold)', borderRadius: 18, background: 'var(--cb-paper-sunk)', padding: '16px 22px' }}>
+            <b style={{ fontFamily: 'var(--cb-serif)', fontSize: 17, fontWeight: 600, color: 'var(--cb-ink)' }}>None yet.</b>
+            <span style={{ fontSize: 14, color: 'var(--cb-ink-mute)', marginLeft: 10 }}>Bookings land here with the pre-call brief.</span>
           </div>
         ) : (
           <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -701,11 +698,7 @@ export default function OutreachTopOfPanel({
       </div>
       <Card style={{ marginTop: 12, padding: '18px 26px 14px' }}>
         <Footnote style={{ marginTop: 0 }}>
-          Counted {stamp}, trailing 7 days.{' '}
-          {intentsKnown === roster.length && roster.length > 0
-            ? 'Every reply here has been read and sorted.'
-            : `${intentsKnown} of ${roster.length} replies have been read and sorted so far; the rest carry no label yet.`}{' '}
-          Each name opens what we hold on them: the messages we sent, or their profile.
+          Counted {stamp}, trailing 7 days. Tap a name for the messages or their profile.
         </Footnote>
         {roster.length === 0 ? (
           <Footnote>Nobody has written back in the last 7 days. Names land here the moment one does.</Footnote>

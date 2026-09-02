@@ -350,6 +350,10 @@ export default function DeskOutreachSurface({
   // the page whose numerator and denominator came from different populations.
   const contactedFromLog = entries.filter((e) => (e.messages || []).some((m) => m.direction === 'outbound' && m.sent_at)).length;
   const contactedCount = ot?.funnel && typeof ot.funnel.contacted === 'number' ? ot.funnel.contacted : contactedFromLog;
+  // The send-log feed can be empty for a seat whose messages the log RPC does not carry (ARCH,
+  // 2026-09-02: 63 people contacted, log empty, and the tab said nothing had gone out). The
+  // program has sends when EITHER source says so; the headline never denies the counted blob.
+  const programHasSends = hasSends || contactedCount > 0;
   const repliedCount = ot && ot.funnel && typeof ot.funnel.replied_people === 'number'
     ? ot.funnel.replied_people
     : entries.filter((e) => e.replied).length;
@@ -447,6 +451,8 @@ export default function DeskOutreachSurface({
       <DeskH2>
         {hasSends ? (
           <>Week of {shortDate(thisWeekStart)}, {sendDaysIn} of 5 send days in: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
+        ) : programHasSends ? (
+          <>{contactedCount} people contacted so far. <b>{repliedCount} wrote back{callsBookedCount > 0 ? `, ${callsBookedCount} booked a call` : ''}.</b></>
         ) : (
           <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
         )}
@@ -456,6 +462,20 @@ export default function DeskOutreachSurface({
           Sends read from your live send record at {shortDateTime(now)}.
           {wroteBackFromBlob ? <> Replies counted {countedFull}.</> : null}
         </Footnote>
+      )}
+
+      {/* The review page, embedded (Ivan 2026-09-02). The leads waiting on the client live on
+          their own shared page; it renders in place so the client reviews without leaving the
+          tab. Same origin, so that page's own Submit button works inside the frame. */}
+      {o.candidates?.list_url && (
+        <Card style={{ marginTop: 16, padding: '16px 26px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <Eyebrow tone="ink">Your review page</Eyebrow>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>tap a company to skip it, then submit</span>
+            <a href={o.candidates.list_url} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', textDecoration: 'none', whiteSpace: 'nowrap' }}>open full page</a>
+          </div>
+          <iframe src={o.candidates.list_url} title="Review page" loading="lazy" style={{ display: 'block', width: '100%', height: 'min(900px, 80vh)', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+        </Card>
       )}
 
       {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
@@ -513,7 +533,9 @@ export default function DeskOutreachSurface({
         </Card>
       )}
 
-      {/* 1 — this week against last, split by channel. */}
+      {/* 1 — this week against last, split by channel. Only once something has gone out:
+          an empty plate saying so was a paragraph for nothing (Ivan, 2026-09-02). */}
+      {hasSends && (
       <Plate style={{ marginTop: 18 }} pad="26px 26px 22px">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
           <Eyebrow on="plate">Week against week</Eyebrow>
@@ -591,15 +613,6 @@ export default function DeskOutreachSurface({
             <Chip tone="plate">Less than a full week of sends so far: the counts stand alone</Chip>
           ) : null}
         </div>
-        {/* Density fold: the reference's middle clause here ("three ways a first message goes
-            out: an invite with a note, a DM once connected, an InMail when not") is the SAME
-            definition the funnel plate's footnote carries one block below. Stating it once
-            pays for the booked-calls empty state and the lane lines this tab was missing. */}
-        <Footnote on="plate">
-          {hasSends ? <>The bars are closed weeks, Mon&ndash;Fri, so they are the same length as each other.
-          The line under them is the week still running. </> : null}
-          The funnel below counts invites and first messages only.
-        </Footnote>
         {/* Every bar on this plate carries the moment its source was read: the send rows
             come off the live send record, the "Wrote back" rows come off the counted blob.
             Two sources, two stamps, never one silent number. */}
@@ -609,23 +622,13 @@ export default function DeskOutreachSurface({
             {wroteBackFromBlob ? <> Wrote back counted {countedFull}.</> : null}
           </Footnote>
         )}
-        {hasSends && hasAcceptField && (
-          <Footnote on="plate">
-            Accepted counts the week the accept landed, so an accept this week can belong to an invite
-            sent last week. That is why its running week carries no comparison against last week.
-          </Footnote>
-        )}
-        {hasSends && wroteBackFromBlob && (
-          <Footnote on="plate">
-            Wrote back is counted a whole week at a time, so the running week shows what has landed
-            so far and gets its comparison once the week closes.
-          </Footnote>
-        )}
       </Plate>
+      )}
 
       {/* 2 — everyone contacted so far, whole program. Every step here is cumulative and
           says so, because the weekly report counts accepts inside a window and the two
           figures are supposed to differ. */}
+      {!(ot && ot.counted_at) && (
       <Plate style={{ marginTop: 22 }} pad="26px 26px 22px">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
           <Eyebrow on="plate">Everyone contacted so far</Eyebrow>
@@ -636,15 +639,9 @@ export default function DeskOutreachSurface({
         <div style={{ marginTop: 18 }}>
           <Funnel steps={funnelSteps} on="plate" />
         </div>
-        <Footnote on="plate">
-          A first touch is an invite with a note, a first DM, or an InMail. Follow-up messages live in the weekly bars above.
-        </Footnote>
-        <Footnote on="plate">
-          {ot
-            ? <>All four numbers are whole-program totals, counted {countedFull}.</>
-            : <>All four numbers are whole-program totals, read from your live send record at {shortDateTime(now)}.</>}
-        </Footnote>
+        <Footnote on="plate">Whole-program totals, read from your live send record at {shortDateTime(now)}.</Footnote>
       </Plate>
+      )}
 
       {/* 3 — the send allowance, collapsed (the frag demoted it off the top of the tab). */}
       {usage && (
@@ -714,7 +711,7 @@ export default function DeskOutreachSurface({
             }}>
               <b style={{ display: 'block', fontFamily: 'var(--cb-serif)', fontSize: 19, fontWeight: 600, color: 'var(--cb-ink)', marginBottom: 8 }}>None yet.</b>
               <div style={{ fontSize: 14.5, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>
-                When someone books, the row lands here: who, company, when, with the pre-call brief and their store scan one tap away.
+                Bookings land here with the pre-call brief.
               </div>
             </div>
           ) : (
@@ -850,14 +847,14 @@ export default function DeskOutreachSurface({
             <Drill
               label="open it"
               summaryLeft={
-                !hasSends ? <>Send log: nothing sent yet</>
+                !hasSends ? (programHasSends ? <>Send log: <b>{contactedCount}</b> people contacted so far</> : <>Send log: nothing sent yet</>)
                 : intentFiltered ? <>The people who said yes: <b>{trailEntries.length}</b>, and every message that went to them</>
                 : <>Today&rsquo;s log: <b>{sentToday}</b> messages out &middot; <b>{repliesToday}</b> replies in</>
               }
             >
               {!hasSends ? (
                 <Footnote>
-                  Nothing sent yet. Every DM and InMail that goes out under your name lands here the moment sends go live, with the date it went out and whether they replied.
+                  Every message that goes out under your name lands here with its date and whether they replied.
                 </Footnote>
               ) : intentFiltered && trailEntries.length === 0 ? (
                 <Footnote style={{ marginTop: 0 }}>
