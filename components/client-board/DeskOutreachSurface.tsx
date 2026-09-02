@@ -484,13 +484,13 @@ export default function DeskOutreachSurface({
           </div>
         );
         const frame = (h: string) => (
-          <iframe src={o.candidates!.list_url} title="Review page" loading="lazy" style={{ display: 'block', width: '100%', height: h, border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+          <iframe src={o.candidates!.list_url} title="Review page" allow="clipboard-write" loading="lazy" style={{ display: 'block', width: '100%', height: h, border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
         );
         return reviewFull ? (
           <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--cb-paper, #f6f6f3)', padding: '14px 18px 18px', display: 'flex', flexDirection: 'column' }}>
             {head}
             <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-              <iframe src={o.candidates.list_url} title="Review page" style={{ flex: '1 1 auto', width: '100%', height: '100%', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+              <iframe src={o.candidates.list_url} title="Review page" allow="clipboard-write" style={{ flex: '1 1 auto', width: '100%', height: '100%', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
             </div>
           </div>
         ) : (
