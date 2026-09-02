@@ -764,6 +764,23 @@ export default function DeskOutreachSurface({
                 </div>
               ))}
             </div>
+            {/* Ivan 2026-09-02: the bar mixed who qualifies with who is banned. icp.out carries
+                the exclusions as their own list under their own heading. */}
+            {Array.isArray(o.icp.out) && o.icp.out.length > 0 && (
+              <>
+                <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 17, lineHeight: 1.3, color: 'var(--cb-ink)', marginTop: 22 }}>
+                  Who stays off the list
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  {o.icp.out.map((b, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 0', borderTop: '1px solid var(--cb-line)' }}>
+                      <span style={{ flex: 'none', width: 26, height: 26, borderRadius: 9, border: '1px solid var(--cb-line-bold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cb-ink-mute)', fontSize: 13, fontWeight: 800 }} aria-hidden>&times;</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, minWidth: 0, color: 'var(--cb-ink)' }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
             {o.icp.note && <Footnote>{o.icp.note}</Footnote>}
           </Card>
         </>
@@ -793,10 +810,10 @@ export default function DeskOutreachSurface({
                   {typeof ln.scanned === 'number' ? (
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                       <Num size="row" inline tone="mute">{ln.scanned}</Num>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>looked at</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>found</span>
                       <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 800 }}>&rarr;</span>
                       <Num size="row" inline>{typeof ln.count === 'number' ? ln.count : (ln.fits ?? 0)}</Num>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>queued</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>in outreach</span>
                     </div>
                   ) : typeof ln.count === 'number' ? (
                     <>
@@ -833,7 +850,9 @@ export default function DeskOutreachSurface({
               </div>
             )}
 
-            {/* 9 — send log Drill: real per-lead outbound trail, honest empty. */}
+            {/* 9 — send log Drill: real per-lead outbound trail, honest empty. Only on boards
+                without a counted blob: with one, "Leads in play" above already lists everyone. */}
+            {!(ot && ot.counted_at) && (
             <Drill
               label="open it"
               summaryLeft={
@@ -897,18 +916,15 @@ export default function DeskOutreachSurface({
                 </div>
               )}
             </Drill>
+            )}
       </Card>
 
       {/* 10 — the full leads view, folded in behind one more Drill so this tab carries every
           write path the old Leads tab had (detail modal, captured-leads table) without
           duplicating the drawn blocks above. */}
-      {foldLeads && (
-        <Card style={{ marginTop: 12, padding: '4px 26px' }}>
-          <Drill label="open it" summaryLeft={<>The full leads view: captured leads, the lead-pipeline detail and every write action</>}>
-            {foldLeads}
-          </Drill>
-        </Card>
-      )}
+      {/* The folded full-leads view was cut 2026-09-02 (Ivan: empty, stalled). The prop stays
+          so callers compile; nothing renders from it. */}
+      {foldLeads ? null : null}
     </div>
   );
 }

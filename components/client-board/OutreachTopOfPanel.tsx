@@ -463,12 +463,14 @@ export default function OutreachTopOfPanel({
   // it cover different windows, and both now say which.
   const weeks = [...(ot.replied_weekly || [])].sort((a, b) => (a.week_monday < b.week_monday ? -1 : 1));
   const inProgress = weeks.length > 0 ? weeks[weeks.length - 1] : null;
-  const heroWeek = weeks.length > 1 ? weeks[weeks.length - 2] : null;
-  const priorWeek = weeks.length > 2 ? weeks[weeks.length - 3] : null;
+  // Ivan 2026-09-02 ("idk why it starts with 0 instead of with the current week"): the hero is
+  // the week in progress, labelled with how far in it is; the last full week sits under it.
+  const heroWeek = inProgress;
+  const priorWeek = weeks.length > 1 ? weeks[weeks.length - 2] : null;
   const heroValue = heroWeek ? heroWeek.people : null;
   const delta = heroWeek && priorWeek ? heroWeek.people - priorWeek.people : null;
   const sparkWeeks = weeks.slice(-7);
-  const heroIdx = sparkWeeks.length > 1 ? sparkWeeks.length - 2 : -1;
+  const heroIdx = sparkWeeks.length > 0 ? sparkWeeks.length - 1 : -1;
   // How far into the in-progress week the count reached, measured from counted_at so it
   // matches the stamp beside it rather than the reader's clock.
   const daysIn = (() => {
@@ -537,7 +539,7 @@ export default function OutreachTopOfPanel({
         </div>
 
         {heroValue === null ? (
-          <Footnote on="plate">The first full week of replies lands here once a week has closed.</Footnote>
+          <Footnote on="plate">Replies land here the week they arrive.</Footnote>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginTop: 10 }}>
@@ -554,8 +556,8 @@ export default function OutreachTopOfPanel({
               )}
             </div>
             <Footnote on="plate">
-              Week of {dayMonth(heroWeek?.week_monday)}, the last full week.
-              {priorWeek ? <> The week before that: {priorWeek.people}.</> : null}
+              Week of {dayMonth(heroWeek?.week_monday)}, so far{daysIn ? `, ${daysIn} of 7 days in` : ''}.
+              {priorWeek ? <> Last full week: {priorWeek.people}.</> : null}
             </Footnote>
           </>
         )}

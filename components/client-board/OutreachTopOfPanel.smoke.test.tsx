@@ -90,13 +90,13 @@ const render = (extra: Partial<{ log: OutreachLogEntry[] | null; signals: Funnel
 
 describe('OutreachTopOfPanel — the ten winner obligations', () => {
 
-  it('O1 the hero is the last FULL week, with its delta, and both periods are named', () => {
+  it('O1 the hero is the week in progress, with its delta against the last full week, and both are named', () => {
     const html = render();
-    // 26 is the week of 17 Aug (the last closed week), not the 9 of the week in progress
-    expect(html).toMatch(/font-size:clamp\(26px[^>]*>26</); // hero demoted to 'big' (Ivan 2026-09-02: sizes too big)
-    expect(html).toContain('+11');
-    expect(html).toContain('Week of 17 Aug, the last full week');
-    expect(html).toContain('The week before that: 15.');
+    // Ivan 2026-09-02: the hero is the running week (9), the last closed week (26) sits under it
+    expect(html).toMatch(/font-size:clamp\(26px[^>]*>9</); // hero demoted to 'big' (Ivan 2026-09-02: sizes too big)
+    expect(html).toContain('-17');
+    expect(html).toContain('Week of 24 Aug, so far');
+    expect(html).toContain('Last full week: 26.');
     // the in-progress week is the trailing bar and says so, in days
     expect(html).toContain('Week of 24 Aug is still counting');
     expect(html).toContain('9*');

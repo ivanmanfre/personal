@@ -119,7 +119,7 @@ describe('DeskOutreachSurface', () => {
     expect(html).not.toMatch(/on pace/i);
 
     // foldLeads is folded in behind its own collapsed drill
-    expect(html).toContain('FOLD LEADS');
+    expect(html).not.toContain('FOLD LEADS'); // the fold was cut 2026-09-02
   });
 
   it('renders only this-week counts (no last-week comparison) when the log covers just a few days', () => {
@@ -546,11 +546,12 @@ it('the trail lists the people who said yes, not everyone we ever wrote to', () 
   const html = renderToStaticMarkup(
     <DeskOutreachSurface board={makeBoard({ outreach_truth: truth } as any)} accent="#4f46e5" log={log} />
   );
-  expect(html).toContain('The people who said yes: <b>1</b>');
-  // the trail itself carries only the positive replier; the roster above still names everyone
-  expect((html.match(/id="sendlog-yes-person"/g) || []).length).toBe(1);
+  // 2026-09-02: with a counted blob the send-log trail no longer renders at all ("Leads in
+  // play" above carries everyone). The roster from the blob still names the repliers.
+  expect(html).not.toContain('The people who said yes');
+  expect(html).not.toContain('id="sendlog-yes-person"');
   expect(html).not.toContain('id="sendlog-no-thanks-person"');
-  expect(html).not.toContain('id="sendlog-silent-person"');
+  expect(html).toContain('Yes Person');
 });
 
 it('a board whose blob carries no reply intents keeps the whole send log', () => {
@@ -571,8 +572,9 @@ it('a board whose blob carries no reply intents keeps the whole send log', () =>
   const html = renderToStaticMarkup(
     <DeskOutreachSurface board={makeBoard({ outreach_truth: truth } as any)} accent="#4f46e5" log={log} />
   );
-  expect(html).toContain('id="sendlog-unlabelled-person"');
-  expect(html).toContain('messages out');
+  // 2026-09-02: the trail is gone under a counted blob; the roster still carries the name
+  expect(html).not.toContain('id="sendlog-unlabelled-person"');
+  expect(html).toContain('Unlabelled Person');
   expect(html).not.toContain('The people who said yes');
 });
 

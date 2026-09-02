@@ -318,7 +318,7 @@ interface OutreachTruth {
 }
 interface OutreachSpec {
   note?: string;
-  icp?: { label?: string; bar?: string[]; note?: string };
+  icp?: { label?: string; bar?: string[]; out?: string[]; note?: string };
   funnel?: { step: string; detail?: string }[];
   lanes?: OutreachLane[];
   /** Client-orbit playbook (live boards): seed clients, the three touches, and the
