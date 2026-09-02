@@ -382,6 +382,23 @@ function zagrebDay(iso?: string | null): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/Zagreb' });
 }
 
+
+/** Collapsible block (Ivan 2026-09-02: "nothing is collapsible, everything just goes below").
+ *  Native details with class "fold" (drills are asserted closed by default; folds may open). */
+function Fold({ id, title, count, note, open, children }: { id?: string; title: React.ReactNode; count?: React.ReactNode; note?: React.ReactNode; open?: boolean; children: React.ReactNode }) {
+  return (
+    <details id={id} className="fold" open={open} style={{ border: '1px solid var(--cb-line)', borderRadius: 16, background: 'var(--cb-paper-raise, #fff)', padding: '0 22px', scrollMarginTop: 76 }}>
+      <summary style={{ listStyle: 'none', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', padding: '15px 0' }}>
+        <Eyebrow style={{ flex: '1 1 auto' }}>{title}</Eyebrow>
+        {count !== undefined && <Num size="row" inline>{count}</Num>}
+        {note && <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{note}</span>}
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>open / close</span>
+      </summary>
+      <div style={{ paddingBottom: 16 }}>{children}</div>
+    </details>
+  );
+}
+
 /** Rows past this count fold behind the "show all N" toggle. */
 const LEADS_FOLD = 12;
 
@@ -410,13 +427,8 @@ export function LeadsStrip({ ot }: { ot?: OutreachTruth | null }) {
     );
   };
   return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginTop: 30, paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)' }}>
-        <Eyebrow style={{ flex: '1 1 auto' }}>Leads in play</Eyebrow>
-        <Num size="row" inline>{leads.length}</Num>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>latest activity first</span>
-      </div>
-      <Card style={{ marginTop: 12, padding: '18px 26px 14px' }}>
+    <div style={{ marginTop: 12 }}>
+      <Fold title="Leads in play" count={leads.length} note="latest activity first">
         <Footnote style={{ marginTop: 0 }}>
           Counted {stamp}. The date beside each name is their latest step.
         </Footnote>
@@ -431,8 +443,8 @@ export function LeadsStrip({ ot }: { ot?: OutreachTruth | null }) {
             </details>
           )}
         </div>
-      </Card>
-    </>
+      </Fold>
+    </div>
   );
 }
 
@@ -632,14 +644,9 @@ export default function OutreachTopOfPanel({
         )}
       </Plate>
 
-      {/* ═══ 2 — booked calls, pinned above the roster ═══ */}
-      <Card style={{ marginTop: 12, padding: '22px 26px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <Eyebrow>Booked calls</Eyebrow>
-          <span style={{ fontFamily: 'var(--cb-mono)', fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', letterSpacing: '0.04em' }}>
-            {booked.length} to date
-          </span>
-        </div>
+      {/* ═══ 2 + 3 — booked calls and the call sheet, side by side, each its own fold ═══ */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(440px, 100%), 1fr))', gap: 12, marginTop: 12, alignItems: 'start' }}>
+      <Fold title="Booked calls" count={booked.length} note="to date" open={booked.length > 0}>
         <Footnote style={{ marginTop: 4 }}>
           Counted {stamp}.
           {bookShown && daysPhrase(speed?.book?.median_days) && (
@@ -689,17 +696,10 @@ export default function OutreachTopOfPanel({
             ))}
           </div>
         )}
-      </Card>
+      </Fold>
 
-      {/* ═══ 3 — the call sheet: everyone who wrote back, by name ═══ */}
-      {/* scrollMarginTop clears the desk sticky bar, so the hero's "see everyone" jump
-          lands on the section rule instead of underneath the chrome. */}
-      <div id="outreach-roster" style={{ scrollMarginTop: 76, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginTop: 30, paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)' }}>
-        <Eyebrow style={{ flex: '1 1 auto' }}>Wrote back, last 7 days</Eyebrow>
-        <Num size="row" inline>{roster.length}</Num>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>most recent first</span>
-      </div>
-      <Card style={{ marginTop: 12, padding: '18px 26px 14px' }}>
+      {/* ═══ 3 — the call sheet: everyone who wrote back, by name (the hero's link jumps here) ═══ */}
+      <Fold id="outreach-roster" title="Wrote back, last 7 days" count={roster.length} note="most recent first" open={roster.length > 0}>
         <Footnote style={{ marginTop: 0 }}>
           Counted {stamp}, trailing 7 days. Tap a name for the messages or their profile.
         </Footnote>
@@ -744,7 +744,8 @@ export default function OutreachTopOfPanel({
             })}
           </div>
         )}
-      </Card>
+      </Fold>
+      </div>
 
       {/* ═══ 3b — every lead in play, ARCH boards only (blob-gated: no `leads` key on the
           blob, no strip, so RISE renders byte-identical). ═══ */}

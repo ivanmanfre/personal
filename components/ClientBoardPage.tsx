@@ -216,7 +216,7 @@ interface PerfPost { url?: string; title?: string; published_at?: string; impres
 interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
-interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number }
+interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number; href?: string }
 /** A lane is dead (retired / no ratified sequence) when its status says retired or its
  *  name is the retired Network Activation lane. Dead lanes carry no message set, so they
  *  never render on the client-facing Leads view — the data stays, the empty lane hides. */

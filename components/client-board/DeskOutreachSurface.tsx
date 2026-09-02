@@ -51,6 +51,23 @@ function isDeadLane(name?: string, status?: string, arms?: string): boolean {
  * the RAW strings: a lane retired under a vendor name must still be recognised as dead.
  */
 
+
+/** Collapsible block (Ivan 2026-09-02: "nothing is collapsible, everything just goes below").
+ *  Native details with class "fold" (drills are asserted closed by default; folds may open). */
+function Fold({ id, title, count, note, open, children }: { id?: string; title: React.ReactNode; count?: React.ReactNode; note?: React.ReactNode; open?: boolean; children: React.ReactNode }) {
+  return (
+    <details id={id} className="fold" open={open} style={{ border: '1px solid var(--cb-line)', borderRadius: 16, background: 'var(--cb-paper-raise, #fff)', padding: '0 22px', scrollMarginTop: 76 }}>
+      <summary style={{ listStyle: 'none', cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', padding: '15px 0' }}>
+        <Eyebrow style={{ flex: '1 1 auto' }}>{title}</Eyebrow>
+        {count !== undefined && <Num size="row" inline>{count}</Num>}
+        {note && <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{note}</span>}
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>open / close</span>
+      </summary>
+      <div style={{ paddingBottom: 16 }}>{children}</div>
+    </details>
+  );
+}
+
 /** A lane status only earns a chip when it is a plain client-readable state. Anything
  *  carrying internal or vendor vocabulary is dropped rather than translated. */
 const UNSAFE_STATUS_RE = /campaign|seat|scorer|icp|dm\s?[123]|sequence|webhook|api|cred|error|retired|paused|draft|\bid\b/i;
@@ -767,8 +784,8 @@ export default function DeskOutreachSurface({
       {/* 6 — The bar: who qualifies, driven entirely by board.outreach.icp. */}
       {o.icp && icpBar.length > 0 && (
         <>
-          <Eyebrow style={{ marginTop: 28 }}>The bar</Eyebrow>
-          <Card style={{ marginTop: 12, padding: '22px 26px 6px' }}>
+          <div style={{ marginTop: 16 }}>
+          <Fold title="The bar" note="who gets a message from your name, and who never does">
             {/* Authored, approved card title — NOT o.icp.label. The live label is a segment
                 name ("DTC brand founders and operators"); the client's question is whose
                 inbox his name shows up in, and the checks below answer exactly that. */}
@@ -804,7 +821,8 @@ export default function DeskOutreachSurface({
               </>
             )}
             {o.icp.note && <Footnote>{o.icp.note}</Footnote>}
-          </Card>
+          </Fold>
+          </div>
         </>
       )}
 
@@ -823,7 +841,9 @@ export default function DeskOutreachSurface({
               return (
               <div key={ln.key || ln.name} style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '16px 0', borderTop: i > 0 ? '1px solid var(--cb-line)' : undefined }}>
                 <div style={{ flex: '1 1 230px', minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 16, color: 'var(--cb-ink)' }}>{laneName(ln.name)}</div>
+                  <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 600, fontSize: 16, color: 'var(--cb-ink)' }}>
+                    {ln.href ? <a href={ln.href} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', borderBottom: '1px solid var(--cb-line-bold)' }}>{laneName(ln.name)}</a> : laneName(ln.name)}
+                  </div>
                   {detail && <div style={{ fontSize: 14, color: 'var(--cb-ink-soft)', marginTop: 3 }}>{detail}</div>}
                 </div>
                 {arms && <Chip>{arms}</Chip>}
