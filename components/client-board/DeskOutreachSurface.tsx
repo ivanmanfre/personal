@@ -21,6 +21,7 @@
  * Props are byte-for-byte the original OutreachSurface signature. No callback, no prop,
  * no data fetch is touched — this file is presentation only.
  */
+import { useState } from 'react';
 import React from 'react';
 import {
   Plate, Eyebrow, Num, BarRow, Funnel, JourneyPlate, Drill, Blank, Chip, DeskH2, Footnote,
@@ -168,6 +169,8 @@ export default function DeskOutreachSurface({
   signals?: FunnelSignals | null;
 }) {
   const o = board.outreach;
+  // Ivan 2026-09-02: the embedded review page can go full-screen on the same tab.
+  const [reviewFull, setReviewFull] = useState(false);
 
   if (!o) {
     return (
@@ -467,16 +470,36 @@ export default function DeskOutreachSurface({
       {/* The review page, embedded (Ivan 2026-09-02). The leads waiting on the client live on
           their own shared page; it renders in place so the client reviews without leaving the
           tab. Same origin, so that page's own Submit button works inside the frame. */}
-      {o.candidates?.list_url && (
-        <Card style={{ marginTop: 16, padding: '16px 26px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+      {o.candidates?.list_url && (() => {
+        const btn: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink)', background: 'transparent', border: '1px solid var(--cb-line-bold)', borderRadius: 999, padding: '6px 13px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
+        const link: React.CSSProperties = { ...btn, textDecoration: 'none', display: 'inline-block' };
+        const head = (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <Eyebrow tone="ink">Your review page</Eyebrow>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>tap a company to skip it, then submit</span>
-            <a href={o.candidates.list_url} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', textDecoration: 'none', whiteSpace: 'nowrap' }}>open full page</a>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>tap a company to skip it, then copy</span>
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setReviewFull((v) => !v)} style={btn}>{reviewFull ? 'close' : 'expand'}</button>
+              <a href={o.candidates.list_url} target="_blank" rel="noreferrer" style={link}>new tab</a>
+            </span>
           </div>
-          <iframe src={o.candidates.list_url} title="Review page" loading="lazy" style={{ display: 'block', width: '100%', height: 'min(900px, 80vh)', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
-        </Card>
-      )}
+        );
+        const frame = (h: string) => (
+          <iframe src={o.candidates!.list_url} title="Review page" loading="lazy" style={{ display: 'block', width: '100%', height: h, border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+        );
+        return reviewFull ? (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--cb-paper, #f6f6f3)', padding: '14px 18px 18px', display: 'flex', flexDirection: 'column' }}>
+            {head}
+            <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
+              <iframe src={o.candidates.list_url} title="Review page" style={{ flex: '1 1 auto', width: '100%', height: '100%', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+            </div>
+          </div>
+        ) : (
+          <Card style={{ marginTop: 16, padding: '16px 26px 20px' }}>
+            {head}
+            {frame('min(1200px, 88vh)')}
+          </Card>
+        );
+      })()}
 
       {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
           graft). Renders only when board.outreach_truth exists; the blocks below stay as
