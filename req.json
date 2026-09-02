@@ -1,0 +1,1 @@
+{"query": "\nselect e->>'id' as id, left(e->>'title',45) as title, e->>'status' as status,\n       e->>'url' as url, e->>'cover_url' as cover_url, e->'covers' as covers, e->>'format' as fmt\nfrom client_boards cb, jsonb_array_elements(cb.board->'lead_magnets') e\nwhere cb.slug='risedtc-com'\n"}
