@@ -188,6 +188,9 @@ export default function DeskOutreachSurface({
   const o = board.outreach;
   // Ivan 2026-09-02: the embedded review page can go full-screen on the same tab.
   const [reviewFull, setReviewFull] = useState(false);
+  // The review page is served with a 10-minute cache; a per-mount stamp makes the embed fetch the fresh file.
+  const [reviewSrcStamp] = useState(() => Date.now());
+  const reviewSrc = o?.candidates?.list_url ? `${o.candidates.list_url}${o.candidates.list_url.includes('?') ? '&' : '?'}v=${reviewSrcStamp}` : '';
 
   if (!o) {
     return (
@@ -501,13 +504,13 @@ export default function DeskOutreachSurface({
           </div>
         );
         const frame = (h: string) => (
-          <iframe src={o.candidates!.list_url} title="Review page" allow="clipboard-write" loading="lazy" style={{ display: 'block', width: '100%', height: h, border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+          <iframe src={reviewSrc} title="Review page" allow="clipboard-write" loading="lazy" style={{ display: 'block', width: '100%', height: h, border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
         );
         return reviewFull ? (
           <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--cb-paper, #f6f6f3)', padding: '14px 18px 18px', display: 'flex', flexDirection: 'column' }}>
             {head}
             <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-              <iframe src={o.candidates.list_url} title="Review page" allow="clipboard-write" style={{ flex: '1 1 auto', width: '100%', height: '100%', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
+              <iframe src={reviewSrc} title="Review page" allow="clipboard-write" style={{ flex: '1 1 auto', width: '100%', height: '100%', border: '1px solid var(--cb-line)', borderRadius: 14, marginTop: 12, background: '#0b1030' }} />
             </div>
           </div>
         ) : (
