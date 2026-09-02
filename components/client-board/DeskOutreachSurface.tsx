@@ -493,7 +493,7 @@ export default function DeskOutreachSurface({
         const head = (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <Eyebrow tone="ink">Your review page</Eyebrow>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>tap a company to skip it, then copy</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>tap a company to skip it, then submit</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
               <button type="button" onClick={() => setReviewFull((v) => !v)} style={btn}>{reviewFull ? 'close' : 'expand'}</button>
               <a href={o.candidates.list_url} target="_blank" rel="noreferrer" style={link}>new tab</a>
@@ -511,10 +511,12 @@ export default function DeskOutreachSurface({
             </div>
           </div>
         ) : (
-          <Card style={{ marginTop: 16, padding: '16px 26px 20px' }}>
+          // Ivan 2026-09-02: the review page IS the tab, not a preview inside a card - full width,
+          // viewport height, no chrome around it; Expand is still there for true full screen.
+          <div style={{ marginTop: 14 }}>
             {head}
-            {frame('min(1200px, 88vh)')}
-          </Card>
+            {frame('calc(100vh - 150px)')}
+          </div>
         );
       })()}
 
