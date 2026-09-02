@@ -562,7 +562,8 @@ export default function OutreachTopOfPanel({
           </>
         )}
 
-        {sparkWeeks.length > 1 && (
+        {/* Two bars where one is a 0 read as a fall (Ivan 2026-09-02); the strip waits for three weeks. */}
+        {sparkWeeks.length > 2 && (
           <>
             <Spark
               on="plate"
