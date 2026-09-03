@@ -91,6 +91,7 @@ function mapProspect(r: any): OutreachProspect {
     messagingPattern: r.messaging_pattern || null,
     researchSources: r.research_sources || null,
     enrichmentSource: r.enrichment_data?.source || null,
+    enrichmentData: r.enrichment_data || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
