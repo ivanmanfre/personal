@@ -5,6 +5,43 @@ import React, { useEffect, useState } from 'react';
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
 
+/** Card copy with a real clamp. The toggle appears only when the text is genuinely cut
+ *  (measured, never guessed from length) and sits outside the card's clickable header, so
+ *  reading more never opens the post modal. */
+function CardBody({ text, open, onToggle, onOpen }: { text: string; open: boolean; onToggle: () => void; onOpen: () => void }) {
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  const [cut, setCut] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || open) return;
+    setCut(el.scrollHeight > el.clientHeight + 2);
+  }, [text, open]);
+  return (
+    <div style={{ padding: '11px 16px 0' }}>
+      <div
+        ref={ref}
+        role="button" tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+        style={{
+          fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line', cursor: 'pointer',
+          ...(open ? null : { display: '-webkit-box', WebkitLineClamp: 11, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }),
+        }}
+      >
+        {text}
+      </div>
+      {(cut || open) && (
+        <button
+          onClick={onToggle}
+          style={{ marginTop: 6, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+        >
+          {open ? 'Show less' : 'Read all'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
  *  static review pages: an empty box means the post is good to go. */
 function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
@@ -585,9 +622,6 @@ export default function DeskReviewSurface({
   // ---- LinkedIn-style card (2026-08-07, Ivan): the Personal topic renders drafts the way
   // they'll actually look in the feed — founder header, the full copy, the image — two to a
   // row. No title line, no hook/copy split, no drill.
-  /** Long bodies clamp so a 2-up grid stays scannable; the toggle reads inline and never
-   *  opens the modal (2026-09-03, Ivan: "collapsible"). */
-  const BODY_CLAMP_CHARS = 420;
   const renderLiCard = (q: QueueItem, bucket: Bucket) => {
     const img = cardImageUrlLocal(q, board);
     /* A carousel is a multi-page document, and this card is the only place the Personal topic
@@ -600,7 +634,6 @@ export default function DeskReviewSurface({
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
-    const clampable = bodyText.length > BODY_CLAMP_CHARS;
     const isOpen = !!cardOpen[q.id];
     return (
       <div key={q.id} style={{ border: '1px solid var(--cb-line)', borderRadius: 14, background: 'var(--cb-paper)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -618,23 +651,8 @@ export default function DeskReviewSurface({
             </div>
             {chip && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>}
           </div>
-          <div
-            style={{
-              marginTop: 11, fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line',
-              ...(clampable && !isOpen ? { display: '-webkit-box', WebkitLineClamp: 11, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : null),
-            }}
-          >
-            {stripBrand(q.body || q.hook || q.title)}
-          </div>
-          {clampable && (
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleCard(q.id); }}
-              style={{ marginTop: 6, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)', textDecoration: 'underline', textUnderlineOffset: 3 }}
-            >
-              {isOpen ? 'Show less' : 'Read all'}
-            </button>
-          )}
         </div>
+        <CardBody text={bodyText} open={isOpen} onToggle={() => toggleCard(q.id)} onOpen={() => onOpen(q)} />
         {deck.length >= 2
           ? <div style={{ marginTop: 12 }}><DocCarousel slides={deck} title={q.title || q.hook} accent={accent} /></div>
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
