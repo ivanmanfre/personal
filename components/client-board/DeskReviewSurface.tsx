@@ -4,6 +4,37 @@ import React, { useEffect, useState } from 'react';
  *  copy is one click away in the post modal. */
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
+
+/** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
+ *  static review pages: an empty box means the post is good to go. */
+function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
+  const [text, setText] = useState('');
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const save = async () => {
+    const note = text.trim();
+    if (!note || state === 'saving') return;
+    setState('saving');
+    const r = await onNote(id, note);
+    setState(r.ok ? 'saved' : 'error');
+  };
+  return (
+    <div style={{ padding: '0 16px 14px' }}>
+      <textarea
+        value={text}
+        onChange={(e) => { setText(e.target.value); if (state !== 'idle') setState('idle'); }}
+        onBlur={save}
+        rows={2}
+        placeholder="Change anything? Write it here, or rewrite the line your way. Empty = good to post."
+        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '9px 11px', borderRadius: 9, border: '1px solid var(--cb-line)', background: 'var(--cb-paper-sunk, #EFEBE3)', font: 'inherit', fontSize: 12.5, lineHeight: 1.5, color: 'var(--cb-ink)' }}
+      />
+      {state !== 'idle' && (
+        <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
+          {state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved — we pick this up' : "Didn't save, try again"}
+        </div>
+      )}
+    </div>
+  );
+}
 import {
   FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz,
 } from '../ClientBoardPage';
@@ -205,7 +236,7 @@ export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
-  foldPhotos, foldCalendar, live = false, fetchHistory,
+  foldPhotos, foldCalendar, live = false, fetchHistory, onNote,
 }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
@@ -236,6 +267,9 @@ export default function DeskReviewSurface({
   /** Live board: per-draft history (client_board_draft_history RPC), fanned across the whole
    *  queue for the Changes log. Absent on preview/demo boards — the log renders nothing. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
+  /** Live board: save a change note against one draft (request_changes). Absent on
+   *  preview boards — the note box then renders nothing. */
+  onNote?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   // Unused-here wiring kept for interface parity with ReviewSurface (see file header):
   // onApprove, onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
@@ -351,6 +385,9 @@ export default function DeskReviewSurface({
   // ---- Collapsible sections (2026-08-07, Ivan): Published starts folded; the header row
   // always renders, the rows toggle. ----
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  /** Per-card body expansion in the 2-up buffer grid. */
+  const [cardOpen, setCardOpen] = useState<Record<string, boolean>>({});
+  const toggleCard = (id: string) => setCardOpen((p) => ({ ...p, [id]: !p[id] }));
   const sectionOpen = (key: string) => openSections[key] ?? key !== 'published';
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
   const [logOpen, setLogOpen] = useState(false);
@@ -548,6 +585,9 @@ export default function DeskReviewSurface({
   // ---- LinkedIn-style card (2026-08-07, Ivan): the Personal topic renders drafts the way
   // they'll actually look in the feed — founder header, the full copy, the image — two to a
   // row. No title line, no hook/copy split, no drill.
+  /** Long bodies clamp so a 2-up grid stays scannable; the toggle reads inline and never
+   *  opens the modal (2026-09-03, Ivan: "collapsible"). */
+  const BODY_CLAMP_CHARS = 420;
   const renderLiCard = (q: QueueItem, bucket: Bucket) => {
     const img = cardImageUrlLocal(q, board);
     /* A carousel is a multi-page document, and this card is the only place the Personal topic
@@ -559,6 +599,9 @@ export default function DeskReviewSurface({
     const dateLabel = bucket === 'buffer' ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+    const bodyText = stripBrand(q.body || q.hook || q.title) || '';
+    const clampable = bodyText.length > BODY_CLAMP_CHARS;
+    const isOpen = !!cardOpen[q.id];
     return (
       <div key={q.id} style={{ border: '1px solid var(--cb-line)', borderRadius: 14, background: 'var(--cb-paper)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div
@@ -575,13 +618,30 @@ export default function DeskReviewSurface({
             </div>
             {chip && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>}
           </div>
-          <div style={{ marginTop: 11, fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line' }}>{stripBrand(q.body || q.hook || q.title)}</div>
+          <div
+            style={{
+              marginTop: 11, fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line',
+              ...(clampable && !isOpen ? { display: '-webkit-box', WebkitLineClamp: 11, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : null),
+            }}
+          >
+            {stripBrand(q.body || q.hook || q.title)}
+          </div>
+          {clampable && (
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleCard(q.id); }}
+              style={{ marginTop: 6, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+            >
+              {isOpen ? 'Show less' : 'Read all'}
+            </button>
+          )}
         </div>
         {deck.length >= 2
           ? <div style={{ marginTop: 12 }}><DocCarousel slides={deck} title={q.title || q.hook} accent={accent} /></div>
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px 13px', borderTop: (img || deck.length >= 2) ? undefined : '1px solid var(--cb-line)', marginTop: (img || deck.length >= 2) ? 0 : 12 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
+          <Chip>{kickerOfLocal(q)}</Chip>
+          <FunnelChip stage={q.funnel_stage} accent={accent} />
           {bucket !== 'published' && (
             <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
               <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
@@ -589,12 +649,15 @@ export default function DeskReviewSurface({
             </span>
           )}
         </div>
+        {onNote && bucket !== 'published' && <CardNote id={q.id} onNote={onNote} />}
       </div>
     );
   };
-  /** The Personal topic reads as a 2-up feed of LinkedIn-style cards; every other view keeps rows. */
+  /** The Personal topic — and the buffer, where the client actually reads and reacts
+   *  (2026-09-03, Ivan) — read as a 2-up feed of LinkedIn-style cards. Dated and published
+   *  sections keep rows: those are scanned by date, not read. */
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal'
+    topic === 'personal' || bucket === 'buffer'
       ? <div className="cb-licard-grid">{list.map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
