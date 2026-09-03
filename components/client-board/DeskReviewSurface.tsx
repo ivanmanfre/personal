@@ -5,38 +5,86 @@ import React, { useEffect, useState } from 'react';
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
 
-/** Card copy with a real clamp. The toggle appears only when the text is genuinely cut
- *  (measured, never guessed from length) and sits outside the card's clickable header, so
- *  reading more never opens the post modal. */
+/** The feed's own action bar. Inert on purpose: it is scenery that tells the eye "this is a
+ *  post", the way the static review pages did it. */
+const LI_ICONS: [string, string][] = [
+  ['Like', 'M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 4-8c1.5 0 2.5 1 2.5 2.5V9H19a2 2 0 0 1 2 2.3l-1 6.5A2.4 2.4 0 0 1 17.6 20H7'],
+  ['Comment', 'M21 12a8 8 0 0 1-8 8H4l2.3-2.7A8 8 0 1 1 21 12z'],
+  ['Repost', 'M17 2l4 4-4 4M21 6H8a4 4 0 0 0-4 4M7 22l-4-4 4-4M3 18h13a4 4 0 0 0 4-4'],
+  ['Send', 'M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z'],
+];
+function LiActions() {
+  return (
+    <div aria-hidden style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,.08)', marginTop: 2 }}>
+      {LI_ICONS.map(([label, d]) => (
+        <span key={label} style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '9px 4px', fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,.6)' }}>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Post copy cut where LinkedIn cuts it. The feed folds after three lines and appends an
+ *  inline "…see more", so the fold itself is the review signal: the client sees exactly how
+ *  much of the hook a scroller gets. Measured, never guessed from length. */
+const FOLD_LINES = 3;
+const MORE_LABEL = '…see more';
 function CardBody({ text, open, onToggle, onOpen }: { text: string; open: boolean; onToggle: () => void; onOpen: () => void }) {
   const ref = React.useRef<HTMLDivElement | null>(null);
-  const [cut, setCut] = useState(false);
-  useEffect(() => {
+  /** Characters that survive the fold. -1 means the whole post fits and there is no fold. */
+  const [keep, setKeep] = useState(-1);
+
+  React.useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || open) return;
-    setCut(el.scrollHeight > el.clientHeight + 2);
-  }, [text, open]);
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      if (!w) return;
+      const cs = getComputedStyle(el);
+      const probe = document.createElement('div');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.cssText = `position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;width:${w}px;font:${cs.font};line-height:${cs.lineHeight};letter-spacing:${cs.letterSpacing}`;
+      document.body.appendChild(probe);
+      const lh = parseFloat(cs.lineHeight) || 20;
+      const max = lh * FOLD_LINES + 1;
+      probe.textContent = text;
+      if (probe.scrollHeight <= max) { setKeep(-1); probe.remove(); return; }
+      // Largest prefix that still fits once the "see more" label is appended to it.
+      let lo = 0; let hi = text.length;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        probe.textContent = text.slice(0, mid).replace(/\s+$/, '') + MORE_LABEL;
+        if (probe.scrollHeight <= max) lo = mid; else hi = mid - 1;
+      }
+      probe.remove();
+      setKeep(lo);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text]);
+
+  const folded = keep >= 0 && !open;
+  const more: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'rgba(0,0,0,.55)' };
   return (
-    <div style={{ padding: '11px 16px 0' }}>
+    <div style={{ padding: '4px 14px 12px' }}>
       <div
         ref={ref}
         role="button" tabIndex={0}
         onClick={onOpen}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-        style={{
-          fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-line', cursor: 'pointer',
-          ...(open ? null : { display: '-webkit-box', WebkitLineClamp: 11, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }),
-        }}
+        style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(0,0,0,.9)', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', cursor: 'pointer' }}
       >
-        {text}
+        {folded ? text.slice(0, keep).replace(/\s+$/, '') : text}
+        {folded && (
+          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={more}>{MORE_LABEL}</button>
+        )}
       </div>
-      {(cut || open) && (
-        <button
-          onClick={onToggle}
-          style={{ marginTop: 6, background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)', textDecoration: 'underline', textUnderlineOffset: 3 }}
-        >
-          {open ? 'Show less' : 'Read all'}
-        </button>
+      {keep >= 0 && open && (
+        <button onClick={onToggle} style={{ ...more, marginTop: 4 }}>see less</button>
       )}
     </div>
   );
@@ -55,7 +103,7 @@ function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: strin
     setState(r.ok ? 'saved' : 'error');
   };
   return (
-    <div style={{ padding: '0 16px 14px' }}>
+    <div style={{ padding: '9px 2px 0' }}>
       <textarea
         value={text}
         onChange={(e) => { setText(e.target.value); if (state !== 'idle') setState('idle'); }}
@@ -636,46 +684,52 @@ export default function DeskReviewSurface({
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
     const isOpen = !!cardOpen[q.id];
     return (
-      <div key={q.id} style={{ border: '1px solid var(--cb-line)', borderRadius: 14, background: 'var(--cb-paper)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
         <div
           role="button" tabIndex={0}
           onClick={() => onOpen(q)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ padding: '14px 16px 0', cursor: 'pointer', flex: '1 1 auto' }}
+          style={{ padding: '12px 14px 6px', cursor: 'pointer' }}
         >
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div aria-hidden style={{ flex: 'none', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 }}>{initials}</div>
-            <div style={{ flex: '1 1 100px', minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--cb-ink)' }}>{fName}</div>
-              {board.founder?.headline && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{board.founder.headline}</div>}
+          <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{initials}</div>
+            <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,.9)' }}>{fName}</span>
+              {board.founder?.headline && <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>{board.founder.headline}</span>}
+              <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>1d · <span aria-hidden>🌐</span></span>
             </div>
-            {chip && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>}
+            <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
           </div>
         </div>
         <CardBody text={bodyText} open={isOpen} onToggle={() => toggleCard(q.id)} onOpen={() => onOpen(q)} />
         {deck.length >= 2
-          ? <div style={{ marginTop: 12 }}><DocCarousel slides={deck} title={q.title || q.hook} accent={accent} /></div>
-          : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto', marginTop: 12 }} />}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 16px 13px', borderTop: (img || deck.length >= 2) ? undefined : '1px solid var(--cb-line)', marginTop: (img || deck.length >= 2) ? 0 : 12 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
-          <Chip>{kickerOfLocal(q)}</Chip>
-          <FunnelChip stage={q.funnel_stage} accent={accent} />
-          {bucket !== 'published' && (
-            <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-              <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-              <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
-            </span>
-          )}
-        </div>
-        {onNote && bucket !== 'published' && <CardNote id={q.id} onNote={onNote} />}
+          ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
+          : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
+        <LiActions />
+      </div>
+      {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post. */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 2px 0' }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
+        {chip && <Chip>{chip.label}</Chip>}
+        <Chip>{kickerOfLocal(q)}</Chip>
+        <FunnelChip stage={q.funnel_stage} accent={accent} />
+        {bucket !== 'published' && (
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
+            <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+            <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
+          </span>
+        )}
+      </div>
+      {onNote && bucket !== 'published' && <CardNote id={q.id} onNote={onNote} />}
       </div>
     );
   };
-  /** The Personal topic — and the buffer, where the client actually reads and reacts
-   *  (2026-09-03, Ivan) — read as a 2-up feed of LinkedIn-style cards. Dated and published
-   *  sections keep rows: those are scanned by date, not read. */
+  /** Rows are the default everywhere. Review mode — and the Personal topic, which has read
+   *  as a feed since 2026-08-07 — swap to a 2-up of LinkedIn-style cards. Opt-in, so a client
+   *  who liked the list keeps the list (2026-09-03, Ivan). */
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || bucket === 'buffer'
+    topic === 'personal' || view === 'feed'
       ? <div className="cb-licard-grid">{list.map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
@@ -735,7 +789,7 @@ export default function DeskReviewSurface({
     <div data-surface="review">
       <style>{`
         .cb-licard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
-        @media (max-width: 640px) { .cb-licard-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) { .cb-licard-grid { grid-template-columns: minmax(0, 1fr); } }
       `}</style>
 
       {/* Block 1: computed headline. */}
@@ -785,7 +839,11 @@ export default function DeskReviewSurface({
       {/* Block 3: view toggle. */}
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
+        <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
+        {view === 'feed' && (
+          <Footnote style={{ marginLeft: 4 }}>Each post as it will look in the feed, cut where LinkedIn cuts it.</Footnote>
+        )}
       </div>
 
       {/* Block 3b: filters — ONE aligned block, three labelled axes. No "All" pills:
