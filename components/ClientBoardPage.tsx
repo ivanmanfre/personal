@@ -175,6 +175,9 @@ interface QueueItem {
   /** The published artefact for a carousel: the exact multi-page PDF that goes to LinkedIn.
    *  Plumbed by the queue sync so the board can offer it for download. */
   pdf_url?: string | null;
+  /** The live permalink, present only once the post has actually gone out. Written by the
+   *  queue sync from client_post_metrics. */
+  post_url?: string | null;
   /** Set by the queue sync when this post's copy asks for a comment keyword ("comment SHELF"),
    *  which is how a comment-gated lead magnet is promoted. Carries the resource the commenter
    *  gets by DM, so the board can link straight to it instead of leaving it unverifiable.
@@ -8662,7 +8665,18 @@ export default function ClientBoardPage() {
   // regardless of its stored stage, and never counts toward the review badge. An item
   // whose angle was swapped goes back to Drafted too: picking a different idea queues a
   // fresh draft, it never fakes an instant one.
-  const stageOf = (q: QueueItem): Stage => (q.generating ? 'drafted' : angleSwaps[q.id] ? 'drafted' : stageOverride[q.id] ?? q.stage);
+  // `published` is the one stage the client cannot be ahead of: it means the post is out on
+  // LinkedIn. The local approvals map is an OPTIMISTIC overlay ("I approved this, show it as
+  // scheduled before the server catches up") and it used to outrank the server here, so a
+  // post that had actually published kept reading 'scheduled' on the board forever, sat in
+  // the Scheduled section with a past date, and never showed its permalink. Server truth
+  // wins once the thing is real.
+  const stageOf = (q: QueueItem): Stage => (
+    q.generating ? 'drafted'
+      : angleSwaps[q.id] ? 'drafted'
+        : q.stage === 'published' ? 'published'
+          : stageOverride[q.id] ?? q.stage
+  );
   // Display resolution for swapped slots: the chosen angle replaces topic + pillar and
   // clears the stale body/media; the trail restarts honestly from "new angle locked".
   const resolveItem = (q: QueueItem): QueueItem => {

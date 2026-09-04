@@ -5,6 +5,20 @@ import React, { useEffect, useState } from 'react';
 const truncAt = (t: string, cap: number) => (t.length <= cap ? t : t.slice(0, t.lastIndexOf(' ', cap)).trimEnd() + '\u2026');
 const stripBrand = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '');
 
+/** The permalink of a post that actually went out. Only ever rendered when the queue item
+ *  carries one, so it never promises a link the board cannot honour. */
+function LivePostLink({ href }: { href: string }) {
+  return (
+    <a
+      href={href} target="_blank" rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+    >
+      See it on LinkedIn
+    </a>
+  );
+}
+
 /** The feed's own action bar. Inert on purpose: it is scenery that tells the eye "this is a
  *  post", the way the static review pages did it. */
 const LI_ICONS: [string, string][] = [
@@ -551,6 +565,7 @@ export default function DeskReviewSurface({
               <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
               <Chip>{kickerOfLocal(q)}</Chip>
               <FunnelChip stage={q.funnel_stage} accent={accent} />
+              {q.post_url && <LivePostLink href={q.post_url} />}
             </div>
           </div>
           {bucket === 'published' ? (
@@ -716,6 +731,7 @@ export default function DeskReviewSurface({
         {chip && <Chip>{chip.label}</Chip>}
         <Chip>{kickerOfLocal(q)}</Chip>
         <FunnelChip stage={q.funnel_stage} accent={accent} />
+        {q.post_url && <LivePostLink href={q.post_url} />}
         {bucket !== 'published' && (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
             <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
