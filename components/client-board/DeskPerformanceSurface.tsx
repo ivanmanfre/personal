@@ -628,14 +628,30 @@ export function DeskPerformanceSurface({
       </>
       )}
 
-      {/* Block 6: ghost/live indicator cards — original rule preserved exactly. */}
+      {/* Block 6: ghost/live indicator cards.
+          MEASURED FIRST, ghosts last (2026-09-04). The two arrays used to render in
+          source order, which put every unstamped card at the top: the block opened on a
+          row of dashes and the client had to scroll past "not tracked yet" to reach
+          1,081 invites and 11 booked calls. Ordering on captured_at — the same signal
+          indicatorCard already branches on — is self-correcting: the day a ghost gains a
+          source it moves up on its own, with no edit here. Relative order inside each
+          group is preserved, so the outreach sequence still reads
+          invites → accepts → replies → booked. */}
       {(indicators.length > 0 || (live && outreachInds.length > 0)) && (
         <div style={{ marginTop: 40 }}>
           <Eyebrow>What we track</Eyebrow>
           <Footnote>{perf?.note || 'Real series appear the day each one goes live.'}</Footnote>
           <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
-            {indicators.map((ind) => indicatorCard(ind, expectationFor(ind)))}
-            {live && outreachInds.map((ind) => indicatorCard(ind))}
+            {(() => {
+              const cards: { ind: PerfIndicator; expectation?: string }[] = [
+                ...indicators.map((ind) => ({ ind, expectation: expectationFor(ind) })),
+                ...(live ? outreachInds.map((ind) => ({ ind, expectation: undefined })) : []),
+              ];
+              return [
+                ...cards.filter((c) => !!c.ind.captured_at),
+                ...cards.filter((c) => !c.ind.captured_at),
+              ].map((c) => indicatorCard(c.ind, c.expectation));
+            })()}
           </div>
         </div>
       )}
