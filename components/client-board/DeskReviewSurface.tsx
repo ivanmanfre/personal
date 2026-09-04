@@ -181,7 +181,7 @@ const KIND_LABEL: Record<string, string> = { post: 'Text post', carousel: 'Carou
 function kickerOfLocal(q: Pick<QueueItem, 'kind' | 'media_url' | 'image_urls' | 'lm_launch' | 'style'>): string {
   if (q.lm_launch) return 'Lead magnet launch';
   if (q.style === 'video') return 'Video';
-  if (q.kind === 'post') return (q.media_url || (q.image_urls && q.image_urls.length)) ? 'Image post' : 'Text post';
+  if (q.kind === 'post') return (q.media_url || (q.image_urls && q.image_urls.length)) ? 'Single image' : 'Text post';
   return KIND_LABEL[q.kind] || q.kind;
 }
 
@@ -404,15 +404,17 @@ export default function DeskReviewSurface({
   // TOPIC (?topic=) is the pillar the engine tagged it with (taxonomy.pillar via the queue
   // sync), with the personal lane keyed off taxonomy.register so a hybrid post still counts
   // as personal. They compose — "Carousels × Teardown" is a real view.
-  type Cat = 'all' | 'post' | 'carousel' | 'video' | 'lm';
+  type Cat = 'all' | 'post' | 'image' | 'carousel' | 'video' | 'lm';
   const CATS: { id: Cat; label: string }[] = [
-    { id: 'all', label: 'All' }, { id: 'post', label: 'Posts' },
+    { id: 'all', label: 'All' }, { id: 'post', label: 'Text' }, { id: 'image', label: 'Single image' },
     { id: 'carousel', label: 'Carousels' }, { id: 'video', label: 'Videos' }, { id: 'lm', label: 'Lead magnets' },
   ];
   const catOf = (q: QueueItem): Cat => {
     if (q.kind === 'lm' || q.lm_launch || q.lm_gate) return 'lm';
     if ((q.style || '').toLowerCase() === 'video' || /^video[:\s]/i.test(q.title || '')) return 'video';
     if (q.kind === 'carousel') return 'carousel';
+    // A post that carries art is a different thing to write and to judge, so it filters apart.
+    if (q.image || (q.image_urls && q.image_urls.length)) return 'image';
     return 'post';
   };
   const topicOf = (q: QueueItem): string | null => {
@@ -729,7 +731,7 @@ export default function DeskReviewSurface({
    *  as a feed since 2026-08-07 — swap to a 2-up of LinkedIn-style cards. Opt-in, so a client
    *  who liked the list keeps the list (2026-09-03, Ivan). */
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || view === 'feed'
+    topic === 'personal' || (view === 'feed' && bucket === 'buffer')
       ? <div className="cb-licard-grid">{list.map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
@@ -759,7 +761,7 @@ export default function DeskReviewSurface({
     </div>
   );
 
-  const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (
+  const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string, aside?: React.ReactNode) => count > 0 ? (
     <div key={key} style={{ marginTop: 20 }}>
       <div
         role="button"
@@ -775,6 +777,16 @@ export default function DeskReviewSurface({
         </div>
         <Num size="row" inline style={{ fontSize: 19 }}>{count}</Num>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{blurb}</span>
+        {aside ? (
+          <span
+            style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, alignItems: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            {aside}
+          </span>
+        ) : null}
       </div>
       {sectionOpen(key) ? rows : null}
     </div>
@@ -839,11 +851,7 @@ export default function DeskReviewSurface({
       {/* Block 3: view toggle. */}
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
-        <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
-        {view === 'feed' && (
-          <Footnote style={{ marginLeft: 4 }}>Each post as it will look in the feed, cut where LinkedIn cuts it.</Footnote>
-        )}
       </div>
 
       {/* Block 3b: filters — ONE aligned block, three labelled axes. No "All" pills:
@@ -904,7 +912,13 @@ export default function DeskReviewSurface({
           {live ? (
             <>
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
-              {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer')}
+              {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer', (
+                <>
+                  {view === 'feed' && <Footnote>Cut where LinkedIn cuts it.</Footnote>}
+                  <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
+                  <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
+                </>
+              ))}
               {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
               {section('Published', fPublished.length, 'published, newest first', [
                 <React.Fragment key="recent-out">{rowsFor(fPublished.slice(-6).reverse(), 'published')}</React.Fragment>,
