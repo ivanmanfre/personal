@@ -4,6 +4,12 @@ import { toastError } from '../lib/dashboardActions';
 
 // Daily snapshots of Ivan's own LinkedIn follower/connection count.
 // Populated by the sync-linkedin-followers edge function (Unipile) on a daily cron.
+//
+// The table went multi-seat on 2026-09-04 (PK is now (client_id, date)) so the client
+// Post Trackers can snapshot Mattan's and Davorin's counts on the same schedule. Ivan's
+// rows carry client_id 'ivan'; without the filter below this chart would average his
+// ~1.9k followers together with a client's ~6.5k and read as a step change on the day
+// the first client row landed.
 export interface FollowerPoint {
   date: string; // ISO date (YYYY-MM-DD)
   followers: number;
@@ -20,6 +26,7 @@ export function useFollowerHistory() {
       const res = await supabase
         .from('linkedin_follower_history')
         .select('*')
+        .eq('client_id', 'ivan')
         .order('date', { ascending: true })
         .limit(365);
       if (res.error) throw res.error;

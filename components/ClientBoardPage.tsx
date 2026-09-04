@@ -212,7 +212,7 @@ interface NewsletterSpec {
   nurture?: NurtureStep[];
 }
 interface PerfIndicator { key: string; label: string; source?: string; value?: number | null; captured_at?: string }
-interface PerfPost { url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null; comments?: number | null; captured_at?: string }
+interface PerfPost { url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null; comments?: number | null; profile_views?: number | null; followers_gained?: number | null; captured_at?: string }
 interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
@@ -6893,6 +6893,19 @@ function PerformanceSurface({ board, accent, live = false, showAim = false }: { 
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13.5px] leading-snug" style={{ fontFamily: BODY, color: INK }}>{p.title || 'Untitled post'}</span>
                       {p.published_at && <span className="block text-[11px] tabular-nums" style={{ color: FAINT }}>{fmtDay(p.published_at)}</span>}
+                      {/* Profile views + followers LinkedIn attributes to this specific post.
+                          Rendered as a caption rather than two more numeric columns: most posts
+                          earn zero on both, and a column that is blank on eight rows out of ten
+                          reads as missing data instead of as a real result. A zero is simply not
+                          shown, so this line appears only on a post that actually moved one. */}
+                      {((p.profile_views || 0) >= 1 || (p.followers_gained || 0) >= 1) && (
+                        <span className="mt-0.5 block text-[11px] tabular-nums" style={{ color: DIM }}>
+                          {[
+                            (p.profile_views || 0) >= 1 ? `${p.profile_views} profile ${p.profile_views === 1 ? 'view' : 'views'}` : null,
+                            (p.followers_gained || 0) >= 1 ? `${p.followers_gained} new ${p.followers_gained === 1 ? 'follower' : 'followers'}` : null,
+                          ].filter(Boolean).join('  ·  ')}
+                        </span>
+                      )}
                     </span>
                     <span className="w-16 shrink-0 text-right cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.impressions)}</span>
                     <span className="w-14 shrink-0 text-right cb-num-serif tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.reactions)}</span>
