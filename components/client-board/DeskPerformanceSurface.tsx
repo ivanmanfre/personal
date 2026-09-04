@@ -569,6 +569,19 @@ export function DeskPerformanceSurface({
                         <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
                           {typeof p.reactions === 'number' ? p.reactions : '—'} · {typeof p.comments === 'number' ? p.comments : '—'}
                         </span>
+                        {/* What the post pulled off the feed: profile views and new followers
+                            LinkedIn attributes to THIS post. Each draws only at >= 1 (Ivan
+                            2026-09-04) — most posts earn zero on both, and a permanent "0 · 0"
+                            on every row would read as the content failing rather than as
+                            growth simply arriving through another door. */}
+                        {((p.profile_views || 0) >= 1 || (p.followers_gained || 0) >= 1) && (
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                            {[
+                              (p.profile_views || 0) >= 1 ? `${p.profile_views} profile ${p.profile_views === 1 ? 'view' : 'views'}` : null,
+                              (p.followers_gained || 0) >= 1 ? `${p.followers_gained} new ${p.followers_gained === 1 ? 'follower' : 'followers'}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
                       </div>
                       <LedgerBar pct={pct} tone={isBest ? 'strong' : 'muted'} height={isBest ? 16 : 10} />
                       <span className="cb-perfh-rtip" aria-hidden="true">
