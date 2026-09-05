@@ -21,6 +21,9 @@ export type IdeaDecision = 'approve' | 'reject' | 'defer';
 export interface IdeaCandidate {
   id: string;
   source: string;
+  // Permalink (reddit/youtube/competitor/HN) or an internal row id (calls,
+  // sessions). Rendered as a link only when it is an http(s) URL.
+  source_ref?: string | null;
   content_type?: string | null;
   raw_topic: string;
   normalized_topic?: string | null;
@@ -75,13 +78,21 @@ export function strengthBand(composite?: number | null): 'High' | 'Mid' | 'Low' 
   return 'Low';
 }
 
-function evidenceList(ev: any): Array<{ quote?: string; persona?: string; source?: string }> {
+// A source_ref / evidence ref is only worth linking when it is a real URL —
+// call and session sources store an internal row id or a memory path there.
+function asLink(ref?: string | null): string | null {
+  if (typeof ref !== 'string') return null;
+  return /^https?:\/\//i.test(ref.trim()) ? ref.trim() : null;
+}
+
+function evidenceList(ev: any): Array<{ quote?: string; persona?: string; source?: string; url?: string }> {
   if (!Array.isArray(ev)) return [];
   return ev
     .map((e: any) => ({
       quote: typeof e?.quote === 'string' ? e.quote : (typeof e?.excerpt === 'string' ? e.excerpt : undefined),
       persona: typeof e?.persona === 'string' ? e.persona : (typeof e?.author === 'string' ? e.author : undefined),
       source: typeof e?.source === 'string' ? e.source : (typeof e?.origin === 'string' ? e.origin : undefined),
+      url: asLink(e?.url) || asLink(e?.permalink) || undefined,
     }))
     .filter((e) => e.quote || e.persona);
 }
@@ -103,8 +114,9 @@ export function assembleIdeaDescription(c: IdeaCandidate): string {
     lines.push('', '**Evidence**');
     ev.slice(0, 4).forEach((e) => {
       const who = [e.persona, e.source && (SOURCE_LABEL[e.source] || e.source)].filter(Boolean).join(' · ');
-      if (e.quote) lines.push(`> "${e.quote}"${who ? `\n> — ${who}` : ''}`);
-      else if (who) lines.push(`> ${who}`);
+      const cite = [who, e.url ? `[open](${e.url})` : null].filter(Boolean).join(' · ');
+      if (e.quote) lines.push(`> "${e.quote}"${cite ? `\n> — ${cite}` : ''}`);
+      else if (cite) lines.push(`> ${cite}`);
     });
   }
   const sig = [
@@ -114,7 +126,8 @@ export function assembleIdeaDescription(c: IdeaCandidate): string {
     c.gap_score != null ? `Gap ${c.gap_score}/10` : null,
   ].filter(Boolean).join(' · ');
   if (sig) lines.push('', `**Signal** — ${sig}`);
-  lines.push(`**Source** — ${srcLabel}`);
+  const srcLink = asLink(c.source_ref);
+  lines.push(`**Source** — ${srcLink ? `[${srcLabel}](${srcLink})` : srcLabel}`);
   if (c.format_recommendation || c.offer_ladder_map) {
     lines.push(`**Recommended** — ${c.format_recommendation || '—'}${c.offer_ladder_map ? ` · ladder ${c.offer_ladder_map}` : ''}`);
   }
