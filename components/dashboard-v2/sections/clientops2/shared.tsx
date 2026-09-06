@@ -119,6 +119,28 @@ export interface BoardIdentity {
   companyName: string | null;
 }
 export interface QueueEntry { status?: string | null; publish_date?: string | null; funnel_stage?: string | null; }
+/** One published post's measured result: what it reached, what it pulled into the inbox,
+ *  and who it reached. `inbound_dms` counts THREADS whose sender had touched this post
+ *  before writing (the reply detector's attribution hook, 2026-09-06). `owner_share` is
+ *  null, never 0, when nothing has been judged for the post yet. */
+export interface PostStat {
+  post_id: string;
+  activity_id: string | null;
+  social_id: string | null;
+  title: string | null;
+  post_url: string | null;
+  published_at: string | null;
+  impressions: number | null;
+  reactions: number | null;
+  comments: number | null;
+  profile_views: number | null;
+  inbound_dms: number;
+  engagers: number;
+  judged: number;
+  owners: number;
+  providers: number;
+  owner_share: number | null;
+}
 
 export const stripPrefix = (t: string) => (t || '').replace(/^\[[^\]]+\]\s*/, '');
 export const fmtDate = (iso: string | null | undefined) => {
@@ -490,18 +512,26 @@ export function useClientDetail(client: ClientOverview | null) {
   const [boardLms, setBoardLms] = useState<BoardLm[] | null>(null);
   const [identity, setIdentity] = useState<BoardIdentity | null>(null);
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
+  // Measured per-post results (reach, attributed inbound DMs, owner share). Its own state
+  // rather than a field on Draft: a draft is a plan and a post stat is an outcome, and the
+  // stat exists for posts whose draft row was never on this board (hand-published copies).
+  const [postStats, setPostStats] = useState<PostStat[] | null>(null);
   const [errors, setErrors] = useState<{ drafts?: string; actions?: string; ideas?: string; lms?: string }>({});
 
   const load = useCallback(async () => {
     if (!client) return;
     setErrors({});
-    const [dRes, aRes, iRes, lRes, bRes] = await Promise.all([
+    const [dRes, aRes, iRes, lRes, bRes, pRes] = await Promise.all([
       supabase.rpc('operator_client_drafts', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_actions', { p_gate: GATE, p_slug: client.board.slug }),
       supabase.rpc('operator_client_ideas', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('operator_client_lms', { p_gate: GATE, p_client_id: client.client_id }),
       supabase.rpc('get_client_board', { p_slug: client.board.slug, p_token: client.board.token }),
+      supabase.rpc('operator_client_post_stats', { p_gate: GATE, p_client_id: client.client_id }),
     ]);
+    // A failed stats read leaves postStats null, which renders as nothing at all. It must
+    // never render as zeros: "no DMs" and "not measured" are different facts.
+    setPostStats(pRes.error || pRes.data?.ok === false ? null : ((pRes.data?.posts || []) as PostStat[]));
     const errs: typeof errors = {};
     if (dRes.error || (dRes.data && dRes.data.ok === false)) { errs.drafts = dRes.error?.message || dRes.data?.error || 'drafts load failed'; setDrafts([]); }
     else setDrafts((dRes.data?.drafts || []) as Draft[]);
@@ -641,7 +671,7 @@ export function useClientDetail(client: ClientOverview | null) {
     [drafts, ideas, lms, queue],
   );
 
-  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates, reload: load, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onSaveCover, onEditBody, onMarkActionsSeen };
+  return { drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, postStats, errors, aggregates, reload: load, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onSaveCover, onEditBody, onMarkActionsSeen };
 }
 
 // ── Client-faithful LinkedIn preview ─────────────────────────────────────────

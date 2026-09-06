@@ -582,6 +582,19 @@ export function DeskPerformanceSurface({
                             ].filter(Boolean).join(' · ')}
                           </span>
                         )}
+                        {/* The two numbers this post exists to produce: DMs from people who had
+                            touched it before they wrote, and how many of the people it reached
+                            run a brand. Drawn only at >= 1, the same rule as the line above
+                            (Ivan 2026-09-04) — zeros on every row read as failure, and reach
+                            does its work quietly. Client Ops carries the zeros. */}
+                        {((p.inbound_dms || 0) >= 1 || (p.owners || 0) >= 1) && (
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                            {[
+                              (p.inbound_dms || 0) >= 1 ? `${p.inbound_dms} inbound ${p.inbound_dms === 1 ? 'DM' : 'DMs'}` : null,
+                              (p.owners || 0) >= 1 ? `${p.owners} brand ${p.owners === 1 ? 'owner' : 'owners'} engaged` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
                       </div>
                       <LedgerBar pct={pct} tone={isBest ? 'strong' : 'muted'} height={isBest ? 16 : 10} />
                       <span className="cb-perfh-rtip" aria-hidden="true">
@@ -619,6 +632,14 @@ export function DeskPerformanceSurface({
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '6px 0 0' }}>
                     <span style={{ flex: '1 1 220px', minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)' }}>{it.title || 'Untitled post'}</span>
                     {typeof it.impressions === 'number' && <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{it.impressions.toLocaleString()} reads</span>}
+                    {/* An older post that pulled someone into the inbox keeps saying so in
+                        the fold — that is the one number worth carrying out of an archived
+                        week. Same >= 1 rule as the live rows above. */}
+                    {(it.inbound_dms || 0) >= 1 && (
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                        {it.inbound_dms} inbound {it.inbound_dms === 1 ? 'DM' : 'DMs'}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

@@ -21,6 +21,7 @@ import {
   type ActionRow,
   type BoardLm,
   type BoardIdentity,
+  type PostStat,
 } from './clientops2/shared';
 import { OutreachView } from './clientops2/OutreachView';
 
@@ -94,7 +95,7 @@ export function ClientOps() {
   );
 
   const {
-    drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, errors, aggregates,
+    drafts, actions, actionsUnseen, ideas, lms, boardLms, identity, queue, postStats, errors, aggregates,
     reload, onToggle, onSchedule, onReschedule, onDecideIdea, onSwapCover, onSaveCover, onEditBody, onMarkActionsSeen,
   } = useClientDetail(client);
 
@@ -391,6 +392,7 @@ export function ClientOps() {
             <LiveLane
               live={liveDrafts}
               published={publishedDrafts}
+              postStats={postStats}
               toggleBusyId={toggleBusyId}
               onToggle={handleToggle}
               loading={drafts == null}
@@ -774,10 +776,37 @@ function BufferLane({ scheduled, bufferDepth, nextPublish, queue, loading, onRes
 }
 
 // ── Live lane: what's on the board (toggle review rows) + published rows ──────
-function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
-  live: Draft[]; published: Draft[]; toggleBusyId: string | null;
+/** The measured result of a published post, rendered on the operator's own row.
+ *
+ *  This is the surface where the zeros MUST show. The client board draws these numbers
+ *  only when they are >= 1 (Ivan 2026-09-04, on profile views), because a wall of zeros
+ *  on a client's own page reads as the content failing. The judgement of whether the
+ *  buyer slot on the feed is producing anything happens HERE, and that judgement needs
+ *  the misses as much as the hits.
+ *
+ *  "not measured" and "measured zero" are different facts and are drawn differently:
+ *  a post with no harvest yet shows no owner share at all, never 0%. */
+export function PostResult({ s }: { s: PostStat | undefined }) {
+  if (!s) return null;
+  const share = s.owner_share == null ? null : Math.round(s.owner_share * 100);
+  return (
+    <span className="co2-lmeta" title="reads · inbound DMs attributed to this post · share of judged engagers who run a brand">
+      {typeof s.impressions === 'number' ? `${s.impressions.toLocaleString()} reads` : 'reads pending'}
+      {` · ${s.inbound_dms} inbound ${s.inbound_dms === 1 ? 'DM' : 'DMs'}`}
+      {share == null ? ' · owners not judged yet' : ` · ${share}% owners (${s.owners}/${s.judged})`}
+    </span>
+  );
+}
+
+export function LiveLane({ live, published, postStats, toggleBusyId, onToggle, loading }: {
+  live: Draft[]; published: Draft[]; postStats: PostStat[] | null; toggleBusyId: string | null;
   onToggle: (d: Draft, next: boolean) => void; loading: boolean;
 }) {
+  // Keyed on the bare numeric activity id, which is what carousel_drafts.source_post_id
+  // holds. NOT on social_id: a document post's ugcPost urn carries a different number
+  // than its own activity id (measured 2026-09-06 on "You still haven't paid us").
+  const statBy = new Map((postStats || []).map((s) => [String(s.activity_id || ''), s]));
+  const statFor = (d: Draft) => (d.source_post_id ? statBy.get(String(d.source_post_id)) : undefined);
   return (
     <section className="co2-laneblock">
       <div className="ec-kicker">On the client board — what the client sees right now · pull a review draft off to hide it</div>
@@ -798,6 +827,7 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
                   {d.qa_score != null ? ` · QA ${d.qa_score}` : ''}
                   {!canToggle ? ` · ${d.status}` : ''}
                 </span>
+                <PostResult s={statFor(d)} />
                 <button
                   role="switch"
                   aria-checked
@@ -817,6 +847,7 @@ function LiveLane({ live, published, toggleBusyId, onToggle, loading }: {
               <span className="co2-lmeta">
                 {d.type === 'text' ? 'Text' : d.type === 'single_image' ? 'Image' : 'Carousel'} · published{d.published_at ? ` ${fmtDate(d.published_at)}` : ''}
               </span>
+              <PostResult s={statFor(d)} />
             </div>
           ))}
         </div>

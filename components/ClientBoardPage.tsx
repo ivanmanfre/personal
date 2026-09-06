@@ -215,7 +215,18 @@ interface NewsletterSpec {
   nurture?: NurtureStep[];
 }
 interface PerfIndicator { key: string; label: string; source?: string; value?: number | null; captured_at?: string }
-interface PerfPost { url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null; comments?: number | null; profile_views?: number | null; followers_gained?: number | null; captured_at?: string }
+interface PerfPost {
+  url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null;
+  comments?: number | null; profile_views?: number | null; followers_gained?: number | null; captured_at?: string;
+  /** Inbound DMs whose sender had reacted to or commented on THIS post before they wrote.
+   *  Written by the reply detector's attribution hook (2026-09-06), counted per thread and
+   *  never per message. Absent on posts captured before the hook existed. */
+  inbound_dms?: number | null;
+  /** Who the post reached, from the engager harvest: how many of `engagers` the side judge
+   *  read as brand owners. owner_share is null (not 0) when nothing has been judged yet —
+   *  an unharvested post has no share, and a drawn 0% would read as a failed post. */
+  engagers?: number | null; owners?: number | null; owner_share?: number | null;
+}
 interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
@@ -6908,6 +6919,18 @@ function PerformanceSurface({ board, accent, live = false, showAim = false }: { 
                           {[
                             (p.profile_views || 0) >= 1 ? `${p.profile_views} profile ${p.profile_views === 1 ? 'view' : 'views'}` : null,
                             (p.followers_gained || 0) >= 1 ? `${p.followers_gained} new ${p.followers_gained === 1 ? 'follower' : 'followers'}` : null,
+                          ].filter(Boolean).join('  ·  ')}
+                        </span>
+                      )}
+                      {/* What the post pulled into the inbox, and who it reached. Same >= 1 rule
+                          as the line above (Ivan 2026-09-04): a permanent "0 DMs · 0 owners" on
+                          every row would read as the content failing, when most posts simply do
+                          their work through reach. The operator surface shows the zeros. */}
+                      {((p.inbound_dms || 0) >= 1 || (p.owners || 0) >= 1) && (
+                        <span className="mt-0.5 block text-[11px] tabular-nums" style={{ color: DIM }}>
+                          {[
+                            (p.inbound_dms || 0) >= 1 ? `${p.inbound_dms} inbound ${p.inbound_dms === 1 ? 'DM' : 'DMs'}` : null,
+                            (p.owners || 0) >= 1 ? `${p.owners} brand ${p.owners === 1 ? 'owner' : 'owners'} engaged` : null,
                           ].filter(Boolean).join('  ·  ')}
                         </span>
                       )}
