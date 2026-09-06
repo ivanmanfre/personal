@@ -282,11 +282,15 @@ describe('LeadsStrip — the ARCH in-play leads list (goal-run arch-panel-live-l
     expect(html).toContain('counted 26 Aug, 04:01 UTC');
   });
 
-  it('L4 status chips derive in priority order: booked, replied, accepted, InMail sent, invited, queued', () => {
-    const html = withLeads(LEADS);
-    for (const label of ['booked', 'replied', 'accepted', 'InMail sent', 'invited', 'queued']) {
+  it('L4 status chips derive in priority order: booked, replied, follow-up sent, DM sent, accepted, InMail sent, invited, queued', () => {
+    const html = withLeads(LEADS.concat([
+      { name: 'Dm Person', company: 'Dm Co', lane: 'engager_warm', from_team: false, stage: 'dm_sent', connection_sent_at: '2026-08-20T09:00:00Z', last_dm_sent_at: '2026-08-22T09:00:00Z', last_reply_at: null, call_booked_at: null, dm_count: 1, inmail_count: 0 },
+      { name: 'Followup Person', company: 'Followup Co', lane: 'hiring_signal', from_team: false, stage: 'dm_sent', connection_sent_at: '2026-08-18T09:00:00Z', last_dm_sent_at: '2026-08-25T09:00:00Z', last_reply_at: null, call_booked_at: null, dm_count: 2, inmail_count: 0 },
+    ]));
+    for (const label of ['booked', 'replied', 'follow-up sent', 'DM sent', 'accepted', 'InMail sent', 'invited', 'queued']) {
       expect(html).toContain(`>${label}<`);
     }
+    expect(html).toContain('hiring');
     // the booked row wins over its own reply/dm/invite dates
     expect(html.indexOf('Booked Person')).toBeLessThan(html.indexOf('>booked<'));
   });

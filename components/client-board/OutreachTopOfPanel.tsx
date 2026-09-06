@@ -355,7 +355,9 @@ function IntentChip({ intent }: { intent?: string | null }) {
  *
  * Lane and stage arrive as internal tokens. Both are mapped to client-facing labels below;
  * an unmapped lane renders NO chip rather than leaking the raw token. The status chip is
- * derived, in priority order: booked, replied, accepted, InMail sent, invited, queued.
+ * derived, in priority order: booked, replied, follow-up sent, DM sent, accepted, InMail sent,
+ * invited, queued (2026-09-06, Ivan: a person in a DM thread must not read as "invited"; the
+ * counts come from the compute()'s per-lead dm_count / inmail_count).
  */
 const LEAD_LANE_LABEL: Record<string, string> = {
   engager_warm: 'warm engager',
@@ -363,13 +365,29 @@ const LEAD_LANE_LABEL: Record<string, string> = {
   cold_apps: 'cold: apps',
   sponsor_team: 'sponsor',
   sponsor_mined: 'sponsor',
+  // 2026-09-06: the signal lanes the harvesters added since launch, named as their leads-page sections
+  hiring_signal: 'hiring',
+  funding_signal: 'funding',
+  new_in_role: 'new in role',
+  soft_launch: 'soft launch',
+  warm_games: 'warm: games',
+  warm_apps: 'warm: apps',
+  orbit_pilot_fintech: 'fintech',
+  orbit_pilot_csaas: 'apps',
+  israel_trip: 'Israel',
+  profile_view: 'profile view',
+  hand_raise: 'hand-raise',
 };
 
 function leadStatus(l: OutreachTruthLead): { label: string; at: string | null; strong: boolean } {
   if (l.call_booked_at) return { label: 'booked', at: l.call_booked_at, strong: true };
   if (l.last_reply_at) return { label: 'replied', at: l.last_reply_at, strong: true };
+  const dms = Number(l.dm_count || 0);
+  const inmails = Number(l.inmail_count || 0);
+  if (dms + inmails >= 2) return { label: 'follow-up sent', at: l.last_dm_sent_at, strong: false };
+  if (dms === 1) return { label: 'DM sent', at: l.last_dm_sent_at, strong: false };
   if ((l.stage || '') === 'connected') return { label: 'accepted', at: l.last_dm_sent_at || l.connection_sent_at || null, strong: false };
-  if (l.last_dm_sent_at && (l.stage || '') === 'dm_sent' && !l.connection_sent_at) return { label: 'InMail sent', at: l.last_dm_sent_at, strong: false };
+  if (inmails === 1 || (l.last_dm_sent_at && (l.stage || '') === 'dm_sent' && !l.connection_sent_at)) return { label: 'InMail sent', at: l.last_dm_sent_at, strong: false };
   if (l.connection_sent_at) return { label: 'invited', at: l.connection_sent_at, strong: false };
   return { label: 'queued', at: null, strong: false };
 }

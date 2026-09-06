@@ -300,6 +300,8 @@ interface OutreachTruthLead {
   from_team?: boolean; stage?: string | null;
   connection_sent_at?: string | null; last_dm_sent_at?: string | null;
   last_reply_at?: string | null; call_booked_at?: string | null;
+  /** 2026-09-06: outbound touches per person (LinkedIn DMs / InMails), for the DM sent and follow-up sent chips */
+  dm_count?: number | null; inmail_count?: number | null;
 }
 /** board.outreach_truth — the single server-computed source of truth for booked/replied/
  *  funnel numbers (goal-run rise-panel-truth-2026-08-25). Written by rise_outreach_truth_apply()
