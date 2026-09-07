@@ -746,12 +746,13 @@ export default function DeskReviewSurface({
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
         <LiActions />
       </div>
-      {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post. */}
+      {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post.
+          2026-09-07 (Ivan): the buffer's Review grid drops the tag row ("no date yet · in buffer ·
+          Text post · Trust") — the Source line above and the mock itself say it; the date and
+          status chips stay only where they carry news (scheduled / published cards). */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 2px 0' }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
-        {chip && <Chip>{chip.label}</Chip>}
-        <Chip>{kickerOfLocal(q)}</Chip>
-        <FunnelChip stage={q.funnel_stage} accent={accent} />
+        {bucket !== 'buffer' && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
+        {bucket !== 'buffer' && chip && <Chip>{chip.label}</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
         {bucket !== 'published' && (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
