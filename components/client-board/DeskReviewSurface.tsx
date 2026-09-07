@@ -201,15 +201,23 @@ function kickerOfLocal(q: Pick<QueueItem, 'kind' | 'media_url' | 'image_urls' | 
 
 /** Mirrors ClientBoardPage's (unexported) sourceChip: the honest, concrete provenance —
  *  never a vague "Picked by Ivan". Only ever called for live boards (see original). */
-function sourceChipLocal(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null } | null {
+function srcDayLocal(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+function sourceChipLocal(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { label: string; quote?: string | null; meta?: string | null } | null {
   const sd = q.source_detail;
   if (sd) {
+    // 2026-09-07 (Ivan): the Review grid now carries the source line, so the call date rides
+    // along when the row knows it — "From your call · 20 Aug" beats a bare "From your calls".
+    const meta = srcDayLocal(sd.call_date) || srcDayLocal(sd.sourced_at) || null;
     if (sd.kind === 'call') {
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
-      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote };
+      return { label: who ? `${sd.label || 'From your sales call'} · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote, meta };
     }
     if (sd.kind === 'strategy') return null;
-    return { label: sd.label || '', quote: null };
+    return { label: sd.label || q.source_label || '', quote: null, meta };
   }
   if (q.source_label) return { label: q.source_label, quote: null };
   return null;
@@ -700,8 +708,21 @@ export default function DeskReviewSurface({
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
     const isOpen = !!cardOpen[q.id];
+    /* Where the post came from sits ABOVE the simulation (2026-09-07, Ivan: "the source of the
+       content should be seen above each html simulation"). Same provenance the list view and
+       the detail modal already show; the quote is the founder's own line from that call. */
+    const src = sourceChipLocal(q);
+    const srcQuote = (src?.quote || '').replace(/\s+/g, ' ').trim();
+    const srcQuoteShort = srcQuote.length > 120 ? srcQuote.slice(0, 117).trimEnd() + '…' : srcQuote;
     return (
       <div key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      {src && src.label && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'baseline', flexWrap: 'wrap', padding: '0 2px 6px', minWidth: 0, lineHeight: 1.35 }} title={srcQuote || undefined}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: 'none' }}>Source</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cb-ink)' }}>{src.label}{src.meta ? ` · ${src.meta}` : ''}</span>
+          {srcQuoteShort && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', flex: '1 1 100%', minWidth: 0 }}>“{srcQuoteShort}”</span>}
+        </div>
+      )}
       <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
         <div
           role="button" tabIndex={0}
