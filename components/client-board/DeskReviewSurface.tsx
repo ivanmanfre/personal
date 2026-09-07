@@ -768,9 +768,17 @@ export default function DeskReviewSurface({
   /** Rows are the default everywhere. Review mode — and the Personal topic, which has read
    *  as a feed since 2026-08-07 — swap to a 2-up of LinkedIn-style cards. Opt-in, so a client
    *  who liked the list keeps the list (2026-09-03, Ivan). */
+  /* Review grid order (2026-09-07, Ivan): text posts first, then single-image posts, then
+     carousels, so the eye reads one format at a time instead of hopping between them. Stable
+     within a group, so the list's own order still holds inside each block. */
+  const formatRank = (q: QueueItem): number => {
+    if (q.kind === 'carousel' || docPagesOf(q).length >= 2) return 2;
+    if (q.media_url || (q.image_urls && q.image_urls.length) || cardImageUrlLocal(q, board)) return 1;
+    return 0;
+  };
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
     topic === 'personal' || (view === 'feed' && bucket === 'buffer')
-      ? <div className="cb-licard-grid">{list.map((q) => renderLiCard(q, bucket))}</div>
+      ? <div className="cb-licard-grid">{[...list].sort((a, b) => formatRank(a) - formatRank(b)).map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
   const renderDraftedRow = (q: QueueItem) => (
