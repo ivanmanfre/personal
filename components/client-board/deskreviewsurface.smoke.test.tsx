@@ -378,4 +378,21 @@ describe('DeskReviewSurface', () => {
     expect(html).not.toContain('reading the log');
     cleanup();
   });
+  it('shows full selectable review copy with an explicit edit control', () => {
+    const board = makeBoard();
+    const body = 'A complete paragraph. '.repeat(60) + 'The final line stays visible.';
+    board.queue = [{ id: 'q-full', kind: 'post', stage: 'review', title: 'Full draft', body }];
+    window.history.replaceState(null, '', '/');
+    const opened: unknown[] = [];
+    const { container, getByRole } = render(<DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...args) => opened.push(args)} onOpenIdea={noop} onApprove={noop} flashId={null} view="feed" setView={noop} skips={{}} live />);
+    const copy = container.querySelector('[data-review-copy]')!;
+    expect(copy.textContent).toBe(body);
+    expect(copy.getAttribute('role')).toBeNull();
+    fireEvent.click(copy);
+    expect(opened).toHaveLength(0);
+    fireEvent.click(getByRole('button', { name: 'Edit copy' }));
+    expect(opened).toEqual([[board.queue[0], { editing: true }]]);
+    cleanup();
+  });
+
 });

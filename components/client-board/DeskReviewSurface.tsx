@@ -20,89 +20,9 @@ function LivePostLink({ href }: { href: string }) {
   );
 }
 
-/** The feed's own action bar. Inert on purpose: it is scenery that tells the eye "this is a
- *  post", the way the static review pages did it. */
-const LI_ICONS: [string, string][] = [
-  ['Like', 'M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 4-8c1.5 0 2.5 1 2.5 2.5V9H19a2 2 0 0 1 2 2.3l-1 6.5A2.4 2.4 0 0 1 17.6 20H7'],
-  ['Comment', 'M21 12a8 8 0 0 1-8 8H4l2.3-2.7A8 8 0 1 1 21 12z'],
-  ['Repost', 'M17 2l4 4-4 4M21 6H8a4 4 0 0 0-4 4M7 22l-4-4 4-4M3 18h13a4 4 0 0 0 4-4'],
-  ['Send', 'M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z'],
-];
-function LiActions() {
-  return (
-    <div aria-hidden style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,.08)', marginTop: 2 }}>
-      {LI_ICONS.map(([label, d]) => (
-        <span key={label} style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '9px 4px', fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,.6)' }}>
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** Post copy cut where LinkedIn cuts it. The feed folds after three lines and appends an
- *  inline "…see more", so the fold itself is the review signal: the client sees exactly how
- *  much of the hook a scroller gets. Measured, never guessed from length. */
-const FOLD_LINES = 3;
-const MORE_LABEL = '…see more';
-function CardBody({ text, open, onToggle, onOpen }: { text: string; open: boolean; onToggle: () => void; onOpen: () => void }) {
-  const ref = React.useRef<HTMLDivElement | null>(null);
-  /** Characters that survive the fold. -1 means the whole post fits and there is no fold. */
-  const [keep, setKeep] = useState(-1);
-
-  React.useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.clientWidth;
-      if (!w) return;
-      const cs = getComputedStyle(el);
-      const probe = document.createElement('div');
-      probe.setAttribute('aria-hidden', 'true');
-      probe.style.cssText = `position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;width:${w}px;font:${cs.font};line-height:${cs.lineHeight};letter-spacing:${cs.letterSpacing}`;
-      document.body.appendChild(probe);
-      const lh = parseFloat(cs.lineHeight) || 20;
-      const max = lh * FOLD_LINES + 1;
-      probe.textContent = text;
-      if (probe.scrollHeight <= max) { setKeep(-1); probe.remove(); return; }
-      // Largest prefix that still fits once the "see more" label is appended to it.
-      let lo = 0; let hi = text.length;
-      while (lo < hi) {
-        const mid = Math.ceil((lo + hi) / 2);
-        probe.textContent = text.slice(0, mid).replace(/\s+$/, '') + MORE_LABEL;
-        if (probe.scrollHeight <= max) lo = mid; else hi = mid - 1;
-      }
-      probe.remove();
-      setKeep(lo);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [text]);
-
-  const folded = keep >= 0 && !open;
-  const more: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'rgba(0,0,0,.55)' };
-  return (
-    <div style={{ padding: '4px 14px 12px' }}>
-      <div
-        ref={ref}
-        role="button" tabIndex={0}
-        onClick={onOpen}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-        style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(0,0,0,.9)', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', cursor: 'pointer' }}
-      >
-        {folded ? text.slice(0, keep).replace(/\s+$/, '') : text}
-        {folded && (
-          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={more}>{MORE_LABEL}</button>
-        )}
-      </div>
-      {keep >= 0 && open && (
-        <button onClick={onToggle} style={{ ...more, marginTop: 4 }}>see less</button>
-      )}
-    </div>
-  );
+/** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
+function CardBody({ text }: { text: string }) {
+  return <div data-review-copy style={{ padding: '12px 22px 24px', fontSize: 18, lineHeight: 1.65, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
 /** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
@@ -119,17 +39,19 @@ function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: strin
   };
   return (
     <div style={{ padding: '9px 2px 0' }}>
+      <label htmlFor={`review-note-${id}`} style={{ display: 'block', marginBottom: 8, fontSize: 15, fontWeight: 600 }}>Changes for this post</label>
       <textarea
+        id={`review-note-${id}`}
         value={text}
         onChange={(e) => { setText(e.target.value); if (state !== 'idle') setState('idle'); }}
         onBlur={save}
         rows={2}
-        placeholder="Change anything? Write it here, or rewrite the line your way. Empty = good to post."
-        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '9px 11px', borderRadius: 9, border: '1px solid var(--cb-line)', background: 'var(--cb-paper-sunk, #EFEBE3)', font: 'inherit', fontSize: 12.5, lineHeight: 1.5, color: 'var(--cb-ink)' }}
+        placeholder="Write your changes or suggest a new line. Notes save when you leave this field."
+        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '12px 14px', minHeight: 96, borderRadius: 9, border: '1px solid var(--cb-line)', background: 'var(--cb-paper-sunk, #EFEBE3)', font: 'inherit', fontSize: 16, lineHeight: 1.55, color: 'var(--cb-ink)' }}
       />
       {state !== 'idle' && (
         <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
-          {state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved — we pick this up' : "Didn't save, try again"}
+          {state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved' : "Didn't save, try again"}
         </div>
       )}
     </div>
@@ -496,8 +418,6 @@ export default function DeskReviewSurface({
   // always renders, the rows toggle. ----
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   /** Per-card body expansion in the 2-up buffer grid. */
-  const [cardOpen, setCardOpen] = useState<Record<string, boolean>>({});
-  const toggleCard = (id: string) => setCardOpen((p) => ({ ...p, [id]: !p[id] }));
   const sectionOpen = (key: string) => openSections[key] ?? key !== 'published';
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
   const [logOpen, setLogOpen] = useState(false);
@@ -650,8 +570,8 @@ export default function DeskReviewSurface({
           </div>
           {bucket !== 'published' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-              <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-              <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
+              <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+              <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
               {!live && <Pill onClick={() => onOpen(q, { changing: true })}>Swap slot</Pill>}
             </div>
           )}
@@ -708,36 +628,34 @@ export default function DeskReviewSurface({
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
-    const isOpen = !!cardOpen[q.id];
     /* Where the post came from sits ABOVE the simulation (2026-09-07, Ivan: "the source of the
        content should be seen above each html simulation"). Same provenance the list view and
        the detail modal already show; the quote is the founder's own line from that call. */
     const src = sourceChipLocal(q);
     return (
-      <div key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div data-review-card={q.id} key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
-      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
+      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: '#202020', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif' }}>
         <div
           role="button" tabIndex={0}
           onClick={() => onOpen(q)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ padding: '12px 14px 6px', cursor: 'pointer' }}
+          style={{ padding: '20px 22px 6px', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
             <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{initials}</div>
             <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,.9)' }}>{fName}</span>
-              {board.founder?.headline && <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>{board.founder.headline}</span>}
-              <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>1d · <span aria-hidden>🌐</span></span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#202020' }}>{fName}</span>
+              {board.founder?.headline && <span style={{ fontSize: 14, color: '#666666' }}>{board.founder.headline}</span>}
+              <span style={{ fontSize: 13, color: '#666666' }}>Post preview</span>
             </div>
             <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
           </div>
         </div>
-        <CardBody text={bodyText} open={isOpen} onToggle={() => toggleCard(q.id)} onOpen={() => onOpen(q)} />
+        <CardBody text={bodyText} />
         {deck.length >= 2
           ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
-        <LiActions />
       </div>
       {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post.
           2026-09-07 (Ivan): the buffer's Review grid drops the tag row ("no date yet · in buffer ·
@@ -749,8 +667,8 @@ export default function DeskReviewSurface({
         {q.post_url && <LivePostLink href={q.post_url} />}
         {bucket !== 'published' && (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-            <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-            <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
+            <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+            <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
           </span>
         )}
       </div>
@@ -839,8 +757,10 @@ export default function DeskReviewSurface({
   return (
     <div data-surface="review">
       <style>{`
-        .cb-licard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
-        @media (max-width: 640px) { .cb-licard-grid { grid-template-columns: minmax(0, 1fr); } }
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 36px 28px; margin-top: 20px; align-items: start; }
+        .cb-licard-grid > div { width: 100%; max-width: 760px; justify-self: center; }
+        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
+        @media (max-width: 480px) { .cb-licard-grid [data-review-copy] { padding: 12px 16px 20px !important; } }
       `}</style>
 
       {/* Block 1: computed headline. */}
@@ -953,7 +873,7 @@ export default function DeskReviewSurface({
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
               {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer', (
                 <>
-                  {view === 'feed' && <Footnote>Cut where LinkedIn cuts it.</Footnote>}
+                  {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
                   <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
                   <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
                 </>

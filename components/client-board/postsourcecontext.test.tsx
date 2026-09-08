@@ -16,4 +16,17 @@ describe('PostSourceContext', () => {
     const html = renderToStaticMarkup(<PostSourceContext detail={{ source: 'Neal Lahmi', reference_only: true }} />);
     expect(html).toContain('Source reference · adaptation pending');
   });
+  it('puts the explanation and original link inside closed notes even without a quote', () => {
+    const html = renderToStaticMarkup(<PostSourceContext detail={{ source: 'Example report', source_url: 'https://example.com/report', explanation: 'Why it matters.' }} />);
+    const notes = html.slice(html.indexOf('<details'), html.indexOf('</details>'));
+    expect(notes).toContain('Why it matters.');
+    expect(notes).toContain('Open original source');
+    expect(notes).not.toMatch(/<details[^>]*\bopen(?:=|>)/);
+  });
+  it('uses reference titles without claiming a supporting link is the original', () => {
+    const html = renderToStaticMarkup(<PostSourceContext detail={{ references: [{ url: 'https://example.com/context', title: 'Background report' }] }} />);
+    expect(html).toContain('Background report');
+    expect(html).not.toContain('Open original source');
+  });
+
 });
