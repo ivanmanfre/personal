@@ -40,7 +40,7 @@ export default function PostSourceContext({ detail, label, quote, date, compact 
   const boundary = detail?.claim_boundary || detail?.note;
   if (!source && !links.length && !explanation && !quote && !boundary) return null;
   return (
-    <section aria-label="Source and angle" data-post-source style={{ padding: compact ? '3px 2px 12px' : '0 0 16px', borderBottom: compact ? undefined : '1px solid var(--cb-line, #ddd)', color: 'var(--cb-ink, #131210)', fontSize: 15, lineHeight: 1.6, overflowWrap: 'anywhere' }}>
+    <section aria-label="Source and angle" data-post-source style={{ padding: compact ? '3px 2px 12px' : '0 0 16px', borderBottom: compact ? undefined : '1px solid var(--cb-line, #ddd)', color: 'var(--cb-ink, #131210)', fontSize: compact ? 13 : 14, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute, #666)' }}>
         {detail?.reference_only ? 'Source reference · adaptation pending' : 'Source'}
       </div>

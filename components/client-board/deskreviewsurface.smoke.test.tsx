@@ -416,6 +416,23 @@ describe('Inline buffer approval', () => {
     expect(p.onOpen).toHaveBeenCalledWith(p.board.queue[0], { scheduling: true });
     cleanup();
   });
+  it('keeps inline feedback visible, saves the exact post note and retains it after failure', async () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValueOnce({ok:false}).mockResolvedValueOnce({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
+    const send = r.getByRole('button', {name:'Send feedback'}) as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    fireEvent.change(field, {target:{value:'Make the second paragraph more casual.'}});
+    fireEvent.click(send);
+    await waitFor(() => expect(r.getByRole('alert').textContent).toContain('Feedback did not save'));
+    expect(field.value).toBe('Make the second paragraph more casual.');
+    fireEvent.click(send);
+    await waitFor(() => expect(r.getByRole('status').textContent).toBe('Feedback saved'));
+    expect(feedback).toHaveBeenLastCalledWith(p.board.queue[0].id, 'Make the second paragraph more casual.');
+    expect(field.value).toBe('');
+    expect(p.onOpen).not.toHaveBeenCalled();
+    cleanup();
+  });
   it('waits for approval, then keeps the approved undated post in the buffer', async () => {
     let resolve!: (value: {ok:boolean}) => void;
     const approve = vi.fn(() => new Promise<{ok:boolean}>(r => { resolve = r; }));

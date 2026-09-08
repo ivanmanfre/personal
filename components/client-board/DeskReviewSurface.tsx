@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { Globe2, ThumbsUp, MessageCircle, Repeat2, Send } from 'lucide-react';
 import PostSourceContext from './PostSourceContext';
 
@@ -23,17 +23,31 @@ function LivePostLink({ href }: { href: string }) {
 
 /** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
 function CardBody({ text }: { text: string }) {
-  return <div data-review-copy style={{ padding: '10px 18px 20px', fontSize: 16, lineHeight: 1.55, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
+  return <div data-review-copy style={{ padding: '8px 16px 14px', fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
 /** Approval is confirmed by the parent only after the server accepts it. */
-function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled }: {
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback }: {
+  onFeedback?: (note: string) => Promise<{ ok: boolean; error?: string }>;
   approved: boolean;
   onApprove: () => Promise<{ ok: boolean; error?: string }> | void;
   onChanges: () => void; onEdit: () => void; onSchedule: () => void; scheduled: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [note, setNote] = useState('');
+  const [feedbackState, setFeedbackState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const feedbackId = useId();
+  const sendFeedback = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!note.trim() || feedbackState === 'saving' || pending || !onFeedback) return;
+    setFeedbackState('saving');
+    try {
+      const result = await onFeedback(note.trim());
+      if (!result.ok) { setFeedbackState('error'); return; }
+      setNote(''); setFeedbackState('saved');
+    } catch { setFeedbackState('error'); }
+  };
   const approve = async () => {
     if (pending) return;
     setPending(true); setError(false);
@@ -42,14 +56,29 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
     finally { setPending(false); }
   };
   return (
-    <div data-review-actions style={{ padding: '12px 2px 0' }}>
+    <div data-review-actions style={{ padding: '8px 2px 0' }}>
+      {onFeedback && <form onSubmit={sendFeedback} style={{ marginBottom: 8 }}>
+        <label htmlFor={feedbackId} style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Feedback on this post</label>
+        <textarea id={feedbackId} value={note} rows={2} disabled={feedbackState === 'saving'}
+          onChange={event => { setNote(event.target.value); setFeedbackState('idle'); }}
+          placeholder="What would you change?"
+          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 64, resize: 'vertical', padding: '9px 11px', fontFamily: 'inherit', fontSize: 14, lineHeight: 1.4, border: '1px solid var(--cb-line, #ccc)', borderRadius: 6, background: '#fff', color: 'var(--cb-ink)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
+          <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
+            style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? .5 : 1 }}>
+            {feedbackState === 'saving' ? 'Saving feedback…' : 'Send feedback'}
+          </button>
+          {feedbackState === 'saved' && <span role="status" style={{ fontSize: 13 }}>Feedback saved</span>}
+          {feedbackState === 'error' && <span role="alert" style={{ fontSize: 13, color: '#a12622' }}>Feedback did not save. Your text is kept. Try again.</span>}
+        </div>
+      </form>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {approved
           ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
-          : <Pill onClick={approve} disabled={pending} style={{ fontSize: 14, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
-        <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 14, minHeight: 44 }}>Request changes</Pill>
-        <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 14, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>
-        <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 14, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
+          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+        {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
+        <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>
+        <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{approved ? (scheduled ? 'Approved. Scheduled time stays as set.' : 'Approved. Still in the buffer until scheduled.') : 'Approval saves your sign-off. Scheduling is separate.'}</div>
       {error && <div role="alert" style={{ fontSize: 14, marginTop: 6, color: '#a12622' }}>Approval did not save. Try Approve post again.</div>}
@@ -265,7 +294,7 @@ export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
-  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(),
+  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback,
 }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
@@ -274,6 +303,7 @@ export default function DeskReviewSurface({
   live?: boolean;
   onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void;
   approvedIds?: Set<string>;
+  onFeedback?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
   onRemove?: (id: string) => void;
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (id: string) => void;
@@ -637,13 +667,13 @@ export default function DeskReviewSurface({
           role="button" tabIndex={0}
           onClick={() => onOpen(q)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ padding: '20px 22px 6px', cursor: 'pointer' }}
+          style={{ padding: '14px 16px 6px', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-            <div aria-hidden style={{ flex: '0 0 48px', width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}</div>
+            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}</div>
             <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#202020' }}>{fName}</span>
-              {board.founder?.headline && <span style={{ fontSize: 14, color: '#666666' }}>{board.founder.headline}</span>}
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#202020' }}>{fName}</span>
+              {board.founder?.headline && <span style={{ fontSize: 12, color: '#666666' }}>{board.founder.headline}</span>}
               <span style={{ fontSize: 12, color: '#666666', display: 'inline-flex', alignItems: 'center', gap: 4 }}>LinkedIn preview · <Globe2 size={12} aria-label="Public" /></span>
             </div>
             <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
@@ -653,7 +683,7 @@ export default function DeskReviewSurface({
         {deck.length >= 2
           ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
-        <div className="cb-linkedin-actions" data-linkedin-actions aria-label="LinkedIn action bar preview" style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #e0dfdc', margin: '0 14px', padding: '13px 0', color: '#666', gap: 4 }}>
+        <div className="cb-linkedin-actions" data-linkedin-actions aria-label="LinkedIn action bar preview" style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #e0dfdc', margin: '0 14px', padding: '11px 0', color: '#666', gap: 4 }}>
           {[[ThumbsUp, 'Like'], [MessageCircle, 'Comment'], [Repeat2, 'Repost'], [Send, 'Send']].map(([Icon, label]) => {
             const ActionIcon = Icon as typeof ThumbsUp;
             return <span key={label as string} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}><ActionIcon size={19} strokeWidth={1.7} aria-hidden />{label as string}</span>;
@@ -669,7 +699,7 @@ export default function DeskReviewSurface({
         {bucket !== 'buffer' && chip && <Chip>{chip.label}</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
-      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
+      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
       </div>
     );
   };
@@ -755,10 +785,10 @@ export default function DeskReviewSurface({
     <div data-surface="review">
       <style>{`
         .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; }
-        .cb-licard-grid > div { width: 100%; max-width: 700px; justify-self: center; }
-        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
+        .cb-licard-grid > div { width: 100%; max-width: 552px; justify-self: center; }
+        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible, .cb-licard-grid textarea:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
         @media (max-width: 360px) { .cb-linkedin-actions > span { flex-direction: column; gap: 4px !important; flex: 1; min-width: 0; } .cb-linkedin-actions svg { flex-shrink: 0; } }
-        @media (max-width: 480px) { .cb-licard-grid [data-review-copy] { padding: 12px 16px 20px !important; } }
+        @media (max-width: 480px) { .cb-licard-grid textarea { font-size: 16px !important; } .cb-licard-grid [data-review-copy] { padding: 8px 16px 14px !important; } }
       `}</style>
 
       {/* Block 1: computed headline. */}
