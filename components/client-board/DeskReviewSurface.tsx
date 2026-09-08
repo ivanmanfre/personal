@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PostSourceContext from './PostSourceContext';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
  *  copy is one click away in the post modal. */
@@ -712,17 +713,9 @@ export default function DeskReviewSurface({
        content should be seen above each html simulation"). Same provenance the list view and
        the detail modal already show; the quote is the founder's own line from that call. */
     const src = sourceChipLocal(q);
-    const srcQuote = (src?.quote || '').replace(/\s+/g, ' ').trim();
-    const srcQuoteShort = srcQuote.length > 120 ? srcQuote.slice(0, 117).trimEnd() + '…' : srcQuote;
     return (
       <div key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      {src && src.label && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'baseline', flexWrap: 'wrap', padding: '0 2px 6px', minWidth: 0, lineHeight: 1.35 }} title={srcQuote || undefined}>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: 'none' }}>Source</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cb-ink)' }}>{src.label}{src.meta ? ` · ${src.meta}` : ''}</span>
-          {srcQuoteShort && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', flex: '1 1 100%', minWidth: 0 }}>“{srcQuoteShort}”</span>}
-        </div>
-      )}
+      {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
       <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
         <div
           role="button" tabIndex={0}

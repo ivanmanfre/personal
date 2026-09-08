@@ -40,6 +40,18 @@ function render(props: { isLive: boolean; reviewMode?: boolean; approved?: boole
 }
 
 describe('DetailModal review mode', () => {
+  it('keeps source context above the post and renders metadata without a label', () => {
+    const item = { ...ITEM, body: 'The complete post body.', source_detail: {
+      kind: 'source_commentary', source_url: 'https://example.com/original',
+      explanation: 'Why this matters to the buyer.', claim_boundary: 'The figure is self-reported.',
+    } } as QueueItem;
+    const html = renderToStaticMarkup(<DetailModal item={item} board={BOARD} accent="#3562FF" stage="review"
+      onClose={() => {}} onApprove={() => {}} isLive reviewMode act={noopAct} slug="arch-agency" />);
+    expect(html.indexOf('data-post-source')).toBeLessThan(html.indexOf('The complete post body.'));
+    expect(html.match(/Why this matters to the buyer\./g)).toHaveLength(1);
+    expect(html).toContain('href="https://example.com/original"');
+    expect(html).toContain('The figure is self-reported.');
+  });
   it('live + review_mode: approve bar and request-changes render', () => {
     const html = render({ isLive: true, reviewMode: true });
     expect(html).toContain('Approve ✓');

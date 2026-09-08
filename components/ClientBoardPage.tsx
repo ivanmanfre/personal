@@ -19,6 +19,7 @@ const PREVIEW_PHONE_WIDTH = 393;
 import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
+import PostSourceContext from './client-board/PostSourceContext';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
 import OutreachTopOfPanel, {
@@ -126,6 +127,15 @@ interface Idea { id: string; title: string; pillar?: string; hook?: string; stat
  *  post carries the real call title + the verbatim quote; launch/own-post/strategy posts
  *  carry an honest specific label. */
 interface SourceDetail {
+  source?: string;
+  source_url?: string;
+  url?: string;
+  supporting_urls?: string[];
+  explanation?: string;
+  claim_boundary?: string;
+  evidence_status?: string;
+  reference_only?: boolean;
+  note?: string;
   kind: 'call' | 'lm_launch' | 'own_posts' | 'strategy' | string;
   label?: string;
   call_title?: string | null;
@@ -3826,6 +3836,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
+          {isLive && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
           {/* Content preview / edit */}
           <div className="min-w-0">
             {item.kind === 'newsletter' && item.body ? (
@@ -4056,14 +4067,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{isLive ? fmtSchedLA(item.scheduled_at, item.publish_date) : fmtDay(item.publish_date)}</div>
                 </div>
               )}
-              {(detailChip?.label || (isLive && item.source_label && item.source_detail?.kind !== 'strategy')) && (
-                <div className="col-span-2">
-                  <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
-                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{detailChip?.label || srcLabelClient(item.source_label!)}</div>
-                  {detailChip?.quote && <p className="mt-1" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.55, color: INK_SOFT }}>“{detailChip.quote}”</p>}
-                  {detailChip?.meta && <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>{detailChip.meta}</div>}
-                </div>
-              )}
+
             </div>
             {/* Reschedule (live): change this post's date/time, shown + entered in LA time. */}
             {isLive && canSched && setSchedule && (
