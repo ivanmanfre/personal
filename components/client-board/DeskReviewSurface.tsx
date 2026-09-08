@@ -22,7 +22,7 @@ function LivePostLink({ href }: { href: string }) {
 
 /** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
 function CardBody({ text }: { text: string }) {
-  return <div data-review-copy style={{ padding: '12px 22px 24px', fontSize: 18, lineHeight: 1.65, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
+  return <div data-review-copy style={{ padding: '10px 18px 20px', fontSize: 16, lineHeight: 1.55, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
 /** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
@@ -757,8 +757,8 @@ export default function DeskReviewSurface({
   return (
     <div data-surface="review">
       <style>{`
-        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 36px 28px; margin-top: 20px; align-items: start; }
-        .cb-licard-grid > div { width: 100%; max-width: 760px; justify-self: center; }
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; }
+        .cb-licard-grid > div { width: 100%; max-width: 700px; justify-self: center; }
         .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
         @media (max-width: 480px) { .cb-licard-grid [data-review-copy] { padding: 12px 16px 20px !important; } }
       `}</style>
