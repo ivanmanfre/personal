@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Globe2, ThumbsUp, MessageCircle, Repeat2, Send } from 'lucide-react';
 import PostSourceContext from './PostSourceContext';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
@@ -25,35 +26,33 @@ function CardBody({ text }: { text: string }) {
   return <div data-review-copy style={{ padding: '10px 18px 20px', fontSize: 16, lineHeight: 1.55, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
-/** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
- *  static review pages: an empty box means the post is good to go. */
-function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
-  const [text, setText] = useState('');
-  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const save = async () => {
-    const note = text.trim();
-    if (!note || state === 'saving') return;
-    setState('saving');
-    const r = await onNote(id, note);
-    setState(r.ok ? 'saved' : 'error');
+/** Approval is confirmed by the parent only after the server accepts it. */
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled }: {
+  approved: boolean;
+  onApprove: () => Promise<{ ok: boolean; error?: string }> | void;
+  onChanges: () => void; onEdit: () => void; onSchedule: () => void; scheduled: boolean;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState(false);
+  const approve = async () => {
+    if (pending) return;
+    setPending(true); setError(false);
+    try { const result = await onApprove(); if (result && !result.ok) setError(true); }
+    catch { setError(true); }
+    finally { setPending(false); }
   };
   return (
-    <div style={{ padding: '9px 2px 0' }}>
-      <label htmlFor={`review-note-${id}`} style={{ display: 'block', marginBottom: 8, fontSize: 15, fontWeight: 600 }}>Changes for this post</label>
-      <textarea
-        id={`review-note-${id}`}
-        value={text}
-        onChange={(e) => { setText(e.target.value); if (state !== 'idle') setState('idle'); }}
-        onBlur={save}
-        rows={2}
-        placeholder="Write your changes or suggest a new line. Notes save when you leave this field."
-        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '12px 14px', minHeight: 96, borderRadius: 9, border: '1px solid var(--cb-line)', background: 'var(--cb-paper-sunk, #EFEBE3)', font: 'inherit', fontSize: 16, lineHeight: 1.55, color: 'var(--cb-ink)' }}
-      />
-      {state !== 'idle' && (
-        <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
-          {state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved' : "Didn't save, try again"}
-        </div>
-      )}
+    <div data-review-actions style={{ padding: '12px 2px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {approved
+          ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
+          : <Pill onClick={approve} disabled={pending} style={{ fontSize: 14, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+        <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 14, minHeight: 44 }}>Request changes</Pill>
+        <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 14, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>
+        <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 14, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
+      </div>
+      <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{approved ? (scheduled ? 'Approved. Scheduled time stays as set.' : 'Approved. Still in the buffer until scheduled.') : 'Approval saves your sign-off. Scheduling is separate.'}</div>
+      {error && <div role="alert" style={{ fontSize: 14, marginTop: 6, color: '#a12622' }}>Approval did not save. Try Approve post again.</div>}
     </div>
   );
 }
@@ -79,7 +78,7 @@ import {
  * The freed-slot panel (skips/replacements/pool/bench/onRestore/onPick*) renders in the
  * row body — see the panel block below the row header.
  *
- * A handful of the original's callbacks (onApprove/onRemove/leftEmpty/replacements/pool/
+ * A handful of the original's callbacks (onRemove/leftEmpty/replacements/pool/
  * the approved reference for this tab — they are kept in the prop interface for wiring parity
  * with ReviewSurface (so the integrator can pass the exact same object through both surfaces),
  * but this file does not invoke them. See the build report for the full list.
@@ -266,14 +265,15 @@ export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
-  foldPhotos, foldCalendar, live = false, fetchHistory, onNote,
+  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(),
 }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
   live?: boolean;
-  onApprove: (id: string) => void;
+  onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void;
+  approvedIds?: Set<string>;
   onRemove?: (id: string) => void;
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (id: string) => void;
@@ -297,16 +297,13 @@ export default function DeskReviewSurface({
   /** Live board: per-draft history (client_board_draft_history RPC), fanned across the whole
    *  queue for the Changes log. Absent on preview/demo boards — the log renders nothing. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
-  /** Live board: save a change note against one draft (request_changes). Absent on
-   *  preview boards — the note box then renders nothing. */
-  onNote?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   // Unused-here wiring kept for interface parity with ReviewSurface (see file header):
-  // onApprove, onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
+  // onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
   // onClearDay, onEditPromo, replacements, pool, benchFor, onRestore, onPickReplacement,
   // onPickReplacementAngle, skips — none has a block in the approved reference.
   // (foldPhotos DOES render — the photo library block near the foot of the list view.)
-  void onApprove; void onRemove; void leftEmpty; void onLeaveEmpty; void onRefillDay; void onBackToBuffer;
+  void onRemove; void leftEmpty; void onLeaveEmpty; void onRefillDay; void onBackToBuffer;
   void onLeaveDayEmpty; void onClearDay; void onEditPromo; void replacements; void pool; void benchFor;
   void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
@@ -338,7 +335,7 @@ export default function DeskReviewSurface({
   let reviewRows: QueueItem[] = [];
   if (live) {
     upNextRows = board.queue.filter((q) => stageOf(q) !== 'published' && stageOf(q) !== 'drafted' && isScheduledLocal(q)).slice().sort(byDate);
-    bufferRows = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduledLocal(q));
+    bufferRows = board.queue.filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && !isScheduledLocal(q));
   } else {
     reviewRows = board.queue.filter((q) => stageOf(q) === 'review').slice().sort(byDate);
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
@@ -643,11 +640,11 @@ export default function DeskReviewSurface({
           style={{ padding: '20px 22px 6px', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{initials}</div>
+            <div aria-hidden style={{ flex: '0 0 48px', width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}</div>
             <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
               <span style={{ fontSize: 16, fontWeight: 600, color: '#202020' }}>{fName}</span>
               {board.founder?.headline && <span style={{ fontSize: 14, color: '#666666' }}>{board.founder.headline}</span>}
-              <span style={{ fontSize: 13, color: '#666666' }}>Post preview</span>
+              <span style={{ fontSize: 12, color: '#666666', display: 'inline-flex', alignItems: 'center', gap: 4 }}>LinkedIn preview · <Globe2 size={12} aria-label="Public" /></span>
             </div>
             <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
           </div>
@@ -656,6 +653,12 @@ export default function DeskReviewSurface({
         {deck.length >= 2
           ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
+        <div className="cb-linkedin-actions" data-linkedin-actions aria-label="LinkedIn action bar preview" style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #e0dfdc', margin: '0 14px', padding: '13px 0', color: '#666', gap: 4 }}>
+          {[[ThumbsUp, 'Like'], [MessageCircle, 'Comment'], [Repeat2, 'Repost'], [Send, 'Send']].map(([Icon, label]) => {
+            const ActionIcon = Icon as typeof ThumbsUp;
+            return <span key={label as string} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}><ActionIcon size={19} strokeWidth={1.7} aria-hidden />{label as string}</span>;
+          })}
+        </div>
       </div>
       {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post.
           2026-09-07 (Ivan): the buffer's Review grid drops the tag row ("no date yet · in buffer ·
@@ -665,14 +668,8 @@ export default function DeskReviewSurface({
         {bucket !== 'buffer' && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
         {bucket !== 'buffer' && chip && <Chip>{chip.label}</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
-        {bucket !== 'published' && (
-          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-            <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-            <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
-          </span>
-        )}
       </div>
-      {onNote && bucket !== 'published' && <CardNote id={q.id} onNote={onNote} />}
+      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
       </div>
     );
   };
@@ -760,6 +757,7 @@ export default function DeskReviewSurface({
         .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; }
         .cb-licard-grid > div { width: 100%; max-width: 700px; justify-self: center; }
         .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
+        @media (max-width: 360px) { .cb-linkedin-actions > span { flex-direction: column; gap: 4px !important; flex: 1; min-width: 0; } .cb-linkedin-actions svg { flex-shrink: 0; } }
         @media (max-width: 480px) { .cb-licard-grid [data-review-copy] { padding: 12px 16px 20px !important; } }
       `}</style>
 
