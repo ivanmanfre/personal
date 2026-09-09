@@ -490,7 +490,16 @@ describe('AudienceSection: six states, both skins', () => {
         expect(html).toContain(`data-audn-section="${state}"`);
         // the state's own sentence is on screen
         expect(html).toContain((AUDIENCE_COPY.state as Record<string, string>)[state]);
-        expect(html).toContain((AUDIENCE_COPY.stateChip as Record<string, string>)[state]);
+        // The state chip, for every state that still has one. `normal` lost its
+        // chip in run 04: the only thing it said was "Up to date", which is the
+        // freshness chip's claim to make and reads `freshness.overall` alone.
+        const chip = AUDIENCE_COPY.stateChip[state];
+        if (state === 'normal') {
+          expect(chip).toBeUndefined();
+          expect(html).not.toContain(AUDIENCE_COPY.freshnessChip.fresh);
+        } else {
+          expect(html).toContain(chip);
+        }
         // no retired timing promise anywhere in the rendered board
         for (const s of RETIRED_TIMING) expect(html).not.toContain(s);
         // no internal table or workflow name reaches a client
@@ -518,7 +527,10 @@ describe('AudienceSection: what the normal state actually shows', () => {
 
   it('shows the raw metric with the date it was taken', () => {
     expect(html).toContain('>12<');                    // reactions, as a real metric cell
-    expect(html).toContain('310 reads');               // impressions on the third post
+    // The source metric is called `impressions`. It used to print as "reads",
+    // which names an event nobody measures (run-04 CONTRACTS §2.4).
+    expect(html).toContain('310 impressions');
+    expect(html).not.toContain('310 reads');
     expect(html).toContain(AUDIENCE_COPY.posts.capturedAt('1 Sep'));
   });
 
@@ -661,5 +673,269 @@ describe('W18: one expectationFor, no retired timing copy left in the tree', () 
 
   it('the surviving C05 line is still the fallback', () => {
     expect(read('expectation.ts')).toContain(KEPT_TIMING);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * RUN 04. The three corrections the Run 03 handoff asked for, each with the
+ * failure it prevents.
+ *
+ * The fixtures below are BUILT FROM `FIXTURES.normal` — the frozen PGlite
+ * payload — by replacing only the block under test. Every other field, and
+ * therefore every other assertion above, is the real migration's output.
+ * `freshness.sources` / `overall` and `people[]` are the run-04 CONTRACTS
+ * §2.1 / §2.2 shapes, which migration 07 is being changed to emit.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+const clone = (o: unknown) => JSON.parse(JSON.stringify(o));
+
+const D_FRESH = '2026-09-08T09:00:00+00:00';   // 1 day before the cutoff
+const D_OLD = '2026-06-30T09:00:00+00:00';     // 71 days before it
+
+function withFreshness(overall: string, metrics: unknown, engagement: unknown) {
+  const f = clone(FIXTURES.normal);
+  f.freshness = {
+    snapshots_as_of: (metrics as { as_of: string | null } | null)?.as_of ?? null,
+    engagers_as_of: (engagement as { as_of: string | null } | null)?.as_of ?? null,
+    stale_after_days: 14,
+    sources: { metrics, engagement },
+    overall,
+  };
+  return f;
+}
+
+const FRESHNESS_CASES = {
+  fresh: withFreshness('fresh',
+    { as_of: D_FRESH, state: 'fresh' }, { as_of: D_FRESH, state: 'fresh' }),
+  /** THE ONE THE OLD DERIVATION HID: a snapshot taken yesterday, an engagement
+   *  source last seen in June. The greatest-of-the-two rule called this normal
+   *  and the chip said "Up to date". */
+  partial: withFreshness('partial',
+    { as_of: D_FRESH, state: 'fresh' }, { as_of: D_OLD, state: 'stale' }),
+  /** And the reverse, so neither source is privileged. */
+  partialReversed: withFreshness('partial',
+    { as_of: D_OLD, state: 'stale' }, { as_of: D_FRESH, state: 'fresh' }),
+  stale: withFreshness('stale',
+    { as_of: D_OLD, state: 'stale' }, { as_of: D_OLD, state: 'stale' }),
+  missing: withFreshness('missing',
+    { as_of: null, state: 'missing' }, { as_of: null, state: 'missing' }),
+};
+
+const S = AUDIENCE_COPY.freshness.sources;
+
+describe('run 04 §2.1: the freshness chip reads overall, and every source says its own date', () => {
+  for (const skin of SKINS) {
+    it(`${skin}: "Up to date" is printed for fresh and for nothing else`, () => {
+      const ok = renderSkin(skin, FRESHNESS_CASES.fresh);
+      expect(ok).toContain(AUDIENCE_COPY.freshnessChip.fresh);
+      for (const key of ['partial', 'partialReversed', 'stale', 'missing'] as const) {
+        const html = renderSkin(skin, FRESHNESS_CASES[key]);
+        expect(html).not.toContain(AUDIENCE_COPY.freshnessChip.fresh);
+      }
+    });
+  }
+
+  it('a fresh metric with a stale engagement source is partial, and the stale date is on screen', () => {
+    const html = renderSkin('desk', FRESHNESS_CASES.partial);
+    expect(html).toContain('data-audn-freshness="partial"');
+    expect(html).toContain(AUDIENCE_COPY.freshnessChip.partial);
+    expect(html).toContain(S.metricsFresh('8 Sep'));
+    expect(html).toContain(S.engagementStale('30 Jun'));
+    // and the window it was judged against is stated, not only in `stale`
+    expect(html).toContain(AUDIENCE_COPY.freshness.staleAfter(14));
+  });
+
+  it('the reverse mix is partial too: neither source can carry the other', () => {
+    const html = renderSkin('desk', FRESHNESS_CASES.partialReversed);
+    expect(html).toContain(AUDIENCE_COPY.freshnessChip.partial);
+    expect(html).toContain(S.metricsStale('30 Jun'));
+    expect(html).toContain(S.engagementFresh('8 Sep'));
+  });
+
+  it('both stale, and both missing, are explicit', () => {
+    const stale = renderSkin('desk', FRESHNESS_CASES.stale);
+    expect(stale).toContain(AUDIENCE_COPY.freshnessChip.stale);
+    expect(stale).toContain(S.metricsStale('30 Jun'));
+    expect(stale).toContain(S.engagementStale('30 Jun'));
+
+    const missing = renderSkin('desk', FRESHNESS_CASES.missing);
+    expect(missing).toContain(AUDIENCE_COPY.freshnessChip.missing);
+    expect(missing).toContain(S.metricsMissing);
+    expect(missing).toContain(S.engagementMissing);
+  });
+
+  it('a payload with no sources block still prints its two dates and claims no freshness', () => {
+    const html = renderSkin('desk', FIXTURES.normal);   // the pre-§2.1 payload
+    expect(html).toContain(AUDIENCE_COPY.freshness.snapshots('8 Sep'));
+    expect(html).toContain(AUDIENCE_COPY.freshness.engagers('2 Sep'));
+    expect(html).not.toContain(AUDIENCE_COPY.freshnessChip.fresh);
+  });
+});
+
+/* ── §2.2 relationship ──────────────────────────────────────────────────── */
+
+function withPeople(people: unknown[]) {
+  const f = clone(FIXTURES.normal);
+  f.people = people;
+  return f;
+}
+
+const PEOPLE = [
+  { person_ref: 'p1', label: 'positive',
+    relationship: { state: 'existing_prospect_stage:replied', source: 'outreach_prospects.current', effective_date: '2026-08-03T10:00:00+00:00' } },
+  { person_ref: 'p2', label: 'positive',
+    relationship: { state: 'unknown', source: null, effective_date: null } },
+  { person_ref: 'p3', label: 'borderline',
+    relationship: { state: 'existing_prospect_stage:booked', source: 'outreach_prospects.current', effective_date: '2026-07-19T10:00:00+00:00' } },
+  // a stage token with no client-facing word: the token must NOT reach the page
+  { person_ref: 'p4', label: 'unknown',
+    relationship: { state: 'existing_prospect_stage:seq7_variant_b', source: 'outreach_prospects.current', effective_date: '2026-08-21T10:00:00+00:00' } },
+  // relationship key absent entirely
+  { person_ref: 'p5', label: 'positive' },
+];
+
+describe('run 04 §2.2: a relevance label is not a relationship, and never a new prospect', () => {
+  for (const skin of SKINS) {
+    it(`${skin}: every person carries a chip, and an unknown one says so in words`, () => {
+      const html = renderSkin(skin, withPeople(PEOPLE));
+      expect(html).toContain('data-audn-relationship');
+      expect(html).toContain(AUDIENCE_COPY.relationship.known('3 Aug', 'they replied to us'));
+      expect(html).toContain(AUDIENCE_COPY.relationship.known('19 Jul', 'they booked a call'));
+      // two people have no record: p2 (state unknown) and p5 (no key at all)
+      expect(html).toContain(AUDIENCE_COPY.relationship.unknown);
+      expect(html).toContain(AUDIENCE_COPY.relationship.unknownMany(2));
+      expect(html).toContain(AUDIENCE_COPY.relationship.footnote);
+    });
+  }
+
+  it('an unmapped stage token never reaches the client: the date survives, the token does not', () => {
+    const html = renderSkin('desk', withPeople(PEOPLE));
+    expect(html).not.toContain('seq7_variant_b');
+    expect(html).not.toContain('existing_prospect_stage');
+    expect(html).toContain(AUDIENCE_COPY.relationship.knownDateOnly('21 Aug'));
+  });
+
+  it('a positive label never reads as a new prospect or as a certified buyer', () => {
+    const html = renderSkin('desk', withPeople(PEOPLE));
+    expect(html).toContain(AUDIENCE_COPY.posts.people.positiveOne);
+    expect(AUDIENCE_COPY.posts.people.positiveOne).toContain('relevant');
+    for (const banned of ['new prospect', 'new prospects', 'look like your buyers', 'looks like your buyer']) {
+      expect(html.toLowerCase()).not.toContain(banned);
+    }
+  });
+
+  it('no person name and no internal id rides in on the relationship block', () => {
+    const html = renderSkin('desk', withPeople(PEOPLE));
+    expect(html).not.toMatch(INTERNAL_TABLES);
+    expect(workflowIdLike(html)).toEqual([]);
+    for (const p of PEOPLE) expect(html).not.toContain(`>${p.person_ref}<`);
+  });
+
+  it('a payload with no people block renders no relationship section at all', () => {
+    const html = renderSkin('desk', FIXTURES.normal);
+    expect(html).not.toContain('data-audn-relationship');
+  });
+
+  it('past the chip cap the remainder is counted in words, never dropped', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({
+      person_ref: `q${i}`, label: 'positive',
+      relationship: { state: 'existing_prospect_stage:replied', source: 'outreach_prospects.current', effective_date: '2026-08-03T10:00:00+00:00' },
+    }));
+    const html = renderSkin('desk', withPeople(many));
+    expect(html).toContain(AUDIENCE_COPY.relationship.more(6));
+  });
+});
+
+/* ── §2.4 headline + the two limits ────────────────────────────────────── */
+
+describe('run 04 §2.4: the headline is grammatical and the relevance counts carry their limits', () => {
+  it('one post reads as a sentence, not as "1 of it"', () => {
+    expect(AUDIENCE_COPY.headline.withCoverage(1, 1))
+      .toBe('1 post reviewed. Engagement collected for 1 post.');
+    expect(AUDIENCE_COPY.headline.withCoverage(1, 1)).not.toContain(' of it');
+  });
+
+  it('more than one reads N of M', () => {
+    expect(AUDIENCE_COPY.headline.withCoverage(3, 2))
+      .toBe('3 posts reviewed. Engagement collected for 2 of 3 posts.');
+  });
+
+  it('the rendered normal board carries the new headline and neither old clause', () => {
+    const html = renderSkin('desk', FIXTURES.normal);
+    expect(html).toContain('Engagement collected for');
+    expect(html).not.toContain('People collected on');
+  });
+
+  for (const skin of SKINS) {
+    it(`${skin}: the classifier-quality and source-coverage limits sit under the counts`, () => {
+      const html = renderSkin(skin, FIXTURES.normal);
+      expect(html).toContain(AUDIENCE_COPY.limits.classifier);
+      expect(html).toContain(AUDIENCE_COPY.limits.coverage);
+    });
+  }
+});
+
+/* ── §2.4 expectation lines, checked against what is actually measured ──── */
+
+describe('run 04 §2.4: no expectation sentence says that waiting supplies a number', () => {
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const src = fs.readFileSync(path.join(here, 'expectation.ts'), 'utf8');
+  const lines = (src.match(/return '[^']+';/g) || []).map((m) => m.slice(8, -2));
+
+  it('reads five sentences and no more', () => {
+    expect(lines.length).toBe(5);
+  });
+
+  it('none of them ties a number to elapsed time', () => {
+    for (const l of lines) {
+      expect(`${l} :: ${/live long enough|within the first|over time|as .* ramps|typically follow|usually/i.test(l)}`)
+        .toBe(`${l} :: false`);
+    }
+  });
+
+  it('the profile-view line states the measured condition instead of a waiting period', () => {
+    const view = lines.find((l) => l.startsWith('Profile views')) as string;
+    expect(view).toContain('LinkedIn names the viewer');
+    expect(view).toContain('floor');
+    expect(view).not.toContain('long enough');
+  });
+
+  it('the DM line states the attribution rule it actually uses', () => {
+    const dm = lines.find((l) => l.startsWith('Inbound DMs')) as string;
+    expect(dm).toContain('reacted to or commented on one of your posts before writing');
+  });
+
+  it('the opt-in line says a gate is what captures one', () => {
+    const opt = lines.find((l) => l.startsWith('Opt-ins')) as string;
+    expect(opt).toContain('gated lead magnet');
+    expect(opt).toContain('ungated page has no gate');
+  });
+});
+
+/* ── the voice rules this run was given, checked on the copy itself ─────── */
+
+describe('run 04: every client-visible string obeys the voice rules', () => {
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const sources = ['audienceCopy.ts', 'expectation.ts']
+    .map((f) => fs.readFileSync(path.join(here, f), 'utf8'));
+
+  /** The rule is about what a client READS. The block comments in these files are
+   *  engineering prose and are allowed their punctuation; every quoted string is
+   *  a candidate for the screen and is not. */
+  it('no em dash in any client-visible string', () => {
+    for (const src of sources) {
+      const stripped = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+      const literals = stripped.match(/'[^'\n]*'|`[^`]*`/g) || [];
+      // a guard on the extraction itself: if the regex ever stops matching, the
+      // test must fail rather than pass over an empty list
+      expect(literals.length).toBeGreaterThan(5);
+      for (const l of literals) expect(`${l} :: ${l.includes('—')}`).toBe(`${l} :: false`);
+    }
+  });
+
+  it('no rounded-full and no hex colour in the section or its copy', () => {
+    const sec = fs.readFileSync(path.join(here, 'AudienceSection.tsx'), 'utf8');
+    expect(sec).not.toContain('rounded-full');
+    expect(sec).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });

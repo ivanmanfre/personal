@@ -92,15 +92,53 @@ export type AudienceRecommendation = {
   link_state: string;
 };
 
+/** Per-source freshness (run-04 CONTRACTS §2.1). Optional on the type because a
+ *  payload built before migration 07's §2.1 change carries only the two dates;
+ *  every read below degrades to those. */
+export type FreshnessSourceState = 'fresh' | 'stale' | 'missing';
+export type FreshnessOverall = 'fresh' | 'partial' | 'stale' | 'missing';
+export type AudienceFreshness = {
+  snapshots_as_of: string | null;
+  engagers_as_of: string | null;
+  stale_after_days: number;
+  sources?: {
+    metrics?: { as_of: string | null; state: FreshnessSourceState };
+    engagement?: { as_of: string | null; state: FreshnessSourceState };
+  } | null;
+  overall?: FreshnessOverall | null;
+};
+
+/**
+ * One person attached to the review (run-04 CONTRACTS §2.2).
+ *
+ * NO NAME EVER. `person_ref` is the opaque key the payload already uses to keep
+ * rows distinct; it is never rendered. `label` is the relevance judgement and
+ * `relationship` is the separate fact of whether our own records already carry
+ * this person. `relationship` is always present on a §2.2 payload; a person the
+ * relationship view does not know arrives as `{state:'unknown', ...}` rather
+ * than as a missing key, and the component treats a missing one the same way.
+ */
+export type AudiencePersonLabel = 'positive' | 'borderline' | 'negative' | 'unknown';
+export type AudiencePerson = {
+  person_ref: string;
+  label?: AudiencePersonLabel | string | null;
+  relationship?: {
+    state: string | null;
+    source: string | null;
+    effective_date: string | null;
+  } | null;
+};
+
 export type AudiencePayload = {
   client_id: string;
   capability_version: number;
   reviewed_at: string | null;
   review_cadence: string;
   state: AudienceState;
-  freshness: {
-    snapshots_as_of: string | null; engagers_as_of: string | null; stale_after_days: number;
-  };
+  freshness: AudienceFreshness;
+  /** §2.2. Absent on a pre-§2.2 payload: the relationship block does not render
+   *  at all rather than inventing an empty one. */
+  people?: AudiencePerson[] | null;
   posts: AudiencePost[];
   monthly_median: {
     month: string; target_age_days: number | null;
@@ -144,6 +182,110 @@ function postLabel(p: AudiencePost): string {
 function postUrl(id: string): string | null {
   const digits = (id.match(/(\d{6,})/) || [])[1];
   return digits ? `https://www.linkedin.com/feed/update/urn:li:activity:${digits}/` : null;
+}
+
+/* ───────────────────────── freshness, per source (§2.1) ─────────────────────
+ * The chip reads `overall` AND NOTHING ELSE. "Up to date" is printed only for
+ * `fresh`, which means both sources are inside the window. Before this the
+ * board took the greatest of the two timestamps, so a snapshot taken this
+ * morning could carry a two-month-old engagement source under an "Up to date"
+ * chip. The lines below always name each source separately with its own date.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+export function freshnessChipLabel(f: AudienceFreshness): string | null {
+  const o = f?.overall;
+  return o ? (C.freshnessChip[o] ?? null) : null;
+}
+
+/** The per-source lines. Falls back to the two legacy single-date lines when a
+ *  payload carries no `sources` block, so an old payload still says its dates. */
+export function freshnessLines(f: AudienceFreshness): string[] {
+  const s = f?.sources;
+  const S = C.freshness.sources;
+  if (!s || (!s.metrics && !s.engagement)) {
+    return [
+      f?.snapshots_as_of ? C.freshness.snapshots(fmtDay(f.snapshots_as_of)) : C.freshness.snapshotsNone,
+      f?.engagers_as_of ? C.freshness.engagers(fmtDay(f.engagers_as_of)) : C.freshness.engagersNone,
+    ];
+  }
+  const line = (
+    src: { as_of: string | null; state: FreshnessSourceState } | undefined | null,
+    fresh: (d: string) => string, stale: (d: string) => string, missing: string,
+  ): string => {
+    // A source with no date is missing whatever its state field claims: there is
+    // no day to print, so there is nothing to call fresh.
+    if (!src || src.state === 'missing' || !src.as_of) return missing;
+    return src.state === 'fresh' ? fresh(fmtDay(src.as_of)) : stale(fmtDay(src.as_of));
+  };
+  return [
+    line(s.metrics, S.metricsFresh, S.metricsStale, S.metricsMissing),
+    line(s.engagement, S.engagementFresh, S.engagementStale, S.engagementMissing),
+  ];
+}
+
+/* ───────────────────────── relationship (§2.2) ─────────────────────────────
+ * A relevance label says nothing about whether we know the person, and it must
+ * never be read as "new prospect" or as a certified buyer. The relationship is
+ * a separate fact off our own contact records, and where we have none the board
+ * says so in words.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+const STAGE_PREFIX = 'existing_prospect_stage:';
+
+/** The client-facing stage word, or null when the raw token has no translation.
+ *  A raw `outreach_prospects.stage` token NEVER reaches the browser text. */
+export function relationshipStageWord(state?: string | null): string | null {
+  if (!state || !state.startsWith(STAGE_PREFIX)) return null;
+  const raw = state.slice(STAGE_PREFIX.length).trim().toLowerCase();
+  return C.relationship.stage[raw] ?? null;
+}
+
+/** The exact chip text for one person. Never blank, never a name, never a token. */
+export function relationshipChipText(rel?: AudiencePerson['relationship']): string {
+  const state = rel?.state ?? null;
+  if (!state || state === 'unknown' || !state.startsWith(STAGE_PREFIX)) return C.relationship.unknown;
+  const word = relationshipStageWord(state);
+  const day = rel?.effective_date ? fmtDay(rel.effective_date) : '';
+  if (word && day) return C.relationship.known(day, word);
+  if (word) return C.relationship.knownNoDate(word);
+  if (day) return C.relationship.knownDateOnly(day);
+  return C.relationship.knownBare;
+}
+
+/** Chips are capped so a 200-person review does not become a wall. The people
+ *  beyond the cap are counted in words, never dropped in silence. */
+const REL_CHIP_CAP = 24;
+
+function RelationshipBlock({ people }: { people: AudiencePerson[] }) {
+  const known = people.filter((p) => (p.relationship?.state ?? 'unknown').startsWith(STAGE_PREFIX));
+  const unknownN = people.length - known.length;
+  const shown = known.slice(0, REL_CHIP_CAP);
+  const hiddenKnown = known.length - shown.length;
+  return (
+    <div style={{ marginTop: 30 }} data-audn-relationship="">
+      <SectionRule
+        label={C.relationship.heading}
+        count={known.length}
+        blurb={C.relationship.blurb}
+      />
+      {people.length === 0 && <Meta style={{ marginTop: 12 }}>{C.relationship.none}</Meta>}
+      {shown.length > 0 && (
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {shown.map((p) => (
+            <Chip key={p.person_ref}>{relationshipChipText(p.relationship)}</Chip>
+          ))}
+        </div>
+      )}
+      {hiddenKnown > 0 && <Meta style={{ marginTop: 9 }}>{C.relationship.more(hiddenKnown)}</Meta>}
+      {unknownN > 0 && (
+        <div style={{ marginTop: 12, display: 'flex', gap: 9, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <Chip>{C.relationship.unknown}</Chip>
+          <Meta>{C.relationship.unknownMany(unknownN)}</Meta>
+        </div>
+      )}
+      <Footnote>{C.relationship.footnote}</Footnote>
+    </div>
+  );
 }
 
 /**
@@ -494,16 +636,37 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       ? C.headline.withCoverage(posts.length, postsWithPeople)
       : C.headline.postsOnly(posts.length);
   const stateLine = (C.state as Record<string, string>)[state];
-  const stateChip = (C.stateChip as Record<string, string>)[state];
+  // TWO chips, and they answer two different questions. The state chip says what
+  // KIND of review this is; the freshness chip says how current it is and reads
+  // `freshness.overall` alone (§2.1). `normal` has no state chip: the only thing
+  // it used to say was "Up to date", which is the freshness chip's claim to make.
+  // When the two would print the same word (a stale review whose sources are both
+  // out of date) only one is shown.
+  const stateChip = C.stateChip[state];
+  const freshChip = freshnessChipLabel(freshness);
+  const chips = [stateChip, freshChip].filter(
+    (c, i, a): c is string => !!c && a.indexOf(c) === i,
+  );
+  const people = audience.people ?? null;
 
   return (
-    <section data-audn-section={state} style={{ marginTop: 34 }}>
+    <section
+      data-audn-section={state}
+      data-audn-freshness={freshness.overall ?? ''}
+      style={{ marginTop: 34 }}
+    >
       <style>{AUDN_CSS}</style>
       <SectionRule
         label={C.eyebrow}
         count={posts.length}
         blurb={C.postsBlurb(posts.length)}
-        right={stateChip ? <Chip>{stateChip}</Chip> : undefined}
+        right={chips.length > 0
+          ? (
+            <span style={{ display: 'inline-flex', gap: 7, flexWrap: 'wrap' }}>
+              {chips.map((c) => <Chip key={c}>{c}</Chip>)}
+            </span>
+          )
+          : undefined}
       />
       <DeskH2>{headline}</DeskH2>
 
@@ -511,13 +674,13 @@ export function AudienceSection({ audience, live = false, onDecide }: {
         {[
           audience.reviewed_at ? C.reviewedOn(fmtDay(audience.reviewed_at)) : C.reviewedNever,
           C.cadence(audience.review_cadence),
-          freshness.snapshots_as_of
-            ? C.freshness.snapshots(fmtDay(freshness.snapshots_as_of))
-            : C.freshness.snapshotsNone,
-          freshness.engagers_as_of
-            ? C.freshness.engagers(fmtDay(freshness.engagers_as_of))
-            : C.freshness.engagersNone,
-          ...(state === 'stale' ? [C.freshness.staleAfter(freshness.stale_after_days)] : []),
+          ...freshnessLines(freshness),
+          // The window is worth stating whenever something is out of date or
+          // missing, not only in the `stale` state: `partial` is exactly the
+          // case the old derivation hid.
+          ...(state === 'stale' || (freshness.overall && freshness.overall !== 'fresh')
+            ? [C.freshness.staleAfter(freshness.stale_after_days)]
+            : []),
         ].join('  ·  ')}
       </Meta>
 
@@ -551,6 +714,10 @@ export function AudienceSection({ audience, live = false, onDecide }: {
           <SectionRule label={C.posts.heading} count={posts.length} blurb={C.posts.blurb} />
           <PostRows posts={posts} />
           <Footnote>{C.posts.notSummed}</Footnote>
+          {/* The two limits that sit beside every relevance count (§2.4): what
+              the judge is worth, and what the sample covers. */}
+          <Footnote style={{ marginTop: 4 }}>{C.limits.classifier}</Footnote>
+          <Footnote style={{ marginTop: 4 }}>{C.limits.coverage}</Footnote>
           <Footnote style={{ marginTop: 4 }}>{C.posts.assistedNote}</Footnote>
         </div>
       )}
@@ -560,6 +727,9 @@ export function AudienceSection({ audience, live = false, onDecide }: {
           <Meta style={{ marginTop: 12 }}>{C.posts.none}</Meta>
         </div>
       )}
+
+      {/* ---- relationship ----------------------------------------------- */}
+      {state !== 'empty' && people && <RelationshipBlock people={people} />}
 
       {/* ---- monthly trend --------------------------------------------- */}
       {state !== 'empty' && (

@@ -35,7 +35,10 @@ export const AUDIENCE_COPY = {
    */
   headline: {
     withCoverage: (posts: number, withPeople: number) =>
-      `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed. People collected on ${withPeople} of ${posts === 1 ? 'it' : 'them'}.`,
+      `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed. `
+      + (posts === 1
+        ? 'Engagement collected for 1 post.'
+        : `Engagement collected for ${withPeople} of ${posts} posts.`),
     postsOnly: (posts: number) =>
       `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed.`,
     nothingYet: 'Nothing reviewed yet.',
@@ -46,23 +49,58 @@ export const AUDIENCE_COPY = {
   state: {
     normal: 'Reviewed against your own posts and the accounts on your source list.',
     empty: 'Nothing reviewed yet. The first review fills this in.',
-    unknown: 'People engaged, and none of them has been judged against your buyer yet. The counts below stay unknown until they are.',
+    unknown: 'People engaged, and none of them has been judged for relevance yet. The counts below stay unknown until they are.',
     incomplete_history: 'These posts were measured, but not yet at an age that compares to your other posts. Ranks appear once two posts have been measured at the same age.',
     stale: 'Nothing new has been collected here for more than two weeks. The numbers below are the last ones we have, with the date they were taken.',
   },
+  /** The chip about WHAT STATE the review is in. It never claims freshness:
+   *  "Up to date" moved to `freshnessChip` below, which reads
+   *  `freshness.overall` and nothing else (run-04 CONTRACTS §2.1). `normal` has
+   *  no state chip of its own, because the only thing it used to say was the
+   *  freshness claim the chip was not entitled to make. */
   stateChip: {
-    normal: 'Up to date',
     empty: 'Not started',
     unknown: 'Not judged yet',
     incomplete_history: 'Short history',
     stale: 'Out of date',
-  },
+  } as Record<string, string>,
+
+  /**
+   * The freshness chip. ONE input: `freshness.overall`.
+   *
+   * "Up to date" is only ever printed for `fresh`, which means BOTH sources are
+   * inside the staleness window. A fresh metric with stale engagement is
+   * `partial` and says so; before this the greatest of the two timestamps won
+   * and a stale engagement source could ride along under an "Up to date" chip.
+   */
+  freshnessChip: {
+    fresh: 'Up to date',
+    partial: 'Partly up to date',
+    stale: 'Out of date',
+    missing: 'Nothing collected yet',
+  } as Record<string, string>,
 
   /** The meta line under the headline. */
   reviewedOn: (d: string) => `Reviewed ${d}`,
   reviewedNever: 'Not reviewed yet',
   cadence: (c: string) => `${c} review`,
+  /**
+   * The freshness lines under the headline.
+   *
+   * `sources` is the per-source pair (run-04 CONTRACTS §2.1). Each source says
+   * its own date and its own verdict, so a stale one is visible even when the
+   * other is fresh. `snapshots` / `engagers` below are the legacy single-date
+   * lines, kept for a payload that carries no `freshness.sources` block yet.
+   */
   freshness: {
+    sources: {
+      metricsFresh: (d: string) => `Post metrics as of ${d}`,
+      metricsStale: (d: string) => `Post metrics as of ${d}, out of date`,
+      metricsMissing: 'No post metrics collected yet',
+      engagementFresh: (d: string) => `Engagement last seen ${d}`,
+      engagementStale: (d: string) => `Engagement last seen ${d}, out of date`,
+      engagementMissing: 'No engagement collected yet',
+    },
     snapshots: (d: string) => `Post numbers as of ${d}`,
     snapshotsNone: 'No post numbers collected yet',
     engagers: (d: string) => `People as of ${d}`,
@@ -160,8 +198,12 @@ export const AUDIENCE_COPY = {
     people: {
       none: 'No people collected for this post yet',
       total: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
-      positive: (n: number) => `${n} look like your buyers`,
-      positiveOne: '1 looks like your buyer',
+      /** A positive label is a RELEVANCE judgement, never a claim that the
+       *  person is a buyer or a new prospect (run-04 CONTRACTS §2.2). Whether
+       *  we already know them is a separate fact and lives in the relationship
+       *  chip below. */
+      positive: (n: number) => `${n} judged relevant`,
+      positiveOne: '1 judged relevant',
       borderline: (n: number) => `${n} possible`,
       unknown: (n: number) => `${n} not judged yet`,
       /** people minus (positive + borderline + unknown). Named so the four
@@ -174,9 +216,75 @@ export const AUDIENCE_COPY = {
     assisted: (n: number) =>
       `Assisted ${n} booked ${n === 1 ? 'call' : 'calls'}`,
     assistedNote: 'A booked call is counted once. It is shown against a post when the person engaged with that post before the call was booked.',
-    impressions: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'read' : 'reads'}`,
+    /** The metric is called `impressions` at the source. It was printed as
+     *  "reads", which names an event nobody measures: an impression is the
+     *  post appearing on a screen. The source name is kept (run-04 §2.4). */
+    impressions: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'impression' : 'impressions'}`,
     comments: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'comment' : 'comments'}`,
     shares: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'share' : 'shares'}`,
+  },
+
+  /**
+   * The two limits that sit beside every relevance count (run-04 §2.4).
+   *
+   * One is about the JUDGE: an automated check nobody has scored on this
+   * account. One is about the SAMPLE: the count only covers people collection
+   * actually reached. Both are printed as footnotes under the ledger, so a
+   * relevance number is never read on its own.
+   */
+  limits: {
+    classifier: 'Relevance is judged by an automated check against your buyer description. Its accuracy has not been measured on your account, so these counts are a reading and carry no guarantee.',
+    coverage: 'These counts only cover people we collected. Anyone the collection missed is not counted anywhere on this page.',
+  },
+
+  /**
+   * Relationship (run-04 CONTRACTS §2.2). Whether we already know a person is a
+   * FACT off our own records, and it is kept separate from the relevance
+   * judgement above. A person we have never contacted says so in words; the
+   * board never leaves the line blank and never calls anyone a new prospect.
+   */
+  relationship: {
+    heading: 'People we already know',
+    blurb: 'Taken from our own contact records.',
+    known: (d: string, stage: string) => `Known to us since ${d} · ${stage}`,
+    knownNoDate: (stage: string) => `Known to us · ${stage}`,
+    /** No date on the record, and no stage we have a client-facing word for. */
+    knownBare: 'Known to us',
+    knownDateOnly: (d: string) => `Known to us since ${d}`,
+    /**
+     * `audn_relationship_v.state` carries the RAW `outreach_prospects.stage`
+     * token (`existing_prospect_stage:dm1_sent`). Those tokens are internal and
+     * never reach a client, so each one is translated here. An unmapped stage
+     * prints NO stage at all rather than leaking the token: the date and the
+     * fact that we know the person are true on their own.
+     */
+    stage: {
+      queued: 'on our list',
+      connect_sent: 'we sent a connection request',
+      connected: 'connected with us',
+      invited: 'we sent a connection request',
+      dm_sent: 'we have written to them',
+      dm1_sent: 'we have written to them',
+      dm2_sent: 'we have written to them',
+      dm3_sent: 'we have written to them',
+      nudge_sent: 'we have written to them',
+      inmail_sent: 'we have written to them',
+      messaged: 'we have written to them',
+      replied: 'they replied to us',
+      in_conversation: 'in conversation with us',
+      booked: 'they booked a call',
+      call_booked: 'they booked a call',
+      won: 'a client of yours',
+      closed: 'a client of yours',
+      skipped: 'set aside on our list',
+      paused: 'paused on our list',
+      not_now: 'said not now',
+    } as Record<string, string>,
+    unknown: 'Relationship unknown',
+    unknownMany: (n: number) => `${n} ${n === 1 ? 'person has' : 'people have'} no contact history with us: relationship unknown.`,
+    more: (n: number) => `${n} more, relationship unknown.`,
+    none: 'No people are attached to this review yet.',
+    footnote: 'A relationship is only shown where our own records carry one. A person with no record here may still know you; we just have nothing on file.',
   },
 
   // ── monthly trend ───────────────────────────────────────────────────────
