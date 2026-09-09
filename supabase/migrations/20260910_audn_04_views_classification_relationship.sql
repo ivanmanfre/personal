@@ -47,11 +47,21 @@ select
     else                           'negative'
   end::text                                                   as label,
   pe.icp_score::text                                          as raw_label,
-  case id.client_id
-    when 'ivan'    then 'icp-outreach-scoring'
-    when 'arch'    then 'arch-icp-engager-scoring'
-    when 'risedtc' then 'rise-icp-engager-scoring'
-    else 'icp-outreach-scoring'
+  -- Run 04: the stamp is the truth. Loggers write scorer_version as
+  -- '<slug>@v<N>' (the audience-learning loggers read their own pinned rows,
+  -- e.g. audn-icp-engager-scoring@v18), so the slug is read from the stamp
+  -- when it has that shape. Rows stamped in the older shapes
+  -- ('arch-engager-v16', 'rise-engager-v2', null) fall back to the client
+  -- mapping, exactly as before.
+  case
+    when pe.scorer_version like '%@v%'
+      then split_part(pe.scorer_version, '@', 1)
+    else case id.client_id
+      when 'ivan'    then 'icp-outreach-scoring'
+      when 'arch'    then 'arch-icp-engager-scoring'
+      when 'risedtc' then 'rise-icp-engager-scoring'
+      else 'icp-outreach-scoring'
+    end
   end::text                                                   as classifier_slug,
   pe.scorer_version                                           as classifier_version,
   pe.scored_at                                                as judged_at,
