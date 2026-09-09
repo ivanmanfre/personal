@@ -27,6 +27,7 @@ import OutreachTopOfPanel, {
 } from './client-board/OutreachTopOfPanel';
 import type { FunnelSignals } from './client-board/OutreachTopOfPanel';
 import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
+import { expectationFor } from './client-board/expectation';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
 import { useMetadata } from '../hooks/useMetadata';
@@ -5721,15 +5722,9 @@ const PLACEHOLDER_SPARKS = [
   'M0 32 C 20 34, 36 28, 54 26 S 92 30, 112 24 S 150 20, 170 15 S 192 15, 200 10',
 ];
 
-/** Honest expectation line per indicator — when the number typically starts moving. */
-function expectationFor(ind: PerfIndicator): string {
-  const l = `${ind.key} ${ind.label}`.toLowerCase();
-  if (l.includes('view')) return 'Profile views usually move within the first week of posting.';
-  if (l.includes('dm')) return 'First inbound DMs typically follow once posting is consistent.';
-  if (l.includes('opt') || l.includes('magnet')) return 'Opt-ins start as soon as your first lead magnet goes live.';
-  if (l.includes('call')) return 'Booked calls follow opt-ins as outreach ramps.';
-  return 'Tracking starts the day delivery goes live.';
-}
+/** Honest expectation line per indicator. The ONE copy lives in
+ *  `./client-board/expectation` and is shared with DeskPerformanceSurface — see that file
+ *  for why the four timing promises were replaced (correction ledger C01-C04). */
 
 // ---------- Leads (engager DM pipeline) ----------
 type PipelineStep = { key: string; label: string; done: boolean; current?: boolean };

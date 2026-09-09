@@ -19,8 +19,9 @@
  * NOT carried over 1:1
  * - The original's flat "one row per post" list is replaced by the frag's grouped,
  *   week-subtotalled <Ledger/>. Same source data (`perf.posts`), denser presentation.
- * - `expectationFor()` and the ghost placeholder are private helpers on the original
- *   component (not exported) — both are replicated here rather than imported.
+ * - the ghost placeholder is a private helper on the original component (not exported) and
+ *   is re-derived here. `expectationFor()` is NO LONGER replicated: both surfaces now import
+ *   the single copy in `./expectation` (correction-ledger C01-C05).
  *
  * Render <DeskKitStyle/> ONCE at the page level (shared across all desk surfaces), not
  * inside this file — importing/rendering it per-surface would duplicate the <style> tag.
@@ -33,6 +34,7 @@ import {
   Thumb, Blank, StatBlank, Drill,
 } from './desk-kit';
 import type { Board, QueueItem, PerfIndicator, PerfPost } from '../ClientBoardPage';
+import { expectationFor } from './expectation';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Local helpers — small private utilities from the original PerformanceSurface
@@ -58,17 +60,6 @@ function truncateWords(s: string, max: number): string {
   if (s.length <= max) return s;
   const sp = s.lastIndexOf(' ', max);
   return (sp > 0 ? s.slice(0, sp) : s.slice(0, max)).trim();
-}
-
-/** Honest expectation line per indicator — copied verbatim from the original
- *  PerformanceSurface's private `expectationFor`, which ClientBoardPage does not export. */
-function expectationFor(ind: PerfIndicator): string {
-  const l = `${ind.key} ${ind.label}`.toLowerCase();
-  if (l.includes('view')) return 'Profile views usually move within the first week of posting.';
-  if (l.includes('dm')) return 'First inbound DMs typically follow once posting is consistent.';
-  if (l.includes('opt') || l.includes('magnet')) return 'Opt-ins start as soon as your first lead magnet goes live.';
-  if (l.includes('call')) return 'Booked calls follow opt-ins as outreach ramps.';
-  return 'Tracking starts the day delivery goes live.';
 }
 
 /** Parses a bare date ('2026-07-27') or a full ISO timestamp the same safe way fmtDay
