@@ -9,8 +9,20 @@ import EmptyState from './shared/EmptyState';
 import PanelCard from './shared/PanelCard';
 import type { CompetitorPost } from '../../types/dashboard';
 
+/** The windows the operator can read the baseline over. 30 days is the default:
+ *  it is the shortest window that still holds a normal posting cadence, and it is
+ *  the one the rest of the panel already talks in. Before this control existed the
+ *  panel called useCompetitors() with no argument at all, so the averages were
+ *  computed over an unlabelled latest-200 slice with no window, no sample size and
+ *  no date on screen (correction ledger C14). */
+const WINDOWS = [7, 30, 90] as const;
+
 const CompetitorIntelPanel: React.FC = () => {
-  const { posts, patterns, competitorStats, opportunities, loading, refresh, markOpportunityActioned } = useCompetitors();
+  const [windowDays, setWindowDays] = useState<number>(30);
+  const {
+    posts, patterns, competitorStats, styleOnly, unclassified, asOf,
+    opportunities, loading, refresh, markOpportunityActioned,
+  } = useCompetitors(windowDays);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['competitor_posts'] });
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>('all');
   const [tab, setTab] = useState<'posts' | 'opportunities' | 'patterns'>('opportunities');
@@ -61,6 +73,9 @@ const CompetitorIntelPanel: React.FC = () => {
     return h % 360;
   };
 
+  // The eligible sample behind the window line: every baseline post counted in it.
+  const windowPostCount = competitorStats.reduce((t, c) => t + c.recentPostCount, 0);
+
   // Find a profile URL for a competitor by name (any of their posts will do)
   const profileUrlFor = (name: string) => posts.find((p) => p.competitorName === name && p.linkedinProfileUrl)?.linkedinProfileUrl || null;
 
@@ -87,6 +102,34 @@ const CompetitorIntelPanel: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Competitor Intelligence</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+      </div>
+
+      {/* The window the figures below are computed over, the eligible sample size,
+          and the date of the newest post inside it. Every average and median on
+          this page is meaningless without all three (correction ledger C14). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] uppercase tracking-wider text-zinc-500">Window</span>
+        {WINDOWS.map((d) => (
+          <button
+            key={d}
+            onClick={() => setWindowDays(d)}
+            aria-pressed={windowDays === d}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 ${windowDays === d ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25' : 'text-zinc-500 border border-zinc-800/80 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
+          >{d}d</button>
+        ))}
+        <span className="text-[11px] text-zinc-500">
+          {windowDays} days · {windowPostCount} {windowPostCount === 1 ? 'post' : 'posts'} · as of {asOf ? new Date(asOf).toLocaleDateString() : 'no post in window'}
+        </span>
+        {unclassified > 0 && (
+          <span className="text-[11px] text-amber-400/80" title="These posts have no roster role yet, so they are counted in the baseline and flagged rather than silently treated as peers.">
+            {unclassified} unclassified
+          </span>
+        )}
+        {styleOnly.length > 0 && (
+          <span className="text-[11px] text-zinc-500" title="Format references. Kept for how they present, never counted in a performance baseline.">
+            {styleOnly.length} format {styleOnly.length === 1 ? 'reference' : 'references'} held out: {styleOnly.map((c) => c.competitorName).join(', ')}
+          </span>
+        )}
       </div>
 
       {/* Competitor profiles grid */}
@@ -117,10 +160,23 @@ const CompetitorIntelPanel: React.FC = () => {
                   <span className="text-[11px] text-zinc-500">{c.postCount} posts</span>
                 </div>
               </div>
-              <div className="flex gap-4 text-xs text-zinc-500">
-                <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-pink-400/60" /> ~{c.avgLikes}</span>
-                <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-400/60" /> ~{c.avgComments}</span>
-              </div>
+              {/* No post inside the window is NOT a zero: an average over nothing
+                  is undefined and used to render as a flat 0 (ledger C13). The
+                  median leads, the mean follows, and n is always beside them. */}
+              {c.recentPostCount === 0 ? (
+                <div className="text-xs text-zinc-600">no posts in window</div>
+              ) : (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                  <span className="flex items-center gap-1" title="Median likes over the window">
+                    <Heart className="w-3 h-3 text-pink-400/60" /> {c.median} med
+                  </span>
+                  <span className="flex items-center gap-1" title="Mean likes over the window">~{c.avgLikes} avg</span>
+                  <span className="flex items-center gap-1" title="Median comments over the window">
+                    <MessageCircle className="w-3 h-3 text-blue-400/60" /> {c.medianComments} med
+                  </span>
+                  <span className="text-zinc-600">n={c.recentPostCount}</span>
+                </div>
+              )}
             </button>
           );
         })}
