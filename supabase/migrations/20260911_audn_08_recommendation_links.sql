@@ -76,6 +76,19 @@
 --
 -- CUTOFF. Every read is bounded by audn_cutoff(), so a fixture replay is
 -- reproducible and a row written after the frozen cutoff is invisible.
+--
+-- APPLY ORDER: 01..06, then 08, then 07. RELEASE-MANIFEST's dependency_order
+-- says so and both replay harnesses use it (OUT/harness/lib.mjs MIGRATIONS,
+-- OUT/board/harness-board.mjs MIGRATIONS). The order is not load bearing for 07
+-- to INSTALL — 07 probes this view with to_regclass at call time — but applying
+-- 08 first means the board payload's link_state is populated on the first call
+-- rather than reading 'unknown' until the next one. DOWN runs the exact reverse
+-- (07 down, then 08 down), and 08's down drops only its own two objects.
+--
+-- PROVENANCE: adapters seat, goal-run audience-learning-03. The two files first
+-- reached git inside the board UI seat's commit 8497890, which staged the whole
+-- worktree; that commit's message describes the board seat's work and not this
+-- migration. This header is the record of who wrote it.
 -- ============================================================================
 
 create or replace function public.audn_recommendation_links()
