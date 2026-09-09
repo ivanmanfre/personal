@@ -120,8 +120,16 @@ export type AudienceFreshness = {
  */
 export type AudiencePersonLabel = 'positive' | 'borderline' | 'negative' | 'unknown';
 export type AudiencePerson = {
-  person_ref: string;
+  /** Migration 07 emits `person_key`. `person_ref` is accepted as well so the
+   *  block is not one renamed column away from losing its React keys. Neither
+   *  is ever rendered: they are reconciliation keys, and a React `key` is not
+   *  serialised into markup. */
+  person_key?: string;
+  person_ref?: string;
   label?: AudiencePersonLabel | string | null;
+  posts?: number | null;
+  first_observed_at?: string | null;
+  last_observed_at?: string | null;
   relationship?: {
     state: string | null;
     source: string | null;
@@ -271,8 +279,8 @@ function RelationshipBlock({ people }: { people: AudiencePerson[] }) {
       {people.length === 0 && <Meta style={{ marginTop: 12 }}>{C.relationship.none}</Meta>}
       {shown.length > 0 && (
         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {shown.map((p) => (
-            <Chip key={p.person_ref}>{relationshipChipText(p.relationship)}</Chip>
+          {shown.map((p, i) => (
+            <Chip key={p.person_key ?? p.person_ref ?? i}>{relationshipChipText(p.relationship)}</Chip>
           ))}
         </div>
       )}

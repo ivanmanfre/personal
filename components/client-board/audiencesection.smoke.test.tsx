@@ -939,3 +939,48 @@ describe('run 04: every client-visible string obeys the voice rules', () => {
     expect(sec).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });
+
+/* ── §2.2 against migration 07's ACTUAL emitted shape ───────────────────── */
+
+/**
+ * The block above was written to the CONTRACT. This one is written to what
+ * `audn_board_payload` actually builds (`20260911_audn_07_board_payload.sql`,
+ * the `people` CTE): `person_key`, `label`, `posts`, `first_observed_at`,
+ * `last_observed_at`, `relationship {state, source, effective_date}`.
+ *
+ * The identifier is `person_key`, not `person_ref`. It is a LinkedIn profile
+ * urn and it MUST NOT reach the markup: the section uses it as a React key and
+ * nothing else, and a React key is not serialised.
+ */
+const PAYLOAD_07_PEOPLE = [
+  { person_key: 'ACoAABBBBBBBBBBBBBBBBBBB1', label: 'positive', posts: 2, first_observed_at: '2026-08-19T10:00:00+00:00', last_observed_at: '2026-09-01T10:00:00+00:00',
+    relationship: { state: 'existing_prospect_stage:replied', source: 'outreach_prospects.current', effective_date: '2026-08-03T10:00:00+00:00' } },
+  { person_key: 'ACoAABBBBBBBBBBBBBBBBBBB2', label: 'borderline', posts: 1, first_observed_at: '2026-08-26T10:00:00+00:00', last_observed_at: '2026-08-26T10:00:00+00:00',
+    relationship: { state: 'unknown', source: null, effective_date: null } },
+  { person_key: 'ACoAABBBBBBBBBBBBBBBBBBB3', label: 'unknown', posts: 1, first_observed_at: '2026-09-02T10:00:00+00:00', last_observed_at: '2026-09-02T10:00:00+00:00',
+    relationship: { state: 'existing_prospect_stage:connect_sent', source: 'outreach_prospects.current', effective_date: '2026-09-01T10:00:00+00:00' } },
+];
+
+describe('run 04 §2.2: the block renders migration 07\'s own people[] shape', () => {
+  for (const skin of SKINS) {
+    it(`${skin}: chips render off person_key, and the key never reaches the markup`, () => {
+      const html = renderSkin(skin, withPeople(PAYLOAD_07_PEOPLE));
+      expect(html).toContain('data-audn-relationship');
+      expect(html).toContain(AUDIENCE_COPY.relationship.known('3 Aug', 'they replied to us'));
+      // asserted in two halves: `toLocaleDateString` renders September as "Sep"
+      // or "Sept" depending on the ICU build, and a whole-chip match would tie
+      // this test to whichever one the runner happens to ship
+      expect(html).toContain('Known to us since 1 Sep');
+      expect(html).toContain(AUDIENCE_COPY.relationship.stage.connect_sent);
+      expect(html).toContain(AUDIENCE_COPY.relationship.unknownMany(1));
+      for (const p of PAYLOAD_07_PEOPLE) expect(html).not.toContain(p.person_key);
+      expect(html).not.toContain('ACoAA');
+    });
+  }
+
+  it('the extra fields migration 07 carries are not printed anywhere', () => {
+    const html = renderSkin('desk', withPeople(PAYLOAD_07_PEOPLE));
+    expect(html).not.toContain('first_observed_at');
+    expect(html).not.toContain('outreach_prospects.current');
+  });
+});
