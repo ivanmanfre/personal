@@ -56,6 +56,7 @@ declare
   v_plat              jsonb;
   v_meas              jsonb;
   v_posts             jsonb  := '[]'::jsonb;
+  v_people            jsonb  := '[]'::jsonb;
   v_median            jsonb  := '[]'::jsonb;
   v_recs              jsonb  := '[]'::jsonb;
   v_assets            jsonb  := '[]'::jsonb;
@@ -70,6 +71,9 @@ declare
   v_n_people          int := 0;
   v_n_known           int := 0;
   v_state             text;
+  v_metrics_state     text;
+  v_engagement_state  text;
+  v_overall           text;
   v_stale_after       int := 14;
 begin
   if coalesce(btrim(p_client_id), '') = '' then
@@ -98,6 +102,33 @@ begin
   select max(e.last_observed_at) into v_engagers_as_of
     from public.audn_interaction_events_v e
    where e.client_id = p_client_id and e.last_observed_at <= v_cutoff;
+
+  -- PER-SOURCE freshness (run-04 CONTRACTS 2.1). The top-level `state` below is
+  -- deliberately LEFT ALONE: it takes the GREATEST of the two timestamps, so a
+  -- fresh metric masks stale engagement under state 'normal'. That is the exact
+  -- failure the run-03 handoff review named, and it is fixed HERE rather than by
+  -- changing `state`, so no frozen run-02/run-03 fixture flips. The chip reads
+  -- freshness.overall; `state` keeps its old meaning for every existing caller.
+  --   fresh   = as_of >= cutoff - stale_after_days
+  --   stale   = as_of <  cutoff - stale_after_days
+  --   missing = as_of is null (never a zero, never a date we did not observe)
+  v_metrics_state := case
+    when v_snapshots_as_of is null then 'missing'
+    when v_snapshots_as_of >= v_cutoff - make_interval(days => v_stale_after) then 'fresh'
+    else 'stale' end;
+
+  v_engagement_state := case
+    when v_engagers_as_of is null then 'missing'
+    when v_engagers_as_of >= v_cutoff - make_interval(days => v_stale_after) then 'fresh'
+    else 'stale' end;
+
+  -- both fresh -> fresh; exactly one fresh -> partial; neither fresh but at
+  -- least one stale -> stale; both missing -> missing.
+  v_overall := case
+    when v_metrics_state = 'fresh' and v_engagement_state = 'fresh'   then 'fresh'
+    when v_metrics_state = 'fresh' or  v_engagement_state = 'fresh'   then 'partial'
+    when v_metrics_state = 'missing' and v_engagement_state = 'missing' then 'missing'
+    else 'stale' end;
 
   -- ---- posts -------------------------------------------------------------
   -- One row per published post, each carrying its latest snapshot, its
@@ -239,6 +270,74 @@ begin
          coalesce(sum(b.n_known), 0)::int
     into v_posts, v_n_posts, v_n_matched, v_n_people, v_n_known
     from built b;
+
+  -- ---- people, each with what we already knew about them -----------------
+  -- run-04 CONTRACTS 2.2. One entry per DISTINCT person in this client's own
+  -- interaction events (a person who reacted and commented is one entry), each
+  -- carrying the relationship audn_relationship_v holds for that person under
+  -- THIS client's scope.
+  --
+  -- Why this exists: the board previously shipped only per-post label counts, so
+  -- a 'positive' label had nothing beside it and read as "new prospect" or
+  -- "buyer". It is neither. `relationship.state` is either
+  -- 'existing_prospect_stage:<stage>' or 'unknown', and unknown is stated
+  -- explicitly rather than left blank.
+  --
+  -- LIMIT, inherited from audn_relationship_v and NOT repaired here: there is no
+  -- stage-history table, so `state` is the stage as read AT CUTOFF, not the stage
+  -- at the moment the person engaged. `source` = 'outreach_prospects.current'
+  -- says so, and `effective_date` is that row's updated_at. A person with no
+  -- prospect row inside their own client's scope is 'unknown' — never "no
+  -- relationship" and never another tenant's row.
+  --
+  -- Operator rows are dropped here for the same reason the per-post engager
+  -- counts drop them (they are counted separately as excluded_operator). Ordered
+  -- by person_key so the array is deterministic across replays.
+  with ppl as (
+    select e.person_key,
+           count(distinct e.post_social_id)::int as posts,
+           min(e.first_observed_at)              as first_observed_at,
+           max(e.last_observed_at)               as last_observed_at
+      from public.audn_interaction_events_v e
+     where e.client_id = p_client_id
+       and e.first_observed_at <= v_cutoff
+     group by 1
+  ),
+  op as (
+    select x.person_key
+      from public.audn_excluded_person_v x
+     where x.client_id = p_client_id and x.exclusion_kind = 'operator'
+  ),
+  lab as (
+    select l.person_key, l.label
+      from public.audn_person_label_v l
+     where l.client_id = p_client_id
+  ),
+  rel as (
+    select r.person_key, r.state, r.source, r.effective_date
+      from public.audn_relationship_v r
+     where r.client_id = p_client_id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'person_key',        ppl.person_key,
+           'label',             coalesce(lab.label, 'unknown'),
+           'posts',             ppl.posts,
+           'first_observed_at', to_jsonb(ppl.first_observed_at),
+           'last_observed_at',  to_jsonb(ppl.last_observed_at),
+           -- no row in audn_relationship_v for this person under this client ->
+           -- unknown, with both fields null. Never omitted, never blank.
+           'relationship', jsonb_build_object(
+             'state',          coalesce(rel.state, 'unknown'),
+             'source',         rel.source,
+             'effective_date', to_jsonb(rel.effective_date)
+           )
+         ) order by ppl.person_key), '[]'::jsonb)
+    into v_people
+    from ppl
+    left join op  on op.person_key  = ppl.person_key
+    left join lab on lab.person_key = ppl.person_key
+    left join rel on rel.person_key = ppl.person_key
+   where op.person_key is null;
 
   -- ---- absolute monthly median trend -------------------------------------
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -393,9 +492,17 @@ begin
     'freshness', jsonb_build_object(
       'snapshots_as_of',  to_jsonb(v_snapshots_as_of),
       'engagers_as_of',   to_jsonb(v_engagers_as_of),
-      'stale_after_days', v_stale_after
+      'stale_after_days', v_stale_after,
+      -- run-04 CONTRACTS 2.1. Additive: the three keys above keep their exact
+      -- meaning and their exact values.
+      'sources', jsonb_build_object(
+        'metrics',    jsonb_build_object('as_of', to_jsonb(v_snapshots_as_of), 'state', v_metrics_state),
+        'engagement', jsonb_build_object('as_of', to_jsonb(v_engagers_as_of),  'state', v_engagement_state)
+      ),
+      'overall', v_overall
     ),
     'posts',            v_posts,
+    'people',           v_people,
     'monthly_median',   v_median,
     'recommendations',  v_recs,
     'assets',           v_assets
