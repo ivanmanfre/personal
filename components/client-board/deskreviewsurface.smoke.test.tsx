@@ -12,7 +12,7 @@
  *
  * Run:  npx vitest run components/client-board/deskreviewsurface.smoke.test.tsx
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
@@ -376,6 +376,86 @@ describe('DeskReviewSurface', () => {
     const html = container.innerHTML;
     expect(html).not.toContain('Changes log');
     expect(html).not.toContain('reading the log');
+    cleanup();
+  });
+  it('shows full selectable review copy with an explicit edit control', () => {
+    const board = makeBoard();
+    const body = 'A complete paragraph. '.repeat(60) + 'The final line stays visible.';
+    board.queue = [{ id: 'q-full', kind: 'post', stage: 'review', title: 'Full draft', body }];
+    window.history.replaceState(null, '', '/');
+    const opened: unknown[] = [];
+    const { container, getByRole } = render(<DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...args) => opened.push(args)} onOpenIdea={noop} onApprove={noop} flashId={null} view="feed" setView={noop} skips={{}} live />);
+    const copy = container.querySelector('[data-review-copy]')!;
+    expect(copy.textContent).toBe(body);
+    expect(copy.getAttribute('role')).toBeNull();
+    fireEvent.click(copy);
+    expect(opened).toHaveLength(0);
+    fireEvent.click(getByRole('button', { name: 'Edit copy' }));
+    expect(opened).toEqual([[board.queue[0], { editing: true }]]);
+    cleanup();
+  });
+
+});
+
+
+describe('Inline buffer approval', () => {
+  function props() {
+    const board = makeBoard(); board.queue = [queueFixture()[2]];
+    board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH', avatar_url: 'https://example.com/avatar.jpg' };
+    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true };
+  }
+  it('shows a recognizable platform preview with distinct review controls', () => {
+    const p = props(); const r = render(<DeskReviewSurface {...p} />);
+    expect(r.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
+    const social = r.container.querySelector('[data-linkedin-actions]')!;
+    expect(social.textContent).toBe('LikeCommentRepostSend');
+    expect(social.querySelector('button')).toBeNull();
+    fireEvent.click(r.getByRole('button', { name: 'Request changes', exact: true }));
+    expect(p.onOpen).toHaveBeenCalledWith(p.board.queue[0], { changing: true });
+    fireEvent.click(r.getByRole('button', { name: 'Schedule', exact: true }));
+    expect(p.onOpen).toHaveBeenCalledWith(p.board.queue[0], { scheduling: true });
+    cleanup();
+  });
+  it('keeps inline feedback visible, saves the exact post note and retains it after failure', async () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValueOnce({ok:false}).mockResolvedValueOnce({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
+    const send = r.getByRole('button', {name:'Send feedback'}) as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    fireEvent.change(field, {target:{value:'Make the second paragraph more casual.'}});
+    fireEvent.click(send);
+    await waitFor(() => expect(r.getByRole('alert').textContent).toContain('Feedback did not save'));
+    expect(field.value).toBe('Make the second paragraph more casual.');
+    fireEvent.click(send);
+    await waitFor(() => expect(r.getByRole('status').textContent).toBe('Feedback saved'));
+    expect(feedback).toHaveBeenLastCalledWith(p.board.queue[0].id, 'Make the second paragraph more casual.');
+    expect(field.value).toBe('');
+    expect(p.onOpen).not.toHaveBeenCalled();
+    cleanup();
+  });
+  it('waits for approval, then keeps the approved undated post in the buffer', async () => {
+    let resolve!: (value: {ok:boolean}) => void;
+    const approve = vi.fn(() => new Promise<{ok:boolean}>(r => { resolve = r; }));
+    const p = props(); const r = render(<DeskReviewSurface {...p} onApprove={approve} />);
+    fireEvent.click(r.getByRole('button', { name: 'Approve post', exact: true }));
+    expect((r.getByRole('button', { name: 'Approving…' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(r.queryByText('✓ Approved')).toBeNull();
+    fireEvent.click(r.getByRole('button', { name: 'Approving…' }));
+    expect(approve).toHaveBeenCalledTimes(1);
+    resolve({ok:true});
+    await waitFor(() => expect(r.queryByText('Approving…')).toBeNull());
+    r.rerender(<DeskReviewSurface {...p} onApprove={approve} stageOf={() => 'scheduled'} approvedIds={new Set(['q-buffer-1'])} />);
+    expect(r.getByText('✓ Approved')).toBeTruthy();
+    expect(r.getByText('Approved. Still in the buffer until scheduled.')).toBeTruthy();
+    expect(r.container.querySelector('[data-review-copy]')?.textContent).toBe(p.board.queue[0].body);
+    cleanup();
+  });
+  it('shows a retryable error and never claims approval on failure', async () => {
+    const p = props(); const r = render(<DeskReviewSurface {...p} onApprove={async () => ({ok:false})} />);
+    fireEvent.click(r.getByRole('button', { name: 'Approve post', exact: true }));
+    await waitFor(() => expect(r.getByRole('alert').textContent).toContain('did not save'));
+    expect(r.queryByText('✓ Approved')).toBeNull();
+    expect((r.getByRole('button', {name:'Approve post'}) as HTMLButtonElement).disabled).toBe(false);
     cleanup();
   });
 });

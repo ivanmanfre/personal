@@ -348,6 +348,7 @@ export const Pill: React.FC<Base & {
   tone?: 'default' | 'accent';
   onClick?: () => void;
   type?: 'button' | 'submit';
+  disabled?: boolean;
   'aria-pressed'?: boolean;
 }> = ({ active, tone = 'default', onClick, className, style, children, ...rest }) => {
   const s: React.CSSProperties = {

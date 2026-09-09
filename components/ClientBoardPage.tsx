@@ -19,6 +19,7 @@ const PREVIEW_PHONE_WIDTH = 393;
 import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
+import PostSourceContext from './client-board/PostSourceContext';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
 import OutreachTopOfPanel, {
@@ -129,6 +130,15 @@ interface Idea { id: string; title: string; pillar?: string; hook?: string; stat
  *  post carries the real call title + the verbatim quote; launch/own-post/strategy posts
  *  carry an honest specific label. */
 interface SourceDetail {
+  source?: string;
+  source_url?: string;
+  url?: string;
+  supporting_urls?: string[];
+  explanation?: string;
+  claim_boundary?: string;
+  evidence_status?: string;
+  reference_only?: boolean;
+  note?: string;
   kind: 'call' | 'lm_launch' | 'own_posts' | 'strategy' | string;
   label?: string;
   call_title?: string | null;
@@ -3514,7 +3524,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
 
 function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, slug, fetchHistory, reviewMode = false, approved = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
-  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
+  onClose: () => void; onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
   /** Live board: remove an unscheduled buffer post — reversible hide (board_visible=false). */
@@ -3608,11 +3618,13 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [approvalError, setApprovalError] = useState(false);
   const [editSaved, setEditSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const ctaInk = inkOn(accent);
-  const canAct = stage === 'review';
+  const canAct = stage === 'review' || (stage === 'scheduled' && approved);
   // Rescheduling stays available after a post is armed: the set_schedule RPC accepts
   // status in (review, scheduled), and the card-level "Edit time" link opens this modal
   // for scheduled posts expecting the scheduler to be here.
@@ -3742,17 +3754,17 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
   const statusLabel = stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Not scheduled yet') : 'In your review')
-    : stage === 'scheduled' ? (isLive ? 'Scheduled' : 'Approved')
+    : stage === 'scheduled' ? (isLive && isScheduled(item) ? 'Scheduled' : 'Approved')
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? (isLive ? 'Published' : 'Example') : 'Planned';
   // Honest source chip for the modal (call quote included).
   const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = stage === 'review' ? (isLive
       ? (reviewMode
-          ? 'Approve it, edit it, or request a change. Approving marks it good to post — the date stays with your operator. Every change lands in the log.'
+          ? 'Approve it, edit it, or request a change. Approval saves your sign-off. Scheduling is separate.'
           : 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.')
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
-    : stage === 'scheduled' ? (isLive ? 'Scheduled. It publishes on its date.' : 'Approved. It publishes on its date.')
+    : stage === 'scheduled' ? (isLive ? (isScheduled(item) ? 'Scheduled. It publishes on its date.' : 'Approved. Still in the buffer until scheduled.') : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
     : stage === 'published' ? (isLive ? 'Published. Its numbers report on the Performance tab.' : 'An example of how published posts will report here once posting starts.')
     : 'It drafts a few days before its date, then lands in your review.';
@@ -3829,6 +3841,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
+          {isLive && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
           {/* Content preview / edit */}
           <div className="min-w-0">
             {item.kind === 'newsletter' && item.body ? (
@@ -4059,14 +4072,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{isLive ? fmtSchedLA(item.scheduled_at, item.publish_date) : fmtDay(item.publish_date)}</div>
                 </div>
               )}
-              {(detailChip?.label || (isLive && item.source_label && item.source_detail?.kind !== 'strategy')) && (
-                <div className="col-span-2">
-                  <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Source</div>
-                  <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{detailChip?.label || srcLabelClient(item.source_label!)}</div>
-                  {detailChip?.quote && <p className="mt-1" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.55, color: INK_SOFT }}>“{detailChip.quote}”</p>}
-                  {detailChip?.meta && <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>{detailChip.meta}</div>}
-                </div>
-              )}
+
             </div>
             {/* Reschedule (live): change this post's date/time, shown + entered in LA time. */}
             {isLive && canSched && setSchedule && (
@@ -4223,7 +4229,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 </span>
               ) : (
               <motion.button
-                onClick={() => { onApprove(item.id); onClose(); }}
+                disabled={approving}
+                onClick={async () => {
+                  setApproving(true); setApprovalError(false);
+                  try {
+                    const result = await onApprove(item.id);
+                    if (result && !result.ok) setApprovalError(true);
+                    else onClose();
+                  } catch { setApprovalError(true); }
+                  finally { setApproving(false); }
+                }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.15, ease: EASE }}
                 className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 uppercase transition-colors duration-150"
@@ -4231,7 +4246,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = INK; }}
               >
-                Approve ✓
+                {approving ? 'Approving…' : 'Approve ✓'}
               </motion.button>
               )}
               <button
@@ -4243,6 +4258,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </button>
               {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent.</span>}
             </div>
+            {approvalError && <div role="alert" style={{ fontSize: 14, marginTop: 8, color: '#a12622' }}>Approval did not save. Try Approve again.</div>}
             {changing && !sent && (
               <div className="mt-3">
                 <textarea
@@ -7726,6 +7742,7 @@ export default function ClientBoardPage() {
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
+  const sessionApprovalChanges = useRef<Record<string, Stage>>({});
   useEffect(() => {
     try { localStorage.setItem(approvalsKey, JSON.stringify(stageOverride)); } catch { /* private mode */ }
   }, [stageOverride, approvalsKey]);
@@ -7785,13 +7802,15 @@ export default function ClientBoardPage() {
   // Live-mode flag readable from callbacks defined above the mode derivation (kept in sync
   // during render below). Live boards route actions through the real client_board_action RPC.
   const isLiveRef = useRef(false);
-  // Review-mode flag, same posture: set during render, read from the slot-state effect so
-  // approved hydration can never fire on a board without the flag (RISE stays untouched).
+  // Review-mode and desk boards expose approval, including the inline buffer controls.
   const reviewModeRef = useRef(false);
   const flashTimer = useRef<number>(0);
   const introTimers = useRef<number[]>([]);
   // Undo window after an action: toast with Z / click to restore the row.
   const [undo, setUndo] = useState<{ id: string; kind: 'approve' | 'angle' | 'skip' } | null>(null);
+  const [undoBusy, setUndoBusy] = useState(false);
+  const [undoError, setUndoError] = useState(false);
+  const undoInFlight = useRef(false);
   const undoTimer = useRef<number>(0);
   useEffect(() => () => { introTimers.current.forEach((t) => window.clearTimeout(t)); window.clearTimeout(flashTimer.current); window.clearTimeout(undoTimer.current); }, []);
 
@@ -7804,6 +7823,7 @@ export default function ClientBoardPage() {
   // Optimistic actions + undo window. Defined above the early returns so the
   // Z-key effect keeps a stable hook order across loading states.
   const armUndo = (id: string, kind: 'approve' | 'angle' | 'skip') => {
+    setUndoError(false);
     setUndo({ id, kind });
     window.clearTimeout(undoTimer.current);
     undoTimer.current = window.setTimeout(() => setUndo(null), 6000);
@@ -7826,7 +7846,7 @@ export default function ClientBoardPage() {
           p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
         });
         if (error) return { ok: false, error: error.message };
-        return (data as any) ?? { ok: true };
+        return (data as any) ?? { ok: false, error: 'No save confirmation received. Try again.' };
       }
       const sess = sessionRef.current;
       if (!sess?.token) return { ok: false, error: 'missing session' };
@@ -7834,7 +7854,7 @@ export default function ClientBoardPage() {
         p_slug: slug, p_session: sess.token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
       });
       if (error) return { ok: false, error: error.message };
-      return (data as any) ?? { ok: true };
+      return (data as any) ?? { ok: false, error: 'No save confirmation received. Try again.' };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -8100,13 +8120,13 @@ export default function ClientBoardPage() {
             const empty: Record<string, true> = {};
             (out.left_empty || []).forEach((id) => { empty[id] = true; });
             setLeftEmpty(empty);
-            // Review mode only: approvals reconstructed from the actions audit, so the tick
-            // survives any device. Local state wins where this session already acted.
-            if (reviewModeRef.current && Array.isArray(out.approved) && out.approved.length > 0) {
-              setStageOverride((s) => {
+            // Approval-enabled boards: reconstruct approvals from the actions audit so the tick
+            // survives any device. Only actions from this mount override the server read.
+            if (reviewModeRef.current && Array.isArray(out.approved)) {
+              setStageOverride(() => {
                 const merged: Record<string, Stage> = {};
                 out.approved!.forEach((id) => { merged[id] = 'scheduled'; });
-                return { ...merged, ...s };
+                return { ...merged, ...sessionApprovalChanges.current };
               });
             }
           }
@@ -8318,13 +8338,17 @@ export default function ClientBoardPage() {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
   };
-  const approve = (id: string) => {
+  const approve = async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    if (isLiveRef.current) {
+      const result = await act('approve', id);
+      if (!result.ok) return result;
+    }
+    sessionApprovalChanges.current[id] = 'scheduled';
     setStageOverride((s) => ({ ...s, [id]: 'scheduled' }));
     flash(id);
     armUndo(id, 'approve');
-    // Live boards record the approve for the operator (the RPC insert IS the action;
-    // it never flips carousel_drafts.status, so client drafts stay out of Ivan's scheduler).
-    if (isLiveRef.current) { void act('approve', id); }
+    // The RPC records sign-off only. Dates remain the scheduling authority.
+    return { ok: true };
   };
   const pickAngle = (id: string, alt: AltAngle) => {
     setAngleSwaps((s) => ({ ...s, [id]: alt }));
@@ -8433,22 +8457,27 @@ export default function ClientBoardPage() {
       void act('note', id, { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook });
     }
   };
-  const undoApprove = () => {
+  const undoApprove = async () => {
+    const u = undo;
+    if (!u || undoInFlight.current) return;
+    undoInFlight.current = true;
+    setUndoBusy(true); setUndoError(false);
     window.clearTimeout(undoTimer.current);
-    setUndo((u) => {
-      if (u) {
-        // Live: tell the operator the client walked back an approve (truthful, uses the
-        // note action — the earlier approve row is not deleted, it is superseded by this).
-        if (u.kind === 'approve' && isLiveRef.current) { void act('note', u.id, { event: 'undo_approve' }); }
-        if (u.kind === 'skip' && isLiveRef.current) { void act('note', u.id, { event: 'post_restored' }); }
-        if (u.kind === 'angle' && isLiveRef.current) { void act('note', u.id, { event: 'angle_swap_undone' }); }
-        if (u.kind === 'approve') setStageOverride((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
-        else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
-        else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
-        flash(u.id);
+    try {
+      if (isLiveRef.current) {
+        const event = u.kind === 'approve' ? 'undo_approve' : u.kind === 'skip' ? 'post_restored' : 'angle_swap_undone';
+        const result = await act('note', u.id, { event });
+        if (!result.ok) { setUndoError(true); return; }
       }
-      return null;
-    });
+      if (u.kind === 'approve') {
+        sessionApprovalChanges.current[u.id] = 'review';
+        setStageOverride((s) => ({ ...s, [u.id]: 'review' }));
+      }
+      else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
+      else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
+      flash(u.id);
+      setUndo((current) => current === u ? null : current);
+    } finally { undoInFlight.current = false; setUndoBusy(false); }
   };
   // Z restores the last approve while the toast is up.
   useEffect(() => {
@@ -8897,7 +8926,7 @@ export default function ClientBoardPage() {
   const isLive = !isPreview;
   isLiveRef.current = isLive;
   const reviewMode = isLive && !!board?.review_mode;
-  reviewModeRef.current = reviewMode;
+  reviewModeRef.current = reviewMode || (isLive && skin === 'desk');
 
   // Per-board share metadata (mirrors ScanReportPage). Sets the title + a NEUTRAL OG about
   // a content preview built for this company — never Ivan's agency pitch — and an OG image
@@ -9076,7 +9105,7 @@ export default function ClientBoardPage() {
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} onNote={isLive ? ((id: string, note: string) => act('request_changes', id, { note })) : undefined} />
+      ? <DeskReviewSurface onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -9532,11 +9561,13 @@ export default function ClientBoardPage() {
               {undo.kind === 'approve' ? 'Post approved' : undo.kind === 'angle' ? 'New angle locked' : isLive ? 'Post removed' : 'Day skipped'}
               <button
                 onClick={undoApprove}
+                disabled={undoBusy}
                 className="ml-1 inline-flex min-h-[32px] items-center gap-1.5 rounded-[6px] px-2.5 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/10"
               >
-                Undo
+                {undoBusy ? 'Undoing…' : 'Undo'}
                 <kbd className="inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[4px] px-1 text-[10px] leading-none" style={{ fontFamily: MONO, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}>Z</kbd>
               </button>
+              {undoError && <span role="alert">Undo did not save. Try again.</span>}
             </div>
           </motion.div>
         )}
@@ -9563,7 +9594,7 @@ export default function ClientBoardPage() {
           setSchedule={isLive ? setScheduleRPC : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
-          reviewMode={reviewMode}
+          reviewMode={reviewMode || (isLive && skin === 'desk')}
           approved={approvedIds.has(detail.id)}
         />
       )}

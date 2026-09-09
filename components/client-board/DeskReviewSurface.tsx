@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useId } from 'react';
+import { Globe2, ThumbsUp, MessageCircle, Repeat2, Send } from 'lucide-react';
+import PostSourceContext from './PostSourceContext';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
  *  copy is one click away in the post modal. */
@@ -19,118 +21,67 @@ function LivePostLink({ href }: { href: string }) {
   );
 }
 
-/** The feed's own action bar. Inert on purpose: it is scenery that tells the eye "this is a
- *  post", the way the static review pages did it. */
-const LI_ICONS: [string, string][] = [
-  ['Like', 'M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 4-8c1.5 0 2.5 1 2.5 2.5V9H19a2 2 0 0 1 2 2.3l-1 6.5A2.4 2.4 0 0 1 17.6 20H7'],
-  ['Comment', 'M21 12a8 8 0 0 1-8 8H4l2.3-2.7A8 8 0 1 1 21 12z'],
-  ['Repost', 'M17 2l4 4-4 4M21 6H8a4 4 0 0 0-4 4M7 22l-4-4 4-4M3 18h13a4 4 0 0 0 4-4'],
-  ['Send', 'M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z'],
-];
-function LiActions() {
-  return (
-    <div aria-hidden style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,.08)', marginTop: 2 }}>
-      {LI_ICONS.map(([label, d]) => (
-        <span key={label} style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center', padding: '9px 4px', fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,.6)' }}>
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-          {label}
-        </span>
-      ))}
-    </div>
-  );
+/** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
+function CardBody({ text }: { text: string }) {
+  return <div data-review-copy style={{ padding: '8px 16px 14px', fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
-/** Post copy cut where LinkedIn cuts it. The feed folds after three lines and appends an
- *  inline "…see more", so the fold itself is the review signal: the client sees exactly how
- *  much of the hook a scroller gets. Measured, never guessed from length. */
-const FOLD_LINES = 3;
-const MORE_LABEL = '…see more';
-function CardBody({ text, open, onToggle, onOpen }: { text: string; open: boolean; onToggle: () => void; onOpen: () => void }) {
-  const ref = React.useRef<HTMLDivElement | null>(null);
-  /** Characters that survive the fold. -1 means the whole post fits and there is no fold. */
-  const [keep, setKeep] = useState(-1);
-
-  React.useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.clientWidth;
-      if (!w) return;
-      const cs = getComputedStyle(el);
-      const probe = document.createElement('div');
-      probe.setAttribute('aria-hidden', 'true');
-      probe.style.cssText = `position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;width:${w}px;font:${cs.font};line-height:${cs.lineHeight};letter-spacing:${cs.letterSpacing}`;
-      document.body.appendChild(probe);
-      const lh = parseFloat(cs.lineHeight) || 20;
-      const max = lh * FOLD_LINES + 1;
-      probe.textContent = text;
-      if (probe.scrollHeight <= max) { setKeep(-1); probe.remove(); return; }
-      // Largest prefix that still fits once the "see more" label is appended to it.
-      let lo = 0; let hi = text.length;
-      while (lo < hi) {
-        const mid = Math.ceil((lo + hi) / 2);
-        probe.textContent = text.slice(0, mid).replace(/\s+$/, '') + MORE_LABEL;
-        if (probe.scrollHeight <= max) lo = mid; else hi = mid - 1;
-      }
-      probe.remove();
-      setKeep(lo);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [text]);
-
-  const folded = keep >= 0 && !open;
-  const more: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'rgba(0,0,0,.55)' };
-  return (
-    <div style={{ padding: '4px 14px 12px' }}>
-      <div
-        ref={ref}
-        role="button" tabIndex={0}
-        onClick={onOpen}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-        style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(0,0,0,.9)', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', cursor: 'pointer' }}
-      >
-        {folded ? text.slice(0, keep).replace(/\s+$/, '') : text}
-        {folded && (
-          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} style={more}>{MORE_LABEL}</button>
-        )}
-      </div>
-      {keep >= 0 && open && (
-        <button onClick={onToggle} style={{ ...more, marginTop: 4 }}>see less</button>
-      )}
-    </div>
-  );
-}
-
-/** Inline change-note box under a buffer card. Saves on blur, mirrors the register of the
- *  static review pages: an empty box means the post is good to go. */
-function CardNote({ id, onNote }: { id: string; onNote: (id: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
-  const [text, setText] = useState('');
-  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const save = async () => {
-    const note = text.trim();
-    if (!note || state === 'saving') return;
-    setState('saving');
-    const r = await onNote(id, note);
-    setState(r.ok ? 'saved' : 'error');
+/** Approval is confirmed by the parent only after the server accepts it. */
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback }: {
+  onFeedback?: (note: string) => Promise<{ ok: boolean; error?: string }>;
+  approved: boolean;
+  onApprove: () => Promise<{ ok: boolean; error?: string }> | void;
+  onChanges: () => void; onEdit: () => void; onSchedule: () => void; scheduled: boolean;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState(false);
+  const [note, setNote] = useState('');
+  const [feedbackState, setFeedbackState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const feedbackId = useId();
+  const sendFeedback = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!note.trim() || feedbackState === 'saving' || pending || !onFeedback) return;
+    setFeedbackState('saving');
+    try {
+      const result = await onFeedback(note.trim());
+      if (!result.ok) { setFeedbackState('error'); return; }
+      setNote(''); setFeedbackState('saved');
+    } catch { setFeedbackState('error'); }
+  };
+  const approve = async () => {
+    if (pending) return;
+    setPending(true); setError(false);
+    try { const result = await onApprove(); if (result && !result.ok) setError(true); }
+    catch { setError(true); }
+    finally { setPending(false); }
   };
   return (
-    <div style={{ padding: '9px 2px 0' }}>
-      <textarea
-        value={text}
-        onChange={(e) => { setText(e.target.value); if (state !== 'idle') setState('idle'); }}
-        onBlur={save}
-        rows={2}
-        placeholder="Change anything? Write it here, or rewrite the line your way. Empty = good to post."
-        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '9px 11px', borderRadius: 9, border: '1px solid var(--cb-line)', background: 'var(--cb-paper-sunk, #EFEBE3)', font: 'inherit', fontSize: 12.5, lineHeight: 1.5, color: 'var(--cb-ink)' }}
-      />
-      {state !== 'idle' && (
-        <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
-          {state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved — we pick this up' : "Didn't save, try again"}
+    <div data-review-actions style={{ padding: '8px 2px 0' }}>
+      {onFeedback && <form onSubmit={sendFeedback} style={{ marginBottom: 8 }}>
+        <label htmlFor={feedbackId} style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Feedback on this post</label>
+        <textarea id={feedbackId} value={note} rows={2} disabled={feedbackState === 'saving'}
+          onChange={event => { setNote(event.target.value); setFeedbackState('idle'); }}
+          placeholder="What would you change?"
+          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 64, resize: 'vertical', padding: '9px 11px', fontFamily: 'inherit', fontSize: 14, lineHeight: 1.4, border: '1px solid var(--cb-line, #ccc)', borderRadius: 6, background: '#fff', color: 'var(--cb-ink)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
+          <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
+            style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? .5 : 1 }}>
+            {feedbackState === 'saving' ? 'Saving feedback…' : 'Send feedback'}
+          </button>
+          {feedbackState === 'saved' && <span role="status" style={{ fontSize: 13 }}>Feedback saved</span>}
+          {feedbackState === 'error' && <span role="alert" style={{ fontSize: 13, color: '#a12622' }}>Feedback did not save. Your text is kept. Try again.</span>}
         </div>
-      )}
+      </form>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {approved
+          ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
+          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+        {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
+        <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>
+        <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
+      </div>
+      <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{approved ? (scheduled ? 'Approved. Scheduled time stays as set.' : 'Approved. Still in the buffer until scheduled.') : 'Approval saves your sign-off. Scheduling is separate.'}</div>
+      {error && <div role="alert" style={{ fontSize: 14, marginTop: 6, color: '#a12622' }}>Approval did not save. Try Approve post again.</div>}
     </div>
   );
 }
@@ -156,7 +107,7 @@ import {
  * The freed-slot panel (skips/replacements/pool/bench/onRestore/onPick*) renders in the
  * row body — see the panel block below the row header.
  *
- * A handful of the original's callbacks (onApprove/onRemove/leftEmpty/replacements/pool/
+ * A handful of the original's callbacks (onRemove/leftEmpty/replacements/pool/
  * the approved reference for this tab — they are kept in the prop interface for wiring parity
  * with ReviewSurface (so the integrator can pass the exact same object through both surfaces),
  * but this file does not invoke them. See the build report for the full list.
@@ -343,14 +294,16 @@ export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
-  foldPhotos, foldCalendar, live = false, fetchHistory, onNote,
+  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback,
 }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
   live?: boolean;
-  onApprove: (id: string) => void;
+  onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void;
+  approvedIds?: Set<string>;
+  onFeedback?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
   onRemove?: (id: string) => void;
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (id: string) => void;
@@ -374,16 +327,13 @@ export default function DeskReviewSurface({
   /** Live board: per-draft history (client_board_draft_history RPC), fanned across the whole
    *  queue for the Changes log. Absent on preview/demo boards — the log renders nothing. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
-  /** Live board: save a change note against one draft (request_changes). Absent on
-   *  preview boards — the note box then renders nothing. */
-  onNote?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   // Unused-here wiring kept for interface parity with ReviewSurface (see file header):
-  // onApprove, onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
+  // onRemove, leftEmpty, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty,
   // onClearDay, onEditPromo, replacements, pool, benchFor, onRestore, onPickReplacement,
   // onPickReplacementAngle, skips — none has a block in the approved reference.
   // (foldPhotos DOES render — the photo library block near the foot of the list view.)
-  void onApprove; void onRemove; void leftEmpty; void onLeaveEmpty; void onRefillDay; void onBackToBuffer;
+  void onRemove; void leftEmpty; void onLeaveEmpty; void onRefillDay; void onBackToBuffer;
   void onLeaveDayEmpty; void onClearDay; void onEditPromo; void replacements; void pool; void benchFor;
   void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
@@ -415,7 +365,7 @@ export default function DeskReviewSurface({
   let reviewRows: QueueItem[] = [];
   if (live) {
     upNextRows = board.queue.filter((q) => stageOf(q) !== 'published' && stageOf(q) !== 'drafted' && isScheduledLocal(q)).slice().sort(byDate);
-    bufferRows = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduledLocal(q));
+    bufferRows = board.queue.filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && !isScheduledLocal(q));
   } else {
     reviewRows = board.queue.filter((q) => stageOf(q) === 'review').slice().sort(byDate);
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
@@ -495,8 +445,6 @@ export default function DeskReviewSurface({
   // always renders, the rows toggle. ----
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   /** Per-card body expansion in the 2-up buffer grid. */
-  const [cardOpen, setCardOpen] = useState<Record<string, boolean>>({});
-  const toggleCard = (id: string) => setCardOpen((p) => ({ ...p, [id]: !p[id] }));
   const sectionOpen = (key: string) => openSections[key] ?? key !== 'published';
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
   const [logOpen, setLogOpen] = useState(false);
@@ -649,8 +597,8 @@ export default function DeskReviewSurface({
           </div>
           {bucket !== 'published' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-              <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-              <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
+              <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+              <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
               {!live && <Pill onClick={() => onOpen(q, { changing: true })}>Swap slot</Pill>}
             </div>
           )}
@@ -707,44 +655,40 @@ export default function DeskReviewSurface({
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
-    const isOpen = !!cardOpen[q.id];
     /* Where the post came from sits ABOVE the simulation (2026-09-07, Ivan: "the source of the
        content should be seen above each html simulation"). Same provenance the list view and
        the detail modal already show; the quote is the founder's own line from that call. */
     const src = sourceChipLocal(q);
-    const srcQuote = (src?.quote || '').replace(/\s+/g, ' ').trim();
-    const srcQuoteShort = srcQuote.length > 120 ? srcQuote.slice(0, 117).trimEnd() + '…' : srcQuote;
     return (
-      <div key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      {src && src.label && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'baseline', flexWrap: 'wrap', padding: '0 2px 6px', minWidth: 0, lineHeight: 1.35 }} title={srcQuote || undefined}>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: 'none' }}>Source</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cb-ink)' }}>{src.label}{src.meta ? ` · ${src.meta}` : ''}</span>
-          {srcQuoteShort && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', flex: '1 1 100%', minWidth: 0 }}>“{srcQuoteShort}”</span>}
-        </div>
-      )}
-      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
+      <div data-review-card={q.id} key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
+      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: '#202020', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif' }}>
         <div
           role="button" tabIndex={0}
           onClick={() => onOpen(q)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ padding: '12px 14px 6px', cursor: 'pointer' }}
+          style={{ padding: '14px 16px 6px', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{initials}</div>
+            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}</div>
             <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,.9)' }}>{fName}</span>
-              {board.founder?.headline && <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>{board.founder.headline}</span>}
-              <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>1d · <span aria-hidden>🌐</span></span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#202020' }}>{fName}</span>
+              {board.founder?.headline && <span style={{ fontSize: 12, color: '#666666' }}>{board.founder.headline}</span>}
+              <span style={{ fontSize: 12, color: '#666666', display: 'inline-flex', alignItems: 'center', gap: 4 }}>LinkedIn preview · <Globe2 size={12} aria-label="Public" /></span>
             </div>
             <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
           </div>
         </div>
-        <CardBody text={bodyText} open={isOpen} onToggle={() => toggleCard(q.id)} onOpen={() => onOpen(q)} />
+        <CardBody text={bodyText} />
         {deck.length >= 2
           ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
-        <LiActions />
+        <div className="cb-linkedin-actions" data-linkedin-actions aria-label="LinkedIn action bar preview" style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #e0dfdc', margin: '0 14px', padding: '11px 0', color: '#666', gap: 4 }}>
+          {[[ThumbsUp, 'Like'], [MessageCircle, 'Comment'], [Repeat2, 'Repost'], [Send, 'Send']].map(([Icon, label]) => {
+            const ActionIcon = Icon as typeof ThumbsUp;
+            return <span key={label as string} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}><ActionIcon size={19} strokeWidth={1.7} aria-hidden />{label as string}</span>;
+          })}
+        </div>
       </div>
       {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post.
           2026-09-07 (Ivan): the buffer's Review grid drops the tag row ("no date yet · in buffer ·
@@ -754,14 +698,8 @@ export default function DeskReviewSurface({
         {bucket !== 'buffer' && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
         {bucket !== 'buffer' && chip && <Chip>{chip.label}</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
-        {bucket !== 'published' && (
-          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
-            <Pill onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
-            <Pill onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
-          </span>
-        )}
       </div>
-      {onNote && bucket !== 'published' && <CardNote id={q.id} onNote={onNote} />}
+      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
       </div>
     );
   };
@@ -846,8 +784,11 @@ export default function DeskReviewSurface({
   return (
     <div data-surface="review">
       <style>{`
-        .cb-licard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
-        @media (max-width: 640px) { .cb-licard-grid { grid-template-columns: minmax(0, 1fr); } }
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; }
+        .cb-licard-grid > div { width: 100%; max-width: 552px; justify-self: center; }
+        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible, .cb-licard-grid textarea:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
+        @media (max-width: 360px) { .cb-linkedin-actions > span { flex-direction: column; gap: 4px !important; flex: 1; min-width: 0; } .cb-linkedin-actions svg { flex-shrink: 0; } }
+        @media (max-width: 480px) { .cb-licard-grid textarea { font-size: 16px !important; } .cb-licard-grid [data-review-copy] { padding: 8px 16px 14px !important; } }
       `}</style>
 
       {/* Block 1: computed headline. */}
@@ -960,7 +901,7 @@ export default function DeskReviewSurface({
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
               {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer', (
                 <>
-                  {view === 'feed' && <Footnote>Cut where LinkedIn cuts it.</Footnote>}
+                  {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
                   <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
                   <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
                 </>
