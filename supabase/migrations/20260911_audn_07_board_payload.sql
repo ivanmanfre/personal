@@ -320,14 +320,6 @@ begin
   )
   select coalesce(jsonb_agg(jsonb_build_object(
            'person_key',        ppl.person_key,
-           -- COMPATIBILITY ALIAS, same value as person_key. The run-04 board
-           -- component (components/client-board/AudienceSection.tsx, commit
-           -- 16c862e) types this field as `person_ref` and uses it as a React
-           -- key; every other audn_ object in the schema calls it person_key.
-           -- CONTRACTS 2.2 names neither. Both are emitted so the two seats'
-           -- work fits together without either editing the other's files.
-           -- RELEASE ITEM: pick ONE name and drop the other before this ships.
-           'person_ref',        ppl.person_key,
            'label',             coalesce(lab.label, 'unknown'),
            'posts',             ppl.posts,
            'first_observed_at', to_jsonb(ppl.first_observed_at),
