@@ -28,6 +28,8 @@ import OutreachTopOfPanel, {
 import type { FunnelSignals } from './client-board/OutreachTopOfPanel';
 import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import { expectationFor } from './client-board/expectation';
+import { AudienceSection } from './client-board/AudienceSection';
+import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
 import { useMetadata } from '../hooks/useMetadata';
@@ -6741,7 +6743,16 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
   );
 }
 
-function PerformanceSurface({ board, accent, live = false, showAim = false }: { board: Board; accent: string; live?: boolean; showAim?: boolean }) {
+/** Exported so the audience-section smoke test can render the BLACKBOX skin's
+ *  performance surface directly, the same way DeskPerformanceSurface is rendered
+ *  for the desk skin. Nothing else imports it; the page still uses it locally. */
+export function PerformanceSurface({ board, accent, live = false, showAim = false, audience, onAudienceDecide }: {
+  board: Board; accent: string; live?: boolean; showAim?: boolean;
+  /** The audience review payload, or null when the feature is not on for this
+   *  client. Null renders NOTHING here, never a placeholder (run 03 CONTRACTS §4). */
+  audience?: AudiencePayload | null;
+  onAudienceDecide?: DecideFn;
+}) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
   const indicators = perf?.indicators || [];
@@ -6962,6 +6973,10 @@ function PerformanceSurface({ board, accent, live = false, showAim = false }: { 
           </div>
         </div>
       )}
+
+      {/* The audience review, below the posts block. Renders nothing at all when
+          the client's audience feature is off (payload null). */}
+      <AudienceSection audience={audience} live={live} onDecide={onAudienceDecide} />
     </div>
   );
 }
@@ -7992,6 +8007,65 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token]);
 
+  // Audience review (live): the reviewed-audience block on the performance tab.
+  // Same token/session routing as funnelSignals directly above, and the same
+  // progressive-enhancement posture: any failure, any `ok:false`, or a null
+  // `audience` (the feature is not on for this client, or the client has no
+  // manifest row) simply leaves the section unrendered. The RPC resolves the
+  // client id from client_boards.client_id server-side; the page never sends one
+  // and never derives one from the slug.
+  const [audience, setAudience] = useState<AudiencePayload | null>(null);
+  const [audienceNonce, setAudienceNonce] = useState(0);
+  useEffect(() => {
+    if (state !== 'ready' || !slug) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_audience', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_audience_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; audience?: AudiencePayload | null } | null;
+        if (!out?.ok || !out.audience) return;
+        setAudience(out.audience);
+      } catch { /* the audience block is progressive enhancement — absent = not shown */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token, audienceNonce]);
+
+  // Recording accepted / rejected / deferred. Writes ONE audit row through the
+  // RPC pair and nothing else: no idea status, no draft, no schedule, no
+  // outreach object. On success the payload is re-read so the recorded decision
+  // is server truth on screen, not an optimistic local overlay.
+  const decideAudience: DecideFn = async (ref, decision, reason) => {
+    if (!slug) return false;
+    if (mode === 'demo' || mode === 'preview') return false;
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token) {
+        resp = await supabase.rpc('client_board_audience_decide', {
+          p_slug: slug, p_token: token, p_ref: ref, p_decision: decision, p_reason: reason });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return false;
+        resp = await supabase.rpc('client_board_audience_decide_v2', {
+          p_slug: slug, p_session: sess.token, p_ref: ref, p_decision: decision, p_reason: reason });
+      }
+      if (resp.error) return false;
+      const out = resp.data as { ok?: boolean } | null;
+      if (!out?.ok) return false;
+      setAudienceNonce((n) => n + 1);
+      return true;
+    } catch { return false; }
+  };
+
   // Slot state (live): a removed slot — and any replacement pulled into it — is
   // reconstructed from the insert-only action log so it SURVIVES a hard refresh (and
   // shows the same on any device). This is the server truth; localStorage is only a
@@ -9020,8 +9094,8 @@ export default function ClientBoardPage() {
       : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: skin === 'desk'
-      ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim />
-      : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} />,
+      ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />
+      : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };

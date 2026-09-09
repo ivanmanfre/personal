@@ -3,7 +3,9 @@
  * (components/ClientBoardPage.tsx, function around L6195).
  *
  * WIRING PRESERVED FROM THE ORIGINAL
- * - Props are byte-identical: `{ board, accent, live?, showAim? }`.
+ * - Props were byte-identical `{ board, accent, live?, showAim? }`; two OPTIONAL props
+ *   were added for the audience review block (`audience`, `onAudienceDecide`). Omitting
+ *   both leaves every existing call site and every rendered pixel unchanged.
  * - The ghost-vs-live indicator rule is kept exactly: an indicator renders as LIVE only
  *   when `captured_at` is stamped; otherwise it stays the honest not-yet-measured ghost
  *   (a dashed Blank box, no invented value). A seeded value with no stamp can never
@@ -35,6 +37,8 @@ import {
 } from './desk-kit';
 import type { Board, QueueItem, PerfIndicator, PerfPost } from '../ClientBoardPage';
 import { expectationFor } from './expectation';
+import { AudienceSection } from './AudienceSection';
+import type { AudiencePayload, DecideFn } from './AudienceSection';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Local helpers — small private utilities from the original PerformanceSurface
@@ -138,8 +142,14 @@ type Week = {
 };
 
 export function DeskPerformanceSurface({
-  board, accent, live = false, showAim = false,
-}: { board: Board; accent: string; live?: boolean; showAim?: boolean }) {
+  board, accent, live = false, showAim = false, audience, onAudienceDecide,
+}: {
+  board: Board; accent: string; live?: boolean; showAim?: boolean;
+  /** The audience review payload, or null/undefined when the feature is not on
+   *  for this client. Null renders NOTHING, never a placeholder. */
+  audience?: AudiencePayload | null;
+  onAudienceDecide?: DecideFn;
+}) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
   const indicators = perf?.indicators || [];
@@ -694,6 +704,10 @@ export function DeskPerformanceSurface({
           </div>
         </Drill>
       )}
+
+      {/* Block 8: the audience review. Renders below the posts block, and renders
+          nothing at all when the client's audience feature is off (payload null). */}
+      <AudienceSection audience={audience} live={live} onDecide={onAudienceDecide} />
     </div>
   );
 }
