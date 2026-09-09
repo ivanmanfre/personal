@@ -3,17 +3,87 @@
 -- goal-run audience-learning-02-foundation-2026-09-09, foundation seat.
 -- Worklist: W01 (post identity), W02 (canonical interaction events),
 --           W03 (two-store reconciliation), W06 (timing confidence),
---           W10 (person activity / return signals).
+--           W10 (person activity / return signals),
+--           W12 / W25 (operator + team exclusion made READABLE IN SQL).
 --
 -- Depends on: 01_functions (audn_person_key, audn_urn_kind, audn_urn_digits).
--- Source tables (all pre-existing): own_posts, client_post_metrics,
---   post_engagers, client_post_engagers, client_post_comments,
---   ivan_post_outcome_spine.
+-- Source tables (all pre-existing): client_registry, own_posts,
+--   client_post_metrics, post_engagers, client_post_engagers,
+--   client_post_comments, ivan_post_outcome_spine.
 --
 -- security_invoker = true on every view: the caller's RLS decides what they
 -- see. A security-definer read path here would let any role that can select the
 -- view read every client's rows, which is exactly the tenant leak §3.1 forbids.
 -- ============================================================================
+
+-- ---------------------------------------------------------------------------
+-- audn_excluded_person_v — the measurement exclusion list, as rows (W12 / W25).
+--
+-- Until this view existed the exclusion list lived ONLY in client configuration
+-- (client_registry.platform->'measurement'->'exclusions', staged in
+-- OUT/staged/manifests/<client>.json). Nothing in SQL could read it, so the
+-- claim "the views expose is_operator so consumers can exclude without deleting
+-- rows" was config, not code. This view is the code.
+--
+-- One row per (client_id, person_key, exclusion_kind):
+--   operator  <- platform.measurement.exclusions.operator_person_keys
+--                (the operator's own account — Ivan engages his clients' posts;
+--                counting him as audience inflates every RISE/ARCH denominator)
+--   team      <- platform.measurement.exclusions.team_person_keys
+--
+-- FAIL-QUIET BY CONSTRUCTION. A client with no registry row, a NULL platform,
+-- no measurement block, no exclusions block, or a key holding something other
+-- than an array contributes ZERO rows and raises nothing. Every step is guarded
+-- with jsonb_typeof rather than assuming shape: a config typo must not take the
+-- measurement views down.
+--
+-- distinct: a key repeated in the config is one exclusion, not two.
+--
+-- NOTHING IS FILTERED HERE OR ANYWHERE DOWNSTREAM. This view only makes the
+-- list joinable; audn_person_activity_v / audn_person_label_v /
+-- audn_relationship_v carry is_operator + is_excluded as FLAGS and still emit
+-- every person. Deleting the rows would destroy the evidence that the operator
+-- engaged at all; flagging them lets Run 03 exclude them from denominators and
+-- still show the raw count beside the adjusted one.
+-- ---------------------------------------------------------------------------
+create or replace view public.audn_excluded_person_v
+with (security_invoker = true) as
+with cfg as (
+  select
+    cr.client_id,
+    case
+      when jsonb_typeof(cr.platform) = 'object'
+       and jsonb_typeof(cr.platform -> 'measurement') = 'object'
+       and jsonb_typeof(cr.platform -> 'measurement' -> 'exclusions') = 'object'
+      then cr.platform -> 'measurement' -> 'exclusions'
+      else '{}'::jsonb
+    end                                                     as ex
+  from public.client_registry cr
+  where nullif(btrim(cr.client_id), '') is not null
+),
+keys as (
+  select client_id, 'operator'::text as exclusion_kind, 'operator_person_keys'::text as cfg_key
+  from cfg
+  union all
+  select client_id, 'team'::text, 'team_person_keys'::text
+  from cfg
+)
+select distinct
+  cfg.client_id,
+  btrim(k.person_key)                                       as person_key,
+  keys.exclusion_kind
+from cfg
+join keys on keys.client_id = cfg.client_id
+cross join lateral jsonb_array_elements_text(
+  case when jsonb_typeof(cfg.ex -> keys.cfg_key) = 'array'
+       then cfg.ex -> keys.cfg_key
+       else '[]'::jsonb
+  end
+) as k(person_key)
+where nullif(btrim(k.person_key), '') is not null;
+
+comment on view public.audn_excluded_person_v is
+  'Measurement exclusion list as rows, expanded from client_registry.platform->measurement->exclusions (operator_person_keys -> kind operator, team_person_keys -> kind team). A client with no manifest, no measurement block or no exclusions contributes zero rows. Nothing is filtered anywhere: consumers join this and exclude, they never delete (W12 / W25).';
 
 -- ---------------------------------------------------------------------------
 -- audn_post_identity_v — one row per published post, per owning client.
@@ -302,6 +372,13 @@ by_event_time as (
   where event_time is not null
   group by 1, 2
   having max(event_time) - min(event_time) >= interval '24 hours'
+),
+excl as (
+  -- W12 / W25. LEFT JOINED, NEVER FILTERED — see audn_excluded_person_v.
+  select client_id, person_key,
+         bool_or(exclusion_kind = 'operator') as is_operator
+  from public.audn_excluded_person_v
+  group by 1, 2
 )
 select
   a.client_id,
@@ -316,12 +393,16 @@ select
     when b.person_key  is not null then 'bounded'
     when et.person_key is not null then 'event_time'
     else 'unknown'
-  end::text                                                  as return_timing
+  end::text                                                  as return_timing,
+  coalesce(x.is_operator, false)                             as is_operator,
+  (x.person_key is not null)                                 as is_excluded
 from agg a
 left join by_event_time et
   on et.client_id = a.client_id and et.person_key = a.person_key
 left join bounded b
-  on b.client_id = a.client_id and b.person_key = a.person_key;
+  on b.client_id = a.client_id and b.person_key = a.person_key
+left join excl x
+  on x.client_id = a.client_id and x.person_key = a.person_key;
 
 comment on view public.audn_person_activity_v is
-  'One row per (client_id, person_key). observed_across_posts is a named signal, never a return; confirmed_return needs platform event times 24h apart or a publication-time bound (CONTRACTS §3.3, handoff C1).';
+  'One row per (client_id, person_key). observed_across_posts is a named signal, never a return; confirmed_return needs platform event times 24h apart or a publication-time bound (CONTRACTS §3.3, handoff C1). is_operator / is_excluded are FLAGS from audn_excluded_person_v: no row is dropped, and any Run 03 denominator must exclude the flagged people itself (W12 / W25).';

@@ -2,8 +2,9 @@
 -- Audience-learning measurement foundation — 04 / classification + relationship.
 -- goal-run audience-learning-02-foundation-2026-09-09, foundation seat.
 -- Worklist: W04 / W11 (classification with slug + version + unknown as a value),
---           W03 (RISE two-store reconciliation), W12 (relationship as-of limit),
---           W25 (conflict never averaged), W30/W31 (label provenance).
+--           W03 (RISE two-store reconciliation), W12 (relationship as-of limit,
+--           operator exclusion flag), W25 (conflict never averaged, exclusion
+--           list), W30/W31 (label provenance).
 --
 -- Depends on: 01_functions, 03_views_identity_events.
 -- Source tables: post_engagers, client_post_engagers, client_post_metrics,
@@ -115,6 +116,13 @@ stats as (
          count(distinct label)::int as n_labels
   from c
   group by 1, 2
+),
+excl as (
+  -- W12 / W25. LEFT JOINED, NEVER FILTERED — see audn_excluded_person_v.
+  select client_id, person_key,
+         bool_or(exclusion_kind = 'operator') as is_operator
+  from public.audn_excluded_person_v
+  group by 1, 2
 )
 select
   l.client_id,
@@ -124,13 +132,17 @@ select
   l.classifier_version,
   l.judged_at,
   (s.n_labels > 1) as conflict,
-  s.n_rows
+  s.n_rows,
+  coalesce(x.is_operator, false) as is_operator,
+  (x.person_key is not null)     as is_excluded
 from latest l
 join stats s
-  on s.client_id = l.client_id and s.person_key = l.person_key;
+  on s.client_id = l.client_id and s.person_key = l.person_key
+left join excl x
+  on x.client_id = l.client_id and x.person_key = l.person_key;
 
 comment on view public.audn_person_label_v is
-  'Latest label per person per client; conflict is flagged and never averaged (CONTRACTS §3.4).';
+  'Latest label per person per client; conflict is flagged and never averaged (CONTRACTS §3.4). is_operator / is_excluded are FLAGS from audn_excluded_person_v — the operator keeps his label row, and any Run 03 denominator excludes him itself (W12 / W25).';
 
 -- ---------------------------------------------------------------------------
 -- audn_rise_reconciliation_v — the two RISE stores, side by side.
@@ -230,6 +242,13 @@ picked as (
          client_id, person_key, prospect_id, campaign_id, stage, updated_at
   from scoped_prospects
   order by client_id, person_key, updated_at desc nulls last, prospect_id
+),
+excl as (
+  -- W12 / W25. LEFT JOINED, NEVER FILTERED — see audn_excluded_person_v.
+  select client_id, person_key,
+         bool_or(exclusion_kind = 'operator') as is_operator
+  from public.audn_excluded_person_v
+  group by 1, 2
 )
 select
   pe.client_id,
@@ -244,10 +263,14 @@ select
   end::text                                          as source,
   pk.updated_at                                      as effective_date,
   pk.prospect_id::uuid                               as prospect_id,
-  pk.campaign_id::uuid                               as campaign_id
+  pk.campaign_id::uuid                               as campaign_id,
+  coalesce(x.is_operator, false)                     as is_operator,
+  (x.person_key is not null)                         as is_excluded
 from people pe
 left join picked pk
-  on pk.client_id = pe.client_id and pk.person_key = pe.person_key;
+  on pk.client_id = pe.client_id and pk.person_key = pe.person_key
+left join excl x
+  on x.client_id = pe.client_id and x.person_key = pe.person_key;
 
 comment on view public.audn_relationship_v is
-  'Current prospect stage per person, client-scoped through outreach_campaigns.client_id (Ivan = NULL). No stage history exists, so effective_date is updated_at and as-of reconstruction is unavailable (Run 01 D02).';
+  'Current prospect stage per person, client-scoped through outreach_campaigns.client_id (Ivan = NULL). No stage history exists, so effective_date is updated_at and as-of reconstruction is unavailable (Run 01 D02). is_operator / is_excluded are FLAGS from audn_excluded_person_v; no row is removed (W12 / W25).';

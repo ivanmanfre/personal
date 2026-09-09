@@ -3,3 +3,4 @@
 drop view if exists public.audn_person_activity_v;
 drop view if exists public.audn_interaction_events_v;
 drop view if exists public.audn_post_identity_v;
+drop view if exists public.audn_excluded_person_v;
