@@ -319,7 +319,31 @@ begin
      where r.client_id = p_client_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
-           'person_key',        ppl.person_key,
+           -- OPAQUE TOKEN, NOT THE PERSON. The board payload crosses into an
+           -- anon browser (the v1 wrapper is a token-gated anon surface), and
+           -- ppl.person_key is the raw LinkedIn person urn. The board needs a
+           -- stable per-row identity for a React key and for reconciling one
+           -- render against the next; it does NOT need — and must never be
+           -- handed — the urn itself, which is a directly resolvable identifier
+           -- for a real person on a third-party platform. So what leaves the
+           -- database is md5(person_key || ':' || client_id):
+           --   * stable — same person under the same client always hashes to the
+           --     same 32-hex token, across replays and across renders, so keys
+           --     and reconciliation hold;
+           --   * per-client — the client_id is in the input, so the SAME person
+           --     is a DIFFERENT token under a different client and the tokens
+           --     cannot be joined across tenants to re-identify anybody;
+           --   * non-reversible — a one-way digest; nothing in the payload can
+           --     be turned back into the urn.
+           -- md5() and not encode(digest(...,'sha256'),'hex'): pgcrypto is NOT
+           -- created by this migration set (grep 'create extension' over
+           -- audn_01..06 — there is none), so digest() is not guaranteed to
+           -- exist wherever these migrations are applied. md5() is a core
+           -- built-in. This is an opacity boundary, not a password hash, so the
+           -- md5/sha256 distinction does not carry security weight here.
+           -- Nothing downstream may treat this value as a person_key: it does
+           -- not join to any audn_ view. It is a display-layer row identity.
+           'person_key',        md5(ppl.person_key || ':' || p_client_id),
            'label',             coalesce(lab.label, 'unknown'),
            'posts',             ppl.posts,
            'first_observed_at', to_jsonb(ppl.first_observed_at),
