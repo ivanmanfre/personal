@@ -24,10 +24,18 @@ export const AUDIENCE_COPY = {
   eyebrow: 'Audience review',
   postsBlurb: (n: number) => (n === 1 ? 'post reviewed' : 'posts reviewed'),
 
-  /** The headline. Two clauses: what was reviewed, then the one finding. */
+  /**
+   * The headline. Two clauses: what was reviewed, then the one finding.
+   *
+   * IT DOES NOT ADD PEOPLE UP. Per-post people counts are distinct WITHIN a post;
+   * one person who engaged with three posts is one person three times over, so
+   * summing the columns would report a distinct-people total that is simply
+   * wrong (measurement contract rule 3). The payload carries no cross-post
+   * distinct count, so the second clause states coverage instead, which is exact.
+   */
   headline: {
-    withPeople: (posts: number, people: number) =>
-      `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed. ${people} ${people === 1 ? 'person' : 'people'} we can name engaged with them.`,
+    withCoverage: (posts: number, withPeople: number) =>
+      `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed. People collected on ${withPeople} of ${posts === 1 ? 'it' : 'them'}.`,
     postsOnly: (posts: number) =>
       `${posts} ${posts === 1 ? 'post' : 'posts'} reviewed.`,
     nothingYet: 'Nothing reviewed yet.',
@@ -156,14 +164,19 @@ export const AUDIENCE_COPY = {
       positiveOne: '1 looks like your buyer',
       borderline: (n: number) => `${n} possible`,
       unknown: (n: number) => `${n} not judged yet`,
+      /** people minus (positive + borderline + unknown). Named so the four
+       *  numbers reconcile with the total instead of leaving a silent gap. */
+      notAFit: (n: number) => `${n} not a fit`,
       excluded: (n: number) => `${n} from our team, not counted`,
     },
+    /** Under the ledger. People are distinct within a post, never across posts. */
+    notSummed: 'People are counted for each post on its own. Someone who engaged with two of your posts appears on both, so these columns do not add up to a total.',
     assisted: (n: number) =>
       `Assisted ${n} booked ${n === 1 ? 'call' : 'calls'}`,
     assistedNote: 'A booked call is counted once. It is shown against a post when the person engaged with that post before the call was booked.',
-    impressions: (n: string) => `${n} reads`,
-    comments: (n: string) => `${n} comments`,
-    shares: (n: string) => `${n} shares`,
+    impressions: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'read' : 'reads'}`,
+    comments: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'comment' : 'comments'}`,
+    shares: (n: number) => `${n.toLocaleString()} ${n === 1 ? 'share' : 'shares'}`,
   },
 
   // ── monthly trend ───────────────────────────────────────────────────────

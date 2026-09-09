@@ -442,10 +442,17 @@ const SKIN_VARS: Record<string, Record<string, string>> = {
 
 const BASE_BOARD: Board = { company_name: 'Test Co', queue: [], performance: { posts: [] } } as Board;
 
-export function renderSkin(skin: 'desk' | 'blackbox', audience: unknown, live = true): string {
+const NOOP_DECIDE = async () => true;
+
+export function renderSkin(
+  skin: 'desk' | 'blackbox', audience: unknown, live = true,
+  /** Present on a live board, absent on a preview board — exactly how
+   *  ClientBoardPage wires it (`isLive ? decideAudience : undefined`). */
+  onDecide: (() => Promise<boolean>) | undefined = live ? NOOP_DECIDE : undefined,
+): string {
   const surface = skin === 'desk'
-    ? <DeskPerformanceSurface board={BASE_BOARD} accent="#FFC71D" live={live} showAim audience={audience as never} />
-    : <PerformanceSurface board={BASE_BOARD} accent="#C8361B" live={live} showAim={false} audience={audience as never} />;
+    ? <DeskPerformanceSurface board={BASE_BOARD} accent="#FFC71D" live={live} showAim audience={audience as never} onAudienceDecide={onDecide as never} />
+    : <PerformanceSurface board={BASE_BOARD} accent="#C8361B" live={live} showAim={false} audience={audience as never} onAudienceDecide={onDecide as never} />;
   return renderToStaticMarkup(
     <div data-skin={skin} style={SKIN_VARS[skin] as React.CSSProperties}>{surface}</div>,
   );
@@ -528,6 +535,28 @@ describe('AudienceSection: what the normal state actually shows', () => {
     expect(html).toContain(AUDIENCE_COPY.posts.people.excluded(1));
   });
 
+  it('names the remainder so the parts reconcile with the total, and shows no zero buckets', () => {
+    // the 1 Sep post has 2 people, 1 of them positive: the other is named, not
+    // left as a silent gap, and the empty buckets are not printed as zeros
+    expect(html).toContain(AUDIENCE_COPY.posts.people.notAFit(1));
+    expect(html).not.toContain(AUDIENCE_COPY.posts.people.borderline(0));
+    expect(html).not.toContain(AUDIENCE_COPY.posts.people.unknown(0));
+  });
+
+  it('never adds people across posts into a distinct-people total', () => {
+    // one person engaged with two of the three posts, so 2 + 3 = 5 would be a
+    // wrong distinct count. The headline states coverage instead.
+    expect(html).toContain(AUDIENCE_COPY.headline.withCoverage(3, 2));
+    expect(html).not.toMatch(/5 people we can name/);
+    expect(html).toContain(AUDIENCE_COPY.posts.notSummed);
+  });
+
+  it('pluralises the per-post counts', () => {
+    expect(html).toContain('1 comment');
+    expect(html).not.toContain('1 comments');
+    expect(html).not.toContain('1 shares');
+  });
+
   it('renders a dashed blank, never a zero, for the post nobody engaged', () => {
     expect(html).toContain(AUDIENCE_COPY.posts.people.none);
     expect(html).toContain('cb-blank');
@@ -581,6 +610,18 @@ describe('AudienceSection: decision controls', () => {
     expect(html).toContain(AUDIENCE_COPY.decision.reject);
     expect(html).toContain(AUDIENCE_COPY.decision.defer);
   });
+
+  it('are live buttons, not dead spans, when a live board hands over a decide fn', () => {
+    const html = renderSkin('desk', FIXTURES.normal, true);
+    expect(html).not.toContain(AUDIENCE_COPY.decision.previewNote);
+    expect(html).not.toContain('disabled=""');
+    // the kit renders a real <button> only when an onClick was given
+    expect(html).toMatch(/<button type="button" class="pill[^"]*"[^>]*>Use it<\/button>/);
+  });
+
+  // (a live board with no decide fn is not a state the page can produce:
+  //  ClientBoardPage passes `isLive ? decideAudience : undefined`, so the two
+  //  always travel together.)
 });
 
 describe('W18: one expectationFor, no retired timing copy left in the tree', () => {

@@ -146,6 +146,28 @@ function postUrl(id: string): string | null {
   return digits ? `https://www.linkedin.com/feed/update/urn:li:activity:${digits}/` : null;
 }
 
+/**
+ * The one thing this section cannot inline: the narrow-screen ledger. Below
+ * 560px a three-column table forces the middle cell down to a strip and every
+ * chip wraps three deep, so the rows become stacked blocks instead, with the
+ * date and the reactions figure sharing the top line. Every selector is
+ * `audn-`-prefixed and scoped to this section's own table; no global rule.
+ */
+const AUDN_CSS = `
+@media (max-width: 560px) {
+  .audn-led thead { display: none; }
+  .audn-led, .audn-led tbody, .audn-led td { display: block; width: auto; }
+  /* the row becomes a flex line so the date and the reactions figure sit
+     together at the top and the detail cell drops underneath them */
+  .audn-led tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px;
+                 border-bottom: 1px solid var(--cb-line); padding: 8px 0 12px; }
+  .audn-led td { border-bottom: none; padding: 3px 0; text-align: left; }
+  .audn-led td.audn-when { order: 0; flex: 0 0 auto; }
+  .audn-led td.audn-reacts { order: 1; flex: 1 1 auto; text-align: right; }
+  .audn-led td:not(.audn-when):not(.audn-reacts) { order: 2; flex: 1 1 100%; min-width: 0; }
+}
+`;
+
 const MUTE = 'var(--cb-ink-mute)';
 const INK = 'var(--cb-ink)';
 const INK_SOFT = 'var(--cb-ink-soft)';
@@ -262,9 +284,9 @@ function RecommendationCard({ rec, live, onDecide }: {
       <Field label={C.recs.proofNeeded}>
         {rec.proof_needed}
         <div style={{ marginTop: 8 }}>
-          <Chip tone={rec.asset_state === 'approved' ? 'accent' : 'default'}>
-            {C.assetState[rec.asset_state] || C.assetState.none}
-          </Chip>
+          {/* Neutral on purpose: the accent is spent on the one primary action
+              and on the best-performing row, not on a status label. */}
+          <Chip>{C.assetState[rec.asset_state] || C.assetState.none}</Chip>
         </div>
       </Field>
 
@@ -328,10 +350,15 @@ function PeopleLine({ e }: { e: AudiencePost['engagers'] }) {
       </div>
     );
   }
+  // Only non-zero buckets are named, plus the remainder, so the parts shown
+  // always reconcile with the total. `people` is the distinct-people count for
+  // THIS post; a bucket at 0 contributes nothing and saying so is noise.
   const bits: string[] = [];
-  if (e.positive !== null) bits.push(e.positive === 1 ? C.posts.people.positiveOne : C.posts.people.positive(e.positive));
-  if (e.borderline !== null) bits.push(C.posts.people.borderline(e.borderline));
-  if (e.unknown !== null) bits.push(C.posts.people.unknown(e.unknown));
+  if (e.positive) bits.push(e.positive === 1 ? C.posts.people.positiveOne : C.posts.people.positive(e.positive));
+  if (e.borderline) bits.push(C.posts.people.borderline(e.borderline));
+  if (e.unknown) bits.push(C.posts.people.unknown(e.unknown));
+  const rest = e.people - ((e.positive ?? 0) + (e.borderline ?? 0) + (e.unknown ?? 0));
+  if (rest > 0) bits.push(C.posts.people.notAFit(rest));
   if (e.excluded_operator > 0) bits.push(C.posts.people.excluded(e.excluded_operator));
   return (
     <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 9, flexWrap: 'wrap' }}>
@@ -347,6 +374,7 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
     (m, p) => Math.max(m, p.raw.reactions ?? 0), 0);
   return (
     <Ledger
+      className="audn-led"
       columns={[
         { label: C.posts.colDate, width: '1%' },
         { label: C.posts.colPost },
@@ -363,7 +391,7 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
         const url = postUrl(p.post_social_id);
         return (
           <LedgerRow key={p.post_social_id} tone={p.rank.rank === 1 ? 'best' : 'default'}>
-            <LedgerCell num align="left" width="1%" style={{ fontSize: 18 }}>
+            <LedgerCell num align="left" width="1%" className="audn-when" style={{ fontSize: 18 }}>
               {fmtDay(p.published_at)}
             </LedgerCell>
             <LedgerCell>
@@ -376,20 +404,20 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
                 ) : (
                   <span style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>{postLabel(p)}</span>
                 )}
-                <Chip tone={p.rank.rank === 1 ? 'accent' : 'default'}>{rankLine}</Chip>
+                <Chip>{rankLine}</Chip>
               </div>
               {r !== null && <LedgerBar pct={pct} tone={p.rank.rank === 1 ? 'strong' : 'muted'} />}
               <PeopleLine e={p.engagers} />
               <div style={{ marginTop: 8, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'baseline' }}>
                 <Meta>{C.posts.coverage[p.raw.coverage] || C.posts.coverage.unknown}</Meta>
                 {p.raw.captured_at && <Meta>{C.posts.capturedAt(fmtDay(p.raw.captured_at))}</Meta>}
-                {p.raw.impressions !== null && <Meta>{C.posts.impressions(fmtNum(p.raw.impressions))}</Meta>}
-                {p.raw.comments !== null && <Meta>{C.posts.comments(fmtNum(p.raw.comments))}</Meta>}
-                {p.raw.shares !== null && <Meta>{C.posts.shares(fmtNum(p.raw.shares))}</Meta>}
+                {p.raw.impressions !== null && <Meta>{C.posts.impressions(p.raw.impressions)}</Meta>}
+                {p.raw.comments !== null && <Meta>{C.posts.comments(p.raw.comments)}</Meta>}
+                {p.raw.shares !== null && <Meta>{C.posts.shares(p.raw.shares)}</Meta>}
                 {p.assisted_outcomes > 0 && <Delta dir="up">{C.posts.assisted(p.assisted_outcomes)}</Delta>}
               </div>
             </LedgerCell>
-            <LedgerCell num align="right" width="1%">
+            <LedgerCell num align="right" width="1%" className="audn-reacts">
               {r === null
                 ? <Blank style={{ maxWidth: 62, height: 30, minHeight: 30, marginLeft: 'auto' }} />
                 : fmtNum(r)}
@@ -456,17 +484,21 @@ export function AudienceSection({ audience, live = false, onDecide }: {
   if (!audience) return null;
 
   const { state, posts, recommendations, monthly_median: median, assets, freshness } = audience;
-  const peopleTotal = posts.reduce((t, p) => t + (p.engagers.people ?? 0), 0);
+  // Posts that actually have a people count. NEVER the sum of the per-post
+  // people columns: those are distinct within a post, not across posts, so a sum
+  // would report a distinct-people total that is wrong (contract rule 3).
+  const postsWithPeople = posts.filter((p) => p.engagers.people !== null && p.engagers.people > 0).length;
   const headline = state === 'empty'
     ? C.headline.nothingYet
-    : peopleTotal > 0
-      ? C.headline.withPeople(posts.length, peopleTotal)
+    : postsWithPeople > 0
+      ? C.headline.withCoverage(posts.length, postsWithPeople)
       : C.headline.postsOnly(posts.length);
   const stateLine = (C.state as Record<string, string>)[state];
   const stateChip = (C.stateChip as Record<string, string>)[state];
 
   return (
     <section data-audn-section={state} style={{ marginTop: 34 }}>
+      <style>{AUDN_CSS}</style>
       <SectionRule
         label={C.eyebrow}
         count={posts.length}
@@ -475,17 +507,19 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       />
       <DeskH2>{headline}</DeskH2>
 
-      <div style={{ marginTop: 10, display: 'flex', gap: 9, flexWrap: 'wrap' }}>
-        <Meta>{audience.reviewed_at ? C.reviewedOn(fmtDay(audience.reviewed_at)) : C.reviewedNever}</Meta>
-        <Meta>{C.cadence(audience.review_cadence)}</Meta>
-        <Meta>{freshness.snapshots_as_of
-          ? C.freshness.snapshots(fmtDay(freshness.snapshots_as_of))
-          : C.freshness.snapshotsNone}</Meta>
-        <Meta>{freshness.engagers_as_of
-          ? C.freshness.engagers(fmtDay(freshness.engagers_as_of))
-          : C.freshness.engagersNone}</Meta>
-        {state === 'stale' && <Meta>{C.freshness.staleAfter(freshness.stale_after_days)}</Meta>}
-      </div>
+      <Meta style={{ marginTop: 10 }}>
+        {[
+          audience.reviewed_at ? C.reviewedOn(fmtDay(audience.reviewed_at)) : C.reviewedNever,
+          C.cadence(audience.review_cadence),
+          freshness.snapshots_as_of
+            ? C.freshness.snapshots(fmtDay(freshness.snapshots_as_of))
+            : C.freshness.snapshotsNone,
+          freshness.engagers_as_of
+            ? C.freshness.engagers(fmtDay(freshness.engagers_as_of))
+            : C.freshness.engagersNone,
+          ...(state === 'stale' ? [C.freshness.staleAfter(freshness.stale_after_days)] : []),
+        ].join('  ·  ')}
+      </Meta>
 
       {stateLine && state !== 'normal' && (
         <div
@@ -516,7 +550,8 @@ export function AudienceSection({ audience, live = false, onDecide }: {
         <div style={{ marginTop: 30 }}>
           <SectionRule label={C.posts.heading} count={posts.length} blurb={C.posts.blurb} />
           <PostRows posts={posts} />
-          <Footnote>{C.posts.assistedNote}</Footnote>
+          <Footnote>{C.posts.notSummed}</Footnote>
+          <Footnote style={{ marginTop: 4 }}>{C.posts.assistedNote}</Footnote>
         </div>
       )}
       {posts.length === 0 && state !== 'empty' && (
