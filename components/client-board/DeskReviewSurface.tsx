@@ -780,7 +780,7 @@ export default function DeskReviewSurface({
        the detail modal already show; the quote is the founder's own line from that call. */
     const src = sourceChipLocal(q);
     return (
-      <div data-review-card={q.id} key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0, fontFamily: LI_FONT }}>
+      <div data-review-card={q.id} key={q.id} className="cb-licard" style={{ minWidth: 0, fontFamily: LI_FONT }}>
       {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
@@ -925,8 +925,17 @@ export default function DeskReviewSurface({
            page). Two columns only when each can hold a 440px card (the desk column is 804px at
            a 1100px viewport, 984px at 1280, capped at 1040) — one centred column below that,
            so a card never runs narrower than a real feed post. */
-        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; background: #f4f2ee; padding: 18px; }
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); grid-auto-rows: auto; gap: 0 24px; margin-top: 20px; align-items: start; background: #f4f2ee; padding: 18px; }
         .cb-licard-grid > div { width: 100%; max-width: 555px; justify-self: center; }
+        /* Each card is a subgrid over the four rows it renders (source line / post / chips /
+           feedback + actions), exactly like the 08-19 review page's .slot rule: the post row grows
+           to the taller card of the pair, so "Feedback on this post" and Approve start at the
+           same y in both columns (2026-09-10, Ivan: "feedback bar and feedback etc should be at
+           same height"). Rows keep their own padding as spacing; the 28px between pairs is the
+           last row's margin. Single column: same stack as before. */
+        .cb-licard-grid > .cb-licard { display: grid; grid-template-rows: subgrid; grid-row: span 4; align-self: stretch; }
+        .cb-licard-grid > .cb-licard > * { align-self: start; min-width: 0; }
+        .cb-licard-grid > .cb-licard > :last-child { margin-bottom: 28px; }
         .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
         .cb-licard-grid textarea:focus-visible { outline: 2px solid #0a66c2; border-color: #0a66c2; }
         .cb-licard-grid textarea::placeholder { color: #9a9a9a; }

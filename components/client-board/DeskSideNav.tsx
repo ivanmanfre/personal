@@ -7,8 +7,9 @@
  *   - SideNavToggle: the chevron button at the top of the menu (real <button>, 44px hit)
  *   - SideNavRailNav: one icon-or-initial per nav item for the collapsed state
  *
- * Default is expanded. The toggle only renders for skin === 'desk'; mobile (< lg) keeps
- * its own header + bottom tabs and never sees the rail.
+ * Default is collapsed (2026-09-10, Ivan: the menu starts as the rail); a stored "0" keeps
+ * it expanded, "1" collapsed. The toggle only renders for skin === 'desk'; mobile (< lg)
+ * keeps its own header + bottom tabs and never sees the rail.
  */
 import React, { useState } from 'react';
 
@@ -17,7 +18,10 @@ export const SIDENAV_WIDTH = 216;
 export const SIDENAV_RAIL_WIDTH = 56;
 
 export function readSideNavCollapsed(): boolean {
-  try { return localStorage.getItem(SIDENAV_STORAGE_KEY) === '1'; } catch { return false; }
+  try {
+    const stored = localStorage.getItem(SIDENAV_STORAGE_KEY);
+    return stored === null ? true : stored === '1';
+  } catch { return true; }
 }
 
 export function useSideNavCollapsed(): [boolean, () => void] {
