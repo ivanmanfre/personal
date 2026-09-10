@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useId } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import { Globe2, ThumbsUp, MessageCircle, Repeat2, Send } from 'lucide-react';
 import PostSourceContext from './PostSourceContext';
 
@@ -24,6 +24,95 @@ function LivePostLink({ href }: { href: string }) {
 /** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
 function CardBody({ text }: { text: string }) {
   return <div data-review-copy style={{ padding: '8px 16px 14px', fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
+}
+
+const escapeHtml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+/** Plain text out of a contentEditable: innerText folds the <div>/<br> a browser inserts on
+ *  Enter back into newlines; jsdom has no innerText, so textContent covers tests. */
+const readPlain = (el: HTMLElement) => (typeof el.innerText === 'string' ? el.innerText : (el.textContent || '')).replace(/\n+$/, '');
+
+/** In-place post text (2026-09-10, Ivan): click into the copy, type, click away, it saves.
+ *  Plain text only — HTML never enters the body. Escape puts the original back. Same
+ *  saving/saved/error line as the feedback box. The explicit Edit copy control stays as the
+ *  fallback. Clicks and keys inside never reach the card's open-the-modal handlers. */
+function InlineBody({ text, onSave, style, wrapStyle }: {
+  text: string;
+  onSave: (body: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Typography of the text itself (the host's own), and the box around text + status line. */
+  style?: React.CSSProperties;
+  wrapStyle?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef(false);
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [error, setError] = useState('');
+  const [focused, setFocused] = useState(false);
+  /* One object per text value: React writes innerHTML whenever this prop's identity changes,
+     so a fresh object on every status re-render would wipe what the client just typed. */
+  const html = useMemo(() => ({ __html: escapeHtml(text) }), [text]);
+  useEffect(() => {
+    if (state !== 'saved') return;
+    const t = setTimeout(() => setState('idle'), 3000);
+    return () => clearTimeout(t);
+  }, [state]);
+  const commit = async () => {
+    const el = ref.current;
+    setFocused(false);
+    if (!el) return;
+    if (cancelRef.current) { cancelRef.current = false; el.innerHTML = escapeHtml(text); return; }
+    const next = readPlain(el);
+    if (next.trim() === text.trim() || state === 'saving') return;
+    setState('saving'); setError('');
+    try {
+      const result = await onSave(next);
+      if (!result.ok) { setState('error'); setError(result.error || 'Could not save that. Try again.'); return; }
+      setState('saved');
+    } catch (e) { setState('error'); setError(e instanceof Error ? e.message : 'Could not save that. Try again.'); }
+  };
+  const onPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const plain = e.clipboardData.getData('text/plain');
+    if (typeof document.execCommand === 'function' && document.execCommand('insertText', false, plain)) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const node = document.createTextNode(plain);
+    range.insertNode(node);
+    range.setStartAfter(node); range.collapse(true);
+    sel.removeAllRanges(); sel.addRange(range);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') { e.preventDefault(); cancelRef.current = true; ref.current?.blur(); }
+  };
+  return (
+    <div data-inline-body-wrap onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} style={{ padding: '8px 16px 14px', ...wrapStyle }}>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Post text"
+        data-inline-body
+        spellCheck
+        onFocus={() => setFocused(true)}
+        onBlur={() => { void commit(); }}
+        onPaste={onPaste}
+        onKeyDown={onKeyDown}
+        dangerouslySetInnerHTML={html}
+        style={{ fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', outline: focused ? '2px solid var(--cb-accent, #FFC71D)' : 'none', outlineOffset: 4, borderRadius: 4, cursor: 'text', ...style }}
+      />
+      {state !== 'idle' && (
+        <div style={{ fontSize: 12, marginTop: 6 }}>
+          {state === 'saving' && <span role="status">Saving…</span>}
+          {state === 'saved' && <span role="status">Saved</span>}
+          {state === 'error' && <span role="alert" style={{ color: '#a12622' }}>{error}</span>}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Approval is confirmed by the parent only after the server accepts it. */
@@ -296,7 +385,7 @@ export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
-  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback,
+  foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
 }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
@@ -306,6 +395,9 @@ export default function DeskReviewSurface({
   onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void;
   approvedIds?: Set<string>;
   onFeedback?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live review boards: saves the post text typed in place on a buffer card (same RPC path
+   *  as the modal's Edit copy). Absent, the copy renders static and Edit copy is the only way. */
+  onEditBody?: (id: string, body: string) => Promise<{ ok: boolean; error?: string }>;
   onRemove?: (id: string) => void;
   leftEmpty?: Record<string, true>;
   onLeaveEmpty?: (id: string) => void;
@@ -471,6 +563,7 @@ export default function DeskReviewSurface({
   const founderFirst = (board.founder?.first_name || '').trim() || (board.founder?.name || '').trim().split(/\s+/)[0] || '';
   const deskLabel = deskLabelOf(board);
   const queueKey = board.queue.map((q) => q.id).join(',');
+  const [historyTick, setHistoryTick] = useState(0);
   useEffect(() => {
     if (!fetchHistory) { setEntries(null); return; }
     let gone = false;
@@ -485,7 +578,13 @@ export default function DeskReviewSurface({
       });
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queueKey, !!fetchHistory]);
+  }, [queueKey, !!fetchHistory, historyTick]);
+  /** In-place text save; a saved edit re-fans the history so the Changes log shows it. */
+  const saveBody = onEditBody ? async (id: string, body: string) => {
+    const r = await onEditBody(id, body);
+    if (r.ok) setHistoryTick((t) => t + 1);
+    return r;
+  } : undefined;
   // One identity verdict per row, used by BOTH the display chip and the founder filter —
   // they can never disagree, and neither ever touches the raw `by` string.
   const filteredEntries = (entries || []).filter((e) => who === 'all' || authorOf(e.by, board, deskLabel).founder);
@@ -601,7 +700,9 @@ export default function DeskReviewSurface({
               {img && <img src={img} alt="" loading="lazy" style={{ flex: 'none', width: 180, height: 'auto', border: '1px solid var(--cb-line)', borderRadius: 6 }} />}
               <div style={{ flex: '1 1 260px', minWidth: 0 }}>
                 <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>The copy</div>
-                <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line', marginTop: 5 }}>{q.body}</div>
+                {live && saveBody && bucket !== 'published'
+                  ? <InlineBody text={q.body} onSave={(body) => saveBody(q.id, body)} style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-mute)' }} wrapStyle={{ padding: 0, marginTop: 5 }} />
+                  : <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line', marginTop: 5 }}>{q.body}</div>}
               </div>
             </div>
           ) : null}
@@ -694,7 +795,9 @@ export default function DeskReviewSurface({
             <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
           </div>
         </div>
-        <CardBody text={bodyText} />
+        {live && saveBody && q.body && bucket !== 'published'
+          ? <InlineBody text={q.body} onSave={(body) => saveBody(q.id, body)} />
+          : <CardBody text={bodyText} />}
         {deck.length >= 2
           ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}

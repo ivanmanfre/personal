@@ -519,3 +519,54 @@ describe('Inline buffer approval', () => {
     cleanup();
   });
 });
+
+describe('In-place post text', () => {
+  function props() {
+    const board = makeBoard(); board.queue = [queueFixture()[2]];
+    board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH' };
+    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true };
+  }
+  it('saves the typed text on blur from the Review feed card and reports Saved', async () => {
+    const p = props(); const edit = vi.fn().mockResolvedValue({ ok: true });
+    const r = render(<DeskReviewSurface {...p} onEditBody={edit} />);
+    openDisclosure(r.container, 'In buffer');
+    fireEvent.click(r.getByRole('button', { name: 'Review' }));
+    const field = r.container.querySelector('[data-inline-body]') as HTMLElement;
+    expect(field.textContent).toBe(p.board.queue[0].body);
+    expect(field.getAttribute('contenteditable')).toBe('true');
+    fireEvent.click(field);
+    expect(p.onOpen).not.toHaveBeenCalled();
+    field.textContent = 'A rewritten opening line.\nAnd a second line.';
+    fireEvent.blur(field);
+    await waitFor(() => expect(r.getByRole('status').textContent).toBe('Saved'));
+    expect(edit).toHaveBeenCalledTimes(1);
+    expect(edit).toHaveBeenCalledWith(p.board.queue[0].id, 'A rewritten opening line.\nAnd a second line.');
+    expect(r.getByRole('button', { name: 'Edit copy' })).toBeTruthy();
+    cleanup();
+  });
+  it('does not save an unchanged blur, keeps the text and shows the error on failure', async () => {
+    const p = props(); const edit = vi.fn().mockResolvedValue({ ok: false, error: 'Could not save that. Try again.' });
+    const r = render(<DeskReviewSurface {...p} onEditBody={edit} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.container.querySelector('[data-inline-body]') as HTMLElement;
+    fireEvent.blur(field);
+    expect(edit).not.toHaveBeenCalled();
+    field.textContent = 'Changed copy.';
+    fireEvent.blur(field);
+    await waitFor(() => expect(r.getByRole('alert').textContent).toBe('Could not save that. Try again.'));
+    expect(field.textContent).toBe('Changed copy.');
+    cleanup();
+  });
+  it('edits in place inside a list row too, and renders nothing editable without onEditBody', () => {
+    const p = props();
+    const withEdit = render(<DeskReviewSurface {...p} view="list" onEditBody={async () => ({ ok: true })} />);
+    openDisclosure(withEdit.container, 'In buffer');
+    expect(withEdit.container.querySelector('[data-inline-body]')).not.toBeNull();
+    cleanup();
+    const without = render(<DeskReviewSurface {...p} />);
+    openDisclosure(without.container, 'In buffer');
+    expect(without.container.querySelector('[data-inline-body]')).toBeNull();
+    expect(without.container.querySelector('[data-review-copy]')?.textContent).toBe(p.board.queue[0].body);
+    cleanup();
+  });
+});
