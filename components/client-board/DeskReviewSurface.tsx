@@ -123,7 +123,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   onFeedback?: (note: string) => Promise<{ ok: boolean; error?: string }>;
   approved: boolean;
   onApprove: () => Promise<{ ok: boolean; error?: string }> | void;
-  onChanges: () => void; onEdit: () => void; onSchedule: () => void; scheduled: boolean;
+  onChanges: () => void; onEdit?: () => void; onSchedule: () => void; scheduled: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
@@ -169,7 +169,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
           ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
           : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
         {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
-        <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>
+        {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
         <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{approved ? (scheduled ? 'Approved. Scheduled time stays as set.' : 'Approved. Still in the buffer until scheduled.') : 'Approval saves your sign-off. Scheduling is separate.'}</div>
@@ -716,7 +716,8 @@ export default function DeskReviewSurface({
           {bucket !== 'published' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
               {live && onApprove && bucket === 'buffer' && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => { void onApprove(q.id); }}>Approve ✓</Pill>}
-              <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
+              {/* 2026-09-10 (Ivan): the text edits in place when onEditBody is wired, so the Edit copy control is redundant there. */}
+              {!(live && onEditBody) && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>}
               <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
               {!live && <Pill onClick={() => onOpen(q, { changing: true })}>Swap slot</Pill>}
             </div>
@@ -822,7 +823,7 @@ export default function DeskReviewSurface({
         {bucket === 'approved' && <Chip>Approved ✓</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
-      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
+      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
       </div>
     );
   };

@@ -552,7 +552,7 @@ describe('In-place post text', () => {
     await waitFor(() => expect(r.getByRole('status').textContent).toBe('Saved'));
     expect(edit).toHaveBeenCalledTimes(1);
     expect(edit).toHaveBeenCalledWith(p.board.queue[0].id, 'A rewritten opening line.\nAnd a second line.');
-    expect(r.getByRole('button', { name: 'Edit copy' })).toBeTruthy();
+    expect(r.queryByRole('button', { name: 'Edit copy' })).toBeNull();
     cleanup();
   });
   it('does not save an unchanged blur, keeps the text and shows the error on failure', async () => {
