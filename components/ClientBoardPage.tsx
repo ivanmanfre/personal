@@ -33,6 +33,7 @@ import { AudienceSection } from './client-board/AudienceSection';
 import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
+import { SideNavToggle, SideNavRailNav, useSideNavCollapsed, SIDENAV_WIDTH, SIDENAV_RAIL_WIDTH } from './client-board/DeskSideNav';
 import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -7798,6 +7799,8 @@ export default function ClientBoardPage() {
     try { localStorage.setItem('client-board-view', v); } catch { /* private mode */ }
   };
   const reduceMotion = useReducedMotion();
+  // Desk skin only: the left menu folds to a 56px rail, remembered per browser.
+  const [sideNavPref, toggleSideNav] = useSideNavCollapsed();
   const introRan = useRef(false);
   // Live-mode flag readable from callbacks defined above the mode derivation (kept in sync
   // during render below). Live boards route actions through the real client_board_action RPC.
@@ -9166,6 +9169,7 @@ export default function ClientBoardPage() {
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable);
+  const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
     ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
     : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
@@ -9333,14 +9337,46 @@ export default function ClientBoardPage() {
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
           the client heading font + accent period; "This week" the one serif nav item, the
           rest mono caps; record button the rail's only ink-filled element. */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[216px] flex-col lg:flex" style={{ borderRight: `1px solid ${LINE}`, background: PAPER }}>
-        <div className="px-6 pb-5 pt-6" style={{ borderBottom: `1px solid ${LINE}` }}>
+      <aside
+        className="fixed inset-y-0 left-0 z-20 hidden flex-col lg:flex"
+        data-collapsed={navCollapsed ? '1' : undefined}
+        style={{ width: navCollapsed ? SIDENAV_RAIL_WIDTH : SIDENAV_WIDTH, transition: reduceMotion ? undefined : 'width .18s cubic-bezier(.25,1,.5,1)', borderRight: `1px solid ${LINE}`, background: PAPER, overflow: 'hidden' }}
+      >
+        {navCollapsed ? (
+          /* Collapsed rail: toggle, the wordmark's first letter, then one square per item. */
+          <>
+            <div className="flex flex-col items-center gap-1 pb-3 pt-2" style={{ borderBottom: `1px solid ${LINE}` }}>
+              <SideNavToggle collapsed onToggle={toggleSideNav} />
+              <span className="flex h-8 w-8 items-center justify-center" title={board.brand?.wordmark || board.company_name} style={{ fontFamily: fontStack, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: INK }} aria-hidden>
+                {(board.brand?.wordmark || board.company_name || '·').trim()[0]}<span style={{ color: accent }}>.</span>
+              </span>
+            </div>
+            <SideNavRailNav tabs={visibleTabs} activeTab={activeTab} onSelect={goTab} accent={accent} badge={{ week: weekBadge }} renderIcon={(id) => <NavIcon id={id} size={18} />} />
+            <div className="mt-auto flex flex-col items-center gap-2 pb-5 pt-4" style={{ borderTop: `1px solid ${LINE}` }}>
+              {!isLive && (
+                <button onClick={() => setVoiceOpen(true)} title="Record a voice note" aria-label="Record a voice note" className="flex h-9 w-9 items-center justify-center rounded-md" style={{ background: INK, color: PAPER, border: 'none', cursor: 'pointer', fontSize: 12 }}>◉</button>
+              )}
+              <span className="flex h-9 w-9 items-center justify-center" title={isLive ? (scheduledCount > 0 ? `${scheduledCount} scheduled${bufferCount > 0 ? ` · ${bufferCount} in buffer` : ''}` : bufferCount > 0 ? `${bufferCount} in buffer` : 'Live') : 'Engine running'}>
+                <PulseDot color={accent} size={7} />
+              </span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" title={founderName} style={{ background: accent, color: inkOn(accent) }}>{initialsOf(founderName)}</span>
+              {skin === 'desk' && isLive && (
+                <button onClick={() => goTab('team')} title="Invite a teammate" aria-label="Invite a teammate" className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[rgba(26,26,26,0.06)]" style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK_MUTE }}>
+                  <NavIcon id="team" size={18} />
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+        <>
+        <div className="relative px-6 pb-5 pt-6" style={{ borderBottom: `1px solid ${LINE}` }}>
           {board.brand?.wordmark ? (
             <span style={{ fontFamily: fontStack, fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em', color: INK }}>
               {board.brand.wordmark}<span style={{ color: accent }}>.</span>
             </span>
           ) : logo(28)}
           <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: INK_MUTE }}>content desk</div>
+          {skin === 'desk' && <SideNavToggle collapsed={false} onToggle={toggleSideNav} style={{ position: 'absolute', right: 6, top: 14 }} />}
         </div>
         <nav className="flex flex-col gap-5 px-0 py-5" aria-label="Board sections">
           {NAV_GROUPS.filter((g) => visibleTabs.some((t) => t.group === g)).map((g) => (
@@ -9416,6 +9452,8 @@ export default function ClientBoardPage() {
             </button>
           )}
         </div>
+        </>
+        )}
       </aside>
 
       {/* Mobile header */}
@@ -9431,7 +9469,7 @@ export default function ClientBoardPage() {
 
       {/* Main is paper, not a floating white canvas — cards are the only white surfaces.
           A hairline top rule carries the tab name + live-preview mark (mono, quiet). */}
-      <div className="lg:ml-[216px]" style={{ background: PAPER }}>
+      <div className={navCollapsed ? 'lg:ml-[56px]' : 'lg:ml-[216px]'} style={{ background: PAPER, transition: reduceMotion ? undefined : 'margin-left .18s cubic-bezier(.25,1,.5,1)' }}>
         <div className="sticky top-0 z-10 hidden h-12 items-center gap-2.5 px-8 backdrop-blur lg:flex" style={{ borderBottom: `1px solid ${LINE}`, background: 'rgba(247,244,239,0.86)' }}>
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{TABS.find((t) => t.id === activeTab)?.label}</span>
           <span
@@ -9516,7 +9554,7 @@ export default function ClientBoardPage() {
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
-              <div className={`w-full ${skin === 'desk' ? 'max-w-[1040px]' : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
+              <div className={`w-full ${skin === 'desk' ? (navCollapsed ? 'max-w-[1200px]' : 'max-w-[1040px]') : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
             </motion.div>
           </AnimatePresence>
         </main>
