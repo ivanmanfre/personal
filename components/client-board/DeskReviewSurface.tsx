@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
-import { Globe2, ThumbsUp, MessageCircle, Repeat2, Send } from 'lucide-react';
 import PostSourceContext from './PostSourceContext';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
@@ -22,8 +21,11 @@ function LivePostLink({ href }: { href: string }) {
 }
 
 /** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
+/** LinkedIn's own stack — the simulation never wears the desk's body face. */
+const LI_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+
 function CardBody({ text }: { text: string }) {
-  return <div data-review-copy style={{ padding: '8px 16px 14px', fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
+  return <div data-review-copy style={{ padding: '4px 14px 12px', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>{text}</div>;
 }
 
 const escapeHtml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -35,12 +37,13 @@ const readPlain = (el: HTMLElement) => (typeof el.innerText === 'string' ? el.in
  *  Plain text only — HTML never enters the body. Escape puts the original back. Same
  *  saving/saved/error line as the feedback box. The explicit Edit copy control stays as the
  *  fallback. Clicks and keys inside never reach the card's open-the-modal handlers. */
-function InlineBody({ text, onSave, style, wrapStyle }: {
+function InlineBody({ text, onSave, style, wrapStyle, statusStyle }: {
   text: string;
   onSave: (body: string) => Promise<{ ok: boolean; error?: string }>;
   /** Typography of the text itself (the host's own), and the box around text + status line. */
   style?: React.CSSProperties;
   wrapStyle?: React.CSSProperties;
+  statusStyle?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const cancelRef = useRef(false);
@@ -105,7 +108,7 @@ function InlineBody({ text, onSave, style, wrapStyle }: {
         style={{ fontSize: 14, lineHeight: 1.45, color: '#202020', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', outline: focused ? '2px solid var(--cb-accent, #FFC71D)' : 'none', outlineOffset: 4, borderRadius: 4, cursor: 'text', ...style }}
       />
       {state !== 'idle' && (
-        <div style={{ fontSize: 12, marginTop: 6 }}>
+        <div style={{ fontSize: 12, marginTop: 6, ...statusStyle }}>
           {state === 'saving' && <span role="status">Saving…</span>}
           {state === 'saved' && <span role="status">Saved</span>}
           {state === 'error' && <span role="alert" style={{ color: '#a12622' }}>{error}</span>}
@@ -151,7 +154,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
         <textarea id={feedbackId} value={note} rows={2} disabled={feedbackState === 'saving'}
           onChange={event => { setNote(event.target.value); setFeedbackState('idle'); }}
           placeholder="What would you change?"
-          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 64, resize: 'vertical', padding: '9px 11px', fontFamily: 'inherit', fontSize: 14, lineHeight: 1.4, border: '1px solid var(--cb-line, #ccc)', borderRadius: 6, background: '#fff', color: 'var(--cb-ink)' }} />
+          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 52, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5, border: '1px solid #d6d3cd', borderRadius: 10, background: '#fff', color: 'var(--cb-ink)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
           <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
             style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? .5 : 1 }}>
@@ -776,36 +779,37 @@ export default function DeskReviewSurface({
        the detail modal already show; the quote is the founder's own line from that call. */
     const src = sourceChipLocal(q);
     return (
-      <div data-review-card={q.id} key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div data-review-card={q.id} key={q.id} style={{ alignSelf: 'start', display: 'flex', flexDirection: 'column', minWidth: 0, fontFamily: LI_FONT }}>
       {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
-      <div style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: '#202020', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif' }}>
+      {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
+          Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
+          size, its grey ink, its head, its action bar. */}
+      <div className="cb-post" style={{ border: '1px solid #e0dfdc', borderRadius: 10, background: '#fff', color: 'rgba(0,0,0,.9)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.08)', fontFamily: LI_FONT }}>
         <div
           role="button" tabIndex={0}
           onClick={() => onOpen(q)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ padding: '14px 16px 6px', cursor: 'pointer' }}
+          style={{ display: 'flex', gap: 9, padding: '12px 14px 6px', cursor: 'pointer' }}
         >
-          <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-            <div aria-hidden style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: accent, color: inkOn(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}</div>
-            <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#202020' }}>{fName}</span>
-              {board.founder?.headline && <span style={{ fontSize: 12, color: '#666666' }}>{board.founder.headline}</span>}
-              <span style={{ fontSize: 12, color: '#666666', display: 'inline-flex', alignItems: 'center', gap: 4 }}>LinkedIn preview · <Globe2 size={12} aria-label="Public" /></span>
-            </div>
-            <span aria-hidden style={{ flex: 'none', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
+          <div aria-hidden data-founder-avatar style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: '#173a5c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}</div>
+          <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,.9)' }}>{fName}</span>
+            {board.founder?.headline && <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>{board.founder.headline}</span>}
+            <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>1d &middot; &#127760;</span>
           </div>
+          <span aria-hidden style={{ flex: 'none', marginLeft: 'auto', color: 'rgba(0,0,0,.55)', fontWeight: 700, letterSpacing: 1 }}>&middot;&middot;&middot;</span>
         </div>
         {live && saveBody && q.body && bucket !== 'published'
-          ? <InlineBody text={q.body} onSave={(body) => saveBody(q.id, body)} />
+          ? <InlineBody text={q.body} onSave={(body) => saveBody(q.id, body)} wrapStyle={{ padding: 0 }} statusStyle={{ padding: '0 14px 10px' }} style={{ padding: '4px 14px 12px', fontSize: 13, lineHeight: 1.5, color: 'inherit', borderRadius: 0, outline: 'none' }} />
           : <CardBody text={bodyText} />}
         {deck.length >= 2
-          ? <DocCarousel slides={deck} title={q.title || q.hook} accent={accent} />
+          ? <div className="cb-post-deck"><DocCarousel slides={deck} title={q.title || q.hook} accent={accent} /></div>
           : img && <img src={img} alt="" loading="lazy" style={{ display: 'block', width: '100%', height: 'auto' }} />}
-        <div className="cb-linkedin-actions" data-linkedin-actions aria-label="LinkedIn action bar preview" style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #e0dfdc', margin: '0 14px', padding: '11px 0', color: '#666', gap: 4 }}>
-          {[[ThumbsUp, 'Like'], [MessageCircle, 'Comment'], [Repeat2, 'Repost'], [Send, 'Send']].map(([Icon, label]) => {
-            const ActionIcon = Icon as typeof ThumbsUp;
-            return <span key={label as string} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}><ActionIcon size={19} strokeWidth={1.7} aria-hidden />{label as string}</span>;
-          })}
+        <div className="cb-pactions" data-linkedin-actions aria-label="LinkedIn action bar preview">
+          <span><svg viewBox="0 0 24 24" aria-hidden><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0 4-8c1.5 0 2.5 1 2.5 2.5V9H19a2 2 0 0 1 2 2.3l-1 6.5A2.4 2.4 0 0 1 17.6 20H7"/></svg>Like</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden><path d="M21 12a8 8 0 0 1-8 8H4l2.3-2.7A8 8 0 1 1 21 12z"/></svg>Comment</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden><path d="M17 2l4 4-4 4M21 6H8a4 4 0 0 0-4 4M7 22l-4-4 4-4M3 18h13a4 4 0 0 0 4-4"/></svg>Repost</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>Send</span>
         </div>
       </div>
       {/* Board chrome sits OUTSIDE the post, so the simulation above stays a clean post.
@@ -916,11 +920,23 @@ export default function DeskReviewSurface({
   return (
     <div data-surface="review">
       <style>{`
-        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; }
-        .cb-licard-grid > div { width: 100%; max-width: 552px; justify-self: center; }
-        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible, .cb-licard-grid textarea:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
-        @media (max-width: 360px) { .cb-linkedin-actions > span { flex-direction: column; gap: 4px !important; flex: 1; min-width: 0; } .cb-linkedin-actions svg { flex-shrink: 0; } }
-        @media (max-width: 480px) { .cb-licard-grid textarea { font-size: 16px !important; } .cb-licard-grid [data-review-copy] { padding: 8px 16px 14px !important; } }
+        /* The feed grey and the 555px column of LinkedIn itself (values from the 08-19 review
+           page). Two columns only when each can hold a 440px card (the desk column is 804px at
+           a 1100px viewport, 984px at 1280, capped at 1040) — one centred column below that,
+           so a card never runs narrower than a real feed post. */
+        .cb-licard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 24px; margin-top: 20px; align-items: start; background: #f4f2ee; padding: 18px; }
+        .cb-licard-grid > div { width: 100%; max-width: 555px; justify-self: center; }
+        .cb-licard-grid button:focus-visible, .cb-licard-grid summary:focus-visible, .cb-licard-grid a:focus-visible { outline: 2px solid var(--cb-ink); outline-offset: 3px; }
+        .cb-licard-grid textarea:focus-visible { outline: 2px solid #0a66c2; border-color: #0a66c2; }
+        .cb-licard-grid textarea::placeholder { color: #9a9a9a; }
+        .cb-post [data-inline-body] { overflow-wrap: anywhere; transition: background .15s, box-shadow .15s; }
+        .cb-post [data-inline-body]:hover { background: #fbfaf8; box-shadow: inset 0 0 0 1px #d6d3cd; }
+        .cb-post [data-inline-body]:focus { background: #fdfdff; box-shadow: inset 0 0 0 2px #0a66c2; }
+        .cb-post .cb-post-deck > div { border-left: 0; border-right: 0; border-radius: 0; }
+        .cb-pactions { display: flex; border-top: 1px solid rgba(0,0,0,.08); margin-top: 2px; }
+        .cb-pactions span { flex: 1; text-align: center; padding: 9px 0; font-size: 12px; font-weight: 600; color: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .cb-pactions svg { width: 15px; height: 15px; fill: none; stroke: rgba(0,0,0,.6); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+        @media (max-width: 480px) { .cb-licard-grid { padding: 12px; } .cb-licard-grid textarea { font-size: 16px !important; } }
       `}</style>
 
       {/* Block 1: computed headline. */}

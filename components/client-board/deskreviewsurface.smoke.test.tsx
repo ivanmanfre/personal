@@ -463,14 +463,25 @@ describe('Inline buffer approval', () => {
   it('shows a recognizable platform preview with distinct review controls', () => {
     const p = props(); const r = render(<DeskReviewSurface {...p} />);
     openDisclosure(r.container, 'In buffer');
-    expect(r.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
+    const avatar = r.container.querySelector('[data-founder-avatar]')!;
+    expect(avatar.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
     const social = r.container.querySelector('[data-linkedin-actions]')!;
     expect(social.textContent).toBe('LikeCommentRepostSend');
+    expect(social.querySelectorAll('svg')).toHaveLength(4);
     expect(social.querySelector('button')).toBeNull();
     fireEvent.click(r.getByRole('button', { name: 'Request changes', exact: true }));
     expect(p.onOpen).toHaveBeenCalledWith(p.board.queue[0], { changing: true });
     fireEvent.click(r.getByRole('button', { name: 'Schedule', exact: true }));
     expect(p.onOpen).toHaveBeenCalledWith(p.board.queue[0], { scheduling: true });
+    cleanup();
+  });
+  it('falls back to the founder initials when the board carries no avatar', () => {
+    const p = props(); p.board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH' };
+    const r = render(<DeskReviewSurface {...p} />);
+    openDisclosure(r.container, 'In buffer');
+    const avatar = r.container.querySelector('[data-founder-avatar]')!;
+    expect(avatar.querySelector('img')).toBeNull();
+    expect(avatar.textContent).toBe('DŠ');
     cleanup();
   });
   it('keeps inline feedback visible, saves the exact post note and retains it after failure', async () => {
