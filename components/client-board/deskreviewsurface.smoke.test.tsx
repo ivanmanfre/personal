@@ -144,7 +144,7 @@ describe('DeskReviewSurface', () => {
 
     // (a) key blocks present
     expect(html()).toContain('All content');
-    expect(html()).toContain('in the pipeline');
+    expect(html()).toContain('in the buffer');
     expect(html()).toContain('In buffer');
     expect(html()).toContain('Published');
     expect(html()).toContain('List');

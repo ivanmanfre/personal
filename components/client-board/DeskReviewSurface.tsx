@@ -346,8 +346,12 @@ export default function DeskReviewSurface({
   const out = board.queue.filter((x) => stageOf(x) === 'published').length;
   const sched = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x)).length;
   const buffer = board.queue.filter((x) => stageOf(x) !== 'published' && !isScheduledLocal(x)).length;
-  const total = board.queue.length;
-  const parts = [out ? `${out} out` : null, sched ? `${sched} scheduled` : null, buffer ? `${buffer} in the buffer` : null].filter(Boolean) as string[];
+  // 2026-09-10 (Ivan): published posts stay out of the pipeline stat. The plate counts only
+  // what still needs a decision: pending approval, approved, scheduled.
+  const pendingN = board.queue.filter((x) => stageOf(x) === 'review' && !isScheduledLocal(x)).length;
+  const approvedN = board.queue.filter((x) => stageOf(x) === 'scheduled' && !isScheduledLocal(x)).length;
+  const total = sched + buffer;
+  const parts = [pendingN ? `${pendingN} pending approval` : null, approvedN ? `${approvedN} approved` : null, sched ? `${sched} scheduled` : null].filter(Boolean) as string[];
 
   // Aim mix across the whole queue.
   const aim = { reach: 0, trust: 0, buyers: 0 } as Record<'reach' | 'trust' | 'buyers', number>;
@@ -819,7 +823,7 @@ export default function DeskReviewSurface({
       {/* Block 1: computed headline. */}
       <Eyebrow>All content</Eyebrow>
       <DeskH2>
-        {total} {total === 1 ? 'post' : 'posts'} in the pipeline{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}
+        {total} {total === 1 ? 'post' : 'posts'} in the buffer{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}
       </DeskH2>
 
       {/* Block 2: dark plate — pipeline counts + aim mix. */}
@@ -827,15 +831,17 @@ export default function DeskReviewSurface({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 28px', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 160px', minWidth: 0 }}>
             <Num size="hero" tone="accent">{total}</Num>
-            <Footnote on="plate" style={{ marginTop: 6 }}>in the pipeline</Footnote>
+            <Footnote on="plate" style={{ marginTop: 6 }}>waiting to go out</Footnote>
           </div>
           <div data-viz="" style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', gap: 6, alignItems: 'flex-end' }}>
             {[
-              { v: out, label: 'out', bg: 'var(--cb-accent)', tone: 'plate' as const },
+              { v: pendingN, label: 'pending approval', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
+              { v: approvedN, label: 'approved', bg: 'var(--cb-accent)', tone: 'plate' as const },
               { v: sched, label: 'scheduled', bg: 'rgba(255,255,255,0.62)', tone: 'plate' as const },
-              { v: buffer, label: 'in buffer', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
             ].map((seg) => (
-              <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: 0 }}>
+              /* minWidth keeps a zero segment's label from stacking onto its neighbour
+                 (the "0 34 / SCHEDULED IN BUFFER" overlap Ivan screenshotted 2026-09-10). */
+              <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: 118 }}>
                 <div className="bar" style={{ height: 16, background: seg.bg, borderRadius: 6 }} />
                 <div style={{ marginTop: 9 }}><Num size="row" inline tone={seg.tone}>{seg.v}</Num></div>
                 <PlateMute as="div" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>{seg.label}</PlateMute>
@@ -1073,7 +1079,6 @@ export default function DeskReviewSurface({
       {/* Block 7: stat footer. */}
       <StatStrip>
         <Stat value={total} caption="written" />
-        <Stat value={out} caption="out" />
         <Stat value={sched} caption="scheduled" />
         <Stat value={buffer} caption="in buffer" />
         {board.ideas && <Stat value={board.ideas.length} caption="ideas banked, ready to write" />}

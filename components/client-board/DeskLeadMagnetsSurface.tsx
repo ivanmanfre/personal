@@ -249,6 +249,12 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                           <span style={{ color: 'var(--cb-plate-ink)' }}>{entry.promise}</span>
                         </>
                       )}
+                      {(entry as { gate_keyword?: string }).gate_keyword && (
+                        <>
+                          <span style={{ color: 'var(--cb-plate-mute)', fontWeight: 700 }}>Comment word</span>
+                          <span style={{ color: 'var(--cb-plate-ink)' }}>{(entry as { gate_keyword?: string }).gate_keyword}</span>
+                        </>
+                      )}
                       {entry.url && (
                         <>
                           <span style={{ color: 'var(--cb-plate-mute)', fontWeight: 700 }}>Lives at</span>
