@@ -46,8 +46,9 @@ const CAL_SPAN_LABEL = `Calendar · ${calShort(CAL_SPAN_START)} to ${calShort(ne
 const CAL_MARK_COUNT = CAL_DATED.length;
 const CAL_GRID_END = calShort(new Date(CAL_SPAN_START.getTime() + (CAL_WEEKS * 7 - 1) * CAL_DAY_MS));
 
-/** 2026-08-07 contract: Published / Changes log / Photo library start collapsed. Tests that
- *  assert their CONTENT click the header open first (header itself always renders). */
+/** 2026-08-07 contract: Published / Changes log / Photo library start collapsed; since
+ *  2026-09-10 EVERY list section starts collapsed. Tests that assert a section's CONTENT
+ *  click the header open first (the header row with its count always renders). */
 const openDisclosure = (container: HTMLElement, label: string) => {
   const heads = Array.from(container.querySelectorAll('[role="button"][aria-expanded="false"]'));
   const head = heads.find((el) => (el.textContent || '').includes(label));
@@ -149,6 +150,17 @@ describe('DeskReviewSurface', () => {
     expect(html()).toContain('Published');
     expect(html()).toContain('List');
     expect(html()).toContain('Calendar');
+
+    // (a2) 2026-09-10 contract: every section header renders, and every one starts collapsed.
+    const heads = Array.from(container.querySelectorAll('[role="button"][aria-expanded]'));
+    for (const label of ['Scheduled', 'In buffer', 'Drafting', 'Published']) {
+      const head = heads.find((el) => (el.textContent || '').includes(label));
+      expect(head, label).toBeTruthy();
+      expect(head!.getAttribute('aria-expanded')).toBe('false');
+    }
+    expect(container.querySelectorAll('[role="button"][aria-expanded="true"]').length).toBe(0);
+    openDisclosure(container, 'Scheduled');
+    openDisclosure(container, 'In buffer');
 
     // (b) data-metric and data-viz appear
     expect(html()).toContain('data-metric');
@@ -253,8 +265,10 @@ describe('DeskReviewSurface', () => {
     expect(html()).not.toContain(OPS_NOTE);
     expect(html()).not.toContain('XQ-77');
 
-    // Published section starts collapsed (2026-08-07 contract); open it so q-published-1's
-    // card (and its per-post log) is on screen before counting.
+    // Every section starts collapsed; open the three that carry cards so their per-post logs
+    // are on screen before counting.
+    openDisclosure(container, 'Scheduled');
+    openDisclosure(container, 'In buffer');
     openDisclosure(container, 'Published');
     // Per-post history affordance: post A's card carries its own 2-entry log, collapsed.
     const postLogA = container.querySelector('[data-post-log="q-scheduled-1"]');
@@ -359,6 +373,7 @@ describe('DeskReviewSurface', () => {
         />
       </div>,
     );
+    openDisclosure(container, 'In buffer');
     const html = container.innerHTML;
     // Every page is mounted in a snapping track, page 1 is current, and the pager is reachable.
     expect(html).toContain('1 / 9');
@@ -393,12 +408,15 @@ describe('DeskReviewSurface', () => {
           onApprove={onApprove} flashId={null} view="list" setView={noop} skips={{}} live approvedIds={new Set(['q-buffer-approved'])} />
       </div>,
     );
+    openDisclosure(container, 'In buffer');
     const html = container.innerHTML;
-    // Both sub-headers name their state, in order, under the one In buffer section.
+    // Both sub-headers name their state under the one In buffer section, Approved first
+    // (2026-09-10). Matched on the blurbs so the 'Approved ✓' chip cannot satisfy the order check.
     expect(html).toContain('In buffer');
     expect(html).toContain('Pending approval');
+    expect(html).toContain('Waiting for your approval.');
     expect(html).toContain('Approved. Takes the next open slot.');
-    expect(html.indexOf('Pending approval')).toBeLessThan(html.indexOf('Approved. Takes the next open slot.'));
+    expect(html.indexOf('Approved. Takes the next open slot.')).toBeLessThan(html.indexOf('Waiting for your approval.'));
     // The approved card is still on the board, inside the Approved group, with its chip.
     const approvedGroup = container.querySelector('[data-buffer-group="approved"]')!;
     expect(approvedGroup.textContent).toContain('Approved buffer post');
@@ -422,6 +440,7 @@ describe('DeskReviewSurface', () => {
     window.history.replaceState(null, '', '/');
     const opened: unknown[] = [];
     const { container, getByRole } = render(<DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...args) => opened.push(args)} onOpenIdea={noop} onApprove={noop} flashId={null} view="feed" setView={noop} skips={{}} live />);
+    openDisclosure(container, 'In buffer');
     const copy = container.querySelector('[data-review-copy]')!;
     expect(copy.textContent).toBe(body);
     expect(copy.getAttribute('role')).toBeNull();
@@ -443,6 +462,7 @@ describe('Inline buffer approval', () => {
   }
   it('shows a recognizable platform preview with distinct review controls', () => {
     const p = props(); const r = render(<DeskReviewSurface {...p} />);
+    openDisclosure(r.container, 'In buffer');
     expect(r.container.querySelector('img')?.getAttribute('src')).toBe('https://example.com/avatar.jpg');
     const social = r.container.querySelector('[data-linkedin-actions]')!;
     expect(social.textContent).toBe('LikeCommentRepostSend');
@@ -456,6 +476,7 @@ describe('Inline buffer approval', () => {
   it('keeps inline feedback visible, saves the exact post note and retains it after failure', async () => {
     const p = props(); const feedback = vi.fn().mockResolvedValueOnce({ok:false}).mockResolvedValueOnce({ok:true});
     const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
     const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
     const send = r.getByRole('button', {name:'Send feedback'}) as HTMLButtonElement;
     expect(send.disabled).toBe(true);
@@ -474,6 +495,7 @@ describe('Inline buffer approval', () => {
     let resolve!: (value: {ok:boolean}) => void;
     const approve = vi.fn(() => new Promise<{ok:boolean}>(r => { resolve = r; }));
     const p = props(); const r = render(<DeskReviewSurface {...p} onApprove={approve} />);
+    openDisclosure(r.container, 'In buffer');
     fireEvent.click(r.getByRole('button', { name: 'Approve post', exact: true }));
     expect((r.getByRole('button', { name: 'Approving…' }) as HTMLButtonElement).disabled).toBe(true);
     expect(r.queryByText('✓ Approved')).toBeNull();
@@ -489,6 +511,7 @@ describe('Inline buffer approval', () => {
   });
   it('shows a retryable error and never claims approval on failure', async () => {
     const p = props(); const r = render(<DeskReviewSurface {...p} onApprove={async () => ({ok:false})} />);
+    openDisclosure(r.container, 'In buffer');
     fireEvent.click(r.getByRole('button', { name: 'Approve post', exact: true }));
     await waitFor(() => expect(r.getByRole('alert').textContent).toContain('did not save'));
     expect(r.queryByText('✓ Approved')).toBeNull();

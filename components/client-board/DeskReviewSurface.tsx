@@ -455,11 +455,11 @@ export default function DeskReviewSurface({
     fPending = pendingRows.filter(inCat), fApproved = approvedRows.filter(inCat),
     fPublished = publishedRows.filter(inCat), fReview = reviewRows.filter(inCat), fScheduled = scheduledRows.filter(inCat);
 
-  // ---- Collapsible sections (2026-08-07, Ivan): Published starts folded; the header row
-  // always renders, the rows toggle. ----
+  // ---- Collapsible sections (2026-08-07, Ivan; 2026-09-10: every section starts folded).
+  // The header row with the count always renders, the rows toggle on click. ----
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   /** Per-card body expansion in the 2-up buffer grid. */
-  const sectionOpen = (key: string) => openSections[key] ?? key !== 'published';
+  const sectionOpen = (key: string) => openSections[key] ?? false;
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
   const [logOpen, setLogOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
@@ -932,8 +932,8 @@ export default function DeskReviewSurface({
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
               {section('In buffer', fBuffer.length, 'written, no date yet', (
                 <>
-                  {subSection('Pending approval', fPending.length, 'Waiting for your approval.', rowsFor(fPending, 'buffer'), 'pending')}
                   {subSection('Approved', fApproved.length, 'Approved. Takes the next open slot.', rowsFor(fApproved, 'approved'), 'approved')}
+                  {subSection('Pending approval', fPending.length, 'Waiting for your approval.', rowsFor(fPending, 'buffer'), 'pending')}
                 </>
               ), 'buffer', (
                 <>
