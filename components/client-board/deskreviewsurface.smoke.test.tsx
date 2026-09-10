@@ -378,6 +378,43 @@ describe('DeskReviewSurface', () => {
     expect(html).not.toContain('reading the log');
     cleanup();
   });
+  it('splits the live buffer into Pending approval and Approved, and keeps the approved card', () => {
+    // One undated pending item, one undated approved item (stage override 'scheduled').
+    const board = makeBoard();
+    board.queue = [
+      { ...queueFixture()[2] },
+      { id: 'q-buffer-approved', kind: 'post', stage: 'review', title: 'Approved buffer post', hook: 'Hook F', body: 'Body F', funnel_stage: 'trust' },
+    ];
+    const stageOfLive = (q: QueueItem) => (q.id === 'q-buffer-approved' ? 'scheduled' : q.stage);
+    const onApprove = vi.fn(async () => ({ ok: true }));
+    const { container } = render(
+      <div data-skin="desk" style={SKIN_VARS}>
+        <DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOfLive} onOpen={noop} onOpenIdea={noop}
+          onApprove={onApprove} flashId={null} view="list" setView={noop} skips={{}} live approvedIds={new Set(['q-buffer-approved'])} />
+      </div>,
+    );
+    const html = container.innerHTML;
+    // Both sub-headers name their state, in order, under the one In buffer section.
+    expect(html).toContain('In buffer');
+    expect(html).toContain('Pending approval');
+    expect(html).toContain('Approved. Takes the next open slot.');
+    expect(html.indexOf('Pending approval')).toBeLessThan(html.indexOf('Approved. Takes the next open slot.'));
+    // The approved card is still on the board, inside the Approved group, with its chip.
+    const approvedGroup = container.querySelector('[data-buffer-group="approved"]')!;
+    expect(approvedGroup.textContent).toContain('Approved buffer post');
+    expect(approvedGroup.textContent).toContain('Approved ✓');
+    const pendingGroup = container.querySelector('[data-buffer-group="pending"]')!;
+    expect(pendingGroup.textContent).toContain('Buffer post title');
+    expect(pendingGroup.textContent).not.toContain('Approved ✓');
+    // Inline approve pill on the pending row only; clicking it calls onApprove with the id.
+    const pills = Array.from(pendingGroup.querySelectorAll('button')).filter((b) => b.textContent === 'Approve ✓');
+    expect(pills.length).toBe(1);
+    expect(Array.from(approvedGroup.querySelectorAll('button')).filter((b) => b.textContent === 'Approve ✓').length).toBe(0);
+    fireEvent.click(pills[0]);
+    expect(onApprove).toHaveBeenCalledWith('q-buffer-1');
+    cleanup();
+  });
+
   it('shows full selectable review copy with an explicit edit control', () => {
     const board = makeBoard();
     const body = 'A complete paragraph. '.repeat(60) + 'The final line stays visible.';

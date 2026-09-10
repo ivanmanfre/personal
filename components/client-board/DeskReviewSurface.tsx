@@ -277,7 +277,9 @@ function perfFor(board: Board, q: QueueItem): { reads: number; rate: string | nu
   return { reads: hit.impressions, rate };
 }
 
-type Bucket = 'upnext' | 'buffer' | 'published';
+type Bucket = 'upnext' | 'buffer' | 'approved' | 'published';
+/** 'buffer' = pending approval, 'approved' = signed off but still undated. Both are the buffer. */
+const inBuffer = (b: Bucket) => b === 'buffer' || b === 'approved';
 
 function statusChipFor(stage: Stage, q: QueueItem, live: boolean, todayIso: string): { label: string; accent?: boolean } | null {
   if (stage === 'published' || stage === 'drafted') return null;
@@ -360,12 +362,19 @@ export default function DeskReviewSurface({
   const ideas = (!live && board.ideas) ? board.ideas : [];
 
   let upNextRows: QueueItem[] = [];
+  let pendingRows: QueueItem[] = [];
+  let approvedRows: QueueItem[] = [];
   let bufferRows: QueueItem[] = [];
   let scheduledRows: QueueItem[] = [];
   let reviewRows: QueueItem[] = [];
   if (live) {
     upNextRows = board.queue.filter((q) => stageOf(q) !== 'published' && stageOf(q) !== 'drafted' && isScheduledLocal(q)).slice().sort(byDate);
-    bufferRows = board.queue.filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && !isScheduledLocal(q));
+    // Approve moves the card, it never vanishes it (2026-09-10, Ivan: "when i select approve
+    // nothing happens"): the buffer splits into Pending approval (still 'review') and
+    // Approved (stage 'scheduled' with no date yet). bufferRows stays the union for counts.
+    pendingRows = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduledLocal(q));
+    approvedRows = board.queue.filter((q) => stageOf(q) === 'scheduled' && !isScheduledLocal(q));
+    bufferRows = [...pendingRows, ...approvedRows];
   } else {
     reviewRows = board.queue.filter((q) => stageOf(q) === 'review').slice().sort(byDate);
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
@@ -439,6 +448,7 @@ export default function DeskReviewSurface({
   const inCat = (q: QueueItem) => (cat === 'all' || catOf(q) === cat) && (topic === 'all' || topicOf(q) === topic) && (aimSel === 'all' || aimOf(q) === aimSel);
   const catCount = (id: Cat) => id === 'all' ? board.queue.length : board.queue.filter((q) => catOf(q) === id).length;
   const fUpNext = upNextRows.filter(inCat), fBuffer = bufferRows.filter(inCat), fDrafted = draftedRows.filter(inCat),
+    fPending = pendingRows.filter(inCat), fApproved = approvedRows.filter(inCat),
     fPublished = publishedRows.filter(inCat), fReview = reviewRows.filter(inCat), fScheduled = scheduledRows.filter(inCat);
 
   // ---- Collapsible sections (2026-08-07, Ivan): Published starts folded; the header row
@@ -489,8 +499,8 @@ export default function DeskReviewSurface({
     const stage = stageOf(q);
     const img = cardImageUrlLocal(q, board);
     const slides = (q.kind === 'carousel' || q.style === 'carousel') ? (q.image_urls || []).filter(Boolean) : [];
-    const dateLabel = bucket === 'buffer' ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
-    const chip = statusChipFor(stage, q, live, todayIso);
+    const dateLabel = inBuffer(bucket) ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
+    const chip = bucket === 'approved' ? { label: 'Approved ✓' } : statusChipFor(stage, q, live, todayIso);
     const provenance = live ? sourceChipLocal(q) : null;
     const perf = bucket === 'published' ? perfFor(board, q) : null;
     const flashed = flashId === q.id;
@@ -597,6 +607,7 @@ export default function DeskReviewSurface({
           </div>
           {bucket !== 'published' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+              {live && onApprove && bucket === 'buffer' && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => { void onApprove(q.id); }}>Approve ✓</Pill>}
               <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>
               <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
               {!live && <Pill onClick={() => onOpen(q, { changing: true })}>Swap slot</Pill>}
@@ -651,7 +662,7 @@ export default function DeskReviewSurface({
        else keeps the flat image. */
     const deck = docPagesOf(q);
     const chip = bucket === 'published' ? { label: 'published' } : statusChipFor(stageOf(q), q, live, todayIso);
-    const dateLabel = bucket === 'buffer' ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
+    const dateLabel = inBuffer(bucket) ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
     const bodyText = stripBrand(q.body || q.hook || q.title) || '';
@@ -695,8 +706,9 @@ export default function DeskReviewSurface({
           Text post · Trust") — the Source line above and the mock itself say it; the date and
           status chips stay only where they carry news (scheduled / published cards). */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 2px 0' }}>
-        {bucket !== 'buffer' && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
-        {bucket !== 'buffer' && chip && <Chip>{chip.label}</Chip>}
+        {!inBuffer(bucket) && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
+        {!inBuffer(bucket) && chip && <Chip>{chip.label}</Chip>}
+        {bucket === 'approved' && <Chip>Approved ✓</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
       {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={() => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
@@ -715,7 +727,7 @@ export default function DeskReviewSurface({
     return 0;
   };
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || (view === 'feed' && bucket === 'buffer')
+    topic === 'personal' || (view === 'feed' && inBuffer(bucket))
       ? <div className="cb-licard-grid">{[...list].sort((a, b) => formatRank(a) - formatRank(b)).map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
@@ -773,6 +785,19 @@ export default function DeskReviewSurface({
         ) : null}
       </div>
       {sectionOpen(key) ? rows : null}
+    </div>
+  ) : null;
+
+  /** Sub-group inside a section: same register as the section header, one step lighter.
+   *  Always names its state, even when it is the only group with rows. */
+  const subSection = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (
+    <div key={key} data-buffer-group={key} style={{ marginTop: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', padding: '6px 0 8px', borderBottom: '1px solid var(--cb-line)' }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>{label}</span>
+        <Num size="row" inline>{count}</Num>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{blurb}</span>
+      </div>
+      {rows}
     </div>
   ) : null;
 
@@ -899,7 +924,12 @@ export default function DeskReviewSurface({
           {live ? (
             <>
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
-              {section('In buffer', fBuffer.length, 'written, no date yet', rowsFor(fBuffer, 'buffer'), 'buffer', (
+              {section('In buffer', fBuffer.length, 'written, no date yet', (
+                <>
+                  {subSection('Pending approval', fPending.length, 'Waiting for your approval.', rowsFor(fPending, 'buffer'), 'pending')}
+                  {subSection('Approved', fApproved.length, 'Approved. Takes the next open slot.', rowsFor(fApproved, 'approved'), 'approved')}
+                </>
+              ), 'buffer', (
                 <>
                   {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
                   <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>

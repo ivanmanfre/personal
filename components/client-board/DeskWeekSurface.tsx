@@ -329,7 +329,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     .filter((q) => q.stage !== 'published' && !!q.publish_date && q.publish_date > today && notSkipped(q))
     .sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
   const bufferItems = board.queue
-    .filter((q) => stageOf(q) === 'review' && !isScheduled(q) && notSkipped(q))
+    // An approved post with no date yet (stage 'scheduled', undated) is still in the buffer.
+    .filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && !isScheduled(q) && notSkipped(q))
     .sort((a, b) => (a.hook || a.title || '').localeCompare(b.hook || b.title || ''));
   const queueTotal = todayItems.length + laterItems.length + bufferItems.length;
   /** Ready posts a client can drop onto an open day (same filter as the original). */
@@ -431,7 +432,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     if (skips[q.id]) return 'removed';
     if (st === 'drafted') return q.generating ? 'being written' : 'in production';
     if (st === 'planned') return 'planned';
-    if (!isScheduled(q)) return 'in buffer';
+    if (!isScheduled(q)) return (st === 'scheduled' || approvedIds.has(q.id)) ? 'approved' : 'in buffer';
     if (q.publish_date === today) return 'ships today';
     if (live || st === 'scheduled' || approvedIds.has(q.id)) return 'scheduled';
     return 'in review';
