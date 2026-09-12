@@ -1,0 +1,3 @@
+-- Audience-learning 14 / lm_idea_candidates.source admits 'audience_review' (the Run 06 approve RPC writes it; the live CHECK lacked it, the harness DDL had it). Ivan 2026-09-12 'you take care of it'.
+alter table public.lm_idea_candidates drop constraint lm_idea_candidates_source_check;
+alter table public.lm_idea_candidates add constraint lm_idea_candidates_source_check CHECK ((source = ANY (ARRAY['calls'::text, 'ivan_call'::text, 'kyle_call'::text, 'search_demand'::text, 'reddit_se'::text, 'hacker_news'::text, 'slack'::text, 'manual'::text, 'model_launch'::text, 'breaking_news'::text, 'x_search'::text, 'youtube_watch'::text, 'claude_sessions'::text, 'competitor'::text, 'contradiction'::text, 'novelty'::text, 'github_repo'::text, 'audience_review'::text])));
