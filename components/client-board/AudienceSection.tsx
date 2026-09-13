@@ -5,7 +5,7 @@
  * decisions"): what changed, why it may matter to this client's buyers, what
  * supports that reading, what we could publish, what proof is needed, and what
  * happened after. Plus, per post: the raw metric with the date it was taken,
- * the rank with its basis spelled out, the relevant engagers as PEOPLE, and an
+ * the matched-age standing with its basis spelled out, the relevant engagers as PEOPLE, and an
  * absolute monthly median with its sample size.
  *
  * WHERE IT RENDERS
@@ -63,7 +63,8 @@ export type AudiencePost = {
   };
   rank: {
     basis: 'matched_age' | 'observed_age' | 'none';
-    rank: number | null; eligible_n: number | null; target_age_days: number | null;
+    /** legacy ordinal rank; never rendered as a percentage */
+    rank: number | null; standing_pct?: number | null; eligible_n: number | null; target_age_days: number | null;
   };
   engagers: {
     people: number | null; positive: number | null;
@@ -154,6 +155,19 @@ export type AudiencePayload = {
   }[];
   recommendations: AudienceRecommendation[];
   assets: { asset_id: string; source: string | null; factual_context: string | null; confidentiality: string }[];
+  /** Additive Run 07 aggregate. This contains no source excerpts, people, or
+   * cross-client data; the token/session wrapper resolves the client server-side. */
+  measurement?: {
+    minimum_n?: number | null;
+    matched_age?: Array<{
+      canonical_post_id?: string | null;
+      metric: 'impressions' | 'engagement_count' | 'engagement_per_1000' | string;
+      value: number | null; target_age_days: number | null; actual_age_days: number | null;
+      captured_at: string | null; eligible_n: number | null; standing_pct: number | null;
+      status: 'supported' | 'below_floor' | 'metric_missing' | string;
+      minimum_n: number | null;
+    }>;
+  } | null;
 };
 
 export type DecideFn = (
@@ -379,6 +393,9 @@ function DecisionBlock({ rec, live, onDecide }: {
           )}
         </div>
       )}
+      {rec.decision.state === 'accepted' && !open && (
+        <Meta style={{ marginTop: 7 }}>{C.decision.acceptedNext}</Meta>
+      )}
       {open && (
         <div style={{ marginTop: 10 }}>
           <label
@@ -535,12 +552,12 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
       {posts.map((p) => {
         const r = p.raw.reactions;
         const pct = best > 0 && r !== null ? (r / best) * 100 : 0;
-        const rankLine = p.rank.basis === 'matched_age' && p.rank.rank && p.rank.eligible_n
-          ? C.posts.rank.matched(p.rank.rank, p.rank.eligible_n, p.rank.target_age_days ?? 0)
+        const rankLine = p.rank.basis === 'matched_age' && p.rank.standing_pct != null && p.rank.eligible_n
+          ? C.posts.rank.matched(p.rank.standing_pct, p.rank.eligible_n, p.rank.target_age_days ?? 0)
           : p.rank.basis === 'observed_age' ? C.posts.rank.observed : C.posts.rank.none;
         const url = postUrl(p.post_social_id);
         return (
-          <LedgerRow key={p.post_social_id} tone={p.rank.rank === 1 ? 'best' : 'default'}>
+          <LedgerRow key={p.post_social_id} tone="default">
             <LedgerCell num align="left" width="1%" className="audn-when" style={{ fontSize: 18 }}>
               {fmtDay(p.published_at)}
             </LedgerCell>
@@ -556,7 +573,7 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
                 )}
                 <Chip>{rankLine}</Chip>
               </div>
-              {r !== null && <LedgerBar pct={pct} tone={p.rank.rank === 1 ? 'strong' : 'muted'} />}
+              {r !== null && <LedgerBar pct={pct} tone="muted" />}
               <PeopleLine e={p.engagers} />
               <div style={{ marginTop: 8, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'baseline' }}>
                 <Meta>{C.posts.coverage[p.raw.coverage] || C.posts.coverage.unknown}</Meta>
@@ -620,6 +637,37 @@ function Trend({ rows }: { rows: AudiencePayload['monthly_median'] }) {
   );
 }
 
+function MeasurementBlock({ measurement }: { measurement: AudiencePayload['measurement'] }) {
+  const rows = measurement?.matched_age ?? [];
+  if (!rows.length) return null;
+  return (
+    <div style={{ marginTop: 30 }}>
+      <SectionRule label={C.measurement.heading} count={rows.length} blurb={C.measurement.blurb} />
+      <details style={{ marginTop: 10 }}>
+        <summary style={{ fontSize: 13, fontWeight: 700, color: INK }}>Show {rows.length} post / metric / age measurements</summary>
+      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', borderTop: `1px solid ${LINE}` }}>
+        {rows.map((r, i) => {
+          const floor = r.minimum_n ?? measurement?.minimum_n ?? 20;
+          const note = r.status === 'supported'
+            ? C.measurement.supported(r.eligible_n ?? 0, r.standing_pct)
+            : r.status === 'below_floor'
+              ? C.measurement.sparse(r.eligible_n ?? 0, floor)
+              : r.status === 'metric_missing' ? C.measurement.missing : C.measurement.unknown;
+          return <div key={`${r.metric}-${r.target_age_days}-${r.captured_at}-${i}`} style={{ padding: '11px 0', borderBottom: `1px solid ${LINE}`, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 12, alignItems: 'start' }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{C.measurement.metric[r.metric] || r.metric}</div>
+              <Meta style={{ marginTop: 3 }}>Post {r.canonical_post_id ? String(r.canonical_post_id).slice(-8) : 'identity unknown'} · {C.measurement.basis(r.target_age_days, r.actual_age_days, r.captured_at ? fmtDay(r.captured_at) : null)}</Meta>
+              <Meta style={{ marginTop: 3 }}>{note}</Meta>
+            </div>
+            <Num size="row" inline style={{ fontSize: 19 }}>{r.value === null ? '—' : fmtNum(r.value)}</Num>
+          </div>;
+        })}
+      </div>
+      </details>
+    </div>
+  );
+}
+
 /* ══════════════════════════ the section ══════════════════════════ */
 
 export function AudienceSection({ audience, live = false, onDecide }: {
@@ -633,7 +681,7 @@ export function AudienceSection({ audience, live = false, onDecide }: {
   // client has no manifest: render nothing at all, never a placeholder.
   if (!audience) return null;
 
-  const { state, posts, recommendations, monthly_median: median, assets, freshness } = audience;
+  const { state, posts, recommendations, monthly_median: median, assets, freshness, measurement } = audience;
   // Posts that actually have a people count. NEVER the sum of the per-post
   // people columns: those are distinct within a post, not across posts, so a sum
   // would report a distinct-people total that is wrong (contract rule 3).
@@ -738,6 +786,8 @@ export function AudienceSection({ audience, live = false, onDecide }: {
 
       {/* ---- relationship ----------------------------------------------- */}
       {state !== 'empty' && people && <RelationshipBlock people={people} />}
+
+      {state !== 'empty' && <MeasurementBlock measurement={measurement} />}
 
       {/* ---- monthly trend --------------------------------------------- */}
       {state !== 'empty' && (

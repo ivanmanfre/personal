@@ -534,9 +534,18 @@ describe('AudienceSection: what the normal state actually shows', () => {
     expect(html).toContain(AUDIENCE_COPY.posts.capturedAt('1 Sep'));
   });
 
-  it('spells out the rank basis, with the eligible denominator', () => {
-    expect(html).toContain(AUDIENCE_COPY.posts.rank.matched(1, 3, 7));
-    expect(html).toContain(AUDIENCE_COPY.posts.rank.matched(3, 3, 7));
+  it('withholds a percentage for legacy ordinal ranks and shows the measured standing field', () => {
+    expect(html).not.toContain(AUDIENCE_COPY.posts.rank.matched(1, 3, 7));
+    expect(html).not.toContain(AUDIENCE_COPY.posts.rank.matched(3, 3, 7));
+
+    const withStanding = structuredClone(FIXTURES.normal);
+    withStanding.posts[0].rank.standing_pct = 95;
+    withStanding.posts[1].rank.standing_pct = 50;
+    withStanding.posts[2].rank.standing_pct = 5;
+    const standingHtml = renderSkin('desk', withStanding);
+    expect(standingHtml).toContain(AUDIENCE_COPY.posts.rank.matched(95, 3, 7));
+    expect(standingHtml).toContain(AUDIENCE_COPY.posts.rank.matched(50, 3, 7));
+    expect(standingHtml).toContain(AUDIENCE_COPY.posts.rank.matched(5, 3, 7));
   });
 
   it('counts relevant engagers as people, and shows the operator it excluded', () => {

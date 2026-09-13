@@ -3,6 +3,7 @@ import { Target, Users, Network, FileText, ChevronDown, ExternalLink } from 'luc
 import { supabase } from '../../lib/supabase';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import EmptyState from './shared/EmptyState';
+import { AudienceAuditMeasurement } from './AudienceAuditMeasurement';
 
 interface NamedExample {
   name?: string;
@@ -26,6 +27,15 @@ interface AudienceAudit {
   onepagerUrl: string | null;
   source: string | null;
   auditedAt: string | null;
+  buyerDefinition: string | null;
+  rubricVersion: string | null;
+  engagerSampleRule: string | null;
+  networkSampleSize: number | null;
+  floorVerdict: string | null;
+  clientId: string | null;
+  measurement: any;
+  guidance: any;
+  audienceCoverage: any;
 }
 
 function mapAudit(r: any): AudienceAudit {
@@ -45,6 +55,15 @@ function mapAudit(r: any): AudienceAudit {
     onepagerUrl: r.onepager_url ?? null,
     source: r.source ?? null,
     auditedAt: r.audited_at ?? null,
+    buyerDefinition: r.buyer_definition ?? null,
+    rubricVersion: r.rubric_version ?? null,
+    engagerSampleRule: r.engager_sample_rule ?? null,
+    networkSampleSize: r.network_sample_size ?? null,
+    floorVerdict: r.floor_verdict ?? null,
+    clientId: r.client_id ?? null,
+    measurement: r.measurement ?? null,
+    guidance: r.guidance ?? null,
+    audienceCoverage: r.audience_coverage ?? null,
   };
 }
 
@@ -116,9 +135,10 @@ function BucketBar({ buckets }: { buckets: Record<string, number> | null }) {
   );
 }
 
-function AuditCard({ audit }: { audit: AudienceAudit }) {
+export function AuditCard({ audit }: { audit: AudienceAudit }) {
   const [showExamples, setShowExamples] = useState(false);
   const exampleCount = audit.namedExamples.length;
+  const clientLearning = Boolean(audit.clientId || audit.source === 'client-learning');
 
   return (
     <div className="panel-surface shadow-sm shadow-black/10 p-5">
@@ -138,7 +158,8 @@ function AuditCard({ audit }: { audit: AudienceAudit }) {
         )}
       </div>
 
-      {/* Load-bearing numbers */}
+      {clientLearning ? <AudienceAuditMeasurement audit={audit} /> : <>
+      {/* Historic hand-raiser fields retain their original DTC bucket meaning. */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40 p-3">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
@@ -168,6 +189,14 @@ function AuditCard({ audit }: { audit: AudienceAudit }) {
         </p>
       )}
 
+      <div className="mt-3 space-y-1 text-xs text-zinc-400">
+        {audit.buyerDefinition ? <p><span className="text-zinc-500">Buyer read:</span> {audit.buyerDefinition}</p> : <p className="text-amber-400">Buyer definition was not captured, so this density cannot support a buyer claim.</p>}
+        {audit.engagerSampleRule && <p><span className="text-zinc-500">Engager sample:</span> {audit.engagerSampleRule}</p>}
+        {audit.networkSampleSize != null && <p><span className="text-zinc-500">Network sample:</span> {audit.networkSampleSize.toLocaleString()} profiles classified</p>}
+        {audit.floorVerdict && <p><span className="text-zinc-500">Read status:</span> {audit.floorVerdict}</p>}
+        {audit.rubricVersion && <p className="text-zinc-500">Rubric {audit.rubricVersion}</p>}
+      </div>
+
       {/* Bucket breakdown */}
       <div className="mt-4">
         <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
@@ -175,9 +204,10 @@ function AuditCard({ audit }: { audit: AudienceAudit }) {
         </div>
         <BucketBar buckets={audit.buckets} />
       </div>
+      </>}
 
       {/* Named examples */}
-      {exampleCount > 0 && (
+      {!clientLearning && exampleCount > 0 && (
         <div className="mt-4 border-t border-zinc-800/60 pt-3">
           <button
             onClick={() => setShowExamples((v) => !v)}

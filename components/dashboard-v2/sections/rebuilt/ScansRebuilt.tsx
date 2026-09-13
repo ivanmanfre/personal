@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ExternalLink, RefreshCw, Search } from 'lucide-react';
 import { supabase } from '../../../../lib/supabase';
+import { AudienceAuditMeasurement } from '../../../dashboard/AudienceAuditMeasurement';
 import '../../editorial-cockpit.css';
 import '../../review/worksurface.css';
 import './scans/scans.css';
@@ -40,6 +41,10 @@ interface AudienceAudit {
   onepagerUrl: string | null;
   source: string | null;
   auditedAt: string | null;
+  clientId: string | null;
+  measurement: any;
+  guidance: any;
+  audienceCoverage: any;
 }
 
 function mapAudit(r: any): AudienceAudit {
@@ -59,6 +64,10 @@ function mapAudit(r: any): AudienceAudit {
     onepagerUrl: r.onepager_url ?? null,
     source: r.source ?? null,
     auditedAt: r.audited_at ?? null,
+    clientId: r.client_id ?? null,
+    measurement: r.measurement ?? null,
+    guidance: r.guidance ?? null,
+    audienceCoverage: r.audience_coverage ?? null,
   };
 }
 
@@ -164,10 +173,25 @@ function EnBar({ label, kind, value, scaleMax }: {
   );
 }
 
-function AuditRow({ audit, rank, scaleMax }: { audit: AudienceAudit; rank: number; scaleMax: number; }) {
-  const [open, setOpen] = useState(false);
+export function AuditRow({ audit, rank, scaleMax, defaultOpen = false }: { audit: AudienceAudit; rank: number; scaleMax: number; defaultOpen?: boolean; }) {
+  const [open, setOpen] = useState(defaultOpen);
   const tier = verdictTier(audit.verdict);
   const exampleCount = audit.namedExamples.length;
+  const clientLearning = Boolean(audit.clientId || audit.source === 'client-learning');
+
+  if (clientLearning) return (
+    <div className="scn-row scn-row--neutral" data-audience-audit="client-learning">
+      <button type="button" className="scn-row-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className="scn-rank">{String(rank).padStart(2, '0')}</span>
+        <span className="scn-idcell"><span className="scn-name">{audit.prospectName || audit.clientId || 'Client learning'}</span><span className="scn-sub">{fmtDate(audit.auditedAt)} · client-learning audit</span></span>
+        <span className="scn-verdict scn-verdict--neutral">OBSERVED</span>
+        <span className="scn-brel scn-brel--na">labels</span>
+        <span className="scn-en"><span className="scn-en-lbl">{audit.audienceCoverage?.distinct_people ?? 'unknown'} people</span></span>
+        <ChevronDown className={`scn-chev ${open ? 'scn-chev--open' : ''}`} size={16} aria-hidden />
+      </button>
+      {open && <div className="scn-detail"><div style={{ gridColumn: '1 / -1' }}><AudienceAuditMeasurement audit={audit} /></div></div>}
+    </div>
+  );
 
   return (
     <div className={`scn-row scn-row--${tier}`}>

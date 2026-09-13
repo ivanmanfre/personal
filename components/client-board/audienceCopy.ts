@@ -50,7 +50,7 @@ export const AUDIENCE_COPY = {
     normal: 'Reviewed against your own posts and the accounts on your source list.',
     empty: 'Nothing reviewed yet. The first review fills this in.',
     unknown: 'People engaged, and none of them has been judged for relevance yet. The counts below stay unknown until they are.',
-    incomplete_history: 'These posts were measured, but not yet at an age that compares to your other posts. Ranks appear once two posts have been measured at the same age.',
+    incomplete_history: 'These posts were measured, but there are not yet 20 eligible posts at the same age. A standing is withheld until that per-metric floor is met.',
     stale: 'Nothing new has been collected here for more than two weeks. The numbers below are the last ones we have, with the date they were taken.',
   },
   /** The chip about WHAT STATE the review is in. It never claims freshness:
@@ -167,6 +167,7 @@ export const AUDIENCE_COPY = {
       rejected: 'You said skip it.',
       deferred: 'You said later.',
     } as Record<string, string>,
+    acceptedNext: 'Next: our team reviews this in the editorial queue. This choice does not publish anything.',
     change: 'Change this',
     saving: 'Saving',
     failed: 'That did not save. Try again.',
@@ -185,8 +186,8 @@ export const AUDIENCE_COPY = {
     capturedAt: (d: string) => `taken ${d}`,
     notMeasured: 'Not measured yet',
     rank: {
-      matched: (rank: number, n: number, age: number) =>
-        `Rank ${rank} of ${n} of your posts measured at ${age} days old`,
+      matched: (standingPct: number, n: number, age: number) =>
+        `Standing ${standingPct}% among ${n} of your posts measured at ${age} days old`,
       observed: 'Measured, but not yet at an age that compares to your other posts',
       none: 'Not measured yet',
     },
@@ -288,6 +289,20 @@ export const AUDIENCE_COPY = {
   },
 
   // ── monthly trend ───────────────────────────────────────────────────────
+  measurement: {
+    heading: 'How your posts compare',
+    blurb: 'Each measure stands on its own. A higher impression count is not the same as a higher engagement rate.',
+    metric: {
+      impressions: 'Impressions',
+      engagement_count: 'Engagement count',
+      engagement_per_1000: 'Engagement per 1,000 impressions',
+    } as Record<string, string>,
+    supported: (n: number, standing: number | null) => `Compared with ${n} eligible posts${standing === null ? '' : ` · standing ${Math.round(standing)}%`}`,
+    sparse: (n: number, floor: number) => `${n} eligible posts. Under the ${floor}-post floor, so no percentile is shown.`,
+    missing: 'This measure was not collected for the selected snapshot.',
+    unknown: 'A comparable measurement is not available yet.',
+    basis: (target: number | null, actual: number | null, captured: string | null) => `Target ${target ?? 'unknown'} days · captured ${captured ?? 'unknown'} · actual age ${actual ?? 'unknown'} days`,
+  },
   trend: {
     heading: 'Month by month',
     blurb: 'The middle post of each month, measured at the same age. Not an average, so one big post cannot carry a month.',
