@@ -304,6 +304,31 @@
 .ec .hx-empty { font-family: var(--ec-sans); font-size: 13px; color: var(--ec-mutedc); padding: 1.6rem 0; }
 .ec .hx-loading { font-family: var(--ec-sans); font-size: 13px; color: var(--ec-mutedc); padding: 2.4rem 0; }
 
+/* ── Who the posts reached (2026-09-15) ───────────────────────────────────────
+   In/out-of-network split + share of members reached, from client_post_metrics via
+   the ivan_post_reach() RPC. Same numbers as the client board card, Health register:
+   ink segments, square swatches, radius 0. */
+.ec .hx-reach { border-top: 1px solid var(--ec-rule); padding: 0.9rem 0 1rem; margin-bottom: 1.8rem; }
+.ec .hx-reach-scope { margin-left: auto; text-align: right; font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-mutedc); }
+.ec .hx-reach-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: clamp(1.2rem, 3vw, 2.6rem); }
+.ec .hx-reach-grid > div { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.ec .hx-reach-lbl { margin-top: 0.2rem; }
+.ec .hx-reach-note { font-family: var(--ec-sans); font-size: 11.5px; line-height: 1.45; color: var(--ec-mutedc); }
+.ec .hx-reach-bar { display: inline-flex; flex: 0 0 96px; width: 96px; height: 6px; background: var(--ec-rule); overflow: hidden; }
+.ec .hx-reach-bar--big { flex: 0 0 auto; width: 100%; max-width: 420px; height: 10px; margin-top: 0.5rem; }
+.ec .hx-reach-in { display: block; height: 100%; background: var(--ec-dim); }
+.ec .hx-reach-out { display: block; height: 100%; background: var(--ec-ink); }
+.ec .hx-reach-sw { display: inline-block; width: 8px; height: 8px; margin-right: 5px; vertical-align: 0; background: var(--ec-dim); }
+.ec .hx-reach-sw--out { background: var(--ec-ink); }
+.ec .hx-reach-row { display: flex; align-items: center; gap: 0.35rem 0.9rem; flex-wrap: wrap; font-family: var(--ec-sans); font-size: 11.5px; font-weight: 600; color: var(--ec-body); }
+.ec .hx-reach-legend { margin-top: 0.2rem; }
+.ec .hx-reach-share { border-top: 1px solid var(--ec-rule); padding-top: 0.45rem; margin-top: 0.3rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.ec .hx-reach-k { font-family: var(--ec-sans); font-size: 11px; font-weight: 600; color: var(--ec-mutedc); }
+.ec .hx-reach-v { font-family: var(--ec-sans); font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--ec-ink); }
+.ec .hx-reach-line { margin-top: 0.4rem; }
+.ec .hx-reach-who { margin-top: 0.25rem; font-family: var(--ec-sans); font-size: 11.5px; line-height: 1.45; color: var(--ec-mutedc); }
+.ec .hx-reach-who b { font-weight: 700; color: var(--ec-body); }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 1080px) {
   .ec .hx-hero-body { grid-template-columns: 1fr; align-items: start; gap: 1.2rem; }
@@ -312,6 +337,7 @@
 }
 @media (max-width: 900px) {
   .ec .hx-stats { grid-template-columns: repeat(2, 1fr); }
+  .ec .hx-reach-grid { grid-template-columns: 1fr; }
   .ec .hx-job { grid-template-columns: auto minmax(0, 1fr) 74px auto; }
   .ec .hx-job-sched-cell { display: none; }
   .ec .hx-job-status-cell { display: none; }

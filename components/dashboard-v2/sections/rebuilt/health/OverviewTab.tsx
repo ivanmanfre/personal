@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 import { useOwnPosts } from '../../../../../hooks/useOwnPosts';
+import { useIvanPostReach } from '../../../../../hooks/useIvanPostReach';
 import { useAgentData } from '../../../../../hooks/useAgentData';
 import { useContentPipeline } from '../../../../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../../../../hooks/useAutoRefresh';
@@ -9,6 +10,7 @@ import { timeAgo, formatNum } from '../../../../dashboard/shared/utils';
 import { pipelineConfig } from '../../../../dashboard/system-map/config';
 import StackCard from '../../../../dashboard/StackCard';
 import { workflowHealth, StatusMark } from './shared';
+import { PostReachLine, PostReachRollup } from './PostReach';
 import type { WorkflowStat } from '../../../../../types/dashboard';
 
 /*
@@ -39,12 +41,15 @@ function truncateWords(text: string, max: number): string {
 const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) => {
   const { userTimezone } = useDashboard();
   const { posts, refresh: refreshPosts } = useOwnPosts(60);
+  // Who each post reached (client_post_metrics via the ivan_post_reach RPC), joined by
+  // exact LinkedIn URL. Empty map = every post renders exactly as before.
+  const { byUrl: reachByUrl, refresh: refreshReach } = useIvanPostReach();
   const { alerts, reminders, messageStats, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData(userTimezone);
   const { statusCounts, refresh: refreshContent } = useContentPipeline(userTimezone);
   const pendingPostsCount = statusCounts.pending || 0;
 
   useAutoRefresh(
-    async () => { await Promise.all([refreshPosts(), refreshAgent(), refreshContent()]); },
+    async () => { await Promise.all([refreshPosts(), refreshAgent(), refreshContent(), refreshReach()]); },
     { realtimeTables: ['own_posts', 'n8nclaw_proactive_alerts'] },
   );
 
@@ -55,6 +60,14 @@ const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) 
     const sum = (k: 'impressions' | 'likes' | 'comments') => curr.reduce((s, r) => s + (r[k] || 0), 0);
     return { count: curr.length, impressions: sum('impressions'), likes: sum('likes'), comments: sum('comments') };
   }, [posts]);
+
+  // Same 30-day window as the stat lockups, carrying each post's captured split (if any).
+  const reach30d = useMemo(() => {
+    const cut = Date.now() - 30 * 86400000;
+    return posts
+      .filter((p) => new Date(p.postedAt).getTime() >= cut)
+      .map((p) => ({ impressions: p.impressions, ...(reachByUrl.get(p.linkedinUrl) || {}) }));
+  }, [posts, reachByUrl]);
 
   // Pipeline health (system-map grouping)
   const pipelineHealth = useMemo(() => pipelineConfig.map((p) => {
@@ -102,9 +115,9 @@ const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) 
   }, [alerts]);
 
   const activity = useMemo(() => [
-    ...posts.slice(0, 5).map((p) => ({ type: 'post' as const, text: truncateWords(p.text, 80), time: p.postedAt, meta: `${formatNum(p.impressions)} views` })),
-    ...alerts.slice(0, 5).map((a) => ({ type: 'alert' as const, text: a.title, time: a.createdAt, meta: a.alertType.replace(/_/g, ' ') })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8), [posts, alerts]);
+    ...posts.slice(0, 5).map((p) => ({ type: 'post' as const, text: truncateWords(p.text, 80), time: p.postedAt, meta: `${formatNum(p.impressions)} views`, reach: reachByUrl.get(p.linkedinUrl) || null })),
+    ...alerts.slice(0, 5).map((a) => ({ type: 'alert' as const, text: a.title, time: a.createdAt, meta: a.alertType.replace(/_/g, ' '), reach: null })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8), [posts, alerts, reachByUrl]);
 
   return (
     <div>
@@ -156,6 +169,9 @@ const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) 
         </div>
       </div>
 
+      {/* Who the posts reached: 30-day roll-up. Renders nothing until a post carries the split. */}
+      <PostReachRollup posts={reach30d} windowLabel="last 30 days" />
+
       {/* Pipeline strip → system map */}
       <button className="hx-pipe" onClick={() => onSection('pulse')}>
         <div className="hx-pipe-cap">
@@ -193,6 +209,7 @@ const OverviewTab: React.FC<Props> = ({ workflows, wfStats, onTab, onSection }) 
                   <div className="ec-item-body">
                     <div className="ec-item-title" style={{ fontSize: 13 }}>{it.text}</div>
                     <div className="ec-item-meta">{timeAgo(it.time)} · {it.meta}</div>
+                    {it.type === 'post' && <PostReachLine reach={it.reach} />}
                   </div>
                 </div>
               ))}

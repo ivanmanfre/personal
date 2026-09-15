@@ -170,18 +170,26 @@ describe('DeskPerformanceSurface', () => {
     expect(html).toContain('Earlier weeks:');
 
     // (i) who the posts reached. Roll-up over the chart's two-week window, weighted by
-    // reads: (75*1354 + 20*217 + 30*132) / (1354+217+132) = 64.5 -> 65% out of network,
-    // and the most common #1 job title is Founder (2 of the 3 posts that carry buckets).
+    // reads: (75*1354 + 20*217 + 30*132) / (1354+217+132) = 64.5 -> 65% out of network.
     expect(html).toContain('Who the posts reached');
     expect(html).toContain('3 posts, these 2 weeks');
     expect(html).toMatch(/>65%</);
     expect(html).toContain('In network 35%');
     expect(html).toContain('Out of network 65%');
     expect(html).toContain('Weighted by reads across 3 posts.');
-    expect(html).toContain('Most common viewers');
-    expect(html).toMatch(/Founder<\/div>[\s\S]{0,200}?top viewer role on 2 of 3 posts/);
-    expect(html).toMatch(/Senior<\/div>[\s\S]{0,200}?top seniority on 2 of 3 posts/);
-    expect(html).toMatch(/Retail<\/div>[\s\S]{0,200}?top industry on 2 of 2 posts/);
+    // Viewer groups are a SHARE OF MEMBERS REACHED, never "top on N of M posts".
+    // Job title over the 3 posts listing it (1210 + 190 + 120 = 1520 members):
+    //   Founder (0.21*1210 + 0.14*190) / 1520 = 18.5 -> 18%; Marketing Manager 0.09*1210 / 1520
+    //   = 7.2 -> 7%; CEO 0.06*1210 / 1520 = 4.8 -> 5%; Head of Growth 0.11*120 / 1520 = 0.9 (4th).
+    // Seniority: Senior (0.31*1210 + 0.28*120) / 1520 = 26.9 -> 27%; Owner 0.22*190 / 1520 = 2.75 -> 3%.
+    // Industry: the 29 Jul post lists none, so the base is 1210 + 190 = 1400:
+    //   Retail (0.18*1210 + 0.12*190) / 1400 = 17.2 -> 17%.
+    expect(html).toContain('Share of members reached');
+    expect(html).not.toContain('Most common viewers');
+    expect(html).not.toMatch(/on \d+ of \d+ posts/);
+    expect(html).toMatch(/data-share="role"[\s\S]{0,300}?Job title<\/div>[\s\S]{0,200}?>Founder 18%, Marketing Manager 7%, CEO 5%</);
+    expect(html).toMatch(/data-share="seniority"[\s\S]{0,300}?>Senior 27%, Owner 3%</);
+    expect(html).toMatch(/data-share="industry"[\s\S]{0,300}?>Retail 17%</);
     // per-row: the three carrying rows draw the split + reached + buckets; the row without
     // the split (30 Jul, same visible week) draws none of it. Three rows carry a split,
     // and the roll-up adds one more bar: four split bars on the page.

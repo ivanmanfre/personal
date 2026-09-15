@@ -38,6 +38,7 @@ import {
 import type { Board, QueueItem, PerfIndicator, PerfPost, PerfDemoBucket } from '../ClientBoardPage';
 import { expectationFor } from './expectation';
 import { AudienceSection } from './AudienceSection';
+import { splitOf, topBuckets, reachShares, formatShares, weightedSplit } from '../../lib/postReach';
 import type { AudiencePayload, DecideFn } from './AudienceSection';
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -62,32 +63,8 @@ const AIM_LABEL: Record<string, string> = { reach: 'Reach', trust: 'Trust', buye
  * performance syncs. A post captured before the split existed carries neither key and
  * draws NOTHING here (no dash, no zero): absence is the honest state, same rule as the
  * profile-view / follower counts above. */
-const isPct = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-/** The split is drawable only when both halves are real numbers. */
-function splitOf(p: PerfPost): { inPct: number; outPct: number } | null {
-  const n = p.network;
-  if (!n || !isPct(n.in_pct) || !isPct(n.out_pct)) return null;
-  return { inPct: Math.max(0, Math.min(100, n.in_pct)), outPct: Math.max(0, Math.min(100, n.out_pct)) };
-}
-/** Top buckets of one demographic list, in the order LinkedIn ranks them. */
-function topBuckets(list: PerfDemoBucket[] | undefined | null, n: number): PerfDemoBucket[] {
-  return (Array.isArray(list) ? list : []).filter((b) => b && typeof b.label === 'string' && b.label.trim() && isPct(b.pct)).slice(0, n);
-}
-/** Most common #1 bucket across posts: the label that topped the most lists, with how many
- *  posts it topped. Counts, never an invented average over lists where a label is absent. */
-function commonTop(posts: PerfPost[], key: keyof NonNullable<PerfPost['demographics']>): { label: string; n: number; of: number } | null {
-  const counts = new Map<string, number>();
-  let of = 0;
-  posts.forEach((p) => {
-    const top = topBuckets(p.demographics?.[key], 1)[0];
-    if (!top) return;
-    of += 1;
-    counts.set(top.label, (counts.get(top.label) || 0) + 1);
-  });
-  if (!of) return null;
-  const [label, n] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
-  return { label, n, of };
-}
+// splitOf / topBuckets / reachShares live in lib/postReach.ts, shared with Ivan's own
+// dashboard so both surfaces compute the same numbers.
 /** One bar, two segments: in network (muted fill) then out of network (ink). Same track,
  *  radius and fill class as the kit's own bars so it animates and reads as one family. */
 function SplitBar({ inPct, outPct, height = 8, style }: { inPct: number; outPct: number; height?: number; style?: React.CSSProperties }) {
@@ -327,24 +304,20 @@ export function DeskPerformanceSurface({
 
   /* ── Block 3b: who the posts reached — roll-up over the SAME two-week window the chart
      draws (`measured`), restricted to posts that carry the split. Out-of-network share is
-     weighted by reads (a 3,000-read post counts more than a 60-read one); the viewer
-     buckets are counted as "topped N of M posts", never averaged across lists. Renders
-     nothing when no post in the window carries the split. ── */
+     weighted by reads (a 3,000-read post counts more than a 60-read one). Viewer groups are
+     a share of members reached: each post's bucket pct times its members reached, summed,
+     over the summed members reached of the posts listing that category. (Counting how many
+     posts a label topped read as dominance: "top industry on 43 of 51 posts" was 12% of
+     members reached.) Renders nothing when no post in the window carries the split. ── */
   const reach = (() => {
     const withSplit = measured.filter((p) => splitOf(p));
-    if (!withSplit.length) return null;
-    let wIn = 0, wOut = 0, w = 0;
-    withSplit.forEach((p) => {
-      const sp = splitOf(p)!;
-      const weight = typeof p.impressions === 'number' && (p.impressions as number) > 0 ? (p.impressions as number) : 1;
-      wIn += sp.inPct * weight; wOut += sp.outPct * weight; w += weight;
-    });
-    const inPct = Math.round(wIn / w), outPct = Math.round(wOut / w);
+    const sp = weightedSplit(withSplit, (p) => (typeof p.impressions === 'number' ? p.impressions : null));
+    if (!sp) return null;
     return {
-      n: withSplit.length, inPct, outPct,
-      role: commonTop(withSplit, 'job_title'),
-      seniority: commonTop(withSplit, 'seniority'),
-      industry: commonTop(withSplit, 'industry'),
+      n: sp.n, inPct: sp.inPct, outPct: sp.outPct,
+      role: reachShares(withSplit, 'job_title', 3),
+      seniority: reachShares(withSplit, 'seniority', 3),
+      industry: reachShares(withSplit, 'industry', 3),
     };
   })();
 
@@ -553,19 +526,20 @@ export function DeskPerformanceSurface({
                 </div>
                 {(reach.role || reach.seniority || reach.industry) && (
                   <div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Most common viewers</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Share of members reached</div>
                     <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {[
-                        reach.role ? { k: 'role', what: 'top viewer role', v: reach.role } : null,
-                        reach.seniority ? { k: 'seniority', what: 'top seniority', v: reach.seniority } : null,
-                        reach.industry ? { k: 'industry', what: 'top industry', v: reach.industry } : null,
+                        reach.role ? { k: 'role', what: 'Job title', v: reach.role } : null,
+                        reach.seniority ? { k: 'seniority', what: 'Seniority', v: reach.seniority } : null,
+                        reach.industry ? { k: 'industry', what: 'Industry', v: reach.industry } : null,
                       ].filter(Boolean).map((r) => (
-                        <div key={r!.k} style={{ borderTop: '1px solid var(--cb-line)', paddingTop: 8 }}>
-                          <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 16, lineHeight: 1.25 }}>{r!.v.label}</div>
-                          <div style={{ marginTop: 2, fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{r!.what} on {r!.v.n} of {r!.v.of} {r!.v.of === 1 ? 'post' : 'posts'}</div>
+                        <div key={r!.k} data-share={r!.k} style={{ borderTop: '1px solid var(--cb-line)', paddingTop: 8 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{r!.what}</div>
+                          <div style={{ marginTop: 2, fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 16, lineHeight: 1.3 }}>{formatShares(r!.v.labels)}</div>
                         </div>
                       ))}
                     </div>
+                    <Footnote style={{ marginTop: 8 }}>Each figure is the share of all members these posts reached. LinkedIn lists only the largest groups per post, so smaller groups are not counted.</Footnote>
                   </div>
                 )}
               </div>
