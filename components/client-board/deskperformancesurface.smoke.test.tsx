@@ -25,6 +25,18 @@ const WEEK2 = [
   { title: 'Free calculator hub launch post', published_at: '2026-07-29', impressions: 132, reactions: 5, comments: 0 },
   { title: 'The Profit Gap: 50% growth, $6,000 kept', published_at: '2026-07-30', impressions: 149, reactions: 4, comments: 2 },
 ];
+/** Who-the-post-reached split + viewer buckets on THREE of the eight posts (the other five
+ *  predate the split and must render exactly as before). Test-only fabrication, shaped
+ *  like client_post_metrics.meta.network / .demographics. */
+const NET = {
+  // 27 Jul best post: 1,354 reads, mostly out of network
+  '2026-07-27': { network: { in_pct: 25, out_pct: 75, members_reached: 1210, captured_at: '2026-07-31' },
+    demographics: { job_title: [{ label: 'Founder', pct: 21 }, { label: 'Marketing Manager', pct: 9 }, { label: 'CEO', pct: 6 }], seniority: [{ label: 'Senior', pct: 31 }], industry: [{ label: 'Retail', pct: 18 }], location: [], company_size: [] } },
+  '2026-07-28': { network: { in_pct: 80, out_pct: 20, members_reached: 190, captured_at: '2026-07-31' },
+    demographics: { job_title: [{ label: 'Founder', pct: 14 }], seniority: [{ label: 'Owner', pct: 22 }], industry: [{ label: 'Retail', pct: 12 }] } },
+  '2026-07-29': { network: { in_pct: 70, out_pct: 30, members_reached: 120, captured_at: '2026-07-31' },
+    demographics: { job_title: [{ label: 'Head of Growth', pct: 11 }], seniority: [{ label: 'Senior', pct: 28 }], industry: [] } },
+} as const;
 
 function boardA(): Board {
   return {
@@ -42,7 +54,7 @@ function boardA(): Board {
       indicators: [
         { key: 'views', label: 'Profile views', value: 240, source: 'LinkedIn', captured_at: '2026-07-30' },
       ],
-      posts: [...WEEK1, ...WEEK2],
+      posts: [...WEEK1, ...WEEK2].map((p) => ({ ...p, ...((NET as any)[p.published_at] || {}) })),
       posts_updated_at: '2026-07-30',
     },
     engine_updates: [
@@ -156,6 +168,34 @@ describe('DeskPerformanceSurface', () => {
     const reachChip = html.match(/<span class="chip"[^>]*style="([^"]*)"[^>]*>Reach<\/span>/);
     expect(reachChip).toBeTruthy();
     expect(html).toContain('Earlier weeks:');
+
+    // (i) who the posts reached. Roll-up over the chart's two-week window, weighted by
+    // reads: (75*1354 + 20*217 + 30*132) / (1354+217+132) = 64.5 -> 65% out of network,
+    // and the most common #1 job title is Founder (2 of the 3 posts that carry buckets).
+    expect(html).toContain('Who the posts reached');
+    expect(html).toContain('3 posts, these 2 weeks');
+    expect(html).toMatch(/>65%</);
+    expect(html).toContain('In network 35%');
+    expect(html).toContain('Out of network 65%');
+    expect(html).toContain('Weighted by reads across 3 posts.');
+    expect(html).toContain('Most common viewers');
+    expect(html).toMatch(/Founder<\/div>[\s\S]{0,200}?top viewer role on 2 of 3 posts/);
+    expect(html).toMatch(/Senior<\/div>[\s\S]{0,200}?top seniority on 2 of 3 posts/);
+    expect(html).toMatch(/Retail<\/div>[\s\S]{0,200}?top industry on 2 of 2 posts/);
+    // per-row: the three carrying rows draw the split + reached + buckets; the row without
+    // the split (30 Jul, same visible week) draws none of it. Three rows carry a split,
+    // and the roll-up adds one more bar: four split bars on the page.
+    expect((html.match(/data-metric="reach"/g) || []).length).toBe(3);
+    expect((html.match(/data-viz="split"/g) || []).length).toBe(4);
+    expect(html).toContain('In network 25%');
+    expect(html).toContain('Out of network 75%');
+    expect(html).toContain('Reached 1,210');
+    expect(html).toContain('Founder 21%, Marketing Manager 9%, CEO 6%');
+    expect(html).toMatch(/Seniority<\/b> Senior 31%/);
+    expect(html).toMatch(/Industry<\/b> Retail 18%/);
+    // no dash / zero placeholder for the rows that predate the split
+    expect(html).not.toContain('In network —');
+    expect(html).not.toContain('Reached 0');
   });
 
   it('renders a single post honestly: no best-vs-average clause, no delta chips', () => {
@@ -170,6 +210,10 @@ describe('DeskPerformanceSurface', () => {
     expect(html).not.toContain('Take the best post out');
     expect((html.match(/class="cb-perfh-hit"/g) || []).length).toBe(1);
     expect(html).toContain('Solo post: 500 reads, 27 Jul');
+    // a post with no split renders none of the reach block, no placeholder either
+    expect(html).not.toContain('Who the posts reached');
+    expect(html).not.toContain('In network');
+    expect(html).not.toContain('data-metric="reach"');
     // still a real, gate-visible surface
     expect(html).toContain('data-metric');
     expect(html).toContain('data-viz');

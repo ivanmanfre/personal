@@ -35,7 +35,7 @@ import {
   Ledger, LedgerRow, LedgerCell, LedgerBar,
   Thumb, Blank, StatBlank, Drill,
 } from './desk-kit';
-import type { Board, QueueItem, PerfIndicator, PerfPost } from '../ClientBoardPage';
+import type { Board, QueueItem, PerfIndicator, PerfPost, PerfDemoBucket } from '../ClientBoardPage';
 import { expectationFor } from './expectation';
 import { AudienceSection } from './AudienceSection';
 import type { AudiencePayload, DecideFn } from './AudienceSection';
@@ -54,6 +54,55 @@ function fmtNum(n?: number | null): string {
  *  look. Only 'buyers' (bottom-of-funnel, the commercial-intent posts) renders in accent;
  *  reach/trust stay the neutral default tone, exactly as the reference ledger encodes it. */
 const AIM_LABEL: Record<string, string> = { reach: 'Reach', trust: 'Trust', buyers: 'Buyers' };
+
+/* ── Who the post reached (2026-09-15) ───────────────────────────────────────────
+ * LinkedIn's own split of a post's impressions: followers + connections (in network)
+ * against everyone else (out of network), plus the distinct members reached and the top
+ * viewer buckets. Arrives on `PerfPost.network` / `PerfPost.demographics` from the
+ * performance syncs. A post captured before the split existed carries neither key and
+ * draws NOTHING here (no dash, no zero): absence is the honest state, same rule as the
+ * profile-view / follower counts above. */
+const isPct = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+/** The split is drawable only when both halves are real numbers. */
+function splitOf(p: PerfPost): { inPct: number; outPct: number } | null {
+  const n = p.network;
+  if (!n || !isPct(n.in_pct) || !isPct(n.out_pct)) return null;
+  return { inPct: Math.max(0, Math.min(100, n.in_pct)), outPct: Math.max(0, Math.min(100, n.out_pct)) };
+}
+/** Top buckets of one demographic list, in the order LinkedIn ranks them. */
+function topBuckets(list: PerfDemoBucket[] | undefined | null, n: number): PerfDemoBucket[] {
+  return (Array.isArray(list) ? list : []).filter((b) => b && typeof b.label === 'string' && b.label.trim() && isPct(b.pct)).slice(0, n);
+}
+/** Most common #1 bucket across posts: the label that topped the most lists, with how many
+ *  posts it topped. Counts, never an invented average over lists where a label is absent. */
+function commonTop(posts: PerfPost[], key: keyof NonNullable<PerfPost['demographics']>): { label: string; n: number; of: number } | null {
+  const counts = new Map<string, number>();
+  let of = 0;
+  posts.forEach((p) => {
+    const top = topBuckets(p.demographics?.[key], 1)[0];
+    if (!top) return;
+    of += 1;
+    counts.set(top.label, (counts.get(top.label) || 0) + 1);
+  });
+  if (!of) return null;
+  const [label, n] = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
+  return { label, n, of };
+}
+/** One bar, two segments: in network (muted fill) then out of network (ink). Same track,
+ *  radius and fill class as the kit's own bars so it animates and reads as one family. */
+function SplitBar({ inPct, outPct, height = 8, style }: { inPct: number; outPct: number; height?: number; style?: React.CSSProperties }) {
+  const total = inPct + outPct || 1;
+  return (
+    <span className="bar" data-viz="split" aria-hidden="true" style={{ display: 'flex', height, borderRadius: 999, overflow: 'hidden', background: 'var(--cb-paper-sunk)', ...style }}>
+      <span className="barfill" style={{ display: 'block', height: '100%', width: `${(inPct / total) * 100}%`, background: 'var(--cb-line-bold)' }} />
+      <span className="barfill" style={{ display: 'block', height: '100%', width: `${(outPct / total) * 100}%`, background: 'var(--cb-ink)' }} />
+    </span>
+  );
+}
+/** Sharp square swatch keyed to the two segments (never a circle). */
+const Swatch = ({ out }: { out?: boolean }) => (
+  <i aria-hidden="true" style={{ display: 'inline-block', width: 8, height: 8, marginRight: 6, verticalAlign: '1px', background: out ? 'var(--cb-ink)' : 'var(--cb-line-bold)' }} />
+);
 
 /** Word-safe cap for a title embedded mid-sentence (no trailing ellipsis — this feeds
  *  straight into "the {title} post", so an ellipsis here would land in the middle of the
@@ -276,6 +325,29 @@ export function DeskPerformanceSurface({
     ? allPosts.reduce((m, p) => (typeof p.impressions === 'number' && (p.impressions as number) > m ? (p.impressions as number) : m), 0) : 0;
   const bestReadsInSet = withReads.length ? Math.max(...withReads.map((p) => p.impressions as number)) : 0;
 
+  /* ── Block 3b: who the posts reached — roll-up over the SAME two-week window the chart
+     draws (`measured`), restricted to posts that carry the split. Out-of-network share is
+     weighted by reads (a 3,000-read post counts more than a 60-read one); the viewer
+     buckets are counted as "topped N of M posts", never averaged across lists. Renders
+     nothing when no post in the window carries the split. ── */
+  const reach = (() => {
+    const withSplit = measured.filter((p) => splitOf(p));
+    if (!withSplit.length) return null;
+    let wIn = 0, wOut = 0, w = 0;
+    withSplit.forEach((p) => {
+      const sp = splitOf(p)!;
+      const weight = typeof p.impressions === 'number' && (p.impressions as number) > 0 ? (p.impressions as number) : 1;
+      wIn += sp.inPct * weight; wOut += sp.outPct * weight; w += weight;
+    });
+    const inPct = Math.round(wIn / w), outPct = Math.round(wOut / w);
+    return {
+      n: withSplit.length, inPct, outPct,
+      role: commonTop(withSplit, 'job_title'),
+      seniority: commonTop(withSplit, 'seniority'),
+      industry: commonTop(withSplit, 'industry'),
+    };
+  })();
+
   /* ── Block 4: aim mix — exact counting logic from the original's showAim block. ── */
   const aim = (() => {
     const aims = [
@@ -460,6 +532,45 @@ export function DeskPerformanceSurface({
           </div>
 
           {spansTwoWeeks && <div style={{ marginTop: 16 }}><Chip>chart shows the latest 2 of {weeks.length} weeks measured</Chip></div>}
+
+          {/* Block 3b: who the posts reached (see the roll-up above). */}
+          {reach && (
+            <Card style={{ marginTop: 14 }} className="cb-perf-reach">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <Eyebrow>Who the posts reached</Eyebrow>
+                <Chip>{reach.n} {reach.n === 1 ? 'post' : 'posts'}{spansTwoWeeks ? ', these 2 weeks' : ''}</Chip>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'clamp(16px, 3vw, 36px)', marginTop: 14 }}>
+                <div>
+                  <Num size="big">{reach.outPct}%</Num>
+                  <Footnote style={{ marginTop: 6 }}>Out of network: reads from people who do not follow you and are not connected to you</Footnote>
+                  <SplitBar inPct={reach.inPct} outPct={reach.outPct} height={12} style={{ marginTop: 12 }} />
+                  <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
+                    <span><Swatch />In network {reach.inPct}%</span>
+                    <span><Swatch out />Out of network {reach.outPct}%</span>
+                  </div>
+                  <Footnote style={{ marginTop: 6 }}>Weighted by reads across {reach.n} {reach.n === 1 ? 'post' : 'posts'}.</Footnote>
+                </div>
+                {(reach.role || reach.seniority || reach.industry) && (
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Most common viewers</div>
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {[
+                        reach.role ? { k: 'role', what: 'top viewer role', v: reach.role } : null,
+                        reach.seniority ? { k: 'seniority', what: 'top seniority', v: reach.seniority } : null,
+                        reach.industry ? { k: 'industry', what: 'top industry', v: reach.industry } : null,
+                      ].filter(Boolean).map((r) => (
+                        <div key={r!.k} style={{ borderTop: '1px solid var(--cb-line)', paddingTop: 8 }}>
+                          <div style={{ fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 16, lineHeight: 1.25 }}>{r!.v.label}</div>
+                          <div style={{ marginTop: 2, fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>{r!.what} on {r!.v.n} of {r!.v.of} {r!.v.of === 1 ? 'post' : 'posts'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </>
       )}
 
@@ -598,6 +709,35 @@ export function DeskPerformanceSurface({
                         )}
                       </div>
                       <LedgerBar pct={pct} tone={isBest ? 'strong' : 'muted'} height={isBest ? 16 : 10} />
+                      {/* Who THIS post reached: the in/out split as one small bar with both
+                          shares, members reached, then the top viewer buckets. Only when the
+                          post carries the split; older rows render exactly as before. */}
+                      {(() => {
+                        const sp = splitOf(p);
+                        if (!sp) return null;
+                        const reached = p.network && typeof p.network.members_reached === 'number' ? p.network.members_reached : null;
+                        const roles = topBuckets(p.demographics?.job_title, 3);
+                        const sen = topBuckets(p.demographics?.seniority, 1)[0];
+                        const ind = topBuckets(p.demographics?.industry, 1)[0];
+                        const split = `In network ${sp.inPct}%, out of network ${sp.outPct}%${reached != null ? `, reached ${reached.toLocaleString()} members` : ''}`;
+                        return (
+                          <div className="cb-perfh-reach" data-metric="reach">
+                            <div style={{ marginTop: 9, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }} title={split}>
+                              <SplitBar inPct={sp.inPct} outPct={sp.outPct} style={{ flex: '0 0 112px', width: 112 }} />
+                              <span><Swatch />In network {sp.inPct}%</span>
+                              <span><Swatch out />Out of network {sp.outPct}%</span>
+                              {reached != null && <span>Reached {reached.toLocaleString()}</span>}
+                            </div>
+                            {(roles.length > 0 || sen || ind) && (
+                              <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)', lineHeight: 1.45 }}>
+                                {roles.length > 0 && <><b style={{ fontWeight: 700 }}>Top viewer roles</b> {roles.map((b) => `${b.label} ${b.pct}%`).join(', ')}</>}
+                                {sen && <>{roles.length > 0 ? ' · ' : ''}<b style={{ fontWeight: 700 }}>Seniority</b> {sen.label} {sen.pct}%</>}
+                                {ind && <>{(roles.length > 0 || sen) ? ' · ' : ''}<b style={{ fontWeight: 700 }}>Industry</b> {ind.label} {ind.pct}%</>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <span className="cb-perfh-rtip" aria-hidden="true">
                         <span className="cb-perfh-rtip-t">{fullTitle}</span>
                         {reads != null && (

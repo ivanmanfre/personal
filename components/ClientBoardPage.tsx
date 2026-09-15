@@ -240,6 +240,21 @@ interface PerfPost {
    *  read as brand owners. owner_share is null (not 0) when nothing has been judged yet —
    *  an unharvested post has no share, and a drawn 0% would read as a failed post. */
   engagers?: number | null; owners?: number | null; owner_share?: number | null;
+  /** Who the post reached (2026-09-15): LinkedIn's own split of impressions between
+   *  followers + connections (in network) and everyone else (out of network), plus the
+   *  distinct members reached. Passed through from client_post_metrics.meta.network by the
+   *  performance syncs. Absent on posts captured before the split existed; the panel draws
+   *  nothing for those rows, never a zero. */
+  network?: PerfNetwork | null;
+  /** Top viewer buckets per LinkedIn's post analytics, each `{label, pct}` (percent of
+   *  viewers, top buckets only). Same source and same absence rule as `network`. */
+  demographics?: PerfDemographics | null;
+}
+interface PerfNetwork { in_pct?: number | null; out_pct?: number | null; members_reached?: number | null; captured_at?: string }
+interface PerfDemoBucket { label: string; pct: number }
+interface PerfDemographics {
+  job_title?: PerfDemoBucket[]; location?: PerfDemoBucket[]; seniority?: PerfDemoBucket[];
+  industry?: PerfDemoBucket[]; company_size?: PerfDemoBucket[];
 }
 interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
@@ -7679,7 +7694,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
  *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
  *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
 export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
-export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, OutreachTruthLead, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, CalendarItem, AgentStep };
+export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, OutreachTruthLead, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, PerfNetwork, PerfDemographics, PerfDemoBucket, CalendarItem, AgentStep };
 
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
