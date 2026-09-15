@@ -22,7 +22,7 @@ describe('postReach', () => {
     expect(r.labels).toEqual([{ label: 'Software', pct: 17 }, { label: 'Advertising', pct: 9 }]);
     expect(r.posts).toBe(3);
     expect(r.reached).toBe(1200);
-    expect(formatShares(r.labels)).toBe('Software 17%, Advertising 9%');
+    expect(formatShares(r.labels)).toBe('Software 17% · Advertising 9%');
   });
 
   it('returns null when nothing qualifies, and drops labels that round to 0%', () => {

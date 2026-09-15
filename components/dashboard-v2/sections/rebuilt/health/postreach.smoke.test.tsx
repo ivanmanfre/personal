@@ -49,9 +49,9 @@ describe('PostReach (Ivan dashboard, Health > Overview)', () => {
     expect(html).toContain('Share of members reached');
     // base 3670 + 189 = 3859. Founder (440.4 + 26.46) / 3859 = 12.1 -> 12%;
     // CEO 183.5 / 3859 = 4.8 -> 5%; Co-Founder 110.1 / 3859 = 2.9 -> 3%
-    expect(html).toMatch(/data-share="role"[\s\S]{0,200}?>Founder 12%, Chief Executive Officer 5%, Co-Founder 3%</);
+    expect(html).toMatch(/data-share="role"[\s\S]{0,200}?>Founder 12% · Chief Executive Officer 5% · Co-Founder 3%</);
     // Software 513.8 / 3859 = 13.3 -> 13%; IT Services (367 + 35.91) / 3859 = 10.4 -> 10%
-    expect(html).toMatch(/data-share="industry"[\s\S]{0,200}?>Software Development 13%, IT Services and IT Consulting 10%</);
+    expect(html).toMatch(/data-share="industry"[\s\S]{0,200}?>Software Development 13% · IT Services and IT Consulting 10%</);
     expect(html).not.toContain('NaN');
   });
 

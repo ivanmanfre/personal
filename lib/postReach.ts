@@ -84,9 +84,9 @@ export function reachShares(
   return { labels, posts: count, reached };
 }
 
-/** "Founder 18%, Marketing Manager 7%" */
+/** "Founder 18% · Marketing Manager 7%". A middle dot, not a comma: LinkedIn labels carry commas ("Technology, Information and Internet"). */
 export const formatShares = (labels: { label: string; pct: number }[]): string =>
-  labels.map((l) => `${l.label} ${l.pct}%`).join(', ');
+  labels.map((l) => `${l.label} ${l.pct}%`).join(' · ');
 
 /**
  * Out-of-network share weighted by a per-post weight (reads on the board, impressions on

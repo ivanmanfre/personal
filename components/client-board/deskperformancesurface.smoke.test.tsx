@@ -187,8 +187,8 @@ describe('DeskPerformanceSurface', () => {
     expect(html).toContain('Share of members reached');
     expect(html).not.toContain('Most common viewers');
     expect(html).not.toMatch(/on \d+ of \d+ posts/);
-    expect(html).toMatch(/data-share="role"[\s\S]{0,300}?Job title<\/div>[\s\S]{0,200}?>Founder 18%, Marketing Manager 7%, CEO 5%</);
-    expect(html).toMatch(/data-share="seniority"[\s\S]{0,300}?>Senior 27%, Owner 3%</);
+    expect(html).toMatch(/data-share="role"[\s\S]{0,300}?Job title<\/div>[\s\S]{0,200}?>Founder 18% · Marketing Manager 7% · CEO 5%</);
+    expect(html).toMatch(/data-share="seniority"[\s\S]{0,300}?>Senior 27% · Owner 3%</);
     expect(html).toMatch(/data-share="industry"[\s\S]{0,300}?>Retail 17%</);
     // per-row: the three carrying rows draw the split + reached + buckets; the row without
     // the split (30 Jul, same visible week) draws none of it. Three rows carry a split,
