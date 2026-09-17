@@ -2659,6 +2659,27 @@ interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
  *  comment-gated post gives away, and the exact PDF a carousel publishes as. Both are the
  *  things a reviewer cannot check from the copy alone, so they are links, not labels.
  *  Renders nothing when the post has neither. */
+/* Lead-magnet posts: the reviewer has to be able to open what commenters will receive, so the
+   resource sits at the top of the post, under the source notes, with the URL spelled out. */
+function LmResourceBlock({ gate, accent }: { gate?: { title: string; url: string; keyword: string } | null; accent: string }) {
+  if (!gate || !gate.url) return null;
+  return (
+    <div className="rounded-xl p-4 sm:p-5" style={{ background: caWash(accent, 8), border: `1.5px solid ${caBorder(accent, 45)}` }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: '#fff', background: caText(accent), borderRadius: 999, padding: '3px 10px' }}>Lead magnet</span>
+        {gate.keyword ? (
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.1em', color: caText(accent), border: `1px solid ${caBorder(accent, 30)}`, borderRadius: 999, padding: '2px 8px' }}>comment {gate.keyword}</span>
+        ) : null}
+      </div>
+      <div className="mt-2.5" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 15, lineHeight: 1.35, color: INK }}>{gate.title}</div>
+      <div className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Resource URL</div>
+      <a href={gate.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: BODY, fontSize: 14, fontWeight: 600, color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3, wordBreak: 'break-all', display: 'inline-block', marginTop: 3 }}>
+        {gate.url.replace(/^https?:\/\//, '')} ↗
+      </a>
+    </div>
+  );
+}
+
 function PostAssets({ gate, pdfUrl, accent, slides, title }: { gate?: { title: string; url: string; keyword: string } | null; pdfUrl?: string | null; accent: string; slides?: string[] | null; title?: string }) {
   /* The deck renders from its slides, with or without a PDF. It used to hang off `pdfUrl`
      — both the early return and the block below — so a carousel whose PDF had not been
@@ -3858,6 +3879,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
           {isLive && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
+          <LmResourceBlock gate={item.lm_gate} accent={accent} />
           {/* Content preview / edit */}
           <div className="min-w-0">
             {item.kind === 'newsletter' && item.body ? (
@@ -4071,7 +4093,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             </div>
           )}
 
-          <PostAssets gate={item.lm_gate} pdfUrl={item.pdf_url} accent={accent} slides={docPagesOf(item)} title={item.title || item.hook} />
+          <PostAssets gate={null} pdfUrl={item.pdf_url} accent={accent} slides={docPagesOf(item)} title={item.title || item.hook} />
 
           {/* Provenance (client-appropriate): status, its date, and what happens next.
               No agent steps, scores, prompts, or model names. */}
