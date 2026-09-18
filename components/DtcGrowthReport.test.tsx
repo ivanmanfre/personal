@@ -485,6 +485,27 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('shopify products.json');
   });
 
+  it('a WooCommerce store links to its storefront and the receipt names the Store API', () => {
+    // StrollAir (2026-09-18) was the first Woo brand scanned. The collector reads Woo through
+    // `/wp-json/wc/store/v1/products`, which no proofHref branch matched, so three findings
+    // pointed the founder at a raw JSON dump, and the receipt tagged every catalogue number
+    // "shopify products.json" under a store that serves no such payload.
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    const wooUrl = 'https://rodial.com/wp-json/wc/store/v1/products?per_page=100&page=1';
+    (dtc as any).shopify.source_url = wooUrl;
+    (dtc as any).shopify.data.platform = 'woocommerce';
+    for (const f of (dtc as any).findings) {
+      if (f.signal === 'shopify') f.source_url = wooUrl;
+    }
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).toContain('href="https://rodial.com"');
+    expect(html).not.toContain('wp-json');
+    expect(html).toContain('see this on your storefront');
+    expect(html).toContain('woocommerce store api');
+    expect(html).not.toContain('shopify products.json');
+  });
+
   it('a per-product .js probe URL links to the product page and labels it as one', () => {
     const fixture = loadFixture('rodial-com.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;

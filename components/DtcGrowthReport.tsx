@@ -79,6 +79,12 @@ function proofHref(url: string): string {
   try {
     const u = new URL(url);
     if (u.pathname.endsWith('/products.json')) return `${u.origin}/collections/all`;
+    // 2026-09-18 (StrollAir, first WooCommerce scan shipped): the collector reads Woo stores
+    // through `/wp-json/wc/store/v1/products`, which no branch below matched, so three findings
+    // sent the founder at a raw JSON payload, the exact Safecourt defect this function exists to
+    // stop. Woo has no guaranteed catalogue route (`/shop` is a default, not a promise), so the
+    // honest landing is the storefront itself, which is also what the link text says.
+    if (u.pathname.includes('/wp-json/')) return u.origin;
     if (u.pathname.endsWith('.js') && u.pathname.includes('/products/')) {
       return `${u.origin}${u.pathname.replace(/\.js$/, '')}`;
     }
@@ -179,6 +185,13 @@ function marginFigures(text: string): string[] {
 }
 
 // Where each signal was read from. Small-caps source line under a finding's margin figures.
+// 2026-09-18: the catalogue tag used to be the literal string "shopify products.json" on every
+// scan. StrollAir is WooCommerce, read at `wc/store/v1/products`, so the receipt named a payload
+// the founder's store does not serve, under numbers she was being asked to trust.
+function catalogSource(sourceUrl?: string | null): string {
+  return sourceUrl && sourceUrl.includes('/wc/store/') ? 'woocommerce store api' : 'shopify products.json';
+}
+
 const MARGIN_SOURCE: Record<string, string> = {
   shopify: 'shopify products.json',
   reviews: 'product page',
@@ -1341,6 +1354,9 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const shopData = shop?.status === 'present' && shop.data ? shop.data : null;
   if (shopData) {
     const rest: ReceiptLine[] = [];
+    // The receipt names the endpoint the number was actually read from. WooCommerce stores are
+    // read through the Store API, so "products.json" would name a payload they do not serve.
+    const catalogSrc = (shopData as any).platform === 'woocommerce' ? 'wc/store/v1/products' : 'products.json';
     const depthCited = shopData.discount_depth_pct != null && cited(haysShopify, `${shopData.discount_depth_pct}%`);
     if (
       typeof shopData.products_on_discount === 'number' &&
@@ -1350,10 +1366,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       // Merch denominator, matching the finding. Mixing a merch numerator with a raw row count
       // ships "73 of 78" in the rail under "every one of your 73 live products" in the finding,
       // and the reader has to decide which of our own two numbers to believe.
-      rest.push({ signal: 'shopify', label: 'On discount', value: `${shopData.products_on_discount} of ${(shopData as any).merch_catalog_size ?? shopData.catalog_size}`, source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'On discount', value: `${shopData.products_on_discount} of ${(shopData as any).merch_catalog_size ?? shopData.catalog_size}`, source: catalogSrc });
     }
     if (shopData.discount_depth_pct != null && depthCited) {
-      rest.push({ signal: 'shopify', label: 'Average discount depth', value: `${shopData.discount_depth_pct}%`, source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Average discount depth', value: `${shopData.discount_depth_pct}%`, source: catalogSrc });
     }
     const band = shopData.price_band;
     const shopSym = curSymbol(shopData.currency);
@@ -1363,14 +1379,14 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         citedAmount(haysShopify, band.max) ||
         /price band/i.test(haysShopify))
     ) {
-      rest.push({ signal: 'shopify', label: 'Price band, low to high', value: `${fmtPrice(band.min, shopSym)} to ${fmtPrice(band.max, shopSym)}`, source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Price band, low to high', value: `${fmtPrice(band.min, shopSym)} to ${fmtPrice(band.max, shopSym)}`, source: catalogSrc });
     }
     // The median is what seeds the calculator, so a rendered Profit Gap binds it on its own.
     if (band && band.median != null && (pgSeeded || citedAmount(haysShopify, band.median))) {
-      rest.push({ signal: 'shopify', label: 'Median price', value: fmtPrice(band.median, shopSym), source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Median price', value: fmtPrice(band.median, shopSym), source: catalogSrc });
     }
     if (shopData.oos_pct != null && (cited(haysShopify, `${shopData.oos_pct}%`) || /out[- ]of[- ]stock/i.test(haysShopify))) {
-      rest.push({ signal: 'shopify', label: 'Out of stock', value: `${shopData.oos_pct}%`, source: 'products.json' });
+      rest.push({ signal: 'shopify', label: 'Out of stock', value: `${shopData.oos_pct}%`, source: catalogSrc });
     }
     // 🔴 products.json has NEVER carried selling_plan_groups at any Shopify version, so it is
     // the one row in this table it cannot source. The verdict is read from /products/{handle}.js;
@@ -1385,7 +1401,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     // Catalog size renders ONLY when a finding cites the count itself, exactly like every
     // other line, so the foot's binding claim stays true by construction (slop pass, 07-31).
     if (typeof shopData.catalog_size === 'number' && cited(haysShopify, String(shopData.catalog_size))) {
-      catalogLines.push({ signal: 'shopify', label: 'Products live', value: String(shopData.catalog_size), source: 'products.json' });
+      catalogLines.push({ signal: 'shopify', label: 'Products live', value: String(shopData.catalog_size), source: catalogSrc });
     }
     catalogLines.push(...rest);
   }
@@ -1835,7 +1851,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               // source label floating on an empty rail reads as a half-populated component
               // (template-tell pass, 07-31). The source link under the finding carries it.
               const figures = marginFigures(`${clean(f.title)} ${clean(f.evidence)}`);
-              const marginSource = MARGIN_SOURCE[f.signal];
+              const marginSource = f.signal === 'shopify' ? catalogSource(f.source_url) : MARGIN_SOURCE[f.signal];
               const marginAside = (
                 <aside className="cedt-margin lg:col-span-3">
                   {figures.length > 0 ? (
