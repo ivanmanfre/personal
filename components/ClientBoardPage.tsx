@@ -8899,6 +8899,8 @@ export default function ClientBoardPage() {
   // onto ~60% of eligible solo TEXT posts, deterministically by draft id so it is stable
   // across reloads (never random per render). Eligible = a plain post that is NOT a lead
   // magnet launch and NOT a carousel and has NO image already (a manual attach always wins).
+  // 2026-09-19: "no image" must read image_urls/image too, and a gated LM post is never
+  // eligible: a hand-staged LM post (no lm_launch flag) had its cover hidden behind a pool photo.
   // Empty pool → nothing assigned. Round-robin over the pool (ordered by name) so the same
   // photo never lands back-to-back. Computed from the RAW queue; keyed by draft id.
   const autoPhoto = useMemo(() => {
@@ -8906,7 +8908,7 @@ export default function ClientBoardPage() {
     if (!board || photoPool.length === 0) return map;
     const hashStr = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
     const eligible = board.queue
-      .filter((q) => q.kind === 'post' && q.style !== 'video' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url && !q.no_photo)
+      .filter((q) => q.kind === 'post' && q.style !== 'video' && !q.lm_launch && q.source_detail?.kind !== 'lm_launch' && !q.media_url && !(q.image_urls && q.image_urls[0]) && !q.image && !q.lm_gate && !q.no_photo)
       .slice()
       .sort((a, b) => a.id.localeCompare(b.id));
     let ri = 0;
