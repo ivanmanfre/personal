@@ -20,3 +20,13 @@ Evidence: August 13 stored scan; public CueVu offer and Andrew's LinkedIn profil
 - [x] Check seven screen sizes, interactive states, keyboard focus, downloads and simulation boundaries; repeat after visual fixes.
 
 Expanded evidence: audits/andrew-scan-design-2026-09-21/expanded in the Ivan Content System workspace.
+
+## Guided story revision
+
+- [x] Replace dense section controls with six scroll chapters and a compact progress indicator.
+- [x] Show a single buyer journey through content, resource, lead and outreach, ending with the whole strategy.
+- [x] Preserve the expanded examples in accessible native dialogs.
+- [x] Verify seven widths, linked interactions, keyboard behavior, download and final CTA reachability.
+- [x] Complete production build and independent visual review.
+
+Guided story evidence: audits/andrew-scan-design-2026-09-21/story in the Ivan Content System workspace.
