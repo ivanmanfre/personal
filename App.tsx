@@ -79,6 +79,7 @@ const ClientBoardPage = lazy(() => import('./components/ClientBoardPage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
 const ScanLabPage = lazy(() => import('./components/dev/ScanLabPage'));
+const ScanWalkthroughPreview = import.meta.env.DEV ? lazy(() => import('./components/dev/scan-walkthrough/ScanWalkthroughPreview')) : null;
 
 function App() {
   const location = useLocation();
@@ -107,6 +108,10 @@ function App() {
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);
+
+  if (import.meta.env.DEV && location.pathname === '/dev/scan-walkthrough' && ScanWalkthroughPreview) {
+    return <Suspense fallback={<div style={{ background: '#fff', minHeight: '100vh' }} />}><ScanWalkthroughPreview /></Suspense>;
+  }
 
   // DEV-ONLY scan-design tournament harness — chrome-free like the real /scan/:slug.
   if (location.pathname.startsWith('/dev/scan-lab')) {
