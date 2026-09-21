@@ -30,3 +30,16 @@ Expanded evidence: audits/andrew-scan-design-2026-09-21/expanded in the Ivan Con
 - [x] Complete production build and independent visual review.
 
 Guided story evidence: audits/andrew-scan-design-2026-09-21/story in the Ivan Content System workspace.
+
+## Full storytelling redesign (founder correction)
+
+Brief: “a complete re-design of the layout to make a storytelling guide”, “each section is literally big copy almost no need to read horizontally”, with smoother animation and the founder website as quality reference. User explicitly excluded Fable advisor.
+
+- [x] Replace the two-column chapter layout with a single vertical reading path and full-screen compositions.
+- [x] Set desktop story headings at up to 112px and hero at up to 156px, with responsive mobile type.
+- [x] Add masked line entrances, a scroll-expanded post stack, post-to-resource assembly and a vertical strategy line. Keep native scrolling.
+- [x] Preserve buyer choices and add visible warm/cold outreach controls. Keep complete interactive examples in detail dialogs.
+- [x] Ground the enquiry and follow-up in the same pet food project.
+- [x] Check normal/reduced motion, scroll phases, short viewports, controls and production build.
+
+Evidence: audits/andrew-scan-design-2026-09-21/cinematic in the Ivan Content System workspace. Reviewed the live founder homepage and 21st.dev scroll animation reference. No new dependency and no Fable consultation.
