@@ -29,28 +29,31 @@ export function LinkedInBackdrop() {
 }
 
 const clientTools = [
-  { id: 'roas', label: 'ROAS calculator', title: 'The number behind an ad budget.', description: 'Change the inputs. See what it takes to break even.', url: 'https://resources.risedtc.com/tools/break-even-roas/', image: '/scan-preview/rise-roas.jpg', alt: 'RISE DTC’s live break-even ROAS calculator, showing inputs and a calculated result' },
-  { id: 'tools', label: 'DTC tools library', title: 'A whole reason to come back.', description: 'Mattan’s library of calculators and Claude tools.', url: 'https://resources.risedtc.com/tools/', image: '/scan-preview/rise-tools.jpg', alt: 'The published RISE DTC tools library' },
-  { id: 'profit', label: 'Profit X-ray', title: 'A resource built around their numbers.', description: 'The entry page for RISE DTC’s profit-per-order X-ray.', url: 'https://resources.risedtc.com/rise-dtc-true-profit-x-ray/', image: '/scan-preview/rise-profit.jpg', alt: 'RISE DTC’s published profit-per-order X-ray landing page' },
+  { id: 'roas', label: 'ROAS calculator', title: 'The number behind an ad budget.', description: 'A paid-media buyer can check the return their own margins need before setting an ad budget.', url: 'https://resources.risedtc.com/tools/break-even-roas/', image: '/scan-preview/rise-roas.jpg', alt: 'RISE DTC’s live break-even ROAS calculator, showing inputs and a calculated result' },
+  { id: 'tools', label: 'DTC tools library', title: 'A whole reason to come back.', description: 'Ecommerce operators can return to Mattan’s library as new questions come up about their store.', url: 'https://resources.risedtc.com/tools/', image: '/scan-preview/rise-tools.jpg', alt: 'The published RISE DTC tools library' },
+  { id: 'profit', label: 'Profit X-ray', title: 'A resource built around their numbers.', description: 'A store owner gets a calculator for profit after costs. The page collects contact details to deliver it.', url: 'https://resources.risedtc.com/rise-dtc-true-profit-x-ray/', image: '/scan-preview/rise-profit.jpg', alt: 'RISE DTC’s published profit-per-order X-ray landing page' },
 ];
 
 export function ClientToolsShowcase() {
   const [selected, setSelected] = useState(0);
   const [live, setLive] = useState(false);
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => { const query = window.matchMedia('(max-width: 767px)'); const update = () => {setMobile(query.matches); if(query.matches) setLive(false);}; query.addEventListener('change', update); return () => query.removeEventListener('change', update); }, []);
   const reduced = useReducedMotion();
   const tool = clientTools[selected];
-  const choose = (index: number) => { setLive(false); setSelected(index); };
+  const choose = (index: number) => { setLive(false); setImageFailed(false); setSelected(index); };
   return <section className="sg-client-tools" id="client-tools" data-story-scene>
-    <div className="sg-client-tools-heading"><p>Built for Mattan Danino / RISE DTC</p><h2 className="sg-display"><span className="sg-line"><span>Give them something</span></span><span className="sg-line"><span>they’ll actually use.</span></span></h2></div>
+    <div className="sg-client-tools-heading"><p>Built for Mattan Danino / RISE DTC</p><h2 className="sg-display">Already working<br />in another business.</h2><p className="sg-client-tools-why">Mattan’s buyers want to understand their store’s profit. We built tools that help them do it.</p></div>
     <div className="sg-tool-tabs" role="group" aria-label="Mattan’s lead magnet examples">{clientTools.map((item, index) => <button key={item.id} aria-pressed={selected === index} onClick={() => choose(index)}>{item.label}{selected === index && <motion.span layoutId="client-tool-selection" transition={{ duration: reduced ? 0 : .4, ease }} />}</button>)}</div>
     <motion.div className="sg-real-browser" data-mockup="browser" initial={reduced ? false : { opacity: 0, y: 50, rotateX: 5 }} whileInView={{ opacity: 1, y: 0, rotateX: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduced ? 0 : .85, ease }}>
       <div className="sg-browser-bar"><span className="sg-browser-dots" aria-hidden="true"><i /><i /><i /></span><span>resources.risedtc.com</span><a href={tool.url} target="_blank" rel="noreferrer" aria-label={`Open ${tool.label} in a new tab`}>↗</a></div>
       <div className={`sg-real-browser-viewport${live ? ' is-live' : ''}`}>
-        {live ? <iframe src={`${tool.url}#calculator`} title={`Live RISE DTC ${tool.label}`} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" /> : <AnimatePresence mode="wait" initial={false}><motion.a key={tool.id} href={tool.url} target="_blank" rel="noreferrer" initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : .3, ease }} aria-label={`Open published ${tool.label}`}><picture><source media="(max-width: 767px)" srcSet={tool.image.replace(".jpg", "-mobile.jpg")} /><img src={tool.image} alt={tool.alt} width="1280" height="840" loading="lazy" /></picture></motion.a></AnimatePresence>}
+        {live && !mobile ? <iframe src={`${tool.url}#calculator`} title={`Live RISE DTC ${tool.label}`} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" /> : imageFailed ? <a className="tool-image-fallback" href={tool.url} target="_blank" rel="noreferrer">Preview image unavailable. Open {tool.label} ↗</a> : <AnimatePresence mode="wait" initial={false}><motion.a key={tool.id} href={tool.url} target="_blank" rel="noreferrer" initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : .3, ease }} aria-label={`Open published ${tool.label}`}><picture><source media="(max-width: 767px)" srcSet={tool.image.replace(".jpg", "-mobile.jpg")} /><img src={tool.image} alt={tool.alt} width="1280" height="840" loading="lazy" onError={() => setImageFailed(true)} /></picture></motion.a></AnimatePresence>}
       </div>
     </motion.div>
-    <div className="sg-tool-caption"><div><h3>{tool.title}</h3><p>{tool.description}</p></div>{selected === 0 ? <button className="sg-tool-try" onClick={() => setLive(value => !value)}>{live ? 'Back to preview' : 'Try the live calculator'}<span aria-hidden="true">{live ? '↑' : '↗'}</span></button> : <a className="sg-tool-try" href={tool.url} target="_blank" rel="noreferrer">Open the real page <span aria-hidden="true">↗</span></a>}</div>
-    <p className="sg-tool-bridge">For CueVu, that could be a research planner. <a href="#inbound">Try yours below ↓</a></p>
+    <div className="sg-tool-caption"><div><h3>{tool.title}</h3><p>{tool.description}</p></div>{selected === 0 && !mobile ? <button className="sg-tool-try" onClick={() => setLive(value => !value)}>{live ? 'Back to preview' : 'Try the live calculator'}<span aria-hidden="true">{live ? '↑' : '↗'}</span></button> : <a className="sg-tool-try" href={tool.url} target="_blank" rel="noreferrer">Open the real page <span aria-hidden="true">↗</span></a>}</div>
+    <p className="sg-tool-bridge">Published client work. These examples show what we build; they are not revenue or booked-call results. <a href="#inbound">Back to your checklist ↑</a></p>
   </section>;
 }
 

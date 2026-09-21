@@ -1,0 +1,192 @@
+{
+  "founder": {
+    "name": "Andrew Hayes",
+    "company": "CueVu",
+    "headline": "The 99-1 Rule: Your next fifty customers are already on LinkedIn. Get them with stories that grab their attention.",
+    "avatarUrl": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/avatar-andrew-hayes-94.jpg"
+  },
+  "buyer": {
+    "role": "Brand manager",
+    "project": "Understanding why people switch brands"
+  },
+  "samples": {
+    "lm": {
+      "slug": "",
+      "brand": {
+        "accent2": "",
+        "ink_hex": "",
+        "is_dark": true,
+        "logo_url": "https://icon.horse/icon/cuevu.com",
+        "cta_label": "Send",
+        "font_body": "",
+        "header_bg": "",
+        "nav_links": [],
+        "radius_px": 0,
+        "accent_hex": "#7F7F7F",
+        "nav_cta_bg": "",
+        "login_label": "",
+        "surface_hex": "",
+        "font_heading": "Open Sans",
+        "accent_secondary": "",
+        "font_heading_style": "sans"
+      },
+      "title": "The 99-1 Story Checklist: 7 Questions Before You Hit Publish",
+      "promise": "Answer all seven and your post stops the 99% who weren't looking for you, before they know they need what you sell.",
+      "cover_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-andrew-hayes-94-lm_cover.png",
+      "accent_hex": "#7F7F7F",
+      "seed_answers": {},
+      "whats_inside": [
+        "Is there a real person at the center of this, with a name, a job, and a daily routine?",
+        "What was that person actually doing on LinkedIn the moment this story found them?",
+        "Have you named their obstacle before your brand appears anywhere in the post?",
+        "Is your brand the guide in this story, not the hero?",
+        "Is the setting specific enough that the reader can picture themselves in it?",
+        "Does the post end without a pitch, a CTA, or a product mention?",
+        "Would someone scroll past your company name and still stop to finish reading?"
+      ]
+    },
+    "posts": [
+      {
+        "body": "We ask them one question. The slides show exactly how 'What were you feeling when [X-Event] happened?' pulls out the kind of language a brand's own marketing team would never write, and what to do with those answers.",
+        "hook": "We ask them one question.",
+        "format": "Carousel",
+        "slides": [
+          {
+            "body": "How it pulls out language your marketing team would never write.",
+            "role": "cover",
+            "heading": "We ask them one question"
+          },
+          {
+            "body": "'What were you feeling when [X-Event] happened?' That's it. Nothing else.",
+            "role": "point",
+            "kicker": "The Question",
+            "heading": "What were you feeling when?"
+          },
+          {
+            "body": "Customers reach for the moment they were in. The product never comes up first.",
+            "role": "point",
+            "kicker": "The Pull",
+            "heading": "Words no brief produces"
+          },
+          {
+            "body": "The marketing team was never in that moment. The customer was.",
+            "role": "point",
+            "kicker": "The Gap",
+            "heading": "Why brand teams miss this"
+          },
+          {
+            "body": "Lift phrases verbatim into ads, pages, emails. The customer already approved the wording.",
+            "role": "point",
+            "kicker": "What To Do",
+            "heading": "Use those answers as copy"
+          },
+          {
+            "body": "Send the question. Read what comes back. That's your next draft.",
+            "role": "action",
+            "heading": "Ask one customer today"
+          }
+        ],
+        "image_prompt": "A researcher's notepad open to a single handwritten question, survey forms stacked beside it",
+        "source_quote": "We ask them one question. What were you feeling when [X-Event] happened?"
+      },
+      {
+        "body": "She called me on a Tuesday, about twenty minutes after I sent the file.\n\nShe'd just finished reading through the results from her CueVu pilot. The file had the responses of dozens of real people from a consumer panel, people who recently switched brands in her product category. Her exact future customers, before they knew her brand existed.\n\nWe asked each one the same question. What were you feeling when it happened?\n\nThey answered in their own words. You could trace the reasoning in each response, the way the frustration built up.\n\nShe said she had no idea her buyers thought about the decision this way. She meant people who hadn't found her yet.\n\nThe file is dozens of real stories, written in the language your future customers actually use. Every person in it is a post waiting to happen.\n\nThe pilot starts at $295.",
+        "hook": "She called me on a Tuesday, about twenty minutes after I sent the file.",
+        "format": "Post",
+        "image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-andrew-hayes-94-post1-brand_image.png",
+        "image_card": {
+          "sub": "What they felt when it happened, in their own words.",
+          "figure": "$295",
+          "kicker": "The Results File",
+          "headline": "Dozens of real stories before they found your brand"
+        },
+        "image_prompt": "A laptop on a quiet desk, plain text document open on screen, warm morning light",
+        "source_quote": "Our deliverable is the results file. The authentic human language told in the person's own words."
+      },
+      {
+        "body": "After a few stories run, I ask the client to look at who came back.\n\nThese readers were never searching for a solution. They read one post, and then showed up for the next. By the time a few are out, LinkedIn has learned who slows down for your content and started putting the next story in front of the same people automatically.\n\nEvery story you share leaves those readers thinking a little differently than they did before. None of it requires a pitch.\n\nAs the storyteller, you can tease what's coming next at the end of each one, a detail left open or a result you haven't gotten to yet. The people who read the last story come back for the next one. An audience builds from readers waiting for the continuation, and most of them were never in the market when they found you.",
+        "hook": "After a few stories run, I ask the client to look at who came back.",
+        "format": "Post",
+        "image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-andrew-hayes-94-post2-brand_image.png",
+        "image_card": {
+          "sub": "One story naturally leads to the next.",
+          "kicker": "After It Ships",
+          "headline": "Each story finds the audience for the next"
+        },
+        "image_prompt": "A phone screen with a LinkedIn feed, scroll stopped on a single story post, coffee cup blurred in background",
+        "source_quote": "Every story you share leaves the readers, aka your future customers, thinking a little differently than they did before."
+      },
+      {
+        "body": "95% of AI-generated marketing campaigns had no measurable return.\n\nThat's MIT's finding, across $40 billion in spend.\n\nForty billion dollars against a zero return, and Salesforce's Bobby Jania put the explanation in one sentence: we are using the most powerful technology in history to send more one-way spam, faster.\n\nThere are 134 million active LinkedIn users every day. Average visit is 8 minutes. 99% of them came to check on people they know, who got promoted or changed jobs. Sending more content they didn't ask for doesn't close that gap.\n\nLinkedIn's algorithm now reads for meaning, buries the generic, and surfaces real stories told in real customer language. The timing makes sense.",
+        "hook": "95% of AI-generated marketing campaigns had no measurable return.",
+        "format": "Post",
+        "image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-andrew-hayes-94-post3-brand_image.png",
+        "image_card": {
+          "sub": "8-minute average visit. They came to check on people.",
+          "figure": "134M",
+          "kicker": "The 99-1 Rule",
+          "headline": "99% Are Not Looking for a Company"
+        },
+        "image_prompt": "Stark bar chart: $40 billion spend on one side, a flat zero-return line on the other. No color, just the gap.",
+        "source_quote": "According to MIT, measuring $40 billion in spend, there was no measurable return. Zero."
+      }
+    ],
+    "title": "this week, from Andrew Hayes's content",
+    "metrics": [
+      {
+        "label": "In your voice",
+        "value": "4 posts + a lead magnet"
+      },
+      {
+        "label": "The lead magnet",
+        "value": "turns readers into leads"
+      },
+      {
+        "label": "Leads land",
+        "value": "named, in your inbox"
+      }
+    ],
+    "follow_ups": [
+      {
+        "day": 1,
+        "body": "You have the 99-1 checklist. Seven questions, but question 3 does the most work: naming the obstacle before your brand shows up anywhere in the post. Get that right and the reader feels seen before they know who you are. Run your next draft through that one first, then work outward.",
+        "step": 1,
+        "subject": "Your checklist (start with question 3)"
+      },
+      {
+        "day": 4,
+        "body": "Getting the person right at question 1 comes quickly. The setting is the harder one. \"In a coffee shop\" is a placeholder. \"Reviewing a contract she'd already sent back twice\" is a scene, and that difference is exactly what question 5 is testing.",
+        "step": 2,
+        "subject": "The setting question is trickier than it looks"
+      },
+      {
+        "day": 10,
+        "body": "The checklist has been in your folder for about a week. If you've got a story draft that isn't clearing all seven, or you're not sure which question is doing the blocking, grab 20 minutes with me and we'll run it through together.",
+        "step": 3,
+        "subject": "Where you're stuck (if you are)"
+      }
+    ],
+    "engager_outreach": {
+      "samples": [
+        {
+          "dm": "Hey,\n\nSaw you on the beagle post. That format doesn't always pull comments, what made you stop on it?",
+          "engager": {
+            "name": "Lorenzo Asnaghi",
+            "headline": "COO at growthcab.com // close deals with the companies on your wishlist"
+          },
+          "trigger": "Commented on the Marcus / Becky beagle story post"
+        },
+        {
+          "dm": "Saw you on the Marcus story. That format, one real person, one specific detail, is something I've been refining for a while. I can send you the post brief I use to build those.",
+          "trigger": "Commented on the Marcus / Becky beagle story post"
+        }
+      ],
+      "explainer": "Fires when someone comments on the character-driven story post featuring Marcus, the JPMorgan Wealth Manager, and his three-year-old beagle Becky."
+    }
+  },
+  "source": {
+    "kind": "original-scan",
+    "url": "https://inboundonsteroids.com/scan/andrew-hayes-94/",
+    "capturedOn": "2026-09-21"
+  }
+}
