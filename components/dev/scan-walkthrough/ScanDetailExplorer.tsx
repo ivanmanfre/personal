@@ -30,14 +30,14 @@ function Post({ buyer, postIndex, compact = false, onOpen }: { buyer: Buyer; pos
 
 export type DetailSection = 'buyers' | 'content' | 'inbound' | 'outreach' | 'proof';
 
-export default function ScanDetailExplorer({ section, buyerId, onBuyerChange, onNavigate, initialView, requestKey }: { initialView: number; requestKey: number; section: DetailSection; buyerId: string; onBuyerChange: (id: string) => void; onNavigate: (section: DetailSection) => void }) {
+export default function ScanDetailExplorer({ section, buyerId, onBuyerChange, onNavigate, initialView, requestKey, category, onCategoryChange }: { category: string; onCategoryChange: (value: string) => void; initialView: number; requestKey: number; section: DetailSection; buyerId: string; onBuyerChange: (id: string) => void; onNavigate: (section: DetailSection) => void }) {
   const setBuyerId = onBuyerChange;
   const buyer = buyers.find(b => b.id === buyerId)!;
   const [heroView, setHeroView] = useState('post');
   const [postIndex, setPostIndex] = useState(0);
   const [flow, setFlow] = useState(0);
   useLayoutEffect(() => { if (section === 'content') setPostIndex(initialView); if (section === 'inbound') setFlow(initialView); if (section === 'proof') setProof(initialView === 1 ? 'lemonade' : 'kyle'); }, [requestKey]);
-  const [category, setCategory] = useState('Pet food');
+  const setCategory = onCategoryChange;
   const [decision, setDecision] = useState<Decision>(buyer.decision as Decision);
   const [recency, setRecency] = useState('3 months');
   const [built, setBuilt] = useState(false);

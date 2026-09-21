@@ -43,3 +43,28 @@ Brief: “a complete re-design of the layout to make a storytelling guide”, �
 - [x] Check normal/reduced motion, scroll phases, short viewports, controls and production build.
 
 Evidence: audits/andrew-scan-design-2026-09-21/cinematic in the Ivan Content System workspace. Reviewed the live founder homepage and 21st.dev scroll animation reference. No new dependency and no Fable consultation.
+
+## Motion refinement and review
+
+- [x] Use the founder site's easing and improve typography weight contrast.
+- [x] Make the held content scene reveal method, deliverable and resource invitation.
+- [x] Put a working sample brief builder in the story and carry its category through the enquiry, follow-up and detailed planner.
+- [x] Animate buyer and outreach selections; keep later headings stable.
+- [x] Review both scroll states and in-app transitions, fix invitation routing and overlapping transition text.
+- [x] Verify 147 interaction assertions, six motion viewport shapes, reduced motion, build and density parity.
+
+Evidence: audits/andrew-scan-design-2026-09-21/refined in the Ivan Content System workspace.
+
+## Creative exhibits, real Mattan examples and optional audio
+
+User direction: try LinkedIn-related motion, optional music, and replace generic sample cards; include Mattan's DTC tools.
+
+- [x] Replace the three repeated slogan covers with an interview guide, a visibly proposed results template and a planner preview inside LinkedIn chrome. Keep the existing full content/planner interactions.
+- [x] Add a published-work browser exhibit between the post and CueVu resource: RISE DTC's ROAS calculator, tools library and profit X-ray page. Capture real desktop/mobile pages and record sources; preserve client branding.
+- [x] Load the actual calculator only after clicking Try, with an external-open link and return-to-preview control. Verify changing a slider changes its output. No forms submitted.
+- [x] Add scroll-linked LinkedIn fragments at the hero edges, hidden from assistive technology and omitted on mobile.
+- [x] Add an original, quiet Web Audio score. Default off; no audio context before a click; close on disable, hidden tab and unmount. Mobile control stays in the header to avoid covering content.
+- [x] Retain reduced-motion support and sequential scene transitions. Build passes; 147 retained flow assertions, 38 new exhibit/audio assertions and six viewport motion checks pass.
+- [x] Independent visual review at 375×667 and 1366×768; fix mobile sound-control overlap and make template labelling explicit. Fresh short-screen capture and overlap assertions pass.
+
+Evidence: `audits/andrew-scan-design-2026-09-21/creative/` in the content-system workspace. This is a local preview only. Published exhibits prove the artifacts exist; no revenue attribution is claimed.
