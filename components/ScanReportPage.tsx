@@ -3236,9 +3236,20 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     inbound: 'A gated asset in your brand names every reader. A newsletter and a follow-up sequence keep them.',
     outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
   };
+  // The approval scrubber can eat the predicate ("...every warm engager gets drafted for his
+  // review" -> "...every warm engager gets."). When the cut leaves a dangling tail or a bare
+  // noun phrase, the cell falls back to the house line instead of shipping a broken sentence.
+  const DANGLING_TAIL = /\b(?:gets?|is|are|be|and|or|waiting|waits?|ready|drafts?|arrives?|ships?)\.$/i;
+  const scrubOrFallback = (raw: string, fallback: string) => {
+    const out = scrubApproval(raw);
+    const cut = out.replace(/\.$/, '') !== raw.trim().replace(/\.$/, '');
+    return cut && (DANGLING_TAIL.test(out) || out.split(/\s+/).length < 6) ? fallback : out;
+  };
+  // Builder jargon never reaches the prospect: "the corpus" is their public posts.
+  const scrubJargon = (t: string) => t.replace(/\b(?:the|this|his|her|their)\s+corpus\b/gi, (m) => (/^[A-Z]/.test(m) ? 'Your public posts' : 'your public posts')).replace(/\bYour public posts shows\b/g, 'Your public posts show');
   const pillarCell = (k: PillarKey) => ({
-    found: scrubApproval((cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k]),
-    projected: scrubApproval((cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k]),
+    found: scrubJargon(scrubApproval((cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k])),
+    projected: scrubJargon(scrubOrFallback((cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k], PROJECTED_FALLBACK[k])),
   });
   const PILLARS: { key: PillarKey; name: string; anchor: string }[] = [
     { key: 'content', name: 'Content', anchor: 'cs-ch-content' },
