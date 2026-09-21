@@ -10,3 +10,13 @@ Scope: Add a dev-only route and self-contained React preview. Existing scan gene
 - [x] Verify mobile/desktop screenshots, keyboard/dialog behavior, profile switching, downloads, overflow, and production build.
 
 Evidence: August 13 stored scan; public CueVu offer and Andrew's LinkedIn profile examined in this task. Customer call anecdote, MIT statistic, reaction counts, and unsourced buyer matches are excluded. New samples are labelled proposed drafts. The captured original post quote is presented with a source link. Target profiles are hypotheses, not scraped buyers.
+
+## Approved expansion after review
+
+- [x] Restore four post examples and a six-slide carousel with mobile swipe.
+- [x] Connect post, landing page, tailored research planner, example lead record and three follow-up emails.
+- [x] Keep buyer selection consistent across content, default planner purpose and outreach.
+- [x] Add targeting criteria, outreach branches, client work and operator introduction.
+- [x] Check seven screen sizes, interactive states, keyboard focus, downloads and simulation boundaries; repeat after visual fixes.
+
+Expanded evidence: audits/andrew-scan-design-2026-09-21/expanded in the Ivan Content System workspace.
