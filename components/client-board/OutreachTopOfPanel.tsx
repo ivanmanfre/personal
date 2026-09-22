@@ -466,6 +466,88 @@ export function LeadsStrip({ ot }: { ot?: OutreachTruth | null }) {
   );
 }
 
+/* ══════════════════════════ this month (instantly-picks 2026-09-22) ══════════════════════════ */
+
+/** board.outreach_truth.month: the monthly report's own four counts for the current renewal
+ *  period (17th to 17th, UTC), written server-side by rise_outreach_truth_compute() through
+ *  rise_month_numbers(), the SQL port of the report's Client Week Packet. Nothing here is
+ *  computed in the browser. `end` is the exclusive boundary; null on the week still running. */
+export type RiseMonthWeek = { start?: string | null; end?: string | null; invites?: number | null; accepted?: number | null; replies?: number | null; booked?: number | null };
+export type RiseMonth = {
+  window_start?: string | null; window_end?: string | null; next_report?: string | null;
+  invites?: number | null; accepted?: number | null; replies?: number | null; booked?: number | null;
+  by_week?: RiseMonthWeek[] | null;
+};
+
+/** A count straight off the blob, or an en dash when the key is missing. Never a 0 it did not read. */
+function monthVal(v?: number | null): string {
+  return typeof v === 'number' && Number.isFinite(v) ? String(v) : '–';
+}
+function monthWord(v: number | null | undefined, one: string, many: string): string {
+  return v === 1 ? one : many;
+}
+/** "17 Sep to 23 Sep" for a closed week (end is exclusive), "24 Sep to today" for the open one. */
+function weekRange(w: RiseMonthWeek): string {
+  const from = dayMonth(w.start) || '–';
+  if (!w.end) return `${from} to today`;
+  const endD = parseIso(w.end);
+  return `${from} to ${endD ? dayMonth(new Date(endD.getTime() - DAY_MS).toISOString()) : '–'}`;
+}
+
+/** The month block renders on the RISE board only: a blob carrying `month`, or one written
+ *  by the RISE compute (semantics clientweekpacket-*) whose month key is missing, which then
+ *  reads as dashes. The ARCH compute emits neither, so its board shows nothing new. */
+export function MonthBlock({ ot }: { ot: OutreachTruth }) {
+  const month = (ot as OutreachTruth & { month?: RiseMonth | null }).month || null;
+  if (!month && !/^clientweekpacket/.test(ot.semantics_version || '')) return null;
+  const m: RiseMonth = month || {};
+  const weeks = Array.isArray(m.by_week) ? m.by_week : [];
+  const start = dayMonth(m.window_start) || '–';
+  const next = dayMonth(m.next_report) || '–';
+  const cell: React.CSSProperties = { padding: '7px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
+  return (
+    <div
+      data-month-block=""
+      data-replies={monthVal(m.replies)}
+      data-booked={monthVal(m.booked)}
+      data-accepted={monthVal(m.accepted)}
+      data-window-start={m.window_start ?? '–'}
+      style={{ marginTop: 18 }}
+    >
+      <Card>
+        <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.45 }}>
+          This month ({start} to today): {monthVal(m.replies)} {monthWord(m.replies, 'reply', 'replies')} · {monthVal(m.booked)} {monthWord(m.booked, 'call booked', 'calls booked')} · {monthVal(m.accepted)} {monthWord(m.accepted, 'invite accepted', 'invites accepted')}
+        </div>
+        {weeks.length > 0 && (
+          <div style={{ overflowX: 'auto', marginTop: 12 }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: 13, fontWeight: 600, minWidth: 280 }}>
+              <thead>
+                <tr style={{ color: 'var(--cb-ink-mute)', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  <th style={{ ...cell, textAlign: 'left', paddingLeft: 0 }}>Week</th>
+                  <th style={cell}>Replies</th>
+                  <th style={cell}>Booked</th>
+                  <th style={cell}>Accepted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weeks.map((w, i) => (
+                  <tr key={`${w.start || ''}-${i}`} style={{ borderTop: '1px solid var(--cb-line)' }}>
+                    <td style={{ ...cell, textAlign: 'left', paddingLeft: 0, whiteSpace: 'nowrap' }}>{weekRange(w)}</td>
+                    <td style={cell}>{monthVal(w.replies)}</td>
+                    <td style={cell}>{monthVal(w.booked)}</td>
+                    <td style={cell}>{monthVal(w.accepted)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Footnote>Next report {next}.</Footnote>
+      </Card>
+    </div>
+  );
+}
+
 /* ══════════════════════════ the surface ══════════════════════════ */
 
 export default function OutreachTopOfPanel({
@@ -560,6 +642,8 @@ export default function OutreachTopOfPanel({
 
   return (
     <div data-surface="outreach-top-of-panel">
+
+      <MonthBlock ot={ot} />
 
       {/* ═══ 1 — the weekly hero. Dark plate, one number, its delta, seven weeks. ═══ */}
       <Plate style={{ marginTop: 18 }} pad="28px 26px 24px">
