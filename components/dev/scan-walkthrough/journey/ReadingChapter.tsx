@@ -1,10 +1,18 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+const labels: Record<string,string> = { content: 'Get noticed', inbound: 'Capture the lead', newsletter: 'Stay in touch', outreach: 'Warm outreach', together: 'Bring it together' };
 export function ReadingChapter({ id, number, title, why, children }: { id: string; number: string; title: string; why: string; children: React.ReactNode }) {
   return <section id={id} className="journey-chapter">
     <div className="journey-transition" data-journey-transition aria-hidden="true"><span className="journey-route-line"/><svg className="route-pulse" aria-hidden="true"><line x1="1" y1="0" x2="1" y2="100%"/></svg><span className="journey-step">{number}</span></div>
-    <header className="chapter-heading"><span className="journey-eyebrow">{number} / {id === 'content' ? 'Get noticed' : id === 'inbound' ? 'Be useful' : id === 'newsletter' ? 'Stay in touch' : id === 'outreach' ? 'Start a conversation' : 'Bring it together'}</span><h2>{title}</h2><p>{why}</p></header>
+    <Reveal className="chapter-heading" as="header"><span className="journey-eyebrow">{number} / {labels[id]}</span><h2>{title}</h2><p>{why}</p></Reveal>
     <div className="journey-reading">{children}</div>
   </section>;
+}
+/** Scroll reveal: one rise per element, settled state under reduced motion. */
+export function Reveal({ children, className, delay = 0, as = 'div', ...rest }: { children: React.ReactNode; className?: string; delay?: number; as?: 'div' | 'header' | 'article'; 'aria-label'?: string; 'data-mockup'?: string }) {
+  const reduced = useReducedMotion();
+  const Tag = as === 'header' ? motion.header : as === 'article' ? motion.article : motion.div;
+  return <Tag {...rest} className={className} initial={reduced ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .15 }} transition={{ duration: reduced ? 0 : .65, delay: reduced ? 0 : delay, ease: [.22, .84, .36, 1] }}>{children}</Tag>;
 }
 export function Paragraphs({ text, className = 'sample-body' }: {text: string; className?: string}) {
   return <div className={className}>{text.split(/\n\s*\n/).map((p,i) => <p key={i}>{p}</p>)}</div>;

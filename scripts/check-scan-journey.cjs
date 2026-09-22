@@ -32,8 +32,8 @@ fs.mkdirSync(out,{recursive:true});
    }
    // Capture actual exhibits, seams and the moving character halfway through each transition.
    if([390,1440].includes(width)){
-    for(const selector of ['.journey-slide','.resource-browser','.request-demo','.journey-email-issue','.journey-thread:not(.journey-thread-cold)','.journey-thread-cold','.sg-client-tools']){
-     await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(400);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
+    for(const selector of ['.journey-slide','.resource-browser','.request-demo','.journey-email-issue','.journey-thread:not(.journey-thread-engager)','.journey-thread-engager','.sg-client-tools']){
+     await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(900);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
     }
     for(let i=0;i<5;i++){
      const y=await page.locator('[data-journey-transition]').nth(i).evaluate(el=>el.getBoundingClientRect().top+scrollY+50-innerHeight*.64);
@@ -62,7 +62,9 @@ fs.mkdirSync(out,{recursive:true});
    assert.equal(await page.locator('.resource-browser iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the live assessment'}).count(),1);
    for(const name of fixture.assessment.sections)assert.ok((await page.locator('.resource-sections').innerText()).includes(name));
    assert.equal(await page.locator('.email-body>section').count(),3);assert.equal(await page.locator('.newsletter-cta').innerText(),'Reply with those three lines. I’ll tell you where I got curious.');assert.match(await page.locator('.email-footer').innerText(),/took The 99-1 Readiness Score\./);
+   assert.ok(!(await page.locator('.journey-thread').first().innerText()).includes(fixture.samples.follow_ups[1].body));await page.getByRole('button',{name:/Show the next two messages/}).click();
    for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.journey-thread').first().innerText()).includes(follow.body));
+   assert.ok((await page.locator('.journey-thread-engager').innerText()).includes(fixture.samples.engager_outreach.samples[0].dm));assert.equal(await page.locator('body').innerText().then(t=>t.includes('[first name]')),false);
    assert.match(await page.locator('.thread-tag').first().innerText(),/warm outreach/i);
    await page.locator('.sg-client-tools').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the real page'}).count(),1);
    if(reduced)assert.equal(await page.locator('.journey-buyer').count(),0);
