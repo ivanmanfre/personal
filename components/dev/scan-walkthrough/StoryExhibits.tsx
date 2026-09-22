@@ -53,7 +53,7 @@ export function ClientToolsShowcase() {
       </div>
     </motion.div>
     <div className="sg-tool-caption"><div><h3>{tool.title}</h3><p>{tool.description}</p></div>{selected === 0 && !mobile ? <button className="sg-tool-try" onClick={() => setLive(value => !value)}>{live ? 'Back to preview' : 'Try the live calculator'}<span aria-hidden="true">{live ? '↑' : '↗'}</span></button> : <a className="sg-tool-try" href={tool.url} target="_blank" rel="noreferrer">Open the real page <span aria-hidden="true">↗</span></a>}</div>
-    <p className="sg-tool-bridge">Published client work. These examples show what we build; they are not revenue or booked-call results. <a href="#inbound">Back to your checklist ↑</a></p>
+    <p className="sg-tool-bridge">Published client work. These examples show what we build; they are not revenue or booked-call results. <a href="#inbound">Back to your score ↑</a></p>
   </section>;
 }
 

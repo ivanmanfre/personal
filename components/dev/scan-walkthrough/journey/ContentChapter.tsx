@@ -22,7 +22,7 @@ export function ContentChapter({ fixture }: {fixture: JourneyFixture}) {
     <article className="journey-profile" data-mockup="linkedin">
       <div className="profile-cover"><span>CueVu</span><span>Stories start<br/>with people.</span></div>
       <div className="profile-details"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/><span className="sample-stamp">Profile preview</span><h3>{fixture.founder.name}</h3><p className="sample-body">{fixture.founder.headline}</p><span className="source-note">Headline from the original scan</span>
-      <div className="profile-featured"><span className="journey-eyebrow">Featured / proposed</span><a href="#inbound"><span>Your next post starts here.<small>The 99-1 Story Checklist</small></span><b aria-hidden="true">↗</b></a></div></div>
+      <div className="profile-featured"><span className="journey-eyebrow">Featured / proposed</span><a href="#inbound"><span>Your next post starts here.<small>The 99-1 Readiness Score</small></span><b aria-hidden="true">↗</b></a></div></div>
     </article>
   </>;
 }

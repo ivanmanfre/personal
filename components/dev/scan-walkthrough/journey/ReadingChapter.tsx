@@ -1,7 +1,7 @@
 import React from 'react';
 export function ReadingChapter({ id, number, title, why, children }: { id: string; number: string; title: string; why: string; children: React.ReactNode }) {
   return <section id={id} className="journey-chapter">
-    <div className="journey-transition" data-journey-transition aria-hidden="true"><span className="journey-route-line"/><span className="journey-step">{number}</span></div>
+    <div className="journey-transition" data-journey-transition aria-hidden="true"><span className="journey-route-line"/><svg className="route-pulse" aria-hidden="true"><line x1="1" y1="0" x2="1" y2="100%"/></svg><span className="journey-step">{number}</span></div>
     <header className="chapter-heading"><span className="journey-eyebrow">{number} / {id === 'content' ? 'Get noticed' : id === 'inbound' ? 'Be useful' : id === 'newsletter' ? 'Stay in touch' : id === 'outreach' ? 'Start a conversation' : 'Bring it together'}</span><h2>{title}</h2><p>{why}</p></header>
     <div className="journey-reading">{children}</div>
   </section>;

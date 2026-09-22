@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const fixture = require('../components/dev/scan-walkthrough/journey/samples.json');
-const out = process.env.JOURNEY_AUDIT_DIR || '/Users/ivanmanfredi/Desktop/Ivan - Content System/audits/andrew-scan-design-2026-09-21/lead-journey';
+const out = process.env.JOURNEY_AUDIT_DIR || '/Users/ivanmanfredi/Desktop/Ivan - Content System/audits/andrew-scan-design-2026-09-21/lead-journey-v2';
 const url = 'http://127.0.0.1:4317/dev/scan-walkthrough';
 const sizes = [[320,740],[360,640],[375,667],[390,844],[768,1024],[1024,768],[1180,900],[1280,900],[1440,900],[1680,1000]];
 fs.mkdirSync(out,{recursive:true});
@@ -26,12 +26,14 @@ fs.mkdirSync(out,{recursive:true});
     await page.locator(`#${id} .chapter-heading`).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(170);
     const overlaps=await page.evaluate(()=>{const c=document.querySelector('.journey-buyer');if(!c)return false;const a=c.getBoundingClientRect();return [...document.querySelectorAll('.journey-reading')].some(el=>{const b=el.getBoundingClientRect();return a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom;});});
     assert.equal(overlaps,false,`character on reading ${width} ${id}`);
+    const onStep=await page.evaluate(()=>{const c=document.querySelector('.journey-buyer');if(!c)return false;const a=c.getBoundingClientRect();return [...document.querySelectorAll('.journey-step')].some(el=>{const b=el.getBoundingClientRect();return a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom;});});
+    assert.equal(onStep,false,`character on step badge ${width} ${id}`);
     if([390,1440].includes(width))await page.screenshot({path:path.join(out,`${width}-${id}.png`)});
    }
    // Capture actual exhibits, seams and the moving character halfway through each transition.
    if([390,1440].includes(width)){
-    for(const selector of ['.journey-slide','.journey-resource','.request-demo','.journey-newsletter','.journey-dm','.sg-client-tools']){
-     await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(400);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1)}.png`)});
+    for(const selector of ['.journey-slide','.resource-browser','.request-demo','.journey-email-issue','.journey-thread:not(.journey-thread-cold)','.journey-thread-cold','.sg-client-tools']){
+     await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(400);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
     }
     for(let i=0;i<5;i++){
      const y=await page.locator('[data-journey-transition]').nth(i).evaluate(el=>el.getBoundingClientRect().top+scrollY+50-innerHeight*.64);
@@ -52,26 +54,29 @@ fs.mkdirSync(out,{recursive:true});
    for(let i=0;i<slides.length;i++){assert.equal(await page.locator('.slide-copy h3').innerText(),slides[i].heading);assert.equal(await page.locator('.slide-copy .sample-body').innerText(),slides[i].body);if(i<slides.length-1)await page.getByRole('button',{name:'Next slide'}).click();}
    assert.equal(await page.getByRole('button',{name:'Next slide'}).isDisabled(),true);
    await page.locator('.journey-deck').focus();await page.keyboard.press('ArrowLeft');assert.equal(await page.locator('.slide-copy h3').innerText(),slides[4].heading);
-   await page.getByLabel('Example category').selectOption('Skincare');await page.getByLabel('What you’re writing').selectOption('launch');
-   assert.equal(await page.getByTestId('record-context').innerText(),'Skincare · Product launch');assert.match(await page.getByTestId('followup-context').innerText(),/skincare product launch/);
-   await page.getByRole('button',{name:'Show the example request'}).click();assert.equal(await page.locator('.newsletter-optin input').isChecked(),false);
-   await page.locator('.newsletter-optin input').check();assert.equal(await page.getByRole('button',{name:/Example request recorded/}).isDisabled(),true);
-   await page.getByLabel('Example category').selectOption('Software');assert.equal(await page.getByRole('button',{name:'Show the example request'}).isEnabled(),true);assert.equal(await page.locator('.newsletter-optin input').isChecked(),true);
-   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download this checklist'}).click();const download=await downloadPromise;const downloadPath=path.join(out,`checklist-${reduced?'reduced':'motion'}.html`);await download.saveAs(downloadPath);const contents=fs.readFileSync(downloadPath,'utf8');assert.match(contents,/Software/);assert.match(contents,/Product launch/);assert.equal((contents.match(/<li>/g)||[]).length,7);
-   assert.equal(await page.locator('.newsletter-paper>section').count(),3);assert.equal(await page.locator('.newsletter-cta').innerText(),'Reply with those three lines. I’ll tell you where I got curious.');
-   for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.followup-sequence').innerText()).includes(follow.body));
+   const pick=(tier)=>page.locator(`.tier-picker input[value=${tier}]`).check({force:true});
+   await pick('high');assert.equal(await page.getByTestId('record-context').innerText(),'84 / 100 · Advanced');assert.match(await page.getByTestId('followup-context').innerText(),/landed in Advanced/);
+   await page.getByRole('button',{name:'Show the example lead'}).click();assert.equal(await page.locator('.newsletter-optin input').isChecked(),false);
+   await page.locator('.newsletter-optin input').check();assert.equal(await page.getByRole('button',{name:/Example lead recorded/}).isDisabled(),true);
+   await pick('low');assert.equal(await page.getByRole('button',{name:'Show the example lead'}).isEnabled(),true);assert.equal(await page.locator('.newsletter-optin input').isChecked(),true);assert.equal(await page.locator('.conversation-context>p').innerText(),'Alex · 31 / 100 · Developing');
+   assert.equal(await page.locator('.resource-browser iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the live assessment'}).count(),1);
+   for(const name of fixture.assessment.sections)assert.ok((await page.locator('.resource-sections').innerText()).includes(name));
+   assert.equal(await page.locator('.email-body>section').count(),3);assert.equal(await page.locator('.newsletter-cta').innerText(),'Reply with those three lines. I’ll tell you where I got curious.');assert.match(await page.locator('.email-footer').innerText(),/took The 99-1 Readiness Score\./);
+   for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.journey-thread').first().innerText()).includes(follow.body));
+   assert.match(await page.locator('.thread-tag').first().innerText(),/warm outreach/i);
    await page.locator('.sg-client-tools').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the real page'}).count(),1);
    if(reduced)assert.equal(await page.locator('.journey-buyer').count(),0);
-   report.checks.push(`Full posts, slide boundaries, keyboard, shared context, download and separate subscription: ${reduced?'reduced':'normal'} motion`);
+   report.checks.push(`Full posts, slide boundaries, keyboard, shared tier, email issue, LinkedIn thread and separate subscription: ${reduced?'reduced':'normal'} motion`);
    await context.close();
   }
   // Image fallback and external calculator fallback stay usable without third-party assets.
   const context=await browser.newContext({viewport:{width:1440,height:900}});const page=await context.newPage();
   await page.route('**/*avatar-andrew*',route=>route.abort());await page.route('**/scan-preview/*.jpg',route=>route.abort());await page.route('https://resources.risedtc.com/**',route=>route.abort());
   await page.goto(url);await page.waitForSelector('.journey-resource');await page.locator('.sg-client-tools').scrollIntoViewIfNeeded();await page.waitForSelector('.tool-image-fallback');assert.ok((await page.locator('.journey-post .journey-avatar').innerText()).includes('AH'));await page.getByRole('button',{name:'Try the live calculator'}).click();assert.equal(await page.getByRole('link',{name:'Open ROAS calculator in a new tab'}).count(),1);await page.getByRole('button',{name:'Back to preview'}).click();
+  await page.getByRole('button',{name:'Try the live assessment'}).click();assert.equal(await page.locator('.resource-browser iframe').count(),1);await page.getByRole('button',{name:'Back to the preview'}).click();assert.equal(await page.locator('.resource-browser iframe').count(),0);
   // Browser zoom equivalent: half-width CSS viewport in a 1440 physical-pixel screen.
   await page.setViewportSize({width:720,height:450});await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(out,'zoom-200-reflow.png')});
-  report.checks.push('Missing images preserve text/initials and links; blocked live embed retains external action; 200% reflow');
+  report.checks.push('Missing images preserve text/initials and links; blocked live embed retains external action; live assessment toggles; 200% reflow');
   await context.close();
   assert.deepEqual(report.writes,[]);assert.deepEqual(report.errors,[]);
   fs.writeFileSync(path.join(out,'browser-checks.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

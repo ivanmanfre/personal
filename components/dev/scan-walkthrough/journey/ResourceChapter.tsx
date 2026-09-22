@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { checklistDownload, purposes, type JourneyAction, type JourneyFixture, type JourneyState, type ResearchPurpose } from './model';
+import { tierOf, tierScores, type JourneyAction, type JourneyFixture, type JourneyState } from './model';
 
 export function ResourceChapter({ fixture, state, dispatch }: {fixture: JourneyFixture; state: JourneyState; dispatch: React.Dispatch<JourneyAction>}) {
   const carousel = fixture.samples.posts?.find(p => p.slides?.length || p.image_urls?.length);
@@ -11,11 +11,13 @@ export function ResourceChapter({ fixture, state, dispatch }: {fixture: JourneyF
   const touch = useRef<{x:number;y:number}|null>(null);
   const reduced = useReducedMotion();
   const current = slides[slide];
-  const lm = fixture.samples.lm!;
-  const questions = lm.whats_inside || [];
-  const firstUnchecked = questions.findIndex((_,i) => !state.checked.includes(i));
+  const assessment = fixture.assessment;
+  const tier = tierOf(state);
+  const [live,setLive] = useState(false);
+  const [mobile,setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [imageFailed,setImageFailed] = useState(false);
+  useEffect(() => { const query = window.matchMedia('(max-width: 767px)'); const update = () => {setMobile(query.matches); if(query.matches) setLive(false);}; query.addEventListener('change',update); return () => query.removeEventListener('change',update); }, []);
   function move(amount: number) { setSlide(i => Math.min(count - 1, Math.max(0,i + amount)));setFailed(false); }
-  function download() { const url = URL.createObjectURL(new Blob([checklistDownload(state,questions)],{type:'text/html'})); const a=document.createElement('a');a.href=url;a.download='cuevu-story-checklist.html';a.click();setTimeout(() => URL.revokeObjectURL(url),1000); }
   return <>
     <div className="sample-caption"><span className="journey-eyebrow">Your carousel</span><p>A useful idea they can swipe through.</p></div>
     <div className="journey-deck" aria-label="Carousel sample" tabIndex={0} onKeyDown={e => { if(e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault();move(e.key === 'ArrowRight'?1:-1); } }} onTouchStart={e => {touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchEnd={e => {if(!touch.current)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)move(dx<0?1:-1);touch.current=null;}}>
@@ -25,17 +27,25 @@ export function ResourceChapter({ fixture, state, dispatch }: {fixture: JourneyF
     </div>
     {carousel?.image_urls?.[slide] && current && <div className="slide-transcript"><h3>{current.heading}</h3><p className="sample-body">{current.body}</p></div>}
     <div className="carousel-controls"><button aria-label="Previous slide" disabled={slide === 0} onClick={() => move(-1)}>←</button><span aria-live="polite">Slide {slide+1} of {count}</span><button aria-label="Next slide" disabled={slide === count-1} onClick={() => move(1)}>→</button></div>
-    <div className="journey-bridge"><span aria-hidden="true">↓</span><p>The carousel finds the story.<br/><strong>The checklist helps write it.</strong></p></div>
-    <article className="journey-resource" data-mockup="cuevu">
-      <div className="resource-masthead"><b>CueVu</b><span>Interactive preview</span></div>
-      <div className="resource-intro"><span className="journey-eyebrow">Your lead magnet</span><h3>The 99-1<br/>Story Checklist<span aria-hidden="true">.</span></h3><p>7 questions before you hit publish.</p><p className="source-note">Original questions. New interactive presentation.</p></div>
-      <div className="resource-fields"><label>Example category<select value={state.category} onChange={e => dispatch({type:'category',value:e.target.value})}><option>Coffee</option><option>Skincare</option><option>Software</option></select></label><label>What you’re writing<select value={state.purpose} onChange={e => dispatch({type:'purpose',value:e.target.value as ResearchPurpose})}>{Object.entries(purposes).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>
-      <div className="checklist-result" role="status"><div><strong>{state.checked.length}<span>/{questions.length}</span></strong><span>questions checked</span></div><p>{firstUnchecked === -1 ? 'All seven checked. Read your draft aloud once more.' : `Try question ${firstUnchecked+1} next.`}</p></div>
-      <div className="journey-questions">{questions.map((q,i) => <label key={q} className={state.checked.includes(i)?'is-checked':''}><input type="checkbox" checked={state.checked.includes(i)} onChange={() => dispatch({type:'check',index:i})}/><span className="question-number" aria-hidden="true">{String(i+1).padStart(2,'0')}</span><span>{q}</span></label>)}</div>
-      <div className="resource-download"><button className="journey-button ink" onClick={download}>Download this checklist <span aria-hidden="true">↓</span></button><p className="source-note">Saves your choices. No email needed in this preview.</p></div>
-    </article>
-    <div className="journey-handoff"><div className="handoff-intro"><span className="journey-eyebrow">From a reader to a name</span><h3>Now there’s a reason<br/>to follow up.</h3><p>When someone asks for the resource, you know what brought them here.</p></div>
-      <div className="request-demo"><span className="sample-stamp">Example contact · demo only</span><div className="demo-person"><span className="demo-avatar" aria-hidden="true">A</span><div><b>Alex</b><span>alex@example.com</span></div></div><dl><div><dt>Found you through</dt><dd>LinkedIn → story checklist</dd></div><div><dt>Interested in</dt><dd data-testid="record-context">{state.category} · {purposes[state.purpose]}</dd></div></dl><button className="journey-button ink" disabled={state.requested} onClick={() => dispatch({type:'request'})}>{state.requested ? '✓ Example request recorded' : 'Show the example request'}<span aria-hidden="true">↗</span></button><p className="source-note" aria-live="polite">{state.requested ? 'Alex’s interest is now attached to this example contact. No message was sent.' : 'Try it here. Nothing is sent or saved online.'}</p></div>
+    <div className="journey-bridge"><span aria-hidden="true">↓</span><p>The carousel finds the story.<br/><strong>The score shows them where they stand.</strong></p></div>
+    <section className="journey-resource" aria-labelledby="resource-title">
+      <div className="resource-intro"><span className="journey-eyebrow">Your lead magnet · published</span><h3 id="resource-title">{assessment.title}<span aria-hidden="true">.</span></h3><p>{assessment.subtitle}</p></div>
+      <dl className="resource-facts"><div><dt>Questions</dt><dd>{assessment.questions}</dd></div><div><dt>Time</dt><dd>{assessment.minutes} min</dd></div><div><dt>Sections</dt><dd>{assessment.sections.length}</dd></div><div><dt>Result</dt><dd>Score and tier</dd></div></dl>
+      <div className={`sg-real-browser resource-browser${live ? ' is-live' : ''}`} data-mockup="browser">
+        <div className="sg-browser-bar"><span className="sg-browser-dots" aria-hidden="true"><i/><i/><i/></span><span>resources.ivanmanfredi.com/andrew-hayes-94-assessment</span><a href={assessment.url} target="_blank" rel="noreferrer" aria-label="Open the assessment in a new tab">↗</a></div>
+        <div className={`sg-real-browser-viewport${live ? ' is-live' : ''}`}>
+          {live && !mobile ? <iframe src={assessment.url} title={`Live ${assessment.title}`} sandbox="allow-scripts allow-same-origin allow-forms allow-popups"/> : imageFailed ? <a className="tool-image-fallback" href={assessment.url} target="_blank" rel="noreferrer">Preview image unavailable. Open the assessment ↗</a> : <a href={assessment.url} target="_blank" rel="noreferrer" aria-label={`Open ${assessment.title}`}><img src={mobile ? assessment.imageMobile : assessment.image} alt={`The published ${assessment.title} page for CueVu`} loading="lazy" onError={() => setImageFailed(true)}/></a>}
+        </div>
+      </div>
+      <div className="resource-actions">{mobile ? <a className="journey-button ink" href={assessment.url} target="_blank" rel="noreferrer">Open the live assessment <span aria-hidden="true">↗</span></a> : <button className="journey-button ink" onClick={() => setLive(v => !v)}>{live ? 'Back to the preview' : 'Try the live assessment'} <span aria-hidden="true">{live ? '↑' : '↗'}</span></button>}<p className="source-note">Real page, real questions. Answers stay on that page; the score and tier are free, the email unlocks the breakdown.</p></div>
+      <ol className="resource-sections" aria-label="Assessment sections">{assessment.sections.map((name,i) => <li key={name}><span aria-hidden="true">{String(i+1).padStart(2,'0')}</span>{name}</li>)}</ol>
+      <p className="source-note">Live page, captured {assessment.capturedOn}. The written sample in your scan called it The 99-1 Story Checklist; this scored assessment is the version we publish.</p>
+    </section>
+    <div className="journey-handoff"><div className="handoff-intro"><span className="journey-eyebrow">From a reader to a name</span><h3>Now there’s a reason<br/>to follow up.</h3><p>When someone finishes the score, you know their result before you write a word.</p></div>
+      <div className="request-demo"><span className="sample-stamp">Example lead · demo only</span><div className="demo-person"><span className="demo-avatar" aria-hidden="true">A</span><div><b>Alex</b><span>{fixture.buyer.role} · alex@example.com</span></div></div>
+        <fieldset className="tier-picker"><legend>Pick Alex’s example result</legend>{assessment.tiers.map(t => <label key={t.id} className={state.tier === t.id ? 'is-selected' : ''}><input type="radio" name="tier" value={t.id} checked={state.tier === t.id} onChange={() => dispatch({type:'tier',value:t.id})}/><b>{tierScores[t.id]}</b><span>{t.name}</span></label>)}</fieldset>
+        <dl><div><dt>Found you through</dt><dd>LinkedIn → {assessment.title}</dd></div><div><dt>Result</dt><dd data-testid="record-context">{tierScores[state.tier]} / 100 · {tier.name}</dd></div><div><dt>What the page told them</dt><dd>{tier.headline}</dd></div></dl>
+        <button className="journey-button ink" disabled={state.requested} onClick={() => dispatch({type:'request'})}>{state.requested ? '✓ Example lead recorded' : 'Show the example lead'}<span aria-hidden="true">↗</span></button><p className="source-note" aria-live="polite">{state.requested ? 'Alex’s result is now attached to this example contact. No message was sent.' : 'Try it here. Nothing is sent or saved online.'}</p></div>
     </div>
   </>;
 }

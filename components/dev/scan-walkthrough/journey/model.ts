@@ -2,33 +2,33 @@ import type { ContentSystem } from '../../../../lib/scanTypes';
 import original from './samples.json';
 
 export type JourneySamples = NonNullable<ContentSystem['sample_output']>;
+export type TierId = 'low' | 'mid' | 'high';
+export interface JourneyAssessment {
+  url: string; title: string; subtitle: string; badge: string; questions: number; minutes: number; sections: string[];
+  tiers: { id: TierId; name: string; headline: string; firstStep: string }[]; thresholds: { low: number; mid: number };
+  image: string; imageMobile: string; capturedOn: string;
+}
 export interface JourneyFixture {
   founder: { name: string; company: string; headline: string; avatarUrl?: string };
   buyer: { role: string; project: string };
   samples: JourneySamples;
+  assessment: JourneyAssessment;
   source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string };
 }
 export const fixture = original as JourneyFixture;
-export type ResearchPurpose = 'story' | 'campaign' | 'launch';
-export const purposes: Record<ResearchPurpose, string> = { story: 'Customer story', campaign: 'Campaign', launch: 'Product launch' };
-export interface JourneyState { category: string; purpose: ResearchPurpose; checked: number[]; requested: boolean; subscribed: boolean }
-export type JourneyAction =
-  | { type: 'category'; value: string } | { type: 'purpose'; value: ResearchPurpose }
-  | { type: 'check'; index: number } | { type: 'request' } | { type: 'subscription'; value: boolean };
-export const initialJourneyState: JourneyState = { category: 'Coffee', purpose: 'story', checked: [0, 1], requested: false, subscribed: false };
+/** Example scores, one per tier of the live assessment (thresholds 40 / 70). */
+export const tierScores: Record<TierId, number> = { low: 31, mid: 58, high: 84 };
+export interface JourneyState { tier: TierId; requested: boolean; subscribed: boolean }
+export type JourneyAction = { type: 'tier'; value: TierId } | { type: 'request' } | { type: 'subscription'; value: boolean };
+export const initialJourneyState: JourneyState = { tier: 'mid', requested: false, subscribed: false };
 export function journeyReducer(state: JourneyState, action: JourneyAction): JourneyState {
   switch (action.type) {
-    case 'category': return { ...state, category: action.value, requested: false };
-    case 'purpose': return { ...state, purpose: action.value, requested: false };
-    case 'check': return { ...state, checked: state.checked.includes(action.index) ? state.checked.filter(i => i !== action.index) : [...state.checked, action.index], requested: false };
+    case 'tier': return { ...state, tier: action.value, requested: false };
     case 'request': return { ...state, requested: true };
     case 'subscription': return { ...state, subscribed: action.value };
   }
 }
-export function escapeHtml(value: string) { return value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!)); }
-export function checklistDownload(state: JourneyState, questions: string[]) {
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><title>Your story checklist</title><style>body{font:18px/1.6 system-ui;max-width:680px;margin:48px auto;padding:24px;color:#131210}li{margin:20px 0}small{color:#555}</style><h1>The 99-1 Story Checklist</h1><p>${escapeHtml(state.category)} · ${escapeHtml(purposes[state.purpose])}</p><p>${state.checked.length} of ${questions.length} checked</p><ol>${questions.map((q,i) => `<li>${state.checked.includes(i) ? '✓ ' : '□ '}${escapeHtml(q)}</li>`).join('')}</ol><small>Interactive preview. Questions from Andrew Hayes’s original scan. Nothing has been submitted.</small></html>`;
-}
+export function tierOf(state: JourneyState) { return fixture.assessment.tiers.find(t => t.id === state.tier)!; }
 export const newsletterDraft = {
   subject: 'Before the brand enters the story',
   preview: 'A small exercise for your next LinkedIn post.',

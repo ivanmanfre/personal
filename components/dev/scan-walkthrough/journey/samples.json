@@ -188,5 +188,47 @@
     "kind": "original-scan",
     "url": "https://inboundonsteroids.com/scan/andrew-hayes-94/",
     "capturedOn": "2026-09-21"
+  },
+  "assessment": {
+    "url": "https://resources.ivanmanfredi.com/andrew-hayes-94-assessment/",
+    "title": "The 99-1 Readiness Score",
+    "subtitle": "Find out how much of your LinkedIn content reaches the 99% who aren't looking yet, and how much gets buried by the algorithm.",
+    "badge": "Interactive Assessment",
+    "questions": 17,
+    "minutes": 8,
+    "sections": [
+      "The 99 vs. The 1",
+      "Customer as Hero",
+      "Real Customer Language",
+      "Audience or Broadcast?",
+      "Algorithm Alignment"
+    ],
+    "tiers": [
+      {
+        "id": "low",
+        "name": "Developing",
+        "headline": "You're writing for the 1% who are already looking.",
+        "firstStep": "Pick one recent post and rewrite the opening so it starts with a specific person in a specific moment. No brand name, no product mention. Just the scene."
+      },
+      {
+        "id": "mid",
+        "name": "Growth Stage",
+        "headline": "You understand the rule. The execution isn't fully there yet.",
+        "firstStep": "Look at your last five posts and count how many open with your brand name or a pitch. That number is your baseline to beat."
+      },
+      {
+        "id": "high",
+        "name": "Advanced",
+        "headline": "You're writing for the right person.",
+        "firstStep": "Start collecting switching-moment stories from category-level customers, not just your own. Their language is the raw material for your next run of posts."
+      }
+    ],
+    "thresholds": {
+      "low": 40,
+      "mid": 70
+    },
+    "image": "/scan-preview/cuevu-assessment.jpg",
+    "imageMobile": "/scan-preview/cuevu-assessment-mobile.jpg",
+    "capturedOn": "2026-09-22"
   }
 }
