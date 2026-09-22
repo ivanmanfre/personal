@@ -15,7 +15,7 @@ fs.mkdirSync(out,{recursive:true});
    const context = await browser.newContext({viewport:{width,height},hasTouch:width<768});
    const page = await context.newPage();
    page.on('pageerror',e=>report.errors.push({width,error:e.message}));
-   await page.goto(url);await page.waitForSelector('.cv-score');await page.evaluate(()=>document.fonts.ready);
+   await page.goto(url);await page.waitForSelector('.lm-figure');await page.evaluate(()=>document.fonts.ready);
    assert.equal(await page.locator('dialog').count(),0);
    const geometry = await page.evaluate(() => ({overflow:document.documentElement.scrollWidth>innerWidth, samples:[...document.querySelectorAll('.sample-body,.newsletter-body')].map(el=>{const s=getComputedStyle(el);return {font:parseFloat(s.fontSize),line:parseFloat(s.lineHeight)}}),buttons:[...document.querySelectorAll('.scan-journey button,.scan-journey select')].map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent.slice(0,40),width:r.width,height:r.height}})}));
    assert.equal(geometry.overflow,false,`overflow ${width}`);
@@ -32,7 +32,7 @@ fs.mkdirSync(out,{recursive:true});
    }
    // Capture actual exhibits, seams and the moving character halfway through each transition.
    if([390,1440].includes(width)){
-    for(const selector of ['.journey-slide','.cv-score','.lead-card','.journey-email-issue','.journey-thread:not(.journey-thread-engager)','.journey-thread-engager','.sg-proof','.journey-loop','.journey-close']){
+    for(const selector of ['.journey-carousel-post','.lm-figure','.lead-card','.journey-email-issue','.journey-thread:not(.journey-thread-engager)','.journey-thread-engager','.sg-proof','.journey-loop','.journey-close']){
      await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(900);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
     }
     for(let i=0;i<5;i++){
@@ -45,36 +45,32 @@ fs.mkdirSync(out,{recursive:true});
   }
   for(const reduced of [false,true]){
    const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:reduced?'reduce':'no-preference',hasTouch:true,acceptDownloads:true});const page=await context.newPage();
-   await page.goto(url);await page.waitForSelector('.cv-score');
+   await page.goto(url);await page.waitForSelector('.lm-figure');
    page.on('request',req=>{if(['POST','PUT','PATCH','DELETE'].includes(req.method()))report.writes.push({method:req.method(),url:req.url()});});
-   const select=page.locator('#journey-post');
-   for(let i=0;i<fixture.samples.posts.length;i++){await select.selectOption(String(i));await select.focus();assert.equal(await select.evaluate(el=>el===document.activeElement),true);assert.equal((await page.locator('.journey-post>.sample-body').innerText()).replace(/\s+/g,' '),fixture.samples.posts[i].body.replace(/\s+/g,' '));}
-   const slides=fixture.samples.posts[0].slides;
+   const select=page.locator('#journey-post');const written=fixture.samples.posts.map((p,i)=>({p,i})).filter(({p})=>!(p.slides&&p.slides.length));assert.equal(await select.locator('option').count(),written.length);
+   for(const {p,i} of written){await select.selectOption(String(i));await select.focus();assert.equal(await select.evaluate(el=>el===document.activeElement),true);assert.equal((await page.locator('.journey-post:not(.journey-carousel-post)>.sample-body').innerText()).replace(/\s+/g,' '),p.body.replace(/\s+/g,' '));}
+   const slides=fixture.samples.posts[0].slides;assert.ok((await page.locator('.journey-carousel-post>.sample-body').innerText()).includes(fixture.samples.posts[0].body.slice(0,40)));
    assert.equal(await page.getByRole('button',{name:'Previous slide'}).isDisabled(),true);
-   for(let i=0;i<slides.length;i++){assert.equal(await page.locator('.slide-copy h3').innerText(),slides[i].heading);assert.equal(await page.locator('.slide-copy .sample-body').innerText(),slides[i].body);if(i<slides.length-1)await page.getByRole('button',{name:'Next slide'}).click();}
+   for(let i=0;i<slides.length;i++){assert.equal(await page.locator('.slide-copy h3').innerText(),slides[i].heading);assert.equal(await page.locator('.slide-copy .sample-body').innerText(),slides[i].body);assert.equal(await page.locator('.slide-counter').innerText(),`${i+1} / ${slides.length}`);if(i<slides.length-1)await page.getByRole('button',{name:'Next slide'}).click();}
    assert.equal(await page.getByRole('button',{name:'Next slide'}).isDisabled(),true);
    await page.locator('.journey-deck').focus();await page.keyboard.press('ArrowLeft');assert.equal(await page.locator('.slide-copy h3').innerText(),slides[4].heading);
-   const pick=(q,score)=>page.locator(`.cv-questions input[name=q${q}][value="${score}"]`).check({force:true});
-   await pick(0,5);await pick(1,5);await pick(2,5);assert.equal(await page.getByTestId('record-context').innerText(),'100 / 100 · Advanced');assert.match(await page.getByTestId('tier-name').innerText(),/advanced/i);
-   await page.locator('.newsletter-optin input').check();
-   await pick(0,1);await pick(1,1);await pick(2,1);assert.equal(await page.getByTestId('record-context').innerText(),'20 / 100 · Developing');assert.equal(await page.locator('.newsletter-optin input').isChecked(),true);assert.equal(await page.locator('.conversation-context>p').innerText(),'Alex · 20 / 100 · Developing');
-   assert.equal(await page.locator('.cv-score iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the live assessment'}).count(),1);
-   for(const name of ['Developing','Growth Stage','Advanced'])assert.ok(true,name);
-   assert.equal(await page.locator('.email-body>section').count(),3);assert.equal(await page.locator('.newsletter-cta').innerText(),'Reply with those three lines. I’ll tell you where I got curious.');assert.match(await page.locator('.email-footer').innerText(),/took The 99-1 Readiness Score\./);
-   await page.locator('.journey-thread').first().scrollIntoViewIfNeeded();await page.waitForSelector('.journey-thread.is-settled',{timeout:8000});assert.match(await page.getByTestId('followup-context').innerText(),/landed in Developing at 20/);
+   assert.equal(await page.locator('.lm-cover img').count(),1);for(const line of fixture.samples.lm.whats_inside)assert.ok((await page.locator('.lm-inside').innerText()).includes(line));assert.equal(await page.getByTestId('record-context').innerText(),`LinkedIn → ${fixture.samples.lm.title}`);
+   await page.locator('.newsletter-optin input').check();assert.equal(await page.locator('.newsletter-optin input').isChecked(),true);
+   assert.equal(await page.locator('.email-body h4').count(),1);assert.equal(await page.locator('.newsletter-body p').count(),2);assert.match(await page.locator('.email-footer').innerText(),/pulled The 99-1 Story Checklist\./);
+   await page.locator('.journey-thread').first().scrollIntoViewIfNeeded();await page.waitForSelector('.journey-thread.is-settled',{timeout:8000});
    assert.ok(!(await page.locator('.journey-thread').first().innerText()).includes(fixture.samples.follow_ups[1].body));await page.getByRole('button',{name:/Show the next two messages/}).click();
    for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.journey-thread').first().innerText()).includes(follow.body));
    await page.locator('.journey-thread-engager').scrollIntoViewIfNeeded();await page.waitForSelector('.journey-thread-engager.is-settled',{timeout:8000});assert.ok((await page.locator('.journey-thread-engager').innerText()).includes(fixture.samples.engager_outreach.samples[0].dm));assert.equal(await page.locator('body').innerText().then(t=>t.includes('[first name]')),false);
    assert.match(await page.locator('.thread-tag').first().innerText(),/warm outreach/i);
    await page.locator('.sg-proof').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the library'}).count(),1);assert.ok((await page.locator('.proof-kyle').innerText()).includes('$80K/mo'));assert.equal(await page.locator('.loop-stations li').count(),5);
    if(reduced)assert.equal(await page.locator('.journey-buyer').count(),0);
-   report.checks.push(`Full posts, slide boundaries, keyboard, live score, email issue, played-in LinkedIn threads and separate subscription: ${reduced?'reduced':'normal'} motion`);
+   report.checks.push(`Full posts, slide boundaries, keyboard, carousel card, cover and contents, one-idea newsletter, played-in LinkedIn threads and separate subscription: ${reduced?'reduced':'normal'} motion`);
    await context.close();
   }
   // Image fallback and external calculator fallback stay usable without third-party assets.
   const context=await browser.newContext({viewport:{width:1440,height:900}});const page=await context.newPage();
   await page.route('**/*avatar-andrew*',route=>route.abort());await page.route('**/scan-preview/*.jpg',route=>route.abort());await page.route('**/content-system/*.webp',route=>route.abort());
-  await page.goto(url);await page.waitForSelector('.cv-score');await page.locator('.sg-proof').scrollIntoViewIfNeeded();await page.waitForSelector('.tool-image-fallback');assert.ok((await page.locator('.journey-post .journey-avatar').innerText()).includes('AH'));assert.equal(await page.getByRole('link',{name:/Open the library/}).count(),2);
+  await page.goto(url);await page.waitForSelector('.lm-figure');await page.locator('.sg-proof').scrollIntoViewIfNeeded();await page.waitForSelector('.tool-image-fallback');assert.ok((await page.locator('.journey-post .journey-avatar').first().innerText()).includes('AH'));assert.equal(await page.getByRole('link',{name:/Open the library/}).count(),2);await page.locator('.lm-figure').scrollIntoViewIfNeeded();await page.waitForSelector('.lm-cover-fallback',{timeout:8000});
   // Browser zoom equivalent: half-width CSS viewport in a 1440 physical-pixel screen.
   await page.setViewportSize({width:720,height:450});await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(out,'zoom-200-reflow.png')});
   report.checks.push('Missing images preserve text/initials and links; proof images fall back to links; 200% reflow');

@@ -48,7 +48,7 @@ export function ClientProof() {
         <a className="sg-tool-try" href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer">Open the library <span aria-hidden="true">↗</span></a>
       </motion.article>
     </div>
-    <p className="sg-tool-bridge">Kyle’s figure is his agency’s monthly revenue before and after. The RISE pages are shown as published work, with no revenue claim. <a href="#inbound">Back to your score ↑</a></p>
+    <p className="sg-tool-bridge">Kyle’s figure is his agency’s monthly revenue before and after. The RISE pages are shown as published work, with no revenue claim. <a href="#inbound">Back to your lead magnet ↑</a></p>
   </section>;
 }
 
