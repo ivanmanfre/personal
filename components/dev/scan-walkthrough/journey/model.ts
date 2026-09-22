@@ -16,8 +16,12 @@ export interface JourneyFixture {
 }
 export const fixture = original as JourneyFixture;
 /** Public asset path that works at '/' in the app and at './' in the standalone preview build. */
+/** Rendered carousel slides per scan (brand-asset renderer output, saved with the preview). */
+export const slideImages: Record<string, string[]> = { 'luiza-vass-8c': [1,2,3,4,5,6].map(n => `scan-preview/slides/luiza-vass-8c/${n}.png`), 'andrew-hayes-94': [1,2,3,4,5,6].map(n => `scan-preview/slides/andrew-hayes-94/${n}.png`) };
+export function slideImagesFor(f: JourneyFixture) { return (slideImages[f.slug] || []).map(asset); }
 export function asset(p: string) { return `${import.meta.env.BASE_URL}${p.replace(/^\//, '')}`; }
 export interface JourneyState { subscribed: boolean }
+
 export type JourneyAction = { type: 'subscription'; value: boolean };
 export const initialJourneyState: JourneyState = { subscribed: false };
 export function journeyReducer(state: JourneyState, action: JourneyAction): JourneyState {

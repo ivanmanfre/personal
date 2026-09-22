@@ -6,7 +6,7 @@ import { ReadingChapter } from './journey/ReadingChapter';
 import { ContentChapter } from './journey/ContentChapter';
 import { ResourceChapter } from './journey/ResourceChapter';
 import { ConversationChapter, NewsletterChapter } from './journey/FollowUpChapters';
-import { Buyer, BuyerPath } from './journey/BuyerPath';
+import { Buyer } from './journey/BuyerPath';
 import { fixture as andrew, initialJourneyState, journeyReducer, type JourneyFixture } from './journey/model';
 import { loadFixture } from './journey/load';
 import './story-exhibits.css';
@@ -27,13 +27,12 @@ export default function ScanWalkthroughPreview() {
     <a href="#content" className="journey-skip">Skip to your samples</a>
     <div className="journey-topbar"><a href="#top" className="journey-wordmark">inbound<span>onsteroids<i>.</i></span></a><StorySound/></div>
     {loadError && <p className="journey-load-error" role="alert">Could not load the scan for “{slug}”: {loadError}. Showing the sample scan instead.</p>}
-    <section className="journey-hero"><div className="hero-copy"><span className="journey-eyebrow">{fixture.founder.name} / {fixture.founder.company} / made for you</span><h1>A stranger.<br/>A story.<br/><span>A conversation.</span></h1><p>How your LinkedIn content<br/>turns a stranger into a call.</p></div><div className="hero-route" aria-hidden="true"><span>scrolling</span><svg viewBox="0 0 680 120"><path d="M0 70H140C220 70 190 20 280 20S350 100 435 100S530 50 680 50"/></svg><div className="hero-person"><span className="rb-flip"><Buyer/></span></div><span>interested</span></div><div className="buyer-intro"><span className="buyer-label">This is Alex.</span><p>{fixture.buyer.role}, who has never heard of {fixture.founder.company}.<small>An example reader. Everything below is what they see.</small></p></div></section>
-    <BuyerPath rootRef={rootRef}/>
-    <ReadingChapter id="content" number="01" title="A story makes them stop." why="A familiar problem catches their eye. Your profile helps them see who can help."><ContentChapter fixture={fixture}/></ReadingChapter>
-    <ReadingChapter id="inbound" number="02" title="Turn a reader into a lead." why="One gated asset in your brand. Every reader who takes it lands on your list with a name."><ResourceChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="newsletter" number="03" title="Give them a reason to return." why="They might leave today. A useful newsletter keeps the conversation open for when they’re ready."><NewsletterChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="outreach" number="04" title="Start with what they need." why="Warm outreach starts from what they just took. Give them something useful to reply to."><ConversationChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose. Alex keeps moving through it; so does every reader after them."><div className="journey-loop" aria-label="The reader’s loop">
+    <section className="journey-hero"><div className="hero-copy"><span className="journey-eyebrow">{fixture.founder.name} / {fixture.founder.company} / made for you</span><h1>A stranger.<br/>A story.<br/><span>A conversation.</span></h1><p>How your LinkedIn content<br/>turns a stranger into a call.</p></div><div className="hero-route" aria-hidden="true"><span>scrolling</span><svg viewBox="0 0 680 120"><path d="M0 70H140C220 70 190 20 280 20S350 100 435 100S530 50 680 50"/></svg><div className="hero-person"><span className="rb-flip"><Buyer/></span></div><span>interested</span></div><div className="buyer-intro"><span className="buyer-label">This is Alex.</span><p>{fixture.buyer.role}, who has never heard of {fixture.founder.company}.</p></div></section>
+    <ReadingChapter id="content" number="01" title="A story makes them stop." why="One carousel, three posts and a profile that says who you are."><ContentChapter fixture={fixture}/></ReadingChapter>
+    <ReadingChapter id="inbound" number="02" title="Turn a reader into a lead." why="One gated asset in your brand. Every reader who takes it lands on your list."><ResourceChapter {...props}/></ReadingChapter>
+    <ReadingChapter id="newsletter" number="03" title="Give them a reason to return." why="One idea a week, in your voice, to the list you own."><NewsletterChapter {...props}/></ReadingChapter>
+    <ReadingChapter id="outreach" number="04" title="Start with what they need." why="Every message references what they took or what they said. No pitch."><ConversationChapter {...props}/></ReadingChapter>
+    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose."><div className="journey-loop" aria-label="The reader’s loop">
       <span className="loop-track" aria-hidden="true"/><span className="loop-runner" aria-hidden="true"><span className="rb-flip"><Buyer/></span></span>
       <ol className="loop-stations">{[
         ['content','The post','Stops them in the feed.','in'],['inbound','The lead magnet','Turns a reader into a name.','▤'],['newsletter','The newsletter','Brings them back next week.','↗'],['outreach','The message','Opens a real conversation.','↳'],['call','The call','On your calendar, already warm.','◉'],

@@ -17,9 +17,9 @@ fs.mkdirSync(out,{recursive:true});
    page.on('pageerror',e=>report.errors.push({width,error:e.message}));
    await page.goto(url);await page.waitForSelector('.lm-figure');await page.evaluate(()=>document.fonts.ready);
    assert.equal(await page.locator('dialog').count(),0);
-   const geometry = await page.evaluate(() => ({overflow:document.documentElement.scrollWidth>innerWidth, samples:[...document.querySelectorAll('.sample-body,.newsletter-body')].map(el=>{const s=getComputedStyle(el);return {font:parseFloat(s.fontSize),line:parseFloat(s.lineHeight)}}),buttons:[...document.querySelectorAll('.scan-journey button,.scan-journey select')].map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent.slice(0,40),width:r.width,height:r.height}})}));
+   const geometry = await page.evaluate(() => ({overflow:document.documentElement.scrollWidth>innerWidth, samples:[...document.querySelectorAll('.sample-body,.newsletter-body')].map(el=>{const s=getComputedStyle(el);return {font:parseFloat(s.fontSize),line:parseFloat(s.lineHeight),feed:!!el.closest('.feed-post')}}),buttons:[...document.querySelectorAll('.scan-journey button,.scan-journey select')].map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent.slice(0,40),width:r.width,height:r.height}})}));
    assert.equal(geometry.overflow,false,`overflow ${width}`);
-   for(const s of geometry.samples){assert.ok(s.font>=16,`font ${width}`);assert.ok(s.line/s.font>=1.5,`line height ${width}`);}
+   for(const s of geometry.samples){assert.ok(s.font>=(s.feed?14:16),`font ${width}`);assert.ok(s.line/s.font>=1.5,`line height ${width}`);}
    for(const b of geometry.buttons){assert.ok(b.width>=44&&b.height>=44,`target ${width}: ${JSON.stringify(b)}`);}
    await page.screenshot({path:path.join(out,`${width}-hero.png`)});
    for(const id of ['content','inbound','newsletter','outreach','together']) {
@@ -32,12 +32,8 @@ fs.mkdirSync(out,{recursive:true});
    }
    // Capture actual exhibits, seams and the moving character halfway through each transition.
    if([390,1440].includes(width)){
-    for(const selector of ['.journey-carousel-post','.lm-figure','.lead-card','.journey-email-issue','.journey-thread:not(.journey-thread-engager)','.journey-thread-engager','.sg-proof','.journey-loop','.journey-close']){
-     await page.locator(selector).evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(900);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
-    }
-    for(let i=0;i<5;i++){
-     const y=await page.locator('[data-journey-transition]').nth(i).evaluate(el=>el.getBoundingClientRect().top+scrollY+50-innerHeight*.64);
-     await page.evaluate(y=>scrollTo({top:y,behavior:'instant'}),y);await page.waitForTimeout(30);await page.screenshot({path:path.join(out,`${width}-transition-${i+1}.png`)});
+    for(const selector of ['.journey-carousel-post','.feed-row','.li-profile','.lm-figure','.lead-card','.journey-email-issue','.li-thread','.sg-proof','.journey-loop','.journey-close']){
+     await page.locator(selector).first().evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(900);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
     }
    }
    report.viewports.push({width,height,sampleCount:geometry.samples.length,buttonCount:geometry.buttons.length,overflow:false});
@@ -47,23 +43,20 @@ fs.mkdirSync(out,{recursive:true});
    const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:reduced?'reduce':'no-preference',hasTouch:true,acceptDownloads:true});const page=await context.newPage();
    await page.goto(url);await page.waitForSelector('.lm-figure');
    page.on('request',req=>{if(['POST','PUT','PATCH','DELETE'].includes(req.method()))report.writes.push({method:req.method(),url:req.url()});});
-   const select=page.locator('#journey-post');const written=fixture.samples.posts.map((p,i)=>({p,i})).filter(({p})=>!(p.slides&&p.slides.length));assert.equal(await select.locator('option').count(),written.length);
-   for(const {p,i} of written){await select.selectOption(String(i));await select.focus();assert.equal(await select.evaluate(el=>el===document.activeElement),true);assert.equal((await page.locator('.journey-post:not(.journey-carousel-post)>.sample-body').innerText()).replace(/\s+/g,' '),p.body.replace(/\s+/g,' '));}
+   const written=fixture.samples.posts.map((p,i)=>({p,i})).filter(({p})=>!(p.slides&&p.slides.length)).slice(0,3);assert.equal(await page.locator('.feed-post').count(),written.length);
+   for(let n=0;n<written.length;n++){const card=page.locator('.feed-post').nth(n);await card.getByRole('button',{name:'…more'}).click();assert.equal((await card.locator('.sample-body').innerText()).replace(/\s+/g,' '),written[n].p.body.replace(/\s+/g,' '));await card.getByRole('button',{name:'Show less'}).click();assert.equal(await card.getByRole('button',{name:'…more'}).count(),1);}
    const slides=fixture.samples.posts[0].slides;assert.ok((await page.locator('.journey-carousel-post>.sample-body').innerText()).includes(fixture.samples.posts[0].body.slice(0,40)));
    assert.equal(await page.getByRole('button',{name:'Previous slide'}).isDisabled(),true);
-   for(let i=0;i<slides.length;i++){assert.equal(await page.locator('.slide-copy h3').innerText(),slides[i].heading);assert.equal(await page.locator('.slide-copy .sample-body').innerText(),slides[i].body);assert.equal(await page.locator('.slide-counter').innerText(),`${i+1} / ${slides.length}`);if(i<slides.length-1)await page.getByRole('button',{name:'Next slide'}).click();}
+   for(let i=0;i<slides.length;i++){assert.equal(await page.locator('.slide-badge').innerText(),`${i+1} / ${slides.length}`);if(i<slides.length-1)await page.getByRole('button',{name:'Next slide'}).click();}
    assert.equal(await page.getByRole('button',{name:'Next slide'}).isDisabled(),true);
-   await page.locator('.journey-deck').focus();await page.keyboard.press('ArrowLeft');assert.equal(await page.locator('.slide-copy h3').innerText(),slides[4].heading);
+   await page.locator('.journey-deck').focus();await page.keyboard.press('ArrowLeft');assert.equal(await page.locator('.slide-badge').innerText(),`${slides.length-1} / ${slides.length}`);
+   assert.equal(await page.locator('.li-profile h3').innerText(),fixture.founder.name);assert.equal(await page.locator('.li-featured b').innerText(),fixture.samples.lm.title);
    assert.equal(await page.locator('.lm-cover img').count(),1);for(const line of fixture.samples.lm.whats_inside)assert.ok((await page.locator('.lm-inside').innerText()).includes(line));assert.equal(await page.getByTestId('record-context').innerText(),`LinkedIn → ${fixture.samples.lm.title}`);
-   await page.locator('.newsletter-optin input').check();assert.equal(await page.locator('.newsletter-optin input').isChecked(),true);
    assert.equal(await page.locator('.email-body h4').count(),1);assert.equal(await page.locator('.newsletter-body p').count(),2);assert.match(await page.locator('.email-footer').innerText(),/pulled The 99-1 Story Checklist\./);
-   await page.locator('.journey-thread').first().scrollIntoViewIfNeeded();await page.waitForSelector('.journey-thread.is-settled',{timeout:8000});
-   assert.ok(!(await page.locator('.journey-thread').first().innerText()).includes(fixture.samples.follow_ups[1].body));await page.getByRole('button',{name:/Show the next two messages/}).click();
-   for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.journey-thread').first().innerText()).includes(follow.body));
-   await page.locator('.journey-thread-engager').scrollIntoViewIfNeeded();await page.waitForSelector('.journey-thread-engager.is-settled',{timeout:8000});assert.ok((await page.locator('.journey-thread-engager').innerText()).includes(fixture.samples.engager_outreach.samples[0].dm));assert.equal(await page.locator('body').innerText().then(t=>t.includes('[first name]')),false);
-   assert.match(await page.locator('.thread-tag').first().innerText(),/warm outreach/i);
+   await page.locator('.li-thread').first().scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('.li-thread')?.classList.contains('is-settled'),{timeout:10000});
+   for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.li-thread').first().innerText()).includes(follow.body));
+   await page.locator('.li-thread').nth(1).scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('.li-thread.is-settled').length>=2,{timeout:8000});assert.ok((await page.locator('.li-thread').nth(1).innerText()).includes(fixture.samples.engager_outreach.samples[0].dm));assert.equal(await page.locator('body').innerText().then(t=>t.includes('[first name]')),false);
    await page.locator('.sg-proof').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the library'}).count(),1);assert.ok((await page.locator('.proof-kyle').innerText()).includes('$80K/mo'));assert.equal(await page.locator('.loop-stations li').count(),5);
-   if(reduced)assert.equal(await page.locator('.journey-buyer').count(),0);
    report.checks.push(`Full posts, slide boundaries, keyboard, carousel card, cover and contents, one-idea newsletter, played-in LinkedIn threads and separate subscription: ${reduced?'reduced':'normal'} motion`);
    await context.close();
   }

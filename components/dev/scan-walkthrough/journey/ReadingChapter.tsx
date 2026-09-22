@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 const labels: Record<string,string> = { content: 'Get noticed', inbound: 'Capture the lead', newsletter: 'Stay in touch', outreach: 'Warm outreach', together: 'Bring it together' };
 export function ReadingChapter({ id, number, title, why, children }: { id: string; number: string; title: string; why: string; children: React.ReactNode }) {
   return <section id={id} className="journey-chapter">
-    <div className="journey-transition" data-journey-transition aria-hidden="true"><span className="journey-route-line"/><svg className="route-pulse" aria-hidden="true"><line x1="1" y1="0" x2="1" y2="100%"/></svg><span className="journey-step">{number}</span></div>
+    <div className="journey-transition" aria-hidden="true"><span className="journey-step">{number}</span></div>
     <Reveal className="chapter-heading" as="header"><span className="journey-eyebrow">{number} / {labels[id]}</span><h2>{title}</h2><p>{why}</p></Reveal>
     <div className="journey-reading">{children}</div>
   </section>;
