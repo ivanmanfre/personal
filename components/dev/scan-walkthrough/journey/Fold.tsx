@@ -50,19 +50,38 @@ export function Fold({ fixture }: { fixture: JourneyFixture }) {
   </section>;
 }
 
-const STATIONS: [string, string, string, string][] = [
-  ['content', 'The post', 'Stops them in the feed.', 'in'], ['inbound', 'The lead magnet', 'Turns a reader into a name.', '▤'], ['newsletter', 'The newsletter', 'Brings them back next week.', '↗'], ['outreach', 'The message', 'Opens a real conversation.', '↳'], ['call', 'The call', 'On your calendar, already warm.', '◉'],
-];
-/** The loop, drawn by the scroll itself: the track fills as the reader moves down it, and each station lights when the track reaches it. */
-export function LoopStations() {
+type Station = { id: string; title: string; why: string; icon: string; href?: string; tags?: string[] };
+/** The whole system as two lanes that meet at the call. The scroll draws both lanes, then the merge. */
+export function SystemMap({ fixture }: { fixture: JourneyFixture }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 78%', 'end 55%'] });
-  const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1]);
-  const [reached, setReached] = useState(reduced ? STATIONS.length : 0);
-  useMotionValueEvent(scrollYProgress, 'change', v => { if (!reduced) setReached(Math.min(STATIONS.length, Math.floor(v * (STATIONS.length - 1) + 1.02))); });
-  return <div className="journey-loop" ref={ref} aria-label="The reader’s loop">
-    <span className="loop-track" aria-hidden="true" /><motion.span className="loop-fill" aria-hidden="true" style={{ scaleY: reduced ? 1 : scaleY }} />
-    <ol className="loop-stations">{STATIONS.map(([id, title, why, icon], i) => <li key={id} className={i < reached ? 'is-reached' : undefined}>{id === 'call' ? <span className="loop-item"><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span></span> : <a className="loop-item" href={`#${id}`}><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span><i aria-hidden="true">↑</i></a>}</li>)}</ol>
+  const cold = (fixture.samples as { cold_outbound?: { note?: string; sources?: { label: string }[] } }).cold_outbound;
+  const inbound: Station[] = [
+    { id: 'content', title: 'The post', why: 'Stops them in the feed.', icon: 'in', href: '#content' },
+    { id: 'inbound', title: 'The lead magnet', why: 'Turns a reader into a name.', icon: '▤', href: '#inbound' },
+    { id: 'newsletter', title: 'The newsletter', why: 'Brings them back every week.', icon: '↗', href: '#newsletter' },
+  ];
+  const outbound: Station[] = [
+    { id: 'warm', title: 'Warm outreach', why: 'Everyone who engages a post gets a note that names it.', icon: '↳', href: '#outreach' },
+    { id: 'signal', title: 'Signal outreach', why: 'A buyer shows intent, a message goes out that week.', icon: '◎', tags: ['Viewed your profile', 'Changed roles', 'Engaged a competitor’s post'] },
+    { id: 'cold', title: 'Cold outreach', why: cold?.note || 'Buyers who don’t know you yet, warmed up before the first message.', icon: '→', tags: cold?.sources?.slice(0, 3).map(x => x.label) },
+  ];
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 70%'] });
+  const lane = useTransform(scrollYProgress, [0, .72], [0, 1]);
+  const merge = useTransform(scrollYProgress, [.72, .92], [0, 1]);
+  const [v, setV] = useState(reduced ? 1 : 0);
+  useMotionValueEvent(scrollYProgress, 'change', x => { if (!reduced) setV(x); });
+  const reached = (i: number) => v >= (i / 3) * .72 + .02;
+  const renderLane = (key: string, label: string, items: Station[]) => <div className={`sys-lane sys-${key}`}>
+    <span className="sys-lane-k">{label}</span>
+    <div className="sys-lane-body"><span className="sys-track" aria-hidden="true" /><motion.span className="sys-fill" aria-hidden="true" style={{ scaleY: reduced ? 1 : lane }} />
+      <ol>{items.map((st, i) => { const inner = <><span className="recap-icon" aria-hidden="true">{st.icon}</span><span className="sys-text"><b>{st.title}</b><small>{st.why}</small>{st.tags?.length ? <span className="sys-tags">{st.tags.map(t => <i key={t}>{t}</i>)}</span> : null}</span></>;
+        return <li key={st.id} className={reached(i) ? 'is-reached' : undefined}>{st.href ? <a className="sys-item" href={st.href}>{inner}</a> : <span className="sys-item">{inner}</span>}</li>; })}</ol>
+    </div>
+  </div>;
+  return <div className="sysmap" ref={ref} aria-label="How the pieces meet">
+    <div className="sys-lanes">{renderLane('in', 'They come to you', inbound)}{renderLane('out', 'You go to them', outbound)}</div>
+    <svg className="sys-merge" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path className="sys-merge-bg" d="M25 0 C25 24 50 16 50 40 M75 0 C75 24 50 16 50 40" /><motion.path className="sys-merge-fg" d="M25 0 C25 24 50 16 50 40 M75 0 C75 24 50 16 50 40" style={{ pathLength: reduced ? 1 : merge }} /></svg>
+    <div className={`sys-call${v >= .9 ? ' is-reached' : ''}`}><span className="recap-icon" aria-hidden="true">◉</span><span><b>The call</b><small>On your calendar, already warm.</small></span></div>
   </div>;
 }

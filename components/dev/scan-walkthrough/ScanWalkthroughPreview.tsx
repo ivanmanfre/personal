@@ -6,7 +6,7 @@ import { ReadingChapter } from './journey/ReadingChapter';
 import { ContentChapter } from './journey/ContentChapter';
 import { ResourceChapter } from './journey/ResourceChapter';
 import { ConversationChapter, NewsletterChapter } from './journey/FollowUpChapters';
-import { Fold, LoopStations } from './journey/Fold';
+import { Fold, SystemMap } from './journey/Fold';
 import { fixture as andrew, initialJourneyState, journeyReducer, type JourneyFixture } from './journey/model';
 import { loadFixture } from './journey/load';
 import './story-exhibits.css';
@@ -32,9 +32,9 @@ export default function ScanWalkthroughPreview() {
     <ReadingChapter id="inbound" number="02" title="Turn a reader into a lead." why="One gated asset in your brand. Every reader who takes it lands on your list."><ResourceChapter {...props}/></ReadingChapter>
     <ReadingChapter id="newsletter" number="03" title="Give them a reason to return." why="One idea a week, in your voice, to the list you own."><NewsletterChapter {...props}/></ReadingChapter>
     <ReadingChapter id="outreach" number="04" title="Start with what they need." why="Every message references what they took or what they said. No pitch."><ConversationChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose."><LoopStations/><p className="recap-note">Comments feed the same loop: an engager gets the message, then the score, then the newsletter.</p><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share what you know on a call.<br/>Veto anything, though you rarely need to.<br/>Take the calls.</p></div></ReadingChapter>
+    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Two ways in, one place they land."><SystemMap fixture={fixture}/><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share what you know on a call.<br/>Veto anything, though you rarely need to.<br/>Take the calls.</p></div></ReadingChapter>
     <ClientProof/>
-    <section className="journey-close"><span className="journey-eyebrow">{fixture.founder.firstName}, this is the whole system</span><h2>Booked calls<br/>without the chase.</h2><p>The posts, the lead magnet, the newsletter and the messages above: we write them, publish them and work the replies, in your voice, every day. You take the calls.</p><a className="journey-button red" href="https://calendly.com/im-ivanmanfredi/30min" target="_blank" rel="noreferrer">Book the walkthrough <span aria-hidden="true">↗</span></a><span className="close-fine">30 minutes. Your samples, the weekly rhythm, and what it costs.</span></section>
+    <section className="journey-close"><h2>Booked calls<br/>without the chase.</h2><p>We write it, publish it and work the replies. You take the calls.</p><a className="journey-button red" href="https://calendly.com/im-ivanmanfredi/30min" target="_blank" rel="noreferrer">Book the walkthrough <span aria-hidden="true">↗</span></a><span className="close-fine">30 minutes. Your samples, the weekly rhythm, the price.</span></section>
     <footer className="journey-footer"><a href={fixture.source.url} target="_blank" rel="noreferrer">View the original scan ↗</a><span>Local design preview · proposed samples</span><a href="#top">Back to the start ↑</a></footer>
   </main>;
 }

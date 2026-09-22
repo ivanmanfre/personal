@@ -32,7 +32,7 @@ fs.mkdirSync(out,{recursive:true});
    }
    // Capture actual exhibits, seams and the moving character halfway through each transition.
    if([390,1440].includes(width)){
-    for(const selector of ['.journey-carousel-post','.feed-row','.li-profile','.lm-figure','.lead-card','.journey-email-issue','.li-thread','.sg-proof','.journey-loop','.journey-close']){
+    for(const selector of ['.journey-carousel-post','.feed-row','.li-profile','.lm-figure','.lead-card','.journey-email-issue','.li-thread','.sg-proof','.sysmap','.journey-close']){
      await page.locator(selector).first().evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));await page.waitForTimeout(900);await page.screenshot({path:path.join(out,`${width}-${selector.slice(1).replace(/[^a-z-]/g,'')}.png`)});
     }
    }
@@ -56,7 +56,7 @@ fs.mkdirSync(out,{recursive:true});
    await page.locator('.li-thread').first().scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('.li-thread')?.classList.contains('is-settled'),{timeout:10000});
    for(const follow of fixture.samples.follow_ups)assert.ok((await page.locator('.li-thread').first().innerText()).includes(follow.body));
    await page.locator('.li-thread').nth(1).scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('.li-thread.is-settled').length>=2,{timeout:8000});assert.ok((await page.locator('.li-thread').nth(1).innerText()).includes(fixture.samples.engager_outreach.samples[0].dm));assert.equal(await page.locator('body').innerText().then(t=>t.includes('[first name]')),false);
-   await page.locator('.sg-proof').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the library'}).count(),1);assert.ok((await page.locator('.proof-kyle').innerText()).includes('$80K/mo'));assert.equal(await page.locator('.loop-stations li').count(),5);
+   await page.locator('.sg-proof').scrollIntoViewIfNeeded();assert.equal(await page.locator('iframe').count(),0);assert.equal(await page.getByRole('link',{name:'Open the library'}).count(),1);assert.ok((await page.locator('.proof-kyle').innerText()).includes('$80K/mo'));assert.equal(await page.locator('.sys-lane li').count(),6);assert.equal(await page.locator('.sys-call').count(),1);assert.ok(!(await page.locator('.journey-close').innerText()).includes('whole system'));
    report.checks.push(`Full posts, slide boundaries, keyboard, carousel card, cover and contents, one-idea newsletter, played-in LinkedIn threads and separate subscription: ${reduced?'reduced':'normal'} motion`);
    await context.close();
   }
