@@ -15,7 +15,7 @@ import './journey/journey.css';
 export default function ScanWalkthroughPreview() {
   const rootRef=useRef<HTMLElement>(null);
   const reduced=useReducedMotion();
-  const slug=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('slug'):null;
+  const slug=typeof window!=='undefined'?(new URLSearchParams(window.location.search).get('slug')||new URLSearchParams(window.location.hash.replace(/^#/, '')).get('slug')||((window as unknown as {__SCAN_SLUG__?: string}).__SCAN_SLUG__||'').replace(/^%.*%$/, '')||null):null;
   const [fixture,setFixture]=useState<JourneyFixture>(andrew);
   const [loadError,setLoadError]=useState<string|null>(null);
   useEffect(()=>{if(!slug||slug===andrew.slug)return;let live=true;loadFixture(slug).then(f=>{if(live)setFixture(f);}).catch(e=>{if(live)setLoadError(String(e.message||e));});return()=>{live=false;};},[slug]);

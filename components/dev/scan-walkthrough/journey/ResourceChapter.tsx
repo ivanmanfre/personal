@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Reveal } from './ReadingChapter';
-import type { JourneyFixture } from './model';
+import { asset, type JourneyFixture } from './model';
 
 export function ResourceChapter({ fixture }: {fixture: JourneyFixture}) {
   const lm = fixture.samples.lm!;
@@ -8,7 +8,7 @@ export function ResourceChapter({ fixture }: {fixture: JourneyFixture}) {
   const [coverFailed,setCoverFailed] = useState(false);
   return <>
     <Reveal className="lm-figure" aria-label="Lead magnet sample">
-      <div className="lm-cover" data-mockup="prospect">{coverFailed ? <span className="lm-cover-fallback"><b>{lm.title}</b><small>{fixture.founder.name} · {fixture.founder.company}</small></span> : <img src={fixture.lm_cover_local} alt={`${lm.title}, cover in ${fixture.founder.company}’s brand`} loading="lazy" onError={() => setCoverFailed(true)}/>}<span className="sample-stamp">Cover · your brand</span></div>
+      <div className="lm-cover" data-mockup="prospect">{coverFailed ? <span className="lm-cover-fallback"><b>{lm.title}</b><small>{fixture.founder.name} · {fixture.founder.company}</small></span> : <img src={/^https?:/.test(fixture.lm_cover_local) ? fixture.lm_cover_local : asset(fixture.lm_cover_local)} alt={`${lm.title}, cover in ${fixture.founder.company}’s brand`} loading="lazy" onError={() => setCoverFailed(true)}/>}<span className="sample-stamp">Cover · your brand</span></div>
       <div className="lm-body">
         <span className="journey-eyebrow">Your lead magnet</span>
         <h3>{lm.title}</h3>

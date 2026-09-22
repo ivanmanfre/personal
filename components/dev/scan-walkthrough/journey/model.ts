@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import type { ContentSystem } from '../../../../lib/scanTypes';
 import original from './samples.json';
 
@@ -14,6 +15,8 @@ export interface JourneyFixture {
   source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string };
 }
 export const fixture = original as JourneyFixture;
+/** Public asset path that works at '/' in the app and at './' in the standalone preview build. */
+export function asset(p: string) { return `${import.meta.env.BASE_URL}${p.replace(/^\//, '')}`; }
 export interface JourneyState { subscribed: boolean }
 export type JourneyAction = { type: 'subscription'; value: boolean };
 export const initialJourneyState: JourneyState = { subscribed: false };

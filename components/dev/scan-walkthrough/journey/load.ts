@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import type { JourneyFixture } from './model';
 
 const url = import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
