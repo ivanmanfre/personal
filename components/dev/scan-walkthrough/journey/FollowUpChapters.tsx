@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useInView, useReducedMotion } from 'framer-motion';
 import { Avatar, Paragraphs, Reveal } from './ReadingChapter';
-import { newsletterFor, type JourneyAction, type JourneyFixture, type JourneyState } from './model';
+import { newsletterFor, readerFor, type JourneyAction, type JourneyFixture, type JourneyState } from './model';
 
 type Props = { fixture: JourneyFixture; state: JourneyState; dispatch: React.Dispatch<JourneyAction> };
 export function NewsletterChapter({ fixture }: Props) {
-  const n = newsletterFor(fixture);
+  const reader = readerFor(fixture);
+  const n = newsletterFor(fixture, reader.first);
   const first = fixture.founder.firstName;
   return <Reveal as="article" className="journey-email-issue" data-mockup="email" aria-label="Newsletter as an email">
     <div className="email-chrome"><span aria-hidden="true">←</span><span className="email-chrome-title">Inbox</span><span className="email-chrome-tools" aria-hidden="true"><i/><i/><i/></span></div>
     <div className="email-head">
       <h3 className="email-subject-line">{n.subject}</h3>
-      <div className="email-sender"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/><div className="email-sender-meta"><b>{fixture.founder.name} <small>&lt;{first.toLowerCase()}@{fixture.domain}&gt;</small></b><span>to Alex</span></div><span className="email-time">Tue, 9:14 AM</span></div>
+      <div className="email-sender"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/><div className="email-sender-meta"><b>{fixture.founder.name} <small>&lt;{first.toLowerCase()}@{fixture.domain}&gt;</small></b><span>to {reader.first}</span></div><span className="email-time">Tue, 9:14 AM</span></div>
     </div>
     <div className="email-body">
       <div className="issue-masthead" data-mockup="prospect"><b>{fixture.founder.company}</b><span>{n.issue}</span></div>
@@ -51,11 +52,12 @@ export function ConversationChapter({ fixture }: Props) {
   const followups = fixture.samples.follow_ups || [];
   const engager = fixture.samples.engager_outreach;
   const sample = engager?.samples?.[0];
+  const reader = readerFor(fixture);
   const warm = useThreadPlayback(followups.length);
   const cold = useThreadPlayback(sample ? 1 : 0);
   const items = followups.map((f,i) => ({ date: dateLabel(f.day || i * 4), time: i === 0 ? '9:02 AM' : i === 1 ? '8:40 AM' : '10:15 AM', text: f.body }));
   return <>
-    <Thread fixture={fixture} withName="Alex" withHeadline={fixture.buyer.role} withInitials="A" items={items} playback={warm}/>
+    <Thread fixture={fixture} withName={reader.name} withHeadline={reader.headline} withInitials={reader.initials} items={items} playback={warm}/>
     {sample && <>
       <Reveal className="outreach-entrance"><span className="journey-eyebrow">When someone comments first</span><h3>{sample.trigger}</h3></Reveal>
       <Thread fixture={fixture} withName={sample.engager?.name || 'A reader from your comments'} withHeadline={sample.engager?.headline || ''} withInitials={(sample.engager?.name || 'R').split(' ').map(n => n[0]).slice(0,2).join('')} items={[{ date: dateLabel(1), time: '2:12 PM', text: sample.dm }]} playback={cold}/>

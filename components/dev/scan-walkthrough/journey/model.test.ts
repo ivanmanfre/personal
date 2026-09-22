@@ -43,3 +43,16 @@ describe('fold hook from the scan audit', () => {
     expect(rows[1].found).toBe('Your public posts show no follow-up.');
   });
 });
+import { monthMath, readerFor } from './model';
+describe('reader and month', () => {
+  it('follows the first named engager, else Alex', () => {
+    const f = { ...fixture, audience: { named: [{ name: 'Andrey  Potekhin', headline: 'Creative director' }] } };
+    expect(readerFor(f)).toEqual({ name: 'Andrey Potekhin', first: 'Andrey', headline: 'Creative director', initials: 'AP', real: true });
+    expect(readerFor(fixture).name).toBe('Alex');
+  });
+  it('runs the month from the stated metrics only', () => {
+    const m = monthMath([{ label: 'avg reactions · your last 20 posts', value: '13' }, { label: 'readers per post · ~15 per reaction, conservative', value: '~195' }, { label: 'named leads a month · 4 posts/wk + a 0.5% capture', value: '≈16' }]);
+    expect(m).toMatchObject({ reactions: 13, perReaction: 15, readersPerPost: 195, postsPerMonth: 16, readersPerMonth: 3120, capturePct: 0.5, leads: 16 });
+    expect(monthMath(fixture.samples.metrics as { label: string; value: string }[])).toBeNull();
+  });
+});

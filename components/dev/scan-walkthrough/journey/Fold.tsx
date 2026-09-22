@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { deriveHook, pillarRows, type JourneyFixture } from './model';
-import { Reveal } from './ReadingChapter';
+import { deriveHook, monthMath, pillarRows, readerFor, type JourneyFixture } from './model';
+import { Reveal, labels } from './ReadingChapter';
 
 /** Counts up once when it scrolls into view. Settled under reduced motion. */
 export function Tally({ value, prefix = '', suffix = '', decimals = 0, duration = 1100 }: { value: number; prefix?: string; suffix?: string; decimals?: number; duration?: number }) {
@@ -17,37 +17,90 @@ export function Tally({ value, prefix = '', suffix = '', decimals = 0, duration 
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [inView, value, reduced, duration]);
-  return <span ref={ref} className="tally">{prefix}{n.toFixed(decimals)}{suffix}</span>;
+  return <span ref={ref} className="tally">{prefix}{n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}</span>;
 }
 
-/** The fold: the scan's own read of the prospect, before the story starts. */
+/** The fold: one screen. The counted hook, the named faces, the gap; the pillar table sits behind a tap. */
 export function Fold({ fixture }: { fixture: JourneyFixture }) {
   const hook = deriveHook(fixture.audience, fixture.thesis, fixture.founder.firstName);
   const rows = pillarRows(fixture.pillars);
+  const reader = readerFor(fixture);
   return <section className="journey-hero">
     <div className="hero-copy">
       <span className="journey-eyebrow">{fixture.founder.name} / {fixture.founder.company}</span>
       <h1>{hook.count ? <><span className="hero-count">{hook.count.prefix}{hook.count.value}</span> {hook.count.rest}</> : hook.headline}</h1>
       <p>{hook.lede}</p>
     </div>
-    {hook.figureLabel && <Reveal className="hero-room" aria-label="Who is in your room">
-      <div className="room-figure"><span className="room-figk">{hook.figureLabel}</span><span className="room-fig"><Tally value={hook.count?.value ?? 0} prefix={hook.count?.prefix} /></span><p>{hook.figureSub}</p></div>
-      <div className="room-receipts">{hook.receipts.map(r => <div key={r.key} className={`room-receipt${r.mark ? ' is-mark' : ''}`}><span className="room-rk">{r.label}</span><span className="room-rv"><Tally value={r.value} prefix={r.prefix} suffix={r.suffix} decimals={r.decimals} /></span><span className="room-rc">{r.cap}</span></div>)}</div>
-      {hook.named.length > 0 && <ul className="room-names">{hook.named.map(n => <li key={n.name}><b>{n.name}</b><span>{n.headline}</span><small>Engaged your posts</small></li>)}</ul>}
-      {hook.gapLine && <p className="room-gap"><span>As it runs today</span>{hook.gapLine}</p>}
+    {hook.count && <Reveal className="hero-room" aria-label="Who is in your room">
+      <div className="room-figure"><span className="room-fig"><Tally value={hook.count.value} prefix={hook.count.prefix} /></span><span className="room-figk">{hook.figureLabel}</span></div>
+      <div className="room-right">
+        {hook.named.length > 0 && <ul className="room-names">{hook.named.map(n => <li key={n.name}><span className="room-face" aria-hidden="true">{n.name.split(' ').map(w => w[0]).slice(0, 2).join('')}</span><span className="room-who"><b>{n.name}</b><span>{n.headline}</span></span></li>)}</ul>}
+        {hook.gapLine && <p className="room-gap">{hook.gapLine} <span>Nobody followed up.</span></p>}
+      </div>
       {hook.caveat && <p className="room-caveat">{hook.caveat}</p>}
     </Reveal>}
-    <Reveal className="hero-verdict" as="div">
-      <div className="verdict-head"><span className="verdict-sq" aria-hidden="true" />{hook.warning}</div>
+    <details className="hero-verdict" open={!hook.count}>
+      <summary><span className="verdict-sq" aria-hidden="true" /><span className="verdict-head">What runs today, and what we’d run</span><span className="verdict-toggle" aria-hidden="true">+</span></summary>
       {hook.warningBody && <p className="verdict-body">{hook.warningBody}</p>}
       {rows.length > 0 && <div className="ptab" role="table" aria-label="What runs today and what we would run">
         <div className="ptab-h" role="row"><span role="columnheader">Pillar</span><span role="columnheader">On your feed today</span><span role="columnheader">After 90 days</span></div>
         {rows.map(r => <div className="ptab-r" key={r.key} role="row"><div role="cell"><a className="ptab-a" href={`#${r.anchor}`}>{r.name}</a></div><div className="ptab-f" data-l="On your feed today" role="cell">{r.found}</div><div className="ptab-v" data-l="After 90 days" role="cell">{r.projected}</div></div>)}
       </div>}
-      <p className="verdict-note">Read from your public presence. Tap a pillar to jump to it.</p>
-    </Reveal>
-    <div className="buyer-intro"><span className="buyer-label">This is Alex.</span><p>{fixture.buyer.role}. Never heard of {fixture.founder.company} until today.</p></div>
+    </details>
+    <div className="buyer-intro">
+      <span className={`reader-face${reader.real ? ' is-real' : ''}`} aria-hidden="true">{reader.initials}</span>
+      <div><span className="buyer-label">Follow {reader.first}.</span><p>{reader.real ? <>{reader.headline}. Engaged your posts. Here is what happens next.</> : <>{reader.headline}. Never heard of {fixture.founder.company} until today.</>}</p></div>
+    </div>
   </section>;
+}
+
+/** One month from the scan's own numbers, arithmetic on the page. Renders nothing unless every input is stated. */
+export function MonthStrip({ fixture }: { fixture: JourneyFixture }) {
+  const m = monthMath(fixture.samples.metrics as { label: string; value: string }[] | undefined);
+  if (!m) return null;
+  const fmt = (n: number) => n.toLocaleString('en-US');
+  const steps: { v: number; pre?: string; op?: string; k: string; c: string }[] = [
+    { v: m.reactions, k: 'reactions per post', c: `your average, last 20 posts` },
+    { v: m.readersPerPost, pre: '~', op: `× ${m.perReaction}`, k: 'readers per post', c: `about ${m.perReaction} readers per reaction` },
+    { v: m.readersPerMonth, pre: '~', op: `× ${m.postsPerMonth}`, k: 'readers a month', c: `${m.postsPerWeek} posts a week` },
+    { v: m.leads, pre: '≈', op: `× ${m.capturePct}%`, k: 'named leads a month', c: 'take the lead magnet' },
+  ];
+  return <Reveal className="month-strip" aria-label="One month in numbers">
+    <span className="journey-eyebrow">One month, from your own numbers</span>
+    <ol>{steps.map((s, i) => <li key={s.k} className={i === steps.length - 1 ? 'is-result' : undefined}>{s.op && <span className="month-op">{s.op}</span>}<span className="month-v"><Tally value={s.v} prefix={s.pre} duration={900 + i * 250} /></span><b>{s.k}</b><small>{s.c}</small></li>)}</ol>
+    <p className="month-note">{fmt(m.leads)} people a month with a name and an email, each one getting the messages above. The rates are conservative: {m.perReaction} readers per reaction and {m.capturePct}% capture.</p>
+  </Reveal>;
+}
+
+const RAIL = ['content', 'inbound', 'newsletter', 'outreach', 'together'];
+/** A fixed side rail: pure scroll position, no springs. The current chapter is lit; each dot jumps. */
+export function ProgressRail() {
+  const [state, setState] = useState({ active: -1, visible: false, progress: 0 });
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const els = RAIL.map(id => document.getElementById(id));
+      const close = document.querySelector('.sg-proof') as HTMLElement | null;
+      const line = window.innerHeight * .4;
+      let active = -1;
+      els.forEach((el, i) => { if (el && el.getBoundingClientRect().top <= line) active = i; });
+      const first = els[0]?.getBoundingClientRect().top ?? 0;
+      const end = close?.getBoundingClientRect().top ?? 0;
+      const visible = first <= line && end > line;
+      const total = end - first, progress = total > 0 ? Math.min(1, Math.max(0, (line - first) / total)) : 0;
+      setState(s => (s.active === active && s.visible === visible && Math.abs(s.progress - progress) < .002) ? s : { active, visible, progress });
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(frame); };
+  }, []);
+  return <nav className={`progress-rail${state.visible ? ' is-visible' : ''}`} aria-label="Chapters">
+    <span className="rail-bar" aria-hidden="true"><span style={{ transform: `scaleY(${state.progress})` }} /></span>
+    <span className="rail-top" aria-hidden="true"><span style={{ transform: `scaleX(${state.progress})` }} /></span>
+    <ol>{RAIL.map((id, i) => <li key={id} className={i === state.active ? 'is-active' : i < state.active ? 'is-done' : undefined}><a href={`#${id}`} aria-current={i === state.active ? 'step' : undefined}><span className="rail-dot" aria-hidden="true" /><span className="rail-label"><i>{String(i + 1).padStart(2, '0')}</i>{labels[id]}</span></a></li>)}</ol>
+  </nav>;
 }
 
 type Station = { id: string; title: string; why: string; icon: string; href?: string; tags?: string[] };

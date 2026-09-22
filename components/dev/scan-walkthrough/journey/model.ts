@@ -116,6 +116,27 @@ const PROJECTED_FALLBACK: Record<keyof JourneyPillars, string> = {
   inbound: 'A gated asset in your brand names every reader. A newsletter and a follow-up sequence keep them.',
   outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
 };
+/** The reader the page follows: the first buyer the audit named from the prospect's own comments, else the invented Alex. */
+export interface JourneyReader { name: string; first: string; headline: string; initials: string; real: boolean }
+export function readerFor(f: JourneyFixture): JourneyReader {
+  const n = (f.audience?.named ?? []).find(x => (x?.name || '').trim());
+  if (n?.name) { const name = n.name.replace(/\s+/g, ' ').trim(); return { name, first: name.split(' ')[0], headline: (n.headline || '').replace(/\s*—\s*/g, ', ').trim(), initials: name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(), real: true }; }
+  return { name: 'Alex', first: 'Alex', headline: f.buyer.role, initials: 'A', real: false };
+}
+/** One month, run from the scan's own metrics. Null unless every input is a number the scan states. */
+export interface MonthMath { reactions: number; perReaction: number; readersPerPost: number; postsPerWeek: number; postsPerMonth: number; readersPerMonth: number; capturePct: number; leads: number }
+export function monthMath(metrics: { label: string; value: string }[] | undefined): MonthMath | null {
+  const num = (v?: string) => { const m = (v || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; };
+  const find = (re: RegExp) => (metrics || []).find(m => re.test(m.label));
+  const r = find(/reaction/i), rp = find(/readers per post/i), l = find(/leads/i);
+  const reactions = num(r?.value), readersPerPost = num(rp?.value);
+  const perReaction = num(rp?.label.match(/(\d+)\s*per reaction/i)?.[1]);
+  const postsPerWeek = num(l?.label.match(/(\d+)\s*posts?\s*\/\s*wk/i)?.[1]);
+  const capturePct = num(l?.label.match(/(\d+(?:\.\d+)?)\s*%/)?.[1]);
+  if (![reactions, readersPerPost, perReaction, postsPerWeek, capturePct].every(Number.isFinite)) return null;
+  const postsPerMonth = postsPerWeek * 4, readersPerMonth = readersPerPost * postsPerMonth;
+  return { reactions, perReaction, readersPerPost, postsPerWeek, postsPerMonth, readersPerMonth, capturePct, leads: Math.round(readersPerMonth * capturePct / 100) };
+}
 /** The three pillar rows of the fold table, scrubbed like the public report, with the chapter each one jumps to. */
 export function pillarRows(p: JourneyPillars | undefined) {
   const rows: { key: keyof JourneyPillars; name: string; anchor: string }[] = [{ key: 'content', name: 'Content', anchor: 'content' }, { key: 'inbound', name: 'Inbound', anchor: 'inbound' }, { key: 'outbound', name: 'Warm outbound', anchor: 'outreach' }];
@@ -147,8 +168,8 @@ export const newsletterDraft = {
   cta: 'Reply with your first three lines. I’ll tell you where I got curious.',
 };
 /** One issue = one idea. Loaded scans carry a full newsletter; the preview shows its first section. */
-export function newsletterFor(f: JourneyFixture) {
+export function newsletterFor(f: JourneyFixture, readerFirst = 'Alex') {
   const n = f.samples.newsletter as { subject?: string; preview?: string; cta?: string; sections?: { h: string; body: string }[] } | undefined;
-  if (n?.sections?.length) return { issue: 'No. 1', subject: n.subject || n.sections[0].h, preview: n.preview || '', intro: `Hi Alex. One thing this week, from ${f.founder.firstName}.`, section: n.sections[0], cta: n.cta || '', fromScan: true, more: n.sections.length - 1 };
-  return { ...newsletterDraft, fromScan: false, more: 0 };
+  if (n?.sections?.length) return { issue: 'No. 1', subject: n.subject || n.sections[0].h, preview: n.preview || '', intro: `Hi ${readerFirst}. One thing this week, from ${f.founder.firstName}.`, section: n.sections[0], cta: n.cta || '', fromScan: true, more: n.sections.length - 1 };
+  return { ...newsletterDraft, intro: newsletterDraft.intro.replace('Alex', readerFirst), fromScan: false, more: 0 };
 }

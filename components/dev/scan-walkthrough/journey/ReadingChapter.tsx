@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-const labels: Record<string,string> = { content: 'Get noticed', inbound: 'Capture the lead', newsletter: 'Stay in touch', outreach: 'Warm outreach', together: 'Bring it together' };
+export const labels: Record<string,string> = { content: 'Get noticed', inbound: 'Capture the lead', newsletter: 'Stay in touch', outreach: 'Warm outreach', together: 'Bring it together' };
 export function ReadingChapter({ id, number, title, why, children }: { id: string; number: string; title: string; why: string; children: React.ReactNode }) {
   return <section id={id} className="journey-chapter">
     <div className="journey-transition" aria-hidden="true"><span className="journey-step">{number}</span></div>
