@@ -21,7 +21,7 @@ export function Tally({ value, prefix = '', suffix = '', decimals = 0, duration 
 }
 
 /** The fold: one screen. The counted hook, the named faces, the gap; the pillar table sits behind a tap. */
-export function Fold({ fixture }: { fixture: JourneyFixture }) {
+export function Fold({ fixture, ask }: { fixture: JourneyFixture; ask?: React.ReactNode }) {
   const hook = deriveHook(fixture.audience, fixture.thesis, fixture.founder.firstName);
   const rows = pillarRows(fixture.pillars);
   const reader = readerFor(fixture);
@@ -47,6 +47,7 @@ export function Fold({ fixture }: { fixture: JourneyFixture }) {
         {rows.map(r => <div className="ptab-r" key={r.key} role="row"><div role="cell"><a className="ptab-a" href={`#${r.anchor}`}>{r.name}</a></div><div className="ptab-f" data-l="On your feed today" role="cell">{r.found}</div><div className="ptab-v" data-l="After 90 days" role="cell">{r.projected}</div></div>)}
       </div>}
     </details>
+    {ask}
     <div className="buyer-intro">
       <span className={`reader-face${reader.real ? ' is-real' : ''}`} aria-hidden="true">{reader.initials}</span>
       <div><span className="buyer-label">Follow {reader.first}.</span><p>{reader.real ? <>{reader.headline}. Engaged your posts. Here is what happens next.</> : <>{reader.headline}. Never heard of {fixture.founder.company} until today.</>}</p></div>
