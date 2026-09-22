@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
 
 /** The example reader: a small illustrated figure reading on a phone. Walk/idle motion is CSS-driven (see .rb-* rules). */
 export function Buyer() {
@@ -17,18 +17,24 @@ export function Buyer() {
     </g>
   </svg>;
 }
+/** Walks each chapter transition as the page scrolls. Position is spring-smoothed; the figure fades out once it has entered the next chapter. */
 export function BuyerPath({ rootRef }: { rootRef: React.RefObject<HTMLElement|null> }) {
   const reduced = useReducedMotion();
-  const [position,setPosition] = useState({x:0,y:0,walking:false,reverse:false,ready:false});
+  const [state,setState] = useState({walking:false,reverse:false,ready:false});
+  const rawX = useMotionValue(0), rawY = useMotionValue(0), rawO = useMotionValue(0);
+  const x = useSpring(rawX,{stiffness:150,damping:24,mass:.7}), y = useSpring(rawY,{stiffness:150,damping:24,mass:.7}), opacity = useSpring(rawO,{stiffness:110,damping:22});
   useEffect(() => {
     const root=rootRef.current;if(!root || reduced)return;
-    let anchors:{el:HTMLElement;top:number;height:number}[]=[], frame=0, idle:ReturnType<typeof setTimeout>,lastY=-1;
-    function measure(){const base=root!.getBoundingClientRect().top+window.scrollY;anchors=Array.from(root!.querySelectorAll<HTMLElement>('[data-journey-transition]')).map(el=>{const r=el.getBoundingClientRect();return {el,top:r.top+window.scrollY-base,height:r.height};});update();}
-    function update(){frame=0;const base=root!.getBoundingClientRect().top+window.scrollY;const at=window.scrollY+window.innerHeight*.64-base;const anchor=[...anchors].reverse().find(a=>a.top<=at)||anchors[0];if(!anchor)return;const progress=Math.min(1,Math.max(0,(at-anchor.top)/(anchor.height-48)));const desktop=window.innerWidth>=1024;const x=desktop?root!.clientWidth/2-424:24+progress*75;const y=anchor.top+progress*(anchor.height-96);const walking=Math.abs(y-lastY)>.5;const reverse=lastY>=0&&y<lastY;lastY=y;for(const a of anchors)a.el.classList.toggle('is-active',a===anchor&&walking);setPosition({x,y,walking,reverse,ready:true});clearTimeout(idle);idle=setTimeout(()=>{for(const a of anchors)a.el.classList.remove('is-active');setPosition(p=>({...p,walking:false}));},130);}
-    const scroll=()=>{if(!frame)frame=requestAnimationFrame(update);};
+    let anchors:{el:HTMLElement;top:number;height:number}[]=[], frame=0, idle:ReturnType<typeof setTimeout>,lastY=-1,lastAnchor:HTMLElement|null=null;
+    function measure(){const base=root!.getBoundingClientRect().top+window.scrollY;anchors=Array.from(root!.querySelectorAll<HTMLElement>('[data-journey-transition]')).map(el=>{const r=el.getBoundingClientRect();return {el,top:r.top+window.scrollY-base,height:r.height};});update(true);}
+    function update(jump=false){frame=0;const base=root!.getBoundingClientRect().top+window.scrollY;const at=window.scrollY+window.innerHeight*.64-base;const anchor=[...anchors].reverse().find(a=>a.top<=at)||anchors[0];if(!anchor)return;const span=anchor.height-88;const progress=Math.min(1,Math.max(0,(at-anchor.top)/span));const desktop=window.innerWidth>=1024;const xv=desktop?root!.clientWidth/2-424:24+progress*75;const yv=anchor.top+progress*span;const visible=progress>.02&&progress<.98;
+      if(jump||anchor.el!==lastAnchor){x.jump(xv);y.jump(yv);opacity.jump(0);lastY=-1;}lastAnchor=anchor.el;rawX.set(xv);rawY.set(yv);rawO.set(visible?1:0);
+      const walking=visible&&Math.abs(yv-lastY)>.5;const reverse=lastY>=0&&yv<lastY-1;lastY=yv;for(const a of anchors)a.el.classList.toggle('is-active',a===anchor&&walking);
+      setState(s=>({walking,reverse:walking?reverse:s.reverse,ready:true}));clearTimeout(idle);idle=setTimeout(()=>{for(const a of anchors)a.el.classList.remove('is-active');setState(s=>({...s,walking:false}));},130);}
+    const scroll=()=>{if(!frame)frame=requestAnimationFrame(()=>update());};
     const observer=new ResizeObserver(measure);observer.observe(root);measure();window.addEventListener('scroll',scroll,{passive:true});window.addEventListener('resize',measure);
     return()=>{observer.disconnect();window.removeEventListener('scroll',scroll);window.removeEventListener('resize',measure);cancelAnimationFrame(frame);clearTimeout(idle);for(const a of anchors)a.el.classList.remove('is-active');};
-  },[rootRef,reduced]);
-  if(reduced || !position.ready)return null;
-  return <div className={`journey-buyer${position.walking?' is-walking':''}`} data-dir={position.reverse?'back':'forward'} aria-hidden="true" style={{transform:`translate3d(${position.x}px,${position.y}px,0)`}}><span className="rb-flip"><Buyer/></span></div>;
+  },[rootRef,reduced,rawX,rawY,rawO,x,y,opacity]);
+  if(reduced || !state.ready)return null;
+  return <motion.div className={`journey-buyer${state.walking?' is-walking':''}`} data-dir={state.reverse?'back':'forward'} aria-hidden="true" style={{x,y,opacity}}><span className="rb-flip"><Buyer/></span></motion.div>;
 }

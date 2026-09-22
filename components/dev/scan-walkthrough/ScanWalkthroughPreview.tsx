@@ -1,7 +1,7 @@
 import React, { useReducer, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useGoogleFonts } from '../../../hooks/useGoogleFonts';
-import { StorySound, ClientToolsShowcase } from './StoryExhibits';
+import { StorySound, ClientProof } from './StoryExhibits';
 import { ReadingChapter } from './journey/ReadingChapter';
 import { ContentChapter } from './journey/ContentChapter';
 import { ResourceChapter } from './journey/ResourceChapter';
@@ -14,7 +14,7 @@ import './journey/journey.css';
 export default function ScanWalkthroughPreview() {
   const rootRef=useRef<HTMLElement>(null);
   const reduced=useReducedMotion();
-  useGoogleFonts([fixture.samples.lm?.brand?.font_heading]);
+  useGoogleFonts([fixture.samples.lm?.brand?.font_heading, fixture.assessment.brand.fontHeading, fixture.assessment.brand.fontBody]);
   const [state,dispatch]=useReducer(journeyReducer,initialJourneyState);
   const props={fixture,state,dispatch};
   return <main className="scan-journey" ref={rootRef} id="top">
@@ -27,11 +27,14 @@ export default function ScanWalkthroughPreview() {
     <ReadingChapter id="inbound" number="02" title="Turn a reader into a lead." why="One useful thing they can take. The moment they take it, you have a name, a result and a reason to write."><ResourceChapter {...props}/></ReadingChapter>
     <ReadingChapter id="newsletter" number="03" title="Give them a reason to return." why="They might leave today. A useful newsletter keeps the conversation open for when they’re ready."><NewsletterChapter {...props}/></ReadingChapter>
     <ReadingChapter id="outreach" number="04" title="Start with what they need." why="Warm outreach begins with the score they just took. Give them something useful to reply to."><ConversationChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose. Here’s the work we would create and run."><div className="journey-recap-wrap"><motion.span className="recap-connecting-line" aria-hidden="true" initial={reduced?false:{scaleY:0}} whileInView={{scaleY:1}} viewport={{once:true,amount:.3}} transition={{duration:reduced?0:.45,ease:[.22,.84,.36,1]}}/><ol className="journey-recap">{[
-      ['content','The posts & carousel','A reason to notice you.','in'],['inbound','The lead magnet','The moment a reader becomes a name.','▤'],['newsletter','The newsletter','A reason to come back.','↗'],['outreach','The conversation','A useful next step together.','↳'],
-    ].map(([id,title,why,icon])=><li key={id}><a href={`#${id}`}><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span><i aria-hidden="true">↑</i></a></li>)}</ol></div><p className="recap-note">Outreach can start the conversation too. A useful reply could lead to a call.</p><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share your expertise.<br/>Review what goes out.<br/>Take the right conversations.</p></div></ReadingChapter>
-    <ClientToolsShowcase/>
-    <section className="journey-close"><span className="journey-eyebrow">Your LinkedIn, working together</span><h2>Let’s make this<br/>work for you.</h2><p>We’ll walk through the samples,<br/>the workflow and what it costs.</p><a className="journey-button red" href="https://calendly.com/im-ivanmanfredi/30min" target="_blank" rel="noreferrer">Walk me through it <span aria-hidden="true">↗</span></a></section>
+    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose. Alex keeps moving through it; so does every reader after them."><div className="journey-loop" aria-label="The reader’s loop">
+      <span className="loop-track" aria-hidden="true"/><span className="loop-runner" aria-hidden="true"><span className="rb-flip"><Buyer/></span></span>
+      <ol className="loop-stations">{[
+        ['content','The post','Stops them in the feed.','in'],['inbound','The score','Turns a reader into a name.','▤'],['newsletter','The newsletter','Brings them back next week.','↗'],['outreach','The message','Opens a real conversation.','↳'],['call','The call','On your calendar, already warm.','◉'],
+      ].map(([id,title,why,icon],i)=><li key={id} style={{'--i':i} as React.CSSProperties}>{id==='call'?<span className="loop-item"><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span></span>:<a className="loop-item" href={`#${id}`}><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span><i aria-hidden="true">↑</i></a>}</li>)}</ol>
+    </div><p className="recap-note">Comments feed the same loop: an engager gets the message, then the score, then the newsletter.</p><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share what you know on a call.<br/>Veto anything, though you rarely need to.<br/>Take the calls.</p></div></ReadingChapter>
+    <ClientProof/>
+    <section className="journey-close"><span className="journey-eyebrow">Andrew, this is the whole system</span><h2>Booked calls<br/>without the chase.</h2><p>The post, the score, the newsletter and the message above: we write them, publish them and work the replies, in your voice, every day. You take the calls.</p><a className="journey-button red" href="https://calendly.com/im-ivanmanfredi/30min" target="_blank" rel="noreferrer">Book the walkthrough <span aria-hidden="true">↗</span></a><span className="close-fine">30 minutes. Your samples, the weekly rhythm, and what it costs.</span></section>
     <footer className="journey-footer"><a href={fixture.source.url} target="_blank" rel="noreferrer">View the original scan ↗</a><span>Local design preview · proposed samples</span><a href="#top">Back to the start ↑</a></footer>
   </main>;
 }

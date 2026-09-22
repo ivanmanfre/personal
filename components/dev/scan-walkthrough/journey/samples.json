@@ -227,8 +227,93 @@
       "low": 40,
       "mid": 70
     },
-    "image": "/scan-preview/cuevu-assessment.jpg",
-    "imageMobile": "/scan-preview/cuevu-assessment-mobile.jpg",
-    "capturedOn": "2026-09-22"
+    "capturedOn": "2026-09-22",
+    "questions_sample": [
+      {
+        "text": "When you sit down to write a LinkedIn post, who are you picturing as the reader?",
+        "answers": [
+          {
+            "label": "Someone actively searching for a product or service like mine",
+            "score": 1
+          },
+          {
+            "label": "A mix of people who are ready to buy and people who are just browsing",
+            "score": 2
+          },
+          {
+            "label": "Industry peers who might refer me someday",
+            "score": 3
+          },
+          {
+            "label": "Someone not looking for anything in particular, just checking who got promoted",
+            "score": 4
+          },
+          {
+            "label": "Someone who has never heard of my brand, scrolling LinkedIn out of habit",
+            "score": 5
+          }
+        ]
+      },
+      {
+        "text": "How do most of your posts begin?",
+        "answers": [
+          {
+            "label": "With our company name, our product, or a direct claim about what we do",
+            "score": 1
+          },
+          {
+            "label": "With an industry stat or trend that leads into what we sell",
+            "score": 2
+          },
+          {
+            "label": "With a question aimed at people who already know they have the problem we solve",
+            "score": 3
+          },
+          {
+            "label": "With a description of a specific person or moment that mirrors a real customer experience",
+            "score": 4
+          },
+          {
+            "label": "With a character in a scene, before our brand is mentioned at all",
+            "score": 5
+          }
+        ]
+      },
+      {
+        "text": "What do you treat as a successful LinkedIn post?",
+        "answers": [
+          {
+            "label": "Strong impressions and follower growth",
+            "score": 1
+          },
+          {
+            "label": "Likes and comments from people who look like potential buyers",
+            "score": 2
+          },
+          {
+            "label": "Direct messages or inquiries from people who saw the post",
+            "score": 3
+          },
+          {
+            "label": "Comments from people saying the post reminded them of their own situation",
+            "score": 4
+          },
+          {
+            "label": "New leads who say the story sounded exactly like them",
+            "score": 5
+          }
+        ]
+      }
+    ],
+    "brand": {
+      "ink": "#161616",
+      "paper": "#f2ebeb",
+      "accent": "#d6f8aa",
+      "accentDeep": "#b4d26e",
+      "fontHeading": "Poppins",
+      "fontBody": "Open Sans",
+      "source": "cuevu.com, captured 2026-09-22"
+    },
+    "gate": "Score + tier shown free. Email unlocks per-category breakdown + personalized fixes."
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import source from './samples.json';
-import { fixture, initialJourneyState, journeyReducer, tierOf, tierScores } from './model';
+import { fixture, initialJourneyState, journeyReducer, scoreOf, tierOf } from './model';
 describe('public sample adapter', () => {
   it('preserves every source sample without rewriting or dropping paragraphs', () => {
     expect(fixture.samples).toEqual(source.samples);
@@ -12,27 +12,27 @@ describe('public sample adapter', () => {
     expect(fixture.samples.newsletter).toBeUndefined();
     expect(fixture.source.url).toBe('https://inboundonsteroids.com/scan/andrew-hayes-94/');
   });
-  it('describes the published assessment with its real sections and tiers', () => {
+  it('describes the published assessment with its real sections, questions and tiers', () => {
     expect(fixture.assessment.url).toBe('https://resources.ivanmanfredi.com/andrew-hayes-94-assessment/');
     expect(fixture.assessment.sections).toHaveLength(5);
+    expect(fixture.assessment.questions_sample).toHaveLength(3);
+    for (const q of fixture.assessment.questions_sample) expect(q.answers.map(a => a.score)).toEqual([1,2,3,4,5]);
     expect(fixture.assessment.tiers.map(t => t.name)).toEqual(['Developing','Growth Stage','Advanced']);
-    const { low, mid } = fixture.assessment.thresholds;
-    expect(tierScores.low).toBeLessThan(low); expect(tierScores.mid).toBeGreaterThanOrEqual(low); expect(tierScores.mid).toBeLessThan(mid); expect(tierScores.high).toBeGreaterThanOrEqual(mid);
   });
 });
-describe('resource hand-off', () => {
-  it('retains the chosen tier when recording without subscribing', () => {
-    const selected=journeyReducer(initialJourneyState,{type:'tier',value:'high'});
-    expect(journeyReducer(selected,{type:'request'})).toMatchObject({tier:'high',requested:true,subscribed:false});
-    expect(tierOf(selected).name).toBe('Advanced');
+describe('example score', () => {
+  it('scores the default answers into the middle tier', () => {
+    expect(scoreOf(initialJourneyState)).toBe(60);
+    expect(tierOf(initialJourneyState).name).toBe('Growth Stage');
   });
-  it('invalidates a recorded example when the tier changes', () => {
-    const requested=journeyReducer(initialJourneyState,{type:'request'});
-    expect(journeyReducer(requested,{type:'tier',value:'low'})).toMatchObject({tier:'low',requested:false});
+  it('moves across the live thresholds as answers change', () => {
+    const low = [0,1,2].reduce((s,i) => journeyReducer(s,{type:'answer',index:i,score:1}), initialJourneyState);
+    expect(scoreOf(low)).toBe(20); expect(tierOf(low).id).toBe('low');
+    const high = [0,1,2].reduce((s,i) => journeyReducer(s,{type:'answer',index:i,score:5}), initialJourneyState);
+    expect(scoreOf(high)).toBe(100); expect(tierOf(high).id).toBe('high');
   });
-  it('keeps subscription separate from recording and changing the tier', () => {
-    const subscribed=journeyReducer(initialJourneyState,{type:'subscription',value:true});
-    expect(subscribed.requested).toBe(false);
-    expect(journeyReducer(subscribed,{type:'tier',value:'low'}).subscribed).toBe(true);
+  it('keeps subscription separate from answering', () => {
+    const subscribed = journeyReducer(initialJourneyState,{type:'subscription',value:true});
+    expect(journeyReducer(subscribed,{type:'answer',index:0,score:5}).subscribed).toBe(true);
   });
 });

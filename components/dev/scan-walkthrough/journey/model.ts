@@ -6,7 +6,9 @@ export type TierId = 'low' | 'mid' | 'high';
 export interface JourneyAssessment {
   url: string; title: string; subtitle: string; badge: string; questions: number; minutes: number; sections: string[];
   tiers: { id: TierId; name: string; headline: string; firstStep: string }[]; thresholds: { low: number; mid: number };
-  image: string; imageMobile: string; capturedOn: string;
+  questions_sample: { text: string; answers: { label: string; score: number }[] }[];
+  brand: { ink: string; paper: string; accent: string; accentDeep: string; fontHeading: string; fontBody: string; source: string };
+  gate: string; capturedOn: string;
 }
 export interface JourneyFixture {
   founder: { name: string; company: string; headline: string; avatarUrl?: string };
@@ -16,19 +18,22 @@ export interface JourneyFixture {
   source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string };
 }
 export const fixture = original as JourneyFixture;
-/** Example scores, one per tier of the live assessment (thresholds 40 / 70). */
-export const tierScores: Record<TierId, number> = { low: 31, mid: 58, high: 84 };
-export interface JourneyState { tier: TierId; requested: boolean; subscribed: boolean }
-export type JourneyAction = { type: 'tier'; value: TierId } | { type: 'request' } | { type: 'subscription'; value: boolean };
-export const initialJourneyState: JourneyState = { tier: 'mid', requested: false, subscribed: false };
+/** Alex's example answers: one score (1 to 5) per sample question. Three sample questions stand in for the 17 on the live page. */
+export interface JourneyState { answers: number[]; subscribed: boolean }
+export type JourneyAction = { type: 'answer'; index: number; score: number } | { type: 'subscription'; value: boolean };
+export const initialJourneyState: JourneyState = { answers: [3, 2, 4], subscribed: false };
 export function journeyReducer(state: JourneyState, action: JourneyAction): JourneyState {
   switch (action.type) {
-    case 'tier': return { ...state, tier: action.value, requested: false };
-    case 'request': return { ...state, requested: true };
+    case 'answer': return { ...state, answers: state.answers.map((s,i) => i === action.index ? action.score : s) };
     case 'subscription': return { ...state, subscribed: action.value };
   }
 }
-export function tierOf(state: JourneyState) { return fixture.assessment.tiers.find(t => t.id === state.tier)!; }
+export function scoreOf(state: JourneyState) { const max = state.answers.length * 5; return Math.round(state.answers.reduce((a,b) => a + b, 0) / max * 100); }
+export function tierOf(state: JourneyState) {
+  const score = scoreOf(state); const { low, mid } = fixture.assessment.thresholds;
+  const id: TierId = score < low ? 'low' : score < mid ? 'mid' : 'high';
+  return fixture.assessment.tiers.find(t => t.id === id)!;
+}
 export const newsletterDraft = {
   subject: 'Before the brand enters the story',
   preview: 'A small exercise for your next LinkedIn post.',
