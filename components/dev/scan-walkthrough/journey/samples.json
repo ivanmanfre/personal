@@ -202,5 +202,33 @@
   "post_notes": {
     "1": "The customer story and pilot price need Andrew’s confirmation.",
     "3": "The statistics and study claims need checking before publishing."
+  },
+  "pillars": {
+    "content": {
+      "found": "Andrew publishes long narrative stories on LinkedIn featuring named fictional personas to show how a reader who was not shopping for a product can stop scrolling for a story that fits their situation.",
+      "projected": "Each week, story posts drafted under his name sit ready for his review before they go out."
+    },
+    "inbound": {
+      "found": "His website offers a $295 pilot project that delivers a file of real consumer stories, and readers who engage with posts are directed to the comments or to DM him directly.",
+      "projected": "A lead magnet under his name turns post readers into named leads by giving them a concrete piece of the 99-1 Rule to take away."
+    },
+    "outbound": {
+      "found": "The corpus shows no record of follow-up to the people who reacted to or commented on his posts.",
+      "projected": "A short personal note to every warm engager gets drafted for his review before it sends."
+    }
+  },
+  "audience": {
+    "named": [],
+    "posts": 5,
+    "verdict": "PEER/NOISE-HEAVY (THIN SAMPLE)",
+    "engagers": 13,
+    "buyer_pct": 0.0,
+    "audited_at": "2026-08-13T13:40:27.055868+00:00",
+    "icp_density": 0.0,
+    "network_total": 2543,
+    "network_sample": 50,
+    "engager_icp_count": 0,
+    "network_icp_count": 0,
+    "network_icp_density": 0.0
   }
 }

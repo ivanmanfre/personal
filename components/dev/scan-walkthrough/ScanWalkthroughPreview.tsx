@@ -6,7 +6,7 @@ import { ReadingChapter } from './journey/ReadingChapter';
 import { ContentChapter } from './journey/ContentChapter';
 import { ResourceChapter } from './journey/ResourceChapter';
 import { ConversationChapter, NewsletterChapter } from './journey/FollowUpChapters';
-import { Buyer } from './journey/BuyerPath';
+import { Fold, LoopStations } from './journey/Fold';
 import { fixture as andrew, initialJourneyState, journeyReducer, type JourneyFixture } from './journey/model';
 import { loadFixture } from './journey/load';
 import './story-exhibits.css';
@@ -27,17 +27,12 @@ export default function ScanWalkthroughPreview() {
     <a href="#content" className="journey-skip">Skip to your samples</a>
     <div className="journey-topbar"><a href="#top" className="journey-wordmark">inbound<span>onsteroids<i>.</i></span></a><StorySound/></div>
     {loadError && <p className="journey-load-error" role="alert">Could not load the scan for “{slug}”: {loadError}. Showing the sample scan instead.</p>}
-    <section className="journey-hero"><div className="hero-copy"><span className="journey-eyebrow">{fixture.founder.name} / {fixture.founder.company} / made for you</span><h1>A stranger.<br/>A story.<br/><span>A conversation.</span></h1><p>How your LinkedIn content<br/>turns a stranger into a call.</p></div><div className="hero-route" aria-hidden="true"><span>scrolling</span><svg viewBox="0 0 680 120"><path d="M0 70H140C220 70 190 20 280 20S350 100 435 100S530 50 680 50"/></svg><div className="hero-person"><span className="rb-flip"><Buyer/></span></div><span>interested</span></div><div className="buyer-intro"><span className="buyer-label">This is Alex.</span><p>{fixture.buyer.role}, who has never heard of {fixture.founder.company}.</p></div></section>
+    <Fold fixture={fixture}/>
     <ReadingChapter id="content" number="01" title="A story makes them stop." why="One carousel, three posts and a profile that says who you are."><ContentChapter fixture={fixture}/></ReadingChapter>
     <ReadingChapter id="inbound" number="02" title="Turn a reader into a lead." why="One gated asset in your brand. Every reader who takes it lands on your list."><ResourceChapter {...props}/></ReadingChapter>
     <ReadingChapter id="newsletter" number="03" title="Give them a reason to return." why="One idea a week, in your voice, to the list you own."><NewsletterChapter {...props}/></ReadingChapter>
     <ReadingChapter id="outreach" number="04" title="Start with what they need." why="Every message references what they took or what they said. No pitch."><ConversationChapter {...props}/></ReadingChapter>
-    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose."><div className="journey-loop" aria-label="The reader’s loop">
-      <span className="loop-track" aria-hidden="true"/><span className="loop-runner" aria-hidden="true"><span className="rb-flip"><Buyer/></span></span>
-      <ol className="loop-stations">{[
-        ['content','The post','Stops them in the feed.','in'],['inbound','The lead magnet','Turns a reader into a name.','▤'],['newsletter','The newsletter','Brings them back next week.','↗'],['outreach','The message','Opens a real conversation.','↳'],['call','The call','On your calendar, already warm.','◉'],
-      ].map(([id,title,why,icon],i)=><li key={id} style={{'--i':i} as React.CSSProperties}>{id==='call'?<span className="loop-item"><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span></span>:<a className="loop-item" href={`#${id}`}><span className="recap-icon" aria-hidden="true">{icon}</span><span><b>{title}</b><small>{why}</small></span><i aria-hidden="true">↑</i></a>}</li>)}</ol>
-    </div><p className="recap-note">Comments feed the same loop: an engager gets the message, then the score, then the newsletter.</p><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share what you know on a call.<br/>Veto anything, though you rarely need to.<br/>Take the calls.</p></div></ReadingChapter>
+    <ReadingChapter id="together" number="05" title="Now it all comes together." why="Each piece gives the next one a purpose."><LoopStations/><p className="recap-note">Comments feed the same loop: an engager gets the message, then the score, then the newsletter.</p><div className="service-note"><span className="journey-eyebrow">Your part</span><p>Share what you know on a call.<br/>Veto anything, though you rarely need to.<br/>Take the calls.</p></div></ReadingChapter>
     <ClientProof/>
     <section className="journey-close"><span className="journey-eyebrow">{fixture.founder.firstName}, this is the whole system</span><h2>Booked calls<br/>without the chase.</h2><p>The posts, the lead magnet, the newsletter and the messages above: we write them, publish them and work the replies, in your voice, every day. You take the calls.</p><a className="journey-button red" href="https://calendly.com/im-ivanmanfredi/30min" target="_blank" rel="noreferrer">Book the walkthrough <span aria-hidden="true">↗</span></a><span className="close-fine">30 minutes. Your samples, the weekly rhythm, and what it costs.</span></section>
     <footer className="journey-footer"><a href={fixture.source.url} target="_blank" rel="noreferrer">View the original scan ↗</a><span>Local design preview · proposed samples</span><a href="#top">Back to the start ↑</a></footer>
