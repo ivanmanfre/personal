@@ -542,7 +542,9 @@ export function MonthBlock({ ot }: { ot: OutreachTruth }) {
             </table>
           </div>
         )}
-        <Footnote>Next report {next}.</Footnote>
+        {/* The month is a 6-hourly count like the rest of this surface, so it carries the same
+            stamp (skeptic 1, 2026-09-22: "to today" alone read as live). */}
+        <Footnote>Counted {countedStamp(ot.counted_at) || '–'}. Next report {next}.</Footnote>
       </Card>
     </div>
   );
