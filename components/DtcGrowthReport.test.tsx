@@ -126,7 +126,6 @@ function assertConversionLayer(html: string) {
   // Performance leads the fee card (Ivan 2026-08-11): accent-highlighted, gate intact.
   expect(html).toContain('Performance Model');
   expect(html).toContain('for qualifying brands');
-  // PRICING-BALLOT: matches the risedtc.com/solutions/ Performance Model wording.
   expect(html).toContain('Fixed monthly fee plus a % of contribution profit.');
   expect(html).toContain('Base from $2,000 per month');
   expect(html.indexOf('Performance Model')).toBeLessThan(html.indexOf('Growth Model'));

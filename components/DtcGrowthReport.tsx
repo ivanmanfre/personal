@@ -1665,7 +1665,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             {credibilityLine ? (
               <div className="mt-3 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.55 }}>{credibilityLine}</div>
             ) : null}
-            {/* PRICING-BALLOT: default = no-fee-named variant; Ivan's ballot pick may swap in the fee-named line */}
             <p className="mt-3 text-[0.85rem] leading-relaxed" style={{ color: ink, opacity: 0.6 }}>
               For qualifying brands, RISE gets paid on performance: a lower fixed fee + a share of growth above an agreed baseline. The terms are at the end of this page.
             </p>
@@ -2125,7 +2124,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 <span className="text-[1.05rem]" style={{ fontFamily: headingFont, fontWeight: 800, color: accent }}>Performance Model</span>
                 <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.55)' }}>for qualifying brands</span>
               </div>
-              {/* PRICING-BALLOT: line names the model, so matched to risedtc.com/solutions/ wording */}
               <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
                 Fixed monthly fee plus a % of contribution profit. RISE earns a share of growth above your baseline, typically 20%, measured in your own ad account and store backend.
               </p>
