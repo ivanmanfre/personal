@@ -22,9 +22,10 @@ export default function ScanWalkthroughPreview() {
   const rootRef=useRef<HTMLElement>(null);
   const reduced=useReducedMotion();
   const slug=typeof window!=='undefined'?(new URLSearchParams(window.location.search).get('slug')||new URLSearchParams(window.location.hash.replace(/^#/, '')).get('slug')||((window as unknown as {__SCAN_SLUG__?: string}).__SCAN_SLUG__||'').replace(/^%.*%$/, '')||null):null;
-  const [loaded,setLoaded]=useState<JourneyFixture|null>(!slug||slug===andrew.slug?andrew:null);
+  const baked=typeof window!=='undefined'&&!!(window as unknown as {__SCAN_ROW__?: unknown}).__SCAN_ROW__;
+  const [loaded,setLoaded]=useState<JourneyFixture|null>(!slug||(slug===andrew.slug&&!baked)?andrew:null);
   const [loadError,setLoadError]=useState<string|null>(null);
-  useEffect(()=>{if(!slug||slug===andrew.slug)return;let live=true;loadFixture(slug).then(f=>{if(live)setLoaded(f);}).catch(e=>{if(live){setLoadError(String(e.message||e));setLoaded(andrew);}});return()=>{live=false;};},[slug]);
+  useEffect(()=>{if(!slug||(slug===andrew.slug&&!baked))return;let live=true;loadFixture(slug).then(f=>{if(live)setLoaded(f);}).catch(e=>{if(live){setLoadError(String(e.message||e));setLoaded(andrew);}});return()=>{live=false;};},[slug]);
   const fixture=loaded||andrew;
   useGoogleFonts([loaded?.samples.lm?.brand?.font_heading]);
   const [state,dispatch]=useReducer(journeyReducer,initialJourneyState);
