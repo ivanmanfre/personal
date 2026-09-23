@@ -1,0 +1,262 @@
+{
+  "company_slug": "luiza-vass-8c",
+  "assessment": {
+    "state": "unclassified",
+    "date": "22 Sept 2026",
+    "rubric": "",
+    "posts": 5,
+    "people": 37,
+    "buyers": null,
+    "networkCount": null,
+    "networkSample": null,
+    "heading": "37 people engaged. Who could become a client?",
+    "why": "Check who fits your offer. Start conversations that can lead to qualified calls.",
+    "receipt": "The scan recorded 37 engagers across 5 posts. Its buyer classification is not verified for this report."
+  },
+  "story_v1": {
+    "version": 1,
+    "reviewStatus": "draft",
+    "slug": "luiza-vass-8c",
+    "founderName": "Luiza Vass",
+    "companyName": "neu | creative talent reps",
+    "brand": "neu",
+    "post": "We lost a project over access to our first internal review.\n\nWe offered a sync an hour later, the next morning, the following day. The client still wanted to be in that first meeting.\n\nI’d put that question in the brief before booking the team: when does the client first see the work?\n\nThe slides show how I’d agree on it before the work begins.",
+    "slides": [
+      {
+        "title": "We lost a project over one meeting.",
+        "body": "The client wanted to join our first internal review. We wanted the team to work through the ideas together first.",
+        "visual": "review"
+      },
+      {
+        "title": "We offered another time.",
+        "body": "An hour after our meeting. The next morning. The following day. We offered each of those options and still lost the project. Changing the time didn’t resolve the disagreement about who could join the first review.",
+        "note": "The review access was the issue."
+      },
+      {
+        "title": "I’d raise it while booking the team.",
+        "body": "A producer commissioning independent talent needs to know when the client will see the work. Put that decision in the brief alongside the deliverables. Both sides can agree on the arrangement before anyone commits to the project.",
+        "visual": "brief"
+      },
+      {
+        "title": "Name the decision for each review.",
+        "body": "For the first client review, agree whether you’re choosing a direction or checking finished work. Say what the team will show and what is still being developed. The producer can then invite the people needed for that decision.",
+        "note": "A proposed first review: choose the direction."
+      },
+      {
+        "title": "Agree on how feedback comes back.",
+        "body": "Ask the client to name one person who collects their comments. If two requests conflict, have that person resolve them before the team revises. Include the feedback date in the schedule so the next delivery has time set aside.",
+        "visual": "brief"
+      },
+      {
+        "title": "Agree on access before booking.",
+        "body": "Before you commission the team, put the review plan in the brief. Say when the client will first join and what they’ll decide. Ask the rep and the client to confirm it while there’s still time to change the arrangement.",
+        "note": "Who joins the first review? Put the answer in the brief."
+      }
+    ],
+    "magnet": "The project room",
+    "plainPost": "When I introduce a creative team, my name goes with them.\n\nA team I knew had tried to get into a brand through cold pitching. They were turned down. I heard about it through someone on the inside.\n\nI kept thinking that, if I represented them, I could have called and asked him to give them a shot. And I would have stayed involved after that introduction.\n\nIf you’re commissioning talent, ask the rep who will pick up the phone when something gets difficult after the team is booked.",
+    "magnetPost": "A production house sent me a spec budget with 5% of the total going to creative development.\n\nAt €100,000, that would leave €5,000 for the idea. Before comparing the total with another bid, I’d ask what that line includes. Concept development? Art direction on the shoot? Revisions?\n\nI put together a project planner for producers. Choose the type of project and use the deliverables, review decisions and quote questions to write a brief.\n\nSend the same scope to each team you’re considering. You’ll have something concrete to compare when the quotes come back.",
+    "message": "Hi Alex, saw you requested the project planner. Are you putting a team together for a campaign at the moment?",
+    "reply": "Yes, a beauty launch. We have a producer but still need an art director.",
+    "next": "What’s the launch date and the fee range for the art director? I can check whether we have someone who fits.",
+    "subject": "Which part of that campaign did they make?",
+    "email": "Hi Alex,\n\nIf you’re choosing between creative teams, ask each one to take you through a project close to your brief.\n\nWho came up with the idea? Who directed the work? Which people would be on your project, and are they available for your dates?\n\nA campaign in a portfolio can involve several teams. Those answers help you understand what you’re actually booking.\n\nSend the same brief to the teams you shortlist so their quotes cover the same work.\n\nLuiza",
+    "art": "creative",
+    "keyword": "TEAM",
+    "contentHeading": "Reach people who commission creative work.",
+    "contentWhy": "Your experience gives producers a reason to remember you.",
+    "magnetWhy": "A lead magnet for producers planning a team. The cover invites them to ask for it.",
+    "researchNote": "Your posts on representation and production budgets shape the samples below.",
+    "sourceQuote": "My credibility carries them. It covers the clumsy grabs at getting something only for themselves.",
+    "segments": [
+      {
+        "label": "Brand leads commissioning campaigns",
+        "note": "Look for a launch or recent campaign credits."
+      },
+      {
+        "label": "Producers putting teams together",
+        "note": "Check that they commission and pay for creative work."
+      }
+    ],
+    "buyerRole": "Brand producer",
+    "coldTrigger": "A brand announces a beauty launch.",
+    "coldMessage": "Hi Alex, saw the new beauty launch. Are you still putting the creative team together? We represent independent art directors and creative teams. Happy to send a few portfolios if you’re still looking.",
+    "newsletterNote": "notes on commissioning talent",
+    "nurtureNote": "A note on comparing creative quotes.",
+    "resource": {
+      "title": "Who do you need on this project?",
+      "mode": "planner",
+      "brand": {
+        "surface": "#fffcf5",
+        "ink": "#20201e",
+        "accent": "#e6fd9e",
+        "logo": "https://theneu.team/logo-neu.svg"
+      },
+      "options": [
+        {
+          "label": "Campaign",
+          "title": "A beauty launch",
+          "team": [
+            {
+              "role": "Creative lead",
+              "job": "Develops the campaign idea and directs the team."
+            },
+            {
+              "role": "Art director",
+              "job": "Sets the visual direction for the shoot."
+            },
+            {
+              "role": "Producer",
+              "job": "Owns the schedule, crew and production budget."
+            }
+          ],
+          "coveredRole": "Producer",
+          "coveredJob": "Your producer supplies the schedule, crew and production quote.",
+          "deliverables": [
+            {
+              "label": "Campaign idea",
+              "value": "1 chosen direction"
+            },
+            {
+              "label": "Hero asset",
+              "value": "1 film, up to 30 seconds"
+            },
+            {
+              "label": "Social versions",
+              "value": "3 cutdowns, 9:16"
+            },
+            {
+              "label": "Stills",
+              "value": "6 final images"
+            }
+          ],
+          "review": "Choose the campaign direction before booking the shoot.",
+          "quote": "Separate concept development, art direction, production and finishing. State the revision rounds included in each fee.",
+          "changes": "Extra formats, another shoot day or a new direction after approval should be quoted separately.",
+          "rights": "Name the markets, channels and usage period before requesting a talent quote."
+        },
+        {
+          "label": "Brand identity",
+          "title": "A new brand identity",
+          "team": [
+            {
+              "role": "Brand strategist",
+              "job": "Defines the audience, positioning and brief."
+            },
+            {
+              "role": "Design director",
+              "job": "Develops the identity and guides the design work."
+            },
+            {
+              "role": "Project lead",
+              "job": "Collects decisions and keeps delivery on schedule."
+            }
+          ],
+          "coveredRole": "Project lead",
+          "coveredJob": "Your project lead collects feedback and confirms the delivery dates.",
+          "deliverables": [
+            {
+              "label": "Identity",
+              "value": "1 chosen direction"
+            },
+            {
+              "label": "Logo handover",
+              "value": "Vector and web files"
+            },
+            {
+              "label": "Applications",
+              "value": "3 agreed touchpoints"
+            },
+            {
+              "label": "Brand guide",
+              "value": "Type, colour and layout"
+            }
+          ],
+          "review": "Approve the identity direction before adapting it across touchpoints.",
+          "quote": "Separate strategy, identity design, applications and handover. Name the working files and revision rounds included.",
+          "changes": "Additional touchpoints, naming or a new direction after approval need their own scope.",
+          "rights": "Agree who owns the final files and which font and image licences are needed."
+        },
+        {
+          "label": "Film",
+          "title": "A launch film",
+          "team": [
+            {
+              "role": "Director",
+              "job": "Develops the treatment and directs the film."
+            },
+            {
+              "role": "Producer",
+              "job": "Builds the crew, budget and production schedule."
+            },
+            {
+              "role": "Editor",
+              "job": "Shapes the footage into the agreed cuts."
+            }
+          ],
+          "coveredRole": "Producer",
+          "coveredJob": "Your producer supplies the crew, locations and production schedule.",
+          "deliverables": [
+            {
+              "label": "Main film",
+              "value": "1 edit, up to 60 seconds"
+            },
+            {
+              "label": "Cutdowns",
+              "value": "3 edits, up to 15 seconds"
+            },
+            {
+              "label": "Formats",
+              "value": "16:9 and 9:16"
+            },
+            {
+              "label": "Finishing",
+              "value": "Sound mix and colour"
+            }
+          ],
+          "review": "Approve the treatment before the shoot, then the edit before final finishing.",
+          "quote": "Separate pre-production, shoot, edit and finishing. Confirm whether music, talent and usage fees are included.",
+          "changes": "Extra shoot days, animation or another edit after approval should be priced separately.",
+          "rights": "Confirm music, talent and footage rights for every market and channel."
+        }
+      ]
+    },
+    "cover": {
+      "lines": [
+        "Before you",
+        "book the team."
+      ],
+      "left": "The team",
+      "right": "The first review",
+      "details": [
+        "Who joins?",
+        "What gets approved?"
+      ]
+    },
+    "flow": {
+      "messages": [
+        "I need an art director for a beauty launch.",
+        "We need an art director. We’ve allowed €8,000 for that role.",
+        "The launch is in six weeks. Can we discuss the brief?",
+        "Yes, send me a time and I’ll bring the producer."
+      ],
+      "checks": [
+        {
+          "label": "Creative role",
+          "value": "Art director"
+        },
+        {
+          "label": "Fee range",
+          "value": "€8,000"
+        },
+        {
+          "label": "Launch date",
+          "value": "In six weeks"
+        }
+      ],
+      "signal": "Campaign launch announced",
+      "callTitle": "Creative project call",
+      "brief": "Art director · €8,000 · six weeks"
+    }
+  }
+}

@@ -1,0 +1,288 @@
+[
+  {
+    "company_slug": "andrew-hayes-94",
+    "company_name": "CueVu",
+    "domain": "cuevu.com",
+    "completed_at": null,
+    "report_json": {
+      "content_system": {
+        "founder": {
+          "name": "Andrew Hayes",
+          "headline": "The 99-1 Rule: Your next fifty customers are already on LinkedIn. Get them with stories that grab their attention.",
+          "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/avatar-andrew-hayes-94.jpg",
+          "first_name": "Andrew"
+        },
+        "audience": {
+          "named": [],
+          "posts": 5,
+          "verdict": "PEER/NOISE-HEAVY (THIN SAMPLE)",
+          "engagers": 13,
+          "buyer_pct": 0.0,
+          "audited_at": "2026-08-13T13:40:27.055868+00:00",
+          "icp_density": 0.0,
+          "network_total": 2543,
+          "network_sample": 50,
+          "engager_icp_count": 0,
+          "network_icp_count": 0,
+          "network_icp_density": 0.0
+        },
+        "pillars": {
+          "content": {
+            "found": "Andrew publishes long narrative stories on LinkedIn featuring named fictional personas to show how a reader who was not shopping for a product can stop scrolling for a story that fits their situation.",
+            "projected": "Each week, story posts drafted under his name sit ready for his review before they go out."
+          },
+          "inbound": {
+            "found": "His website offers a $295 pilot project that delivers a file of real consumer stories, and readers who engage with posts are directed to the comments or to DM him directly.",
+            "projected": "A lead magnet under his name turns post readers into named leads by giving them a concrete piece of the 99-1 Rule to take away."
+          },
+          "outbound": {
+            "found": "The corpus shows no record of follow-up to the people who reacted to or commented on his posts.",
+            "projected": "A short personal note to every warm engager gets drafted for his review before it sends."
+          }
+        },
+        "og_image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-andrew-hayes-94-lm_cover.png",
+        "sample_output": {
+          "posts": [
+            {
+              "format": "Carousel",
+              "hook": "We ask them one question.",
+              "source_quote": "We ask them one question. What were you feeling when [X-Event] happened?"
+            },
+            {
+              "format": "Post",
+              "hook": "She called me on a Tuesday, about twenty minutes after I sent the file.",
+              "source_quote": "Our deliverable is the results file. The authentic human language told in the person's own words."
+            },
+            {
+              "format": "Post",
+              "hook": "After a few stories run, I ask the client to look at who came back.",
+              "source_quote": "Every story you share leaves the readers, aka your future customers, thinking a little differently than they did before."
+            },
+            {
+              "format": "Post",
+              "hook": "95% of AI-generated marketing campaigns had no measurable return.",
+              "source_quote": "According to MIT, measuring $40 billion in spend, there was no measurable return. Zero."
+            }
+          ],
+          "lm": {
+            "brand": {
+              "accent2": "",
+              "ink_hex": "",
+              "is_dark": true,
+              "logo_url": "https://icon.horse/icon/cuevu.com",
+              "cta_label": "Send",
+              "font_body": "",
+              "header_bg": "",
+              "nav_links": [],
+              "radius_px": 0,
+              "accent_hex": "#7F7F7F",
+              "nav_cta_bg": "",
+              "login_label": "",
+              "surface_hex": "",
+              "font_heading": "Open Sans",
+              "accent_secondary": "",
+              "font_heading_style": "sans"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "company_slug": "luiza-vass-8c",
+    "company_name": "neu | creative talent reps",
+    "domain": "theneu.team",
+    "completed_at": null,
+    "report_json": {
+      "content_system": {
+        "founder": {
+          "name": "Luiza Vass",
+          "headline": "Founder @Neu - creative talent reps | ex. Head of Brand @Tinkoff | ex. BBDO",
+          "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/avatar-luiza-vass-8c.jpg",
+          "first_name": "Luiza"
+        },
+        "audience": {
+          "named": [
+            {
+              "name": "Andrey Potekhin",
+              "source": "engager",
+              "headline": "Creative director | Communication lead"
+            },
+            {
+              "name": "Dmitry Kuznetsov",
+              "source": "engager",
+              "headline": "Head of Production & Motion Designer | Visual Storytelling & Branded Content | muvi.red"
+            },
+            {
+              "name": "Anum Ahmed",
+              "source": "engager",
+              "headline": "Executive Producer/Founder at Istanbul Line Films Award-winning Producer for TVCs and content"
+            }
+          ],
+          "posts": 5,
+          "verdict": "BUYER-DENSE",
+          "engagers": 37,
+          "buyer_pct": 35.1,
+          "audited_at": "2026-09-22T08:34:01.821315+00:00",
+          "icp_density": 24.3,
+          "network_total": 1935,
+          "network_sample": 2,
+          "engager_icp_count": 9,
+          "network_icp_count": null,
+          "network_icp_density": null
+        },
+        "pillars": {
+          "content": {
+            "found": "Luiza publishes personal, first-person LinkedIn posts under her own name about talent representation, industry economics, and her path from BBDO and Tinkoff into founding neu.",
+            "projected": "A week of posts goes out under her name, waiting for her approval."
+          },
+          "inbound": {
+            "found": "Readers respond to her posts only through likes, comments, and DMs she invites case by case, such as \"DM if that's you\" on the Beauty Bind post.",
+            "projected": "A lead magnet under her name turns readers into named leads."
+          },
+          "outbound": {
+            "found": "Engagement on her posts sits in LinkedIn's native reactions and comments with no described follow-up process to the people who engage.",
+            "projected": "A short personal note goes out to every warm engager, drafted for her approval."
+          }
+        },
+        "og_image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-luiza-vass-8c-lm_cover.png",
+        "sample_output": {
+          "posts": [
+            {
+              "format": "Carousel",
+              "hook": "A client lost us an entire project because we wouldn't let her into our team's first internal review.",
+              "source_quote": "We offered every option, a sync an hour after our meeting, tomorrow, the day after, anything except pulling her into the very first internal."
+            },
+            {
+              "format": "Post",
+              "hook": "A client stopped talking to me once because our team didn't invite her to our first internal review.",
+              "source_quote": "we kept her fully in the loop: here's the plan, here's the progress, today we review internally"
+            },
+            {
+              "format": "Post",
+              "hook": "A creative team I know once spent real effort trying to land a spot as vendors at a brand a lot of people want in with.",
+              "source_quote": "My credibility carries them. It covers the clumsy grabs at getting something only for themselves."
+            },
+            {
+              "format": "Post",
+              "hook": "A production house once sent me a cost breakdown for an ad they never made.",
+              "source_quote": "Creative development included into their budget: 5% of total cost. While the mark up around 20% is fine"
+            }
+          ],
+          "lm": {
+            "brand": {
+              "accent2": "",
+              "ink_hex": "",
+              "is_dark": true,
+              "logo_url": "https://theneu.team/logo-neu.svg",
+              "cta_label": "",
+              "font_body": "",
+              "header_bg": "",
+              "nav_links": [
+                "Say Hey"
+              ],
+              "radius_px": null,
+              "accent_hex": "#5B6470",
+              "nav_cta_bg": "",
+              "login_label": "",
+              "surface_hex": "",
+              "font_heading": "",
+              "accent_secondary": "",
+              "font_heading_style": "sans"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "company_slug": "nerijus-danilevicius-43",
+    "company_name": "Simmer",
+    "domain": "simmer.no",
+    "completed_at": null,
+    "report_json": {
+      "content_system": {
+        "founder": {
+          "name": "Nerijus Danilevicius",
+          "headline": "Branding, design and webflow | Partner & Creative Director @ Simmer",
+          "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/avatar-nerijus-danilevicius-43.png",
+          "first_name": "Nerijus"
+        },
+        "audience": {
+          "named": [],
+          "posts": 5,
+          "engagers": 122,
+          "audited_at": "2026-09-12T16:34:16.402219+00:00",
+          "network_total": 4212,
+          "network_sample": 1000,
+          "buyer_undefined": false,
+          "buyer_definition": "a founder or marketing lead at a growing company who needs a brand refresh or new website",
+          "engager_icp_count": 0,
+          "network_icp_count": 0,
+          "network_icp_density": 0
+        },
+        "pillars": {
+          "content": {
+            "found": "His own feed already carries first-person case-study posts about real projects like Plug, Hartnet, and Vegggal, published directly under his name.",
+            "projected": "Once the system runs, a full week of posts sits ready under his name, waiting for his approval."
+          },
+          "inbound": {
+            "found": "By his own description, incoming requests from companies and people already fill his week, leaving him little time to seek new clients.",
+            "projected": "A lead magnet carrying his name would turn those same readers into named leads."
+          },
+          "outbound": {
+            "found": "He personally thanks clients and collaborators by name inside his posts, engaging with the people who worked with him rather than through any separate outreach step.",
+            "projected": "A short personal note goes out to every warm engager, drafted for his approval before it sends."
+          }
+        },
+        "og_image_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-nerijus-danilevicius-43-lm_cover.png",
+        "sample_output": {
+          "posts": [
+            {
+              "format": "Carousel",
+              "hook": "Skrifttypen på Hartnet sin nye nettside kommer fra et fransk foundry, valgt for å matche håndverket i kjøkkenene de lager.",
+              "source_quote": "Fonten vi valgte heter Writer, fra det franske foundry'et pangram Pangram. Inspirert av fransk renessanse."
+            },
+            {
+              "format": "Post",
+              "hook": "Hartnet sin nye side og logo har vært live en stund nå, og vi bruker fortsatt tid på å justere den.",
+              "source_quote": "Nå gjelder det å optimalisere videre som er like viktig for små og store budsjett nettsider."
+            },
+            {
+              "format": "Post",
+              "hook": "Når vi leverer en side i Webflow, får kunden full kontroll over den med en gang.",
+              "source_quote": "Med Webflow har vi gitt kundene våre kontroll. De oppdaterer selv, endrer innhold, legger til sider uten venting og ekstra kostnader."
+            },
+            {
+              "format": "Post",
+              "hook": "Vi leverte Maler Hansen sin nye nettside en tirsdag, og torsdag var trafikken akkurat like lav som uken før.",
+              "source_quote": "Vente på at Google og kundene oppdager den nye siden og følge med på resultatene."
+            }
+          ],
+          "lm": {
+            "brand": {
+              "accent2": "ffe894",
+              "ink_hex": "",
+              "is_dark": true,
+              "logo_url": "https://cdn.prod.website-files.com/67a679c23604ac102b38eb6a/67c1c9ae69af193c70e8aa6a_Simmer%20logo%20white%20fv..svg",
+              "cta_label": "Let's talk",
+              "font_body": "",
+              "header_bg": "fffef9",
+              "nav_links": [
+                "Let's talk"
+              ],
+              "radius_px": 6,
+              "accent_hex": "#5B6470",
+              "nav_cta_bg": "0a0a09",
+              "login_label": "",
+              "surface_hex": "",
+              "font_heading": "",
+              "accent_secondary": "#ffe894",
+              "font_heading_style": "sans"
+            }
+          }
+        }
+      }
+    }
+  }
+]

@@ -80,6 +80,8 @@ const LandingPage = lazy(() => import('./components/LandingPage'));
 const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
 const ScanLabPage = lazy(() => import('./components/dev/ScanLabPage'));
 const ScanWalkthroughPreview = import.meta.env.DEV ? lazy(() => import('./components/dev/scan-walkthrough/ScanWalkthroughPreview')) : null;
+const StoryReviewDesk = lazy(() => import('./components/scan/story/StoryReviewDesk'));
+const ScanReleaseReview = import.meta.env.DEV ? lazy(() => import('./components/scan/story/ReleaseReview')) : null;
 
 function App() {
   const location = useLocation();
@@ -108,6 +110,14 @@ function App() {
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);
+
+  if (location.pathname === '/scan-review' || (import.meta.env.DEV && location.pathname === '/dev/scan-review')) {
+    return <Suspense fallback={<div>Loading scan review…</div>}><StoryReviewDesk/></Suspense>;
+  }
+
+  if (import.meta.env.DEV && location.pathname === '/dev/scan-release' && ScanReleaseReview) {
+    return <Suspense fallback={<div>Loading scan review…</div>}><ScanReleaseReview/></Suspense>;
+  }
 
   if (import.meta.env.DEV && location.pathname === '/dev/scan-walkthrough' && ScanWalkthroughPreview) {
     return <Suspense fallback={<div style={{ background: '#fff', minHeight: '100vh' }} />}><ScanWalkthroughPreview /></Suspense>;

@@ -35,6 +35,8 @@ export interface CallIntel {
 // (organic content engine + lead-magnet capture) report variant. Mirrors CallIntel:
 // the audit reasons about THIS prospect's organic content gap and frames it as a leak.
 export interface ContentSystem {
+  // Opt-in production story. Untrusted JSON is validated before rendering.
+  story_v1?: unknown;
   // The dominant gap the audit picks for this prospect:
   //  silent_founder   — has audience/title but rarely posts (leaking attention)
   //  inconsistent     — posts in bursts then goes quiet (no momentum)
@@ -131,6 +133,7 @@ export interface ContentSystem {
   // network_icp_count is buyers classified in the sample actually read, never extrapolated.
   // Absent -> the "Who is actually in your room" section does not render.
   audience?: {
+    audit_status?: 'complete' | 'partial' | 'blocked' | 'error';
     engagers?: number;
     posts?: number;
     engager_icp_count?: number | null;

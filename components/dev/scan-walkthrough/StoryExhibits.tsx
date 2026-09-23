@@ -30,22 +30,22 @@ export function LinkedInBackdrop() {
 }
 
 /** Two founders the engine already runs for. Kyle's figure is his verified monthly agency revenue; RISE is shown as published work with no revenue claim. */
-export function ClientProof() {
+export function ClientProof({ compact = false }: { compact?: boolean }) {
+  const reduced = useReducedMotion();
   const [riseImageFailed, setRiseImageFailed] = useState(false);
   const [kyleImageFailed, setKyleImageFailed] = useState(false);
   return <section className="sg-proof" id="proof">
-    <div className="sg-proof-heading"><p>Already running for other founders</p><h2 className="sg-display">Same engine.<br />Other feeds.</h2></div>
+    <div className="sg-proof-heading">{compact ? <h2 className="sg-display">Already running for other founders.</h2> : <><p>Already running for other founders</p><h2 className="sg-display">Same engine.<br />Other feeds.</h2></>}</div>
     <div className="proof-grid">
-      <motion.article className="proof-card proof-kyle" initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: .7, ease }}>
+      <motion.article className="proof-card proof-kyle" initial={reduced ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduced ? 0 : .7, ease }}>
         <div className="proof-person"><img src={asset("/content-system/kyle-portrait.webp")} alt="Kyle Hunt" loading="lazy" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} /><span><b>Kyle Hunt</b><small>Agency Operators, founder</small></span></div>
         <div className="proof-figure"><span className="proof-figk">Agency MRR</span><span className="proof-fig"><span className="from">$30K/mo →</span> $80K/mo</span></div>
-        <blockquote className="proof-quote">“Leads come in with a name and the guide they pulled. By the time we talk, they already know the offer.”</blockquote>
         <figure className="proof-sample">{kyleImageFailed ? <span className="tool-image-fallback">Kyle’s guide library</span> : <img src={asset("/content-system/kyle-guides.webp")} alt="Kyle Hunt’s guide library, generated and shipped by the engine" loading="lazy" onError={() => setKyleImageFailed(true)} />}<figcaption>Kyle’s lead magnets, written and published by the engine.</figcaption></figure>
       </motion.article>
-      <motion.article className="proof-card proof-rise" initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: .7, delay: .12, ease }}>
+      <motion.article className="proof-card proof-rise" initial={reduced ? false : { opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduced ? 0 : .7, delay: reduced ? 0 : .12, ease }}>
         <div className="proof-person"><span className="demo-avatar" aria-hidden="true">MD</span><span><b>Mattan Danino</b><small>RISE DTC, founder</small></span></div>
         <div className="sg-real-browser proof-browser" data-mockup="browser"><div className="sg-browser-bar"><span className="sg-browser-dots" aria-hidden="true"><i /><i /><i /></span><span>resources.risedtc.com/tools</span><a href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer" aria-label="Open the RISE DTC tools library in a new tab">↗</a></div><div className="sg-real-browser-viewport">{riseImageFailed ? <a className="tool-image-fallback" href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer">Preview image unavailable. Open the library ↗</a> : <a href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer" aria-label="Open the RISE DTC tools library"><img src={asset("/scan-preview/rise-tools.jpg")} alt="The published RISE DTC tools library" loading="lazy" onError={() => setRiseImageFailed(true)} /></a>}</div></div>
-        <p className="proof-text">A published library his buyers come back to: calculators, audits and a DTC skills kit. Daily posts, the resources and the follow-up all run from the same engine.</p>
+        <p className="proof-text">{compact ? "We build Mattan’s DTC tools and run the posts and follow-up that bring people to them." : "A published library his buyers come back to: calculators, audits and a DTC skills kit. Daily posts, the resources and the follow-up all run from the same engine."}</p>
         <a className="sg-tool-try" href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer">Open the library <span aria-hidden="true">↗</span></a>
       </motion.article>
     </div>

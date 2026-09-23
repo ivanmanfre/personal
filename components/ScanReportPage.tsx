@@ -24,6 +24,9 @@ import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
 import { trackScanOpen } from '../lib/scanOpenTracker';
 import { DtcGrowthReport } from './DtcGrowthReport';
 import ScanWalkthroughVideo from './ScanWalkthroughVideo';
+import ScanStoryReport from './scan/story/ScanStoryReport';
+import {toStoryFixture} from './scan/story/adapter';
+import {validateEdition} from './scan/story/validate';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -5337,6 +5340,9 @@ const ScanReportPage: React.FC = () => {
   // Content-system prospects (organic content engine + lead-magnet capture, one bundled offer)
   // get a dedicated personalized pitch instead of the generic AI Opportunity Scan report.
   if (offer === 'content_system' && report.content_system) {
+    const fixture=toStoryFixture(scan);
+    const {edition}=validateEdition(report.content_system.story_v1,fixture,true);
+    if(edition)return <><ScanWalkthroughVideo slug={scan.company_slug}/><ScanStoryReport fixture={fixture} edition={edition}/></>;
     return <><ScanWalkthroughVideo slug={scan.company_slug} /><ContentSystemReport report={report} scan={scan} companyName={companyName} /></>;
   }
 

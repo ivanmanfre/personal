@@ -9,6 +9,9 @@ import { ConversationChapter, NewsletterChapter } from './journey/FollowUpChapte
 import { Fold, MonthStrip, ProgressRail, SystemMap } from './journey/Fold';
 import { fixture as andrew, initialJourneyState, journeyReducer, type JourneyFixture } from './journey/model';
 import { loadFixture } from './journey/load';
+import {StoryBody} from '../../scan/story/ScanStoryReport';
+import {reviewDraft} from '../../scan/story/reviewDrafts';
+import { storyKind } from './journey/connectedModel';
 import './story-exhibits.css';
 import './journey/journey.css';
 
@@ -25,16 +28,16 @@ export default function ScanWalkthroughPreview() {
   const baked=typeof window!=='undefined'&&!!(window as unknown as {__SCAN_ROW__?: unknown}).__SCAN_ROW__;
   const [loaded,setLoaded]=useState<JourneyFixture|null>(!slug||(slug===andrew.slug&&!baked)?andrew:null);
   const [loadError,setLoadError]=useState<string|null>(null);
-  useEffect(()=>{if(!slug||(slug===andrew.slug&&!baked))return;let live=true;loadFixture(slug).then(f=>{if(live)setLoaded(f);}).catch(e=>{if(live){setLoadError(String(e.message||e));setLoaded(andrew);}});return()=>{live=false;};},[slug]);
+  useEffect(()=>{if(!slug||(slug===andrew.slug&&!baked))return;let live=true;loadFixture(slug).then(f=>{if(live)setLoaded(f);}).catch(e=>{if(live)setLoadError(String(e.message||e));});return()=>{live=false;};},[slug]);
   const fixture=loaded||andrew;
   useGoogleFonts([loaded?.samples.lm?.brand?.font_heading]);
   const [state,dispatch]=useReducer(journeyReducer,initialJourneyState);
   const props={fixture,state,dispatch};
   return <main className="scan-journey" ref={rootRef} id="top">
-    <title>{`${fixture.founder.firstName}, here’s how it comes together · LinkedIn story preview`}</title><meta name="robots" content="noindex,nofollow"/>
+    <title>{`${fixture.founder.firstName}, your LinkedIn plan for qualified calls`}</title><meta name="robots" content="noindex,nofollow"/>
     <a href="#content" className="journey-skip">Skip to your samples</a>
     <div className="journey-topbar"><a href="#top" className="journey-wordmark" aria-label="InboundOnSteroids">INBOUND<b>ON</b>STEROIDS</a><a className="topbar-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call</a></div>
-    {!loaded ? <div className="journey-loading" role="status">Loading your scan</div> : <>
+    {!loaded ? <div className="journey-loading" role={loadError ? 'alert' : 'status'}>{loadError ? `Could not load this scan. Please refresh to try again.` : 'Loading your scan'}</div> : storyKind(loaded.slug) ? <StoryBody key={loaded.slug} fixture={loaded} edition={reviewDraft(loaded)!}/> : <>
     {loadError && <p className="journey-load-error" role="alert">Could not load the scan for “{slug}”: {loadError}. Showing the sample scan instead.</p>}
     <Fold fixture={fixture} ask={<Ask line={<>That is the read on {fixture.founder.company}, {fixture.founder.firstName}. The rest of this page is what we would run.</>}/>}/>
     <ProgressRail/>

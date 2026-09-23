@@ -1,0 +1,45 @@
+import {simmerDraft} from './simmerDraft';
+import {samplePlans} from '../../dev/scan-walkthrough/journey/samplePlan';
+import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
+import type {StoryEdition} from './types';
+
+const projects = [
+  { name: 'Campaign', title: 'A beauty launch', team: [['Creative lead', 'Develops the campaign idea and directs the team.'], ['Art director', 'Sets the visual direction for the shoot.'], ['Producer', 'Owns the schedule, crew and production budget.']], delivery: 'One campaign direction, a shoot treatment and a list of launch assets.', decision: 'Choose the campaign direction before booking the shoot.', rights: 'Name the markets, channels and usage period before requesting a talent quote.' },
+  { name: 'Brand identity', title: 'A new brand identity', team: [['Brand strategist', 'Defines the audience, positioning and brief.'], ['Design director', 'Develops the identity and guides the design work.'], ['Project lead', 'Collects decisions and keeps delivery on schedule.']], delivery: 'An identity direction, logo files and a guide to type, colour and layout.', decision: 'Approve the identity direction before adapting it across touchpoints.', rights: 'Agree who owns the final files and which font and image licences are needed.' },
+  { name: 'Film', title: 'A launch film', team: [['Director', 'Develops the treatment and directs the film.'], ['Producer', 'Builds the crew, budget and production schedule.'], ['Editor', 'Shapes the footage into the agreed cuts.']], delivery: 'A treatment, the main film and a written list of cutdowns and formats.', decision: 'Approve the treatment before the shoot, then the edit before final finishing.', rights: 'Confirm music, talent and footage rights for every market and channel.' },
+];
+const scopes = [
+ {deliverables:[['Campaign idea','1 chosen direction'],['Hero asset','1 film, up to 30 seconds'],['Social versions','3 cutdowns, 9:16'],['Stills','6 final images']], changes:'Extra formats, another shoot day or a new direction after approval should be quoted separately.', ask:'Separate concept development, art direction, production and finishing. State the revision rounds included in each fee.', booked:'Producer', covered:'Your producer supplies the schedule, crew and production quote.'},
+ {deliverables:[['Identity','1 chosen direction'],['Logo handover','Vector and web files'],['Applications','3 agreed touchpoints'],['Brand guide','Type, colour and layout']], changes:'Additional touchpoints, naming or a new direction after approval need their own scope.', ask:'Separate strategy, identity design, applications and handover. Name the working files and revision rounds included.', booked:'Project lead', covered:'Your project lead collects feedback and confirms the delivery dates.'},
+ {deliverables:[['Main film','1 edit, up to 60 seconds'],['Cutdowns','3 edits, up to 15 seconds'],['Formats','16:9 and 9:16'],['Finishing','Sound mix and colour']], changes:'Extra shoot days, animation or another edit after approval should be priced separately.', ask:'Separate pre-production, shoot, edit and finishing. Confirm whether music, talent and usage fees are included.', booked:'Producer', covered:'Your producer supplies the crew, locations and production schedule.'},
+];
+const questions = [
+  { event: 'Switching brands', question: 'What were you feeling when you decided to switch brands?', people: 'Customers who replaced a brand they previously used.', record: 'Previous brand, new brand and when the change happened.' },
+  { event: 'First purchase', question: 'What were you feeling when you bought this for the first time?', people: 'People who recently made their first purchase in your category.', record: 'What they bought, when they bought it and what they used before.' },
+  { event: 'Renewing', question: 'What were you feeling when you decided to renew?', people: 'Customers who chose to continue at the end of their term.', record: 'The service, the renewal date and how long they had used it.' },
+];
+
+/** Local editorial candidates. Never selected by industry, name similarity or a fallback. */
+export function reviewDraft(f:JourneyFixture):StoryEdition|null {
+ const creative=f.slug==='luiza-vass-8c'&&f.founder.name==='Luiza Vass';
+ const research=f.slug==='andrew-hayes-94'&&f.founder.name==='Andrew Hayes';
+ if(!creative&&!research)return simmerDraft(f);
+ const p=samplePlans[creative?'creative':'research'];
+ return {
+  version:1,reviewStatus:'draft',slug:f.slug,founderName:f.founder.name,companyName:f.founder.company,...p,
+  art:creative?'creative':'research',keyword:creative?'TEAM':'QUESTION',
+  contentHeading:creative?'Reach people who commission creative work.':'Reach the people planning your next research project.',
+  contentWhy:creative?'Your experience gives producers a reason to remember you.':'Show brand teams what they can learn from their customers.',
+  magnetWhy:creative?'A lead magnet for producers planning a team. The cover invites them to ask for it.':'A lead magnet built around your research question. A brand team can use it to plan a study.',
+  researchNote:creative?'Your posts on representation and production budgets shape the samples below.':'Your posts on research questions and results shape the samples below.',
+  sourceQuote:f.samples.posts?.find(x=>x.source_quote?.includes(creative?'My credibility':'Our deliverable'))?.source_quote||'',
+  segments:creative?[{label:'Brand leads commissioning campaigns',note:'Look for a launch or recent campaign credits.'},{label:'Producers putting teams together',note:'Check that they commission and pay for creative work.'}]:[{label:'Brand teams planning a launch',note:'Look for a campaign that needs customer evidence.'},{label:'Research leads studying a category',note:'Check the question, budget and delivery date.'}],
+  buyerRole:creative?'Brand producer':'Brand lead',
+  coldTrigger:creative?'A brand announces a beauty launch.':'A brand announces a new product launch.',
+  coldMessage:creative?'Hi Alex, saw the new beauty launch. Are you still putting the creative team together? We represent independent art directors and creative teams. Happy to send a few portfolios if you’re still looking.':'Hi Alex, saw the new product launch. Are you doing customer research before the campaign brief is signed off? We help brand teams hear how customers describe their buying decisions. Happy to send an example of the results file.',
+  newsletterNote:creative?'notes on commissioning talent':'notes on customer research',nurtureNote:creative?'A note on comparing creative quotes.':'A note on choosing study participants.',
+  resource:{title:creative?'Who do you need on this project?':'Find the question for your study.',mode:creative?'planner':'question',brand:creative?{surface:'#fffcf5',ink:'#20201e',accent:'#e6fd9e',logo:'https://theneu.team/logo-neu.svg'}:{surface:'#f6f6f6',ink:'#252525',accent:'#d6dde4'},options:creative?projects.map((p,i)=>({label:p.name,title:p.title,team:p.team.map(([role,job])=>({role,job})),coveredRole:scopes[i].booked,coveredJob:scopes[i].covered,deliverables:scopes[i].deliverables.map(([label,value])=>({label,value})),review:p.decision,quote:scopes[i].ask,changes:scopes[i].changes,rights:p.rights})):questions.map((q,i)=>({label:q.event,title:q.event,question:q.question,people:q.people,record:q.record,recruitment:i===0?'Which brand did you use before, which did you choose and when did you switch?':i===1?'When did you make your first purchase, and what did you use before?':'When did you renew, and how long had you used the service?',sections:[{heading:'Your results file',body:'Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it.'}]}))},
+  cover:creative?{lines:['Before you','book the team.'],left:'The team',right:'The first review',details:['Who joins?','What gets approved?']}:{lines:['What made','them switch?'],left:'Their decision',right:'The question',details:['What happened?','What did they feel?']},
+  flow:creative?{messages:['I need an art director for a beauty launch.','We need an art director. We’ve allowed €8,000 for that role.','The launch is in six weeks. Can we discuss the brief?','Yes, send me a time and I’ll bring the producer.'],checks:[{label:'Creative role',value:'Art director'},{label:'Fee range',value:'€8,000'},{label:'Launch date',value:'In six weeks'}],signal:'Campaign launch announced',callTitle:'Creative project call',brief:'Art director · €8,000 · six weeks'}:{messages:['We’re planning a launch and want to understand brand switching.','We want to understand brand switching. We’ve allowed $2,000 for the study.','The campaign brief is due in six weeks. Could a pilot fit?','Yes, send me a time and we can discuss the study.'],checks:[{label:'Research',value:'Brand switching'},{label:'Budget',value:'$2,000'},{label:'Campaign brief',value:'In six weeks'}],signal:'New product launch announced',callTitle:'Research project call',brief:'Brand-switching study · $2,000 · six weeks'},
+ };
+}

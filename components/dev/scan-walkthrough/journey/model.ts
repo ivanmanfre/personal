@@ -7,6 +7,7 @@ export type JourneyPillars = NonNullable<ContentSystem['pillars']>;
 export type JourneyAudience = NonNullable<ContentSystem['audience']>;
 export interface JourneyFixture {
   slug: string; domain: string;
+  ogImage?: string;
   /** The scan's own read of the prospect: hero table cells and the counted audience audit. */
   pillars?: JourneyPillars;
   audience?: JourneyAudience;
@@ -18,7 +19,7 @@ export interface JourneyFixture {
   lm_cover_local: string;
   post_labels?: string[];
   post_notes?: Record<string, string>;
-  source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string };
+  source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string; quotes?: string[] };
 }
 export const fixture = original as JourneyFixture;
 

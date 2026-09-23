@@ -22,14 +22,19 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
 
   useEffect(() => {
     if (!companySlug) {
+      setScan(null);
+      setError(null);
       setLoading(false);
       return;
     }
 
+    setScan(null);
+    setError(null);
     let cancelled = false;
 
     async function fetchScan(): Promise<boolean> {
       setLoading(true);
+      setError(null);
       const { data, error: fetchError } = await supabase
         .from('scans')
         .select(SCAN_COLUMNS)
@@ -109,5 +114,6 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
     };
   }, [companySlug, opts.realtime]);
 
-  return { scan, loading, error };
+  const matches = scan?.company_slug === companySlug;
+  return { scan: matches ? scan : null, loading: loading || !!(scan && !matches), error };
 }

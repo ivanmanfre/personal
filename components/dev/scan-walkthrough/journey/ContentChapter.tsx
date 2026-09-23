@@ -16,7 +16,7 @@ function FeedPost({ fixture, body, meta, open, onToggle }: { fixture: JourneyFix
     <LinkedInActions/>
   </article>;
 }
-export function ContentChapter({ fixture }: {fixture: JourneyFixture}) {
+export function ContentChapter({ fixture, focused = false }: {fixture: JourneyFixture; focused?: boolean}) {
   const posts = fixture.samples.posts || [];
   const carouselIndex = posts.findIndex(p => p.slides?.length || p.image_urls?.length);
   const carousel = posts[carouselIndex];
@@ -48,14 +48,14 @@ export function ContentChapter({ fixture }: {fixture: JourneyFixture}) {
       <span className="slide-status" aria-live="polite">Slide {slide+1} of {count}</span>
       <LinkedInActions/>
     </Reveal>}
-    <Reveal className="feed-row" aria-label="The rest of the week">
+    {!focused && <Reveal className="feed-row" aria-label="The rest of the week">
       {written.map(({ p, i },n) => <FeedPost key={i} fixture={fixture} body={p.body || p.hook || ''} meta={metas[n]} open={open === i} onToggle={() => setOpen(open === i ? null : i)}/>)}
-    </Reveal>
-    <Reveal as="article" className="li-profile" data-mockup="linkedin" aria-label="Profile preview">
+    </Reveal>}
+    {!focused && <Reveal as="article" className="li-profile" data-mockup="linkedin" aria-label="Profile preview">
       <div className="li-profile-banner"><span>{fixture.founder.company}</span></div>
       <div className="li-profile-top"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/><div className="li-profile-actions"><span className="li-btn li-btn-primary">Follow</span><span className="li-btn">Message</span><span className="li-btn li-btn-icon">…</span></div></div>
       <div className="li-profile-body"><h3>{fixture.founder.name}</h3><p className="li-profile-headline">{fixture.founder.headline}</p><p className="li-profile-meta">{fixture.founder.company} · <span>Contact info</span></p></div>
       <div className="li-profile-section"><h4>Featured</h4><a className="li-featured" href="#inbound">{fixture.lm_cover_local && <img src={/^https?:/.test(fixture.lm_cover_local) ? fixture.lm_cover_local : asset(fixture.lm_cover_local)} alt="" loading="lazy"/>}<span><small>Link</small><b>{fixture.samples.lm?.title}</b><em>{fixture.domain}</em></span></a></div>
-    </Reveal>
+    </Reveal>}
   </>;
 }

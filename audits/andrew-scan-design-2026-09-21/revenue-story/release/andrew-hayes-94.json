@@ -1,0 +1,177 @@
+{
+  "company_slug": "andrew-hayes-94",
+  "assessment": {
+    "state": "unclassified",
+    "date": "13 Aug 2026",
+    "rubric": "",
+    "posts": 5,
+    "people": 13,
+    "buyers": null,
+    "networkCount": null,
+    "networkSample": 50,
+    "heading": "13 people engaged. Who could become a client?",
+    "why": "Check who fits your offer. Start conversations that can lead to qualified calls.",
+    "receipt": "The scan recorded 13 engagers across 5 posts. Its buyer classification is not verified for this report."
+  },
+  "story_v1": {
+    "version": 1,
+    "reviewStatus": "draft",
+    "slug": "andrew-hayes-94",
+    "founderName": "Andrew Hayes",
+    "companyName": "CueVu",
+    "brand": "CueVu",
+    "post": "“What were you feeling when you decided to switch?”\n\nThat’s the question I’d use for a brand-switching study.\n\nI want to hear what happened around the decision and what the person tried before it. I’d keep their exact words beside the campaign brief so the team can check what the customer actually said.\n\nThe slides show how I’d set up that study. The question studio has examples you can adapt.",
+    "slides": [
+      {
+        "title": "What made your customer switch?",
+        "body": "Ask them to take you back to the decision. Their account of that day gives you a place to start the research.",
+        "visual": "question"
+      },
+      {
+        "title": "Choose the event before the question.",
+        "body": "For a switching study, define the change you want to understand. It could be a move between brands in your category. Ask about a recent decision that the person can describe, and record when it happened with the answer.",
+        "note": "Interview question: “What were you feeling when you decided to switch?”"
+      },
+      {
+        "title": "Recruit people who made that change.",
+        "body": "Check that each participant used an alternative before choosing the new brand. Ask which products they used and when they changed. Keep those answers with the response so your team knows whose experience it is reading.",
+        "visual": "brief"
+      },
+      {
+        "title": "Let people answer in their own words.",
+        "body": "Send the question with the event clearly named. Give participants space to describe what they felt and what was happening. Keep their responses intact in the results file so the campaign team can read each person’s account in context.",
+        "visual": "question"
+      },
+      {
+        "title": "Keep the quote beside its context.",
+        "body": "Save the exact phrase with the event it describes. Look across the responses for repeated reasons and exceptions. If one person mentions a problem, keep that observation at the level the evidence supports when sharing it with the campaign team.",
+        "note": "Working file: quote → event → possible message → evidence needed."
+      },
+      {
+        "title": "Write the question around their decision.",
+        "body": "Agree on what the campaign team needs to learn before collecting responses. The question studio includes examples of events and participant criteria. You can use it to work out who belongs in the study and what you’ll ask them.",
+        "note": "Customer question studio · CueVu"
+      }
+    ],
+    "magnet": "Customer question studio",
+    "plainPost": "Our deliverable is the results file.\n\nThe person reading it should be able to see what we asked and the words people used in reply.\n\nIf a customer describes the day they switched brands, keep that account together. The campaign team needs the context around a phrase before deciding to use it.\n\nI’d put the original response beside any proposed copy. You can then check whether the draft still says what the person meant, and ask permission before publishing their words.",
+    "magnetPost": "“What were you feeling when it happened?”\n\nBefore you send that question, decide which event you want people to describe.\n\nFor a brand-switching study, that could be the purchase that replaced their previous brand. Your panel needs to have made that change.\n\nI put together a question studio with example events, participant criteria and the wording to send. You can start with one of the examples and copy the question.",
+    "message": "Hi Alex, saw you requested the question studio. Which customer decision are you looking into?",
+    "reply": "Why people switch skincare brands. We’re planning a launch and need to agree on the campaign angle.",
+    "next": "When does the team need the findings? I can help work out who to ask and whether a pilot would fit the launch.",
+    "subject": "Keep the response beside the campaign draft",
+    "email": "Hi Alex,\n\nWhen a customer phrase makes it into a campaign draft, keep the original response beside it.\n\nDid the person describe why they switched, or a problem they ran into afterwards? Does your draft still mean what they said?\n\nSave the event and the question with the quote. The next person reviewing the copy can then check it against the response.\n\nAndrew",
+    "art": "research",
+    "keyword": "QUESTION",
+    "contentHeading": "Reach the people planning your next research project.",
+    "contentWhy": "Show brand teams what they can learn from their customers.",
+    "magnetWhy": "A lead magnet built around your research question. A brand team can use it to plan a study.",
+    "researchNote": "Your posts on research questions and results shape the samples below.",
+    "sourceQuote": "Our deliverable is the results file. The authentic human language told in the person's own words.",
+    "segments": [
+      {
+        "label": "Brand teams planning a launch",
+        "note": "Look for a campaign that needs customer evidence."
+      },
+      {
+        "label": "Research leads studying a category",
+        "note": "Check the question, budget and delivery date."
+      }
+    ],
+    "buyerRole": "Brand lead",
+    "coldTrigger": "A brand announces a new product launch.",
+    "coldMessage": "Hi Alex, saw the new product launch. Are you doing customer research before the campaign brief is signed off? We help brand teams hear how customers describe their buying decisions. Happy to send an example of the results file.",
+    "newsletterNote": "notes on customer research",
+    "nurtureNote": "A note on choosing study participants.",
+    "resource": {
+      "title": "Find the question for your study.",
+      "mode": "question",
+      "brand": {
+        "surface": "#f6f6f6",
+        "ink": "#252525",
+        "accent": "#d6dde4"
+      },
+      "options": [
+        {
+          "label": "Switching brands",
+          "title": "Switching brands",
+          "question": "What were you feeling when you decided to switch brands?",
+          "people": "Customers who replaced a brand they previously used.",
+          "record": "Previous brand, new brand and when the change happened.",
+          "recruitment": "Which brand did you use before, which did you choose and when did you switch?",
+          "sections": [
+            {
+              "heading": "Your results file",
+              "body": "Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it."
+            }
+          ]
+        },
+        {
+          "label": "First purchase",
+          "title": "First purchase",
+          "question": "What were you feeling when you bought this for the first time?",
+          "people": "People who recently made their first purchase in your category.",
+          "record": "What they bought, when they bought it and what they used before.",
+          "recruitment": "When did you make your first purchase, and what did you use before?",
+          "sections": [
+            {
+              "heading": "Your results file",
+              "body": "Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it."
+            }
+          ]
+        },
+        {
+          "label": "Renewing",
+          "title": "Renewing",
+          "question": "What were you feeling when you decided to renew?",
+          "people": "Customers who chose to continue at the end of their term.",
+          "record": "The service, the renewal date and how long they had used it.",
+          "recruitment": "When did you renew, and how long had you used the service?",
+          "sections": [
+            {
+              "heading": "Your results file",
+              "body": "Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it."
+            }
+          ]
+        }
+      ]
+    },
+    "cover": {
+      "lines": [
+        "What made",
+        "them switch?"
+      ],
+      "left": "Their decision",
+      "right": "The question",
+      "details": [
+        "What happened?",
+        "What did they feel?"
+      ]
+    },
+    "flow": {
+      "messages": [
+        "We’re planning a launch and want to understand brand switching.",
+        "We want to understand brand switching. We’ve allowed $2,000 for the study.",
+        "The campaign brief is due in six weeks. Could a pilot fit?",
+        "Yes, send me a time and we can discuss the study."
+      ],
+      "checks": [
+        {
+          "label": "Research",
+          "value": "Brand switching"
+        },
+        {
+          "label": "Budget",
+          "value": "$2,000"
+        },
+        {
+          "label": "Campaign brief",
+          "value": "In six weeks"
+        }
+      ],
+      "signal": "New product launch announced",
+      "callTitle": "Research project call",
+      "brief": "Brand-switching study · $2,000 · six weeks"
+    }
+  }
+}

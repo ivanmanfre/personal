@@ -1,8 +1,13 @@
 import path from 'path';
-import { defineConfig } from 'vite';
+import fs from 'node:fs';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const localEnv=loadEnv('development',process.cwd(),'');
+const reviewConfigPath=process.env.SCAN_REVIEW_CONFIG||localEnv.SCAN_REVIEW_CONFIG;
+const reviewKey=reviewConfigPath?JSON.parse(fs.readFileSync(reviewConfigPath,'utf8')).API_KEY:undefined;
 
 export default defineConfig({
   // VITE_BASE=/scan/ builds the scan mirror served at inboundonsteroids.com/scan/
@@ -10,7 +15,8 @@ export default defineConfig({
   base: process.env.VITE_BASE || '/',
   server: {
     port: 3000,
-    host: '0.0.0.0',
+    host: reviewKey ? '127.0.0.1' : '0.0.0.0',
+    proxy: reviewKey ? {'/scan-stories': {target:'http://127.0.0.1:4318',headers:{'X-API-Key':reviewKey},configure(proxy){proxy.on('proxyReq',(proxyReq,req)=>{const origin=req.headers.origin;const host=req.headers.host;if(origin && origin!==`http://${host}`){proxyReq.removeHeader('X-API-Key');}})}}} : undefined,
   },
   plugins: [
     tailwindcss(),
