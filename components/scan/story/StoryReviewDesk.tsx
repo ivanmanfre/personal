@@ -28,7 +28,7 @@ export default function StoryReviewDesk(){
   if(!r.ok)throw new Error(typeof result.detail==='string'?result.detail:'The review request failed.');return result;
  }
  async function refresh(){
-  try{const result=await api(`/${encodeURIComponent(slug)}`);if(mounted.current){setRows(result.revisions);setLoaded(true);setError('');}}
+  try{const result=await api(`/${encodeURIComponent(slug)}`);if(!Array.isArray(result?.revisions))throw new Error('Review service returned an unexpected response.');if(mounted.current){setRows(result.revisions);setLoaded(true);setError('');}}
   catch(e){if(mounted.current){setError((e as Error).message);setLoaded(true);}}
  }
  useEffect(()=>{mounted.current=true;setRows([]);setSelected('');setLoaded(false);if(slug)void refresh();return()=>{mounted.current=false};},[slug]);

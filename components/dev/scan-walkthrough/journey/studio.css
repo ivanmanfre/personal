@@ -43,3 +43,7 @@
 
 .tool-custom .resource-options button[aria-pressed=true],.tool-custom .resource-actions button{color:var(--resource-accent-ink)}
 .artwork-custom .artwork-masthead,.artwork-custom .artwork-document{color:inherit}.bespoke-slide>p{white-space:pre-line}
+/* Generated brands can be dark: unselected controls and fine print follow the brand ink, not neu's fixed greys. */
+.tool-custom .resource-options button:not([aria-pressed=true]){color:inherit;border-color:color-mix(in srgb,currentColor 35%,transparent)}
+.tool-custom .resource-workspace>small{color:inherit;opacity:.7}
+.tool-custom .study-file{border-top-color:color-mix(in srgb,currentColor 18%,transparent)}
