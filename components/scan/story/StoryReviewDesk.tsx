@@ -7,7 +7,7 @@ import {validateEdition} from './validate';
 import type {StoryEdition} from './types';
 import './review-desk.css';
 
-type Revision={id:string;scan_slug:string;revision:number;status:'generating'|'needs_review'|'failed'|'approved';created_at:string;feedback:string;source:{scan:StoryScanRow;corpus:string;website:{url:string;text:string};brand_status:string};edition:StoryEdition|null;review:{checked?:boolean;blockers?:string[];warnings?:string[]}};
+type Revision={id:string;scan_slug:string;revision:number;status:'generating'|'needs_review'|'failed'|'approved';created_at:string;feedback:string;source?:{scan:StoryScanRow;corpus:string;website:{url:string;text:string};brand_status:string};edition:StoryEdition|null;review:{checked?:boolean;blockers?:string[];warnings?:string[]}};
 const endpoint=import.meta.env.DEV?'/scan-stories':`${import.meta.env.VITE_SCAN_REVIEW_API||'https://claude-code-railway-production.up.railway.app'}/scan-stories`;
 const editFields=[['post','Image post'],['plainPost','Text post'],['slides','Slides'],['magnetPost','Lead magnet post'],['resource','Lead magnet'],['email','Newsletter'],['message','Warm message'],['next','Follow-up'],['coldMessage','Cold message'],['flow','Full journey'],['all','Complete edition']] as const;
 
@@ -18,7 +18,8 @@ export default function StoryReviewDesk(){
  const current=rows.find(r=>r.id===selected)||rows[0],latest=rows[0];
  const stale=!!latest&&Date.now()-new Date(latest.created_at).getTime()>20*60*1000;
  const running=latest?.status==='generating'&&!stale;
- const fixture=current?toStoryFixture(current.source.scan):null;
+ const source=current?.source||latest?.source;
+ const fixture=source?toStoryFixture(source.scan):null;
  const checked=fixture&&current?.edition?validateEdition(current.edition,fixture):null;
  async function api(path:string,body?:unknown){
   const {data}=await supabase.auth.getSession();
@@ -68,7 +69,7 @@ export default function StoryReviewDesk(){
     <label className="review-feedback">What should improve?<textarea value={feedback} onChange={e=>setFeedback(e.target.value)} placeholder="For example: make the resource useful for a founder preparing a launch. Keep the post and carousel." rows={3}/></label>
     <div className="review-actions"><button disabled={!loaded||busy||running} onClick={()=>void generate()}>{busy?'Working…':!latest?'Generate draft':latest.status==='failed'||latest.status==='generating'&&stale?'Retry generation':'Revise draft'}</button>{current?.edition&&<button disabled={busy||running} onClick={()=>openEditor(editKey)}>Edit content</button>}<button disabled={busy} onClick={()=>void refresh()}>Refresh status</button><button disabled={busy||running||!loaded} onClick={()=>void generate(undefined,true)}>Refresh sources</button></div>
     {editing&&<div className="review-editor"><label>Part to edit <select value={editKey} onChange={e=>openEditor(e.target.value)}>{editFields.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><textarea aria-label="Edit sample content" value={editText} onChange={e=>setEditText(e.target.value)} rows={12}/><button disabled={busy||running} onClick={saveEdit}>Save as new draft and check</button><button onClick={()=>setEditing(false)}>Cancel</button></div>}
-    {current?.source&&<details><summary>Sources used</summary><p>Brand: {current.source.brand_status}. {current.source.corpus.length?`${current.source.corpus.length.toLocaleString()} characters of original post material.`:'No original posts available.'}</p>{current.source.website.url&&<a href={current.source.website.url} target="_blank" rel="noreferrer">Company website</a>}<pre>{current.source.corpus||current.source.website.text||'No source text was available.'}</pre></details>}
+    {source&&<details><summary>Sources used</summary><p>Brand: {source.brand_status}. {source.corpus.length?`${source.corpus.length.toLocaleString()} characters of original post material.`:'No original posts available.'}</p>{source.website.url&&<a href={source.website.url} target="_blank" rel="noreferrer">Company website</a>}<pre>{source.corpus||source.website.text||'No source text was available.'}</pre></details>}
     {current?.edition&&<div className="review-publish">{!!current.review.blockers?.length&&<label><input type="checkbox" checked={override} onChange={e=>setOverride(e.target.checked)}/>I checked the "Fix" items and this version is right as it is.</label>}{!!current.review.warnings?.length&&<label><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>I reviewed these evidence warnings.</label>}<button disabled={busy||running||current.id!==latest?.id||current.status!=='needs_review'||!current.review.checked||!!current.review.blockers?.length&&!override||!checked?.edition||!!current.review.warnings?.length&&!ack} onClick={()=>void approve()}>Approve and publish this version</button><small>Only this action updates the public scan. Drafts stay private.</small></div>}
    </>}
    {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice} <a href={`/scan/${encodeURIComponent(slug)}/`}>Open public scan</a></p>}
