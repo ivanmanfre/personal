@@ -31,9 +31,11 @@ export function BrandSlide({ index }: { index: number }) {
   const plan = useStory(), slide = plan.slides[index], n = plan.slides.length;
   const p = brandPalette(plan.resource.brand);
   const first = index === 0, last = index === n - 1 && n > 1;
-  const ground = first ? p.dark : last ? p.accent : p.light;
-  const ink = first ? p.light : last ? p.accentInk : p.dark;
-  const mark = first ? p.accentOnDark : last ? p.accentInk : p.accentOnLight;
+  // Middle slides sit on the site's own background: a dark site stays dark.
+  const siteDark = plan.resource.brand.surface === p.dark;
+  const ground = first ? p.dark : last ? p.accent : siteDark ? p.dark : p.light;
+  const ink = last ? p.accentInk : ground === p.dark ? p.light : p.dark;
+  const mark = last ? p.accentInk : ground === p.dark ? p.accentOnDark : p.accentOnLight;
   const role = first ? 'hook' : last ? 'close' : 'point';
   const dense = slide.body.length + (slide.points || []).join('').length > 300;
   return <div className={`brand-slide brand-slide-${role}${dense ? ' is-dense' : ''}`} style={{ background: ground, color: ink, fontFamily: brandFont(plan.resource.brand.font), '--slide-mark': mark, '--slide-pill-ink': contrastInk(mark) } as React.CSSProperties}>
