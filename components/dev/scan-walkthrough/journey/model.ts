@@ -20,7 +20,11 @@ export interface JourneyFixture {
   post_labels?: string[];
   post_notes?: Record<string, string>;
   source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string; quotes?: string[] };
+  /** Flagged builds only: sourced profile findings (quotes are verbatim from the lead's profile). */
+  profileAudit?: ProfileAudit;
 }
+export interface ProfileFinding { area: string; label: string; state: string; today: string; quote: string; fix: string }
+export interface ProfileAudit { findings: ProfileFinding[] }
 export const fixture = original as JourneyFixture;
 
 export interface JourneyReceipt { key: string; label: string; value: number; prefix?: string; suffix?: string; decimals?: number; cap: string; mark?: boolean }

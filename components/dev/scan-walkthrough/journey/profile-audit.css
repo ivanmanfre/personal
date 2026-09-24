@@ -1,0 +1,8 @@
+.profile-findings{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.profile-finding{background:#fff;border:1px solid #e2ded7;border-radius:18px;padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+.profile-finding-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#82796c}
+.revenue-story .profile-finding-today{font-size:14px;line-height:1.5;color:#6d665c;margin:0}
+.profile-finding blockquote{margin:0;font-size:18px;line-height:1.4;font-weight:500;letter-spacing:-.2px;color:#191919;overflow-wrap:anywhere}
+.revenue-story .profile-finding-fix{margin:auto 0 0;padding-top:12px;border-top:1px solid #eee9e1;font-size:15px;line-height:1.55;color:#191919}
+.profile-finding-fix>b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#be3823;margin-bottom:4px}
+@media(max-width:760px){.profile-findings{grid-template-columns:1fr;gap:14px}.profile-finding{padding:18px}.profile-finding blockquote{font-size:17px}}

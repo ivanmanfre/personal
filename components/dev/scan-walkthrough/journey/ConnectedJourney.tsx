@@ -13,6 +13,7 @@ import { ProspectPost, TextPost } from './ProspectSamples';
 import { LeadMagnetTool } from './LeadMagnetTool';
 
 import { RevenueMap } from './RevenueMap';
+import { ProfileAuditSection } from './ProfileAudit';
 import './connected.css';
 import './bold.css';
 import './studio.css';
@@ -42,6 +43,7 @@ export function ConnectedJourney({ fixture, kind }: { fixture: JourneyFixture; k
     <EarlyProof/>
     <JourneyVisitor/>
     <div className="story-body">
+      {fixture.profileAudit&&<ProfileAuditSection audit={fixture.profileAudit}/>}
       <section className="story-scene" id="content"><header className="scene-heading"><h2>{plan.contentHeading}</h2><p>{plan.contentWhy}</p></header>
         <ResearchReceipt fixture={fixture} kind={kind}/>
         <div className="sample-post post-pair"><ProspectPost fixture={fixture} kind={kind}/><TextPost fixture={fixture} kind={kind}/></div>
