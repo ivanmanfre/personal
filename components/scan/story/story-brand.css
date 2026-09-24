@@ -107,3 +107,4 @@
 .scan-journey .brand-resource-actions button { font-size:14px!important; white-space:nowrap; }
 /* Centred section headings: the sub-line is narrower than the heading, so centre its box too. */
 .revenue-story .scene-heading > p { margin-left:auto; margin-right:auto; }
+.brand-wordmark { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%; font-size:17px; }

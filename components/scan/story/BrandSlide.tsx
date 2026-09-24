@@ -24,7 +24,7 @@ export function BrandMark({ ground, height = 26 }: { ground: string; height?: nu
   const [failed, setFailed] = useState(false);
   return b.logo && !failed
     ? <img className="brand-mark" src={b.logo} alt={plan.brand} style={{ height, filter: logoOn(ground) }} onError={() => setFailed(true)}/>
-    : <b className="brand-mark brand-wordmark">{plan.brand}</b>;
+    : <b className="brand-mark brand-wordmark">{plan.brand.split(/\s+[-|–:]\s+/)[0]}</b>;
 }
 
 export function BrandSlide({ index }: { index: number }) {
