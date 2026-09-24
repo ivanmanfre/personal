@@ -1,9 +1,19 @@
 import React from 'react';
 
 const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu;
+/** Merge tags a model writes instead of a name. The page's example reader is always Alex. */
+const PLACEHOLDER = /(\{\{?|\[|<)\s*(first[\s_-]?name|firstname|name|recipient|prospect)\s*(\}\}?|\]|>)/gi;
+export const fillNames = (text: string) => String(text || '').replace(PLACEHOLDER, 'Alex');
+/** Every string in an edition, placeholders filled (older scans were saved with them). */
+export function fillEdition<T>(value: T): T {
+  if (typeof value === 'string') return fillNames(value) as T;
+  if (Array.isArray(value)) return value.map(fillEdition) as T;
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, fillEdition(v)])) as T;
+  return value;
+}
 /** Hashtags, emoji and em dashes never render on a sample (older editions still carry them). */
 export function cleanCopy(text: string) {
-  return String(text || '').replace(/\r/g, '').split('\n')
+  return fillNames(text).replace(/\r/g, '').split('\n')
     .map(line => line.replace(EMOJI, '').replace(/ — /g, ' - ').replace(/—/g, ', ').replace(/(\s+#[^\s#]+)+\s*$/, '').trimEnd())
     .filter(line => !(line.trim() && line.trim().split(/\s+/).every(w => w.startsWith('#'))))
     .join('\n').replace(/\n{3,}/g, '\n\n').trim();

@@ -5,11 +5,13 @@ import {ConnectedJourney} from '../../dev/scan-walkthrough/journey/ConnectedJour
 import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryEdition} from './types';
 import {StoryContext} from './context';
+import {fillEdition} from './RichText';
 import '../../dev/scan-walkthrough/story-exhibits.css';
 import '../../dev/scan-walkthrough/journey/journey.css';
 
 export function StoryBody({fixture,edition}:{fixture:JourneyFixture;edition:StoryEdition}){
- return <StoryContext.Provider value={edition}><ConnectedJourney key={fixture.slug} fixture={fixture} kind={edition.art}/></StoryContext.Provider>;
+ const clean=React.useMemo(()=>fillEdition(edition),[edition]);
+ return <StoryContext.Provider value={clean}><ConnectedJourney key={fixture.slug} fixture={fixture} kind={edition.art}/></StoryContext.Provider>;
 }
 export default function ScanStoryReport({fixture,edition,review=false}:{fixture:JourneyFixture;edition:StoryEdition;review?:boolean}){
  useGoogleFonts([fixture.samples.lm?.brand?.font_heading,edition.resource?.brand?.font]);
