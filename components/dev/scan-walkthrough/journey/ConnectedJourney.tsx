@@ -69,6 +69,6 @@ export function ConnectedJourney({ fixture, kind }: { fixture: JourneyFixture; k
     </div>
     <ScanResults/>
     <section className="sample-close portrait-close"><img className="closing-portrait" src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/><div><span className="close-byline">Iván Manfredi</span><h2>Make LinkedIn<br/>a revenue line for {plan.brand}.</h2><p>A service we run for you, built to bring in qualified calls.</p><a className="story-primary" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <span aria-hidden="true">↗</span></a><small className="close-duration">30 minutes to see how we’d bring you qualified leads.</small></div></section>
-    <footer className="journey-footer"><a href={fixture.source.url} target="_blank" rel="noreferrer">Original scan ↗</a><span>Proposed samples. Alex’s conversation is an example.</span><a href="#top">Back to the start ↑</a></footer>
+    <footer className="journey-footer"><a href="#top">Back to the start ↑</a></footer>
   </div>;
 }
