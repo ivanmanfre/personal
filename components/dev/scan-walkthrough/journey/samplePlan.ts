@@ -1,6 +1,6 @@
 import type { StoryKind } from './connectedModel';
 
-export interface SampleSlide { title: string; body: string; note?: string; visual?: 'review' | 'question' | 'brief'; }
+export interface SampleSlide { title: string; body: string; points?: string[]; note?: string; visual?: 'review' | 'question' | 'brief'; }
 export const samplePlans: Record<Exclude<StoryKind, 'custom'>, {
   brand: string; post: string; slides: SampleSlide[]; magnet: string;
   plainPost: string; magnetPost: string;

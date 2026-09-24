@@ -4,19 +4,21 @@ import { MagnetCover } from './MagnetCover';
 import { Avatar, Paragraphs } from './ReadingChapter';
 import { LinkedInActions } from '../StoryExhibits';
 import {useStory} from '../../../scan/story/context';
+import {BrandSlide} from '../../../scan/story/BrandSlide';
 import type { StoryKind } from './connectedModel';
 import type { JourneyFixture } from './model';
 
 export function SampleArtwork({ kind, index = 0 }: { kind: StoryKind; index?: number }) {
   const plan = useStory();
   const slide = plan.slides[index];
-  return <div className={`bespoke-slide artwork-${kind} artwork-${index}`} style={plan.art==='custom'?{background:plan.resource.brand.surface,color:plan.resource.brand.ink}:undefined}>
+  if (plan.art === 'custom') return <BrandSlide index={index}/>;
+  return <div className={`bespoke-slide artwork-${kind} artwork-${index}`}>
     <div className="artwork-masthead"><b>{plan.brand}</b><span>{String(index + 1).padStart(2, '0')} / {String(plan.slides.length).padStart(2, '0')}</span></div>
     <h3>{slide.title}</h3>
     <p>{slide.body}</p>
-    {index === 0 && plan.art !== 'custom' && (kind === 'creative' ? <div className="review-art" aria-hidden="true"><span>First internal review</span><div><i/><i/><i/><i/></div><small>Client access?</small><b>?</b></div> : <div className="question-art" aria-hidden="true"><span>Customer research</span><q>What were you feeling when you decided to switch?</q><div/></div>)}
+    {index === 0 && (kind === 'creative' ? <div className="review-art" aria-hidden="true"><span>First internal review</span><div><i/><i/><i/><i/></div><small>Client access?</small><b>?</b></div> : <div className="question-art" aria-hidden="true"><span>Customer research</span><q>What were you feeling when you decided to switch?</q><div/></div>)}
     {index > 0 && slide.note && <div className="artwork-note">{slide.note}</div>}
-    {index > 0 && !slide.note && <div className="artwork-document" aria-hidden="true"><span>{plan.art === 'custom' ? plan.brand : kind === 'creative' ? 'Project brief' : 'Research brief'}</span><div/><div/><div/></div>}
+    {index > 0 && !slide.note && <div className="artwork-document" aria-hidden="true"><span>{kind === 'creative' ? 'Project brief' : 'Research brief'}</span><div/><div/><div/></div>}
     <footer><span/><span aria-hidden="true">→</span></footer>
   </div>;
 }

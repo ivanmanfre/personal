@@ -29,7 +29,9 @@ export interface StoryEdition {
  buyerRole:string;
  coldTrigger:string; coldMessage:string;
  newsletterNote:string; nurtureNote:string;
- resource:{title:string;mode:'planner'|'question'|'document';brand:{surface:string;ink:string;accent:string;logo?:string};options:ResourceOption[]};
+ resource:{title:string;mode:'planner'|'question'|'document';brand:{surface:string;ink:string;accent:string;logo?:string;logoTone?:'light'|'dark';font?:string};options:ResourceOption[]};
  cover:{lines:[string,string];left:string;right:string;details:[string,string]};
+ /** Gemini cover in the lead's brand, set by the server. */
+ coverImage?:string;
  flow:{messages:[string,string,string,string];checks:[{label:string;value:string},{label:string;value:string},{label:string;value:string}];signal:string;callTitle:string;brief:string};
 }

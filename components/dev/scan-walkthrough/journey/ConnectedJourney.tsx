@@ -17,6 +17,7 @@ import { ProfileAuditSection } from './ProfileAudit';
 import './connected.css';
 import './bold.css';
 import './studio.css';
+import '../../../scan/story/story-brand.css';
 
 const BOOK = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -38,6 +39,7 @@ export function ConnectedJourney({ fixture, kind }: { fixture: JourneyFixture; k
   const reduced = useReducedMotion();
   const [messageOpen, setMessageOpen] = useState(false);
   const founder = fixture.founder;
+  const custom = plan.art === 'custom';
   return <div className="connected-journey sample-story revenue-story">
     <AuditOpening fixture={fixture} kind={kind}/>
     <EarlyProof/>
@@ -45,9 +47,11 @@ export function ConnectedJourney({ fixture, kind }: { fixture: JourneyFixture; k
     <div className="story-body">
       {fixture.profileAudit&&<ProfileAuditSection audit={fixture.profileAudit}/>}
       <section className="story-scene" id="content"><header className="scene-heading"><h2>{plan.contentHeading}</h2><p>{plan.contentWhy}</p></header>
-        <ResearchReceipt fixture={fixture} kind={kind}/>
+        {custom ? null : <ResearchReceipt fixture={fixture} kind={kind}/>}
         <div className="sample-post post-pair"><ProspectPost fixture={fixture} kind={kind}/><TextPost fixture={fixture} kind={kind}/></div>
-        <div id="inbound" className="lead-magnet-scene"><header className="scene-heading"><h2>Give them something worth asking for.</h2><p>{plan.magnetWhy}</p></header><div className="magnet-pair"><TextPost fixture={fixture} kind={kind} promotion/><LeadMagnetTool kind={kind}/></div><EmailCapture kind={kind}/></div>
+        {custom
+          ? <div id="inbound" className="lead-magnet-scene"><header className="scene-heading"><h2>Give them something worth asking for.</h2><p>{plan.magnetWhy}</p></header><div className="magnet-pair magnet-pair-capture"><TextPost fixture={fixture} kind={kind} promotion/><EmailCapture kind={kind}/></div><div className="resource-row"><LeadMagnetTool kind={kind}/></div></div>
+          : <div id="inbound" className="lead-magnet-scene"><header className="scene-heading"><h2>Give them something worth asking for.</h2><p>{plan.magnetWhy}</p></header><div className="magnet-pair"><TextPost fixture={fixture} kind={kind} promotion/><LeadMagnetTool kind={kind}/></div><EmailCapture kind={kind}/></div>}
       </section>
       <div className="followup-pair">
         <section className="story-scene" id="outreach"><header className="scene-heading"><h2>Warm outreach</h2><p>We use their interest to start a conversation and check the project fits.</p></header>
@@ -61,6 +65,7 @@ export function ConnectedJourney({ fixture, kind }: { fixture: JourneyFixture; k
         </section>
       </div>
       <section className="story-scene" id="together"><header className="scene-heading"><h2>How your leads<br/>become qualified calls.</h2></header><RevenueMap kind={kind} founder={founder.firstName}/><div className="service-ownership"><p><b>We run it.</b> We create and publish the content, build your lead magnets and handle outreach through to booking.</p><p><b>You take the calls.</b> Share your expertise with us and meet prospects with a relevant project.</p></div></section>
+      {custom && <section className="story-scene audience-reach" id="reach" aria-label="Who this reaches"><header className="scene-heading"><h2>Who this reaches.</h2><p>The people these posts and the resource are written for.</p></header><ul>{plan.segments.map(x=><li key={x.label}><b>{x.label}</b><span>{x.note}</span></li>)}</ul></section>}
     </div>
     <ScanResults/>
     <section className="sample-close portrait-close"><img className="closing-portrait" src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/><div><span className="close-byline">Iván Manfredi</span><h2>Make LinkedIn<br/>a revenue line for {plan.brand}.</h2><p>A service we run for you, built to bring in qualified calls.</p><a className="story-primary" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <span aria-hidden="true">↗</span></a><small className="close-duration">30 minutes to see how we’d bring you qualified leads.</small></div></section>

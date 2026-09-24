@@ -3,10 +3,12 @@ import {Check,Copy,Download,ArrowUpRight} from 'lucide-react';
 import type {StoryKind} from './connectedModel';
 import {useStory} from '../../../scan/story/context';
 import {contrastInk,logoFilter} from '../../../scan/story/brandColors';
+import {BrandResource} from '../../../scan/story/BrandResource';
 
 export function LeadMagnetTool({kind}:{kind:StoryKind}) {
  const plan=useStory(),resource=plan.resource;
  const [index,setIndex]=useState(0),[covered,setCovered]=useState(false),[copied,setCopied]=useState(false),[error,setError]=useState(false),[logoFailed,setLogoFailed]=useState(false);
+ if(plan.art==='custom')return <BrandResource/>;
  const o=resource.options[index];
  const team=o.team?.map(t=>covered&&t.role===o.coveredRole?{role:`${t.role} · already booked`,job:o.coveredJob!}:t);
  const text=[o.title,'Example scope: confirm the details with your team before using it.',team&&`Team\n${team.map(t=>`${t.role}: ${t.job}`).join('\n')}`,o.deliverables&&`Deliverables\n${o.deliverables.map(x=>`${x.label}: ${x.value}`).join('\n')}`,o.review&&`First client review\n${o.review}`,o.quote&&`Ask each team to quote the same scope\n${o.quote}`,o.changes&&`Price changes separately\n${o.changes}`,o.rights&&`Usage and rights\n${o.rights}`,o.question,o.people&&`Participants: ${o.people}`,o.record&&`Record: ${o.record}`,o.recruitment&&`Recruitment question: ${o.recruitment}`,o.sections?.map(s=>`${s.heading}\n${s.body}`).join('\n\n'),resource.mode==='question'?'Results file\nParticipant reference | Event and date | Original response | Possible campaign angle | Evidence still needed\n\nKeep the complete response with its context. Ask permission before publishing their words.':resource.mode==='planner'?'Before requesting a quote\nAdd your fee range, delivery date and the people who approve the work.':'',`Planning example by ${plan.brand}.`].filter(Boolean).join('\n\n');

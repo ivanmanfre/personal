@@ -8,6 +8,8 @@ export function MagnetCover({kind}:{kind:StoryKind}) {
  const plan=useStory(), creative=plan.art==='creative';
  const colors=plan.resource.brand;
  const [logoFailed,setLogoFailed]=useState(false);
+ const [imageFailed,setImageFailed]=useState(false);
+ if(plan.coverImage&&!imageFailed)return <img className="magnet-cover magnet-cover-image" src={plan.coverImage} alt={`${plan.magnet}. Comment ${plan.keyword} and I’ll send it.`} loading="lazy" onError={()=>setImageFailed(true)}/>;
  const accentInk=contrastInk(colors.accent);
  const titleSize=Math.min(50,540/(Math.max(...plan.cover.lines.map(s=>s.length))*.56));
  const fit=(text:string,width:number,size:number)=>Math.min(size,width/(Math.max(1,text.length)*.56));
