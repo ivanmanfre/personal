@@ -629,7 +629,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
    * (Ivan 08-17: "so me and mattan can always understand this"). One sentence, no jargon.
    */
   const FUNNEL_WHY: Record<string, string> = {
-    reach: 'Why reach (top): made to get seen by people who don’t know RISE yet.',
+    reach: `Why reach (top): made to get seen by people who don’t know ${board.company_name || 'us'} yet.`,
     trust: 'Why trust (mid): shows people already following that we know our stuff.',
     buyers: 'Why buyers (bottom): proof for brands close to reaching out.',
   };

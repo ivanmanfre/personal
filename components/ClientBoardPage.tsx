@@ -5392,7 +5392,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
           <CardHead>How we aim each post</CardHead>
           <p className="mt-2 max-w-[68ch] text-[14px] leading-relaxed" style={{ color: DIM }}>
-            Every post on this board is aimed at one of three audiences. Reach posts are for people who don't know RISE yet: trends, stances, category math. Trust posts are for followers who already know the problem: how we work and what we watch. Buyers posts are for brands close to reaching out: case studies and proof. The weekly mix balances all three, and the tag on each card shows who that post is for.
+            Every post on this board is aimed at one of three audiences. Reach posts are for people who don't know {board.company_name || 'us'} yet: trends, stances, category math. Trust posts are for followers who already know the problem: how we work and what we watch. Buyers posts are for brands close to reaching out: case studies and proof. The weekly mix balances all three, and the tag on each card shows who that post is for.
           </p>
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
             <FunnelChip stage="reach" accent={accent} />
