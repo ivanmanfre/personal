@@ -261,6 +261,21 @@ describe('DeskOutreachSurface', () => {
     expect(html).not.toContain('every week.');
   });
 
+  it('never names another client in a lane line or a queue chip (27 Sep)', () => {
+    const lanes = baseOutreach.lanes.map((l) => l.key === 'orbit'
+      ? { ...l, detail: "People from your clients' orbit scans (JustUs 36 + Tenth Street 408). The strongest fits are in the queue." }
+      : l);
+    const html = renderToStaticMarkup(
+      <DeskOutreachSurface board={makeBoard({ outreach: { ...baseOutreach, lanes } as any })} accent="#4f46e5" log={[]}
+        status={{ is_live: true, any_active: true, dispatch_scheduled: true, campaigns: [], todays_sends: 3, daily_cap: 20, next_window_at: null, up_next: [{ name: 'Case Bakker', company: 'Poko Loko', domain: null, icp_score: null, lane: 'orbit' }] }} />
+    );
+    expect(html).toContain('client networks');
+    expect(html).not.toContain('JustUs');
+    expect(html).not.toContain('Tenth Street');
+    expect(html).not.toContain('orbit');
+    expect(html).toMatch(/People from your clients(&#x27;|')? networks\./);
+  });
+
   it('names the month on the send-allowance counter so it cannot read as a week contradiction', () => {
     const html = renderToStaticMarkup(
       <DeskOutreachSurface

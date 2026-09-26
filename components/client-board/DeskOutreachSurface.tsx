@@ -79,6 +79,18 @@ function safeStatus(status?: string): string {
 
 /** Truncate a lane description to one short line, cut on a word boundary. Anything longer
  *  belongs in a drill, not on the row (the tab has no density headroom). */
+/** A board never names another client (27 Sep). Lane copy written for the operator carries
+ *  "your clients' orbit scans (JustUs 36 + Tenth Street 408)": the parenthetical names other
+ *  clients, and "orbit scans" is our word. Any parenthetical after the orbit phrase goes,
+ *  and the phrase reads as the client's networks. */
+export function scrubOtherClients(s: string): string {
+  return s
+    .replace(/\b(clients?'?)\s+orbit\s+scans?\b(\s*\([^)]*\))?/gi, "$1 networks")
+    .replace(/\borbit\s+scans?\b(\s*\([^)]*\))?/gi, 'client networks')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function clipDetail(s: string, max = 90): string {
   if (s.length <= max) return s;
   const cut = s.slice(0, max);
@@ -567,7 +579,7 @@ export default function DeskOutreachSurface({
                   <span style={{ flex: 'none', width: 20, fontSize: 12, fontWeight: 700, color: 'var(--cb-ink-mute)', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{u.name}</span>
                   {u.company && <span style={{ flex: '1 1 140px', minWidth: 0, fontSize: 12.5, color: 'var(--cb-ink-mute)' }}>{u.company}</span>}
-                  {u.lane && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{scrubVendor(u.lane) === 'orbit' ? 'client orbit' : scrubVendor(u.lane)}</Chip>}
+                  {u.lane && <Chip style={{ flex: 'none', marginLeft: 'auto' }}>{scrubVendor(u.lane) === 'orbit' ? 'client networks' : scrubVendor(u.lane)}</Chip>}
                 </div>
               ))}
               {(status.up_next || []).length > 5 && (
@@ -840,7 +852,7 @@ export default function DeskOutreachSurface({
               // Every string on this row goes through the vendor scrub on its way to the
               // screen; the description is clipped to one short line so it costs the tab a
               // line, not a paragraph.
-              const detail = clipDetail(scrubVendor(ln.detail));
+              const detail = clipDetail(scrubOtherClients(scrubVendor(ln.detail)));
               const arms = scrubVendor(ln.arms);
               const status = safeStatus(ln.status);
               return (
