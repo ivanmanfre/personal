@@ -1261,7 +1261,9 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const findings = (d.findings || []).filter(
     (f) =>
       !(f.signal === 'signup' && f.kind === 'strength') &&
-      (!promise || f.lever === 'paid_media' || f.lever === 'performance_creative'),
+      // The sold-out-variants finding (lever paid_media, read off the catalog) is the same fact as
+      // the drop-off section's sold-out item, so only ad-read findings survive on promise rows.
+      (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
   );
 
   // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
