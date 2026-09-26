@@ -11,6 +11,8 @@ import type { Board, LeadMagnetEntry } from '../ClientBoardPage';
 const LM_FORMAT_LABEL: Record<string, string> = {
   assessment: 'Assessment', calculator: 'Calculator', worksheet: 'Worksheet', checklist: 'Checklist',
   benchmark: 'Benchmark', report_card: 'Report card', diagnostic: 'Diagnostic',
+  claude_pack: 'Claude skill pack', 'skill kit': 'Skill kit', skill_kit: 'Skill kit',
+  'tool hub': 'Tool hub', tool_hub: 'Tool hub', guide: 'Guide',
 };
 
 /** Build-stage label for a not-yet-live entry. Derived from the real `status` field only. */

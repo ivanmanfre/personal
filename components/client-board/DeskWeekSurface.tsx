@@ -806,11 +806,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               {weekMix.untagged} untagged
             </span>
           )}
-          {weekMix.anyInferred && (
-            <span style={{ fontSize: 11, color: 'var(--cb-dim, #6b6b66)', fontStyle: 'italic' }}>
-              hollow-dot tags are estimated
-            </span>
-          )}
         </div>
       )}
 

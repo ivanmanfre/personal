@@ -1255,7 +1255,7 @@ function FunnelChip({ stage, accent, source }: { stage?: string; accent: string;
   const dotColor = `color-mix(in srgb, ${accent} ${FUNNEL_DOT[stage!] ?? 55}%, white)`;
   return (
     <span
-      title={meta.tip + (inferred ? ' · tag estimated from the title' : '')}
+      title={meta.tip}
       className="inline-flex shrink-0 cursor-default items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-medium"
       style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
     >
@@ -4623,6 +4623,8 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 const LM_FORMAT_LABEL: Record<string, string> = {
   assessment: 'Assessment', calculator: 'Calculator', worksheet: 'Worksheet', checklist: 'Checklist',
   benchmark: 'Benchmark', report_card: 'Report card', diagnostic: 'Diagnostic',
+  claude_pack: 'Claude skill pack', 'skill kit': 'Skill kit', skill_kit: 'Skill kit',
+  'tool hub': 'Tool hub', tool_hub: 'Tool hub', guide: 'Guide',
 };
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.

@@ -118,6 +118,21 @@ describe('DeskLeadMagnetsSurface', () => {
     expect(html).not.toContain('Sends from');
   });
 
+  it('renders plain format labels for claude_pack, skill kit, tool hub and guide (27 Sep)', () => {
+    const fmts = ['claude_pack', 'skill kit', 'tool hub', 'guide'];
+    const board = makeBoard({
+      lead_magnets: fmts.map((f, i) => ({ id: `lm-${i}`, title: `Magnet ${i}`, format: f, status: 'live', url: `https://acme.example/m${i}` })),
+      lm_ideas: [],
+    } as unknown as Partial<Board>);
+    const html = renderToStaticMarkup(
+      <DeskLeadMagnetsSurface board={board} accent="#2F7D4F" mint="#8FE0AC" fontStack="Inter, sans-serif" live onEditPromo={noop} />
+    );
+    for (const label of ['Claude skill pack', 'Skill kit', 'Tool hub', 'Guide']) expect(html).toContain(label);
+    expect(html).not.toContain('claude_pack');
+    expect(html).not.toMatch(/>skill kit</);
+    expect(html).not.toMatch(/>tool hub</);
+  });
+
   it('omits the visitor stat number and shows the honest blank when NO entry has a count', () => {
     const board = makeBoard({
       lead_magnets: [
