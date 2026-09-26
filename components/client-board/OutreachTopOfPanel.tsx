@@ -553,10 +553,14 @@ export function MonthBlock({ ot }: { ot: OutreachTruth }) {
 /* ══════════════════════════ the surface ══════════════════════════ */
 
 export default function OutreachTopOfPanel({
-  board, accent, log = null, signals = null,
+  board, accent, log = null, signals = null, live = false,
 }: {
   board: Board;
   accent: string;
+  /** Live client board. The list-by-list filter drill ("Where every name stands") prints
+   *  pipeline internals (review queues, blacklists, caps, lane plumbing), so it never renders
+   *  on a live board (27 Sep). Preview boards keep it. */
+  live?: boolean;
   log?: OutreachLogEntry[] | null;
   signals?: FunnelSignals | null;
 }) {
@@ -856,7 +860,7 @@ export default function OutreachTopOfPanel({
       <LeadsStrip ot={ot} />
 
       {/* ═══ 4 — the filters, lane by lane. Mattan asked to see them. ═══ */}
-      {gateLanes.length > 0 && (
+      {!live && gateLanes.length > 0 && (
         <Card style={{ marginTop: 12, padding: '4px 26px' }}>
           <Drill
             label="open it"

@@ -185,10 +185,13 @@ function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?
 }
 
 export default function DeskOutreachSurface({
-  board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null,
+  board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null, live = false,
 }: {
   board: Board;
   accent: string;
+  /** Live client board: passed through to the top of the panel, which then hides the
+   *  pipeline-internals filter drill. */
+  live?: boolean;
   usage?: OutreachUsage | null;
   log?: OutreachLogEntry[] | null;
   status?: OutreachStatus | null;
@@ -538,7 +541,7 @@ export default function DeskOutreachSurface({
       {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
           graft). Renders only when board.outreach_truth exists; the blocks below stay as
           they were for any board without it. Shared verbatim with the ?skin= branch. */}
-      <OutreachTopOfPanel board={board} accent={accent} log={log} signals={signals} />
+      <OutreachTopOfPanel board={board} accent={accent} log={log} signals={signals} live={live} />
 
       {/* 0 — up next: today's pace against the cap and the real named send queue.
           Desk-kit port of the original UpNextBlock (that one carries 9-10.5px type and
@@ -736,7 +739,7 @@ export default function DeskOutreachSurface({
                 </div>
               </div>
             </Cols>
-            <Footnote>The caps are ours, set low on purpose. These counters cover {MONTHS_FULL[now.getMonth()]} only and start again on the 1st.</Footnote>
+            <Footnote>{live ? '' : 'The caps are ours, set low on purpose. '}These counters cover {MONTHS_FULL[now.getMonth()]} only and start again on the 1st.</Footnote>
           </Drill>
         </Card>
       )}

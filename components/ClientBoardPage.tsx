@@ -9199,7 +9199,7 @@ export default function ClientBoardPage() {
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     outreach: skin === 'desk'
-      ? <DeskOutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      ? <DeskOutreachSurface live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
       : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: skin === 'desk'

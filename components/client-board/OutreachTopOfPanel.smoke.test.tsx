@@ -170,6 +170,18 @@ describe('OutreachTopOfPanel — the ten winner obligations', () => {
     expect(html).not.toContain('still sendable today');
   });
 
+  it('O8b a live client board never renders the filter drill or its internals (27 Sep)', () => {
+    const html = renderToStaticMarkup(
+      <OutreachTopOfPanel board={boardWith(TRUTH)} accent="#4f46e5" log={null} signals={null} live />,
+    );
+    expect(html).not.toContain('Where every name stands');
+    expect(html).not.toContain('waiting on a review from Ivan');
+    expect(html).not.toContain('looked at,');
+    expect(html).not.toContain('stopped here');
+    // the rest of the top of the panel still renders
+    expect(html).toContain('Wrote back, last 7 days');
+  });
+
   it('O9 every rendered figure carries the blob counted_at', () => {
     const html = render();
     expect((html.match(/26 Aug, 04:01 UTC/g) || []).length).toBeGreaterThanOrEqual(4);
