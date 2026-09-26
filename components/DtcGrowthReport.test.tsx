@@ -131,10 +131,10 @@ function assertNoForbidden(html: string) {
 }
 
 // Every fixture, regardless of data richness, renders the static conversion layer.
-function assertConversionLayer(html: string) {
+function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · July (19|20), 2026/, legacyHero = true) {
   // Masthead: wordmark links to risedtc.com, dated label, named header CTA.
   expect(html).toContain('href="https://risedtc.com"');
-  expect(html).toMatch(/Growth Scan · July (19|20), 2026/); // toLocaleDateString is local-tz
+  expect(html).toMatch(masthead); // toLocaleDateString is local-tz
   expect(html).toContain('Book 30 min with Mattan');
   expect(html).toContain('data-cta="header"');
   expect(html).toContain('utm_source=scan');
@@ -143,8 +143,12 @@ function assertConversionLayer(html: string) {
   expect(html).toContain(MATTAN_PHOTO);
   expect(html).toContain('Mattan Danino');
   expect(html).toContain('CEO, RISE DTC');
-  expect(html).toContain('My team ran this scan on');
-  expect(html).toContain('The terms are at the end of this page.');
+  if (legacyHero) {
+    expect(html).toContain('My team ran this scan on');
+    expect(html).toContain('The terms are at the end of this page.');
+  } else {
+    expect(html).toContain('on your live store in 30 minutes.');
+  }
   // Proof strip: three anonymized engagements (vertical descriptors, numerals verbatim
   // from rise-company-facts) plus the foot line pointing at risedtc.com for the named cases.
   expect(html).toContain('Work RISE has run');
@@ -539,5 +543,152 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     const html = renderDtc(dtc, fixture.company_name);
     expect(html).toContain('since the most recent competitor start date');
     expect(html).toContain('Start dates, drawn back from the read');
+  });
+});
+
+// ── 2026-09-26 "deliver the promise" contract ───────────────────────────────────────────
+// The live RISE DM promises "where shoppers drop off + how to get more of them ordering a
+// second time". Rows stamped with builder_version carry those two blocks and the page must
+// lead with them; rows without it keep the legacy layout, minus the retired pieces.
+describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)', () => {
+  const idx = (html: string, needle: string) => {
+    const i = html.indexOf(needle);
+    expect(i, `expected to find ${needle}`).toBeGreaterThan(-1);
+    return i;
+  };
+
+  it('tina (new contract): first screen names her product, the public fact and both promises', () => {
+    const { fixture, html } = renderFixture('tina-new-contract.json');
+    const d = fixture.dtc as any;
+    assertNoForbidden(html);
+    // Masthead dates from dtc.completed_at (restamped on every build), not the scan row.
+    assertConversionLayer(html, /Growth Scan · September 2[56], 2026/, false);
+    // Eyebrow: brand + read date from dtc.completed_at, never the generic hook.
+    expect(html).toMatch(/Tina Cassaday Creations · Read Sep 2[56], 2026/);
+    expect(html).toContain('data-promise-hero="1"');
+    expect(html).not.toContain(escHtml(d.hero_hook));
+    // Headline with the public fact marked where it states it verbatim.
+    expect(html).toMatch(/<h1[^>]*>Your Banana-Banana 6-Pack is <mark data-hero-mark="1"[^>]*>sold out<\/mark>, and your \$4 sachet/);
+    // Proof card: her product image off her own catalog, title, price, and the fact ringed.
+    const proof = html.slice(idx(html, 'data-hero-proof="1"'), idx(html, 'data-hero-proof="1"') + 3000);
+    expect(proof).toContain(escHtml(d.drop_off.items[0].product.image_url));
+    expect(proof).toContain('Banana-Banana Deep Conditioner Sachet 6-Pack');
+    expect(proof).toContain('$25');
+    expect(proof).toMatch(/data-hero-fact="1"[^>]*>Sold out</);
+    expect(proof).toContain('href="https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"');
+    // Both promises named on the first screen, each linking to its section.
+    expect(html).toContain('Where shoppers drop off');
+    expect(html).toContain('The second order');
+    expect(html).toContain('href="#drop-off"');
+    expect(html).toContain('href="#second-order"');
+    // Hero CTA is attributed and hides the sticky bar while on screen.
+    expect(html).toMatch(/data-cta="hero" data-pill-hide="1"/);
+    expect(html).toContain('utm_content=hero');
+  });
+
+  it('tina (new contract): every item renders title, detail, fix and a human evidence line, plus the notes', () => {
+    const { fixture, html } = renderFixture('tina-new-contract.json');
+    const d = fixture.dtc as any;
+    for (const block of [d.drop_off, d.second_order]) {
+      for (const it of block.items) {
+        expect(html, it.id).toContain(`data-promise-item="${it.id}"`);
+        for (const t of [it.title, it.detail, it.fix, it.evidence.label, it.evidence.value]) {
+          expect(html, `${it.id}: ${t}`).toContain(escHtml(t));
+        }
+      }
+      expect(html).toContain(escHtml(block.note));
+    }
+    // Evidence links land on a page a person can read, with human link text.
+    expect(html).toContain('href="https://tinacassadaybh.com/policies/shipping-policy"');
+    expect(html).toContain('see this on your product page');
+  });
+
+  it('tina (new contract): order is hero, drop-off, second order, RISE side, ad records (folded), proof, close', () => {
+    const { html } = renderFixture('tina-new-contract.json');
+    const order = [
+      'data-promise-hero="1"',
+      'data-promise-section="drop-off"',
+      'data-promise-section="second-order"',
+      'Where RISE comes in',
+      'aria-label="Public ad records"',
+      'Work RISE has run',
+      'Ready when you are',
+    ].map((n) => idx(html, n));
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // The store's own image comes before any other brand's ad and before the first section.
+    expect(idx(html, 'data-store-img="1"')).toBeLessThan(idx(html, 'data-promise-section="drop-off"'));
+    // Other advertisers sit behind a disclosure naming the keywords.
+    expect(html).toMatch(/<details[^>]*data-comp-disclosure="1"/);
+    expect(html).toContain('See who else advertises on &quot;conditioner&quot;, &quot;oil&quot;');
+  });
+
+  it('tina (new contract): RISE findings only, no receipt, no week-one panel, no thin-read, no paid-traffic talk', () => {
+    const { fixture, html } = renderFixture('tina-new-contract.json');
+    const d = fixture.dtc as any;
+    // The paid-media finding renders; the cro finding that restates a drop-off item does not.
+    expect(html).toContain(escHtml("You're not running paid social right now"));
+    const cro = d.findings.find((f: any) => f.lever === 'cro');
+    expect(html).not.toContain(escHtml(cro.evidence));
+    expect(html).not.toContain('Store vitals');
+    expect(html).not.toContain('Who does what');
+    expect(html).not.toContain('The public read gave us the basics');
+    // Meta is empty on this row: no page string may talk about paid traffic or the engine.
+    expect(html).not.toMatch(/paid traffic/i);
+    expect(html).not.toMatch(/\bengine\b/i);
+    expect(html).not.toMatch(/Email capture is already live/i);
+  });
+
+  it('new contract tolerates thin items: string price, no product, empty block with a note, stale hero ref', () => {
+    const fixture = loadFixture('tina-new-contract.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    dtc.drop_off.items = [dtc.drop_off.items[2]]; // shipping: no product
+    dtc.second_order = { items: [], note: 'Your repeat rate is private, so we did not guess it.' };
+    dtc.hero = { headline: 'No free-shipping amount anywhere on your store.', item_ref: 'second_order.0' };
+    const html = renderDtc(dtc, fixture.company_name);
+    assertNoForbidden(html);
+    assertNoRetiredChrome(html, dtc);
+    // Stale ref falls back to the first drop-off item; no product, so the dated capture stands in.
+    expect(html).toContain(escHtml(dtc.screenshots.pdp_url));
+    expect(html).toMatch(/Your product page, captured Sep 2[56], 2026/);
+    expect(html).toMatch(/data-hero-fact="1"[^>]*>Blank</);
+    // The empty block renders its honest note, and the hero drops its second row.
+    expect(html).toContain('Your repeat rate is private, so we did not guess it.');
+    expect(html).not.toContain('href="#second-order"');
+    expect(html).toContain('walk you through it on your live store');
+    // A string price still formats.
+    const dtc2 = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    dtc2.drop_off.items[0].product.price = '25.00';
+    expect(renderDtc(dtc2, fixture.company_name)).toContain('$25');
+  });
+
+  it('builder_version without the promise blocks falls back to the legacy layout', () => {
+    const fixture = loadFixture('tina-new-contract.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    delete dtc.drop_off;
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).not.toContain('data-promise-hero');
+    expect(html).toContain('Where the growth is');
+  });
+
+  it('tina (legacy live row): old layout minus the Profit Gap, the email-capture card and raw tokens', () => {
+    const { fixture, html } = renderFixture('tina-legacy.json');
+    const d = fixture.dtc as any;
+    expect(d.builder_version).toBeUndefined();
+    expect(d.profit_gap).toBeTruthy();
+    assertNoForbidden(html);
+    assertConversionLayer(html);
+    expect(html).not.toContain('data-promise-hero');
+    expect(html).toContain('A public read of your store, and where the growth is.');
+    expect(html).toContain('Where the growth is');
+    // Retired pieces stay gone on an old row.
+    expect(html).not.toContain('Email capture is already live');
+    expect(html).not.toContain('Working asset');
+    expect(html).not.toMatch(/newsletter, subscribe/);
+    // Possessive, and human receipt sources.
+    expect(html).toContain('Tina Cassaday Creations&#x27; public data');
+    expect(html).not.toContain('Creations&#x27;s');
+    expect(html).toContain('your catalog');
+    // Ad records still lead on the legacy layout, uncondensed.
+    expect(html).not.toContain('data-comp-disclosure');
   });
 });

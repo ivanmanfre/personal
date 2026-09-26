@@ -242,8 +242,32 @@ export interface DtcCompetitorCreative {
   page_id?: string | null;
 }
 
+// 2026-09-26 "deliver the promise" contract (builder_version "dtc-2026-09-26"). The DM
+// promises where shoppers drop off + how to get a second order; these blocks carry exactly
+// that. Rows without builder_version predate it and render the legacy layout.
+export interface DtcPromiseItem {
+  id: string;
+  title: string;
+  detail: string;
+  fix: string;
+  evidence: { label: string; value: string; source_url: string };
+  product?: { title: string; url?: string | null; image_url?: string | null; price?: number | string | null; currency?: string | null } | null;
+  lever: 'cro' | 'retention_path' | 'paid_media' | 'performance_creative';
+}
+export interface DtcPromiseBlock {
+  items: DtcPromiseItem[];
+  note: string;
+}
+
 export interface DtcGrowth {
   brand: DtcBrand;
+  builder_version?: string | null;
+  completed_at?: string | null;
+  store_meta?: DtcSignalMeta<{ currency?: string | null; country?: string | null; published_products_count?: number | null }>;
+  bestsellers?: DtcSignalMeta<{ handles: string[]; source_url?: string }>;
+  drop_off?: DtcPromiseBlock | null;
+  second_order?: DtcPromiseBlock | null;
+  hero?: { headline: string; item_ref: 'drop_off.0' | 'second_order.0' } | null;
   completeness: {
     signals: Record<string, DtcSignalStatus>;
     present_count: number;

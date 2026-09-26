@@ -1,0 +1,363 @@
+{
+ "company_name": "Tina Cassaday Creations",
+ "label": "tina live row 2026-09-26 (legacy, no builder_version)",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "data": {
+     "active_ad_count": 0
+    },
+    "reason": "Meta transparency: \"This Page isn't currently running ads.\" (declared page zero; cross-checked ad-library search: no identity-matched advertiser)",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:50:51.377798+00:00",
+    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills"
+   },
+   "google": {
+    "data": {
+     "query": "Tina Cassaday Creations",
+     "capped": false,
+     "region": "US",
+     "formats": {
+      "text": 0,
+      "image": 0,
+      "video": 0
+     },
+     "ads_found": 0,
+     "creatives": [],
+     "advertiser": null,
+     "checked_at": "2026-09-26T04:51:09.185487+00:00",
+     "max_results": 60,
+     "queries_tried": [
+      "tinacassadaybh.com",
+      "Tina Cassaday Creations"
+     ],
+     "latest_last_shown": null,
+     "newest_first_shown": null,
+     "oldest_first_shown": null,
+     "advertisers_matched": 0
+    },
+    "reason": "google actor returned 0 items across 2 queries, none matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:51:09.185504+00:00",
+    "source_url": "https://adstransparency.google.com/?region=US&q=tinacassadaybh.com"
+   },
+   "meta_sweep": {
+    "data": {
+     "capped": false,
+     "keywords": [
+      "Tina Cassaday Creations"
+     ],
+     "checked_at": "2026-09-26T04:51:00.307929+00:00",
+     "max_results": 30,
+     "matched_pages": [],
+     "sampled_items": 0,
+     "identity_matched_ads": 0
+    },
+    "reason": "ad-library keyword sweep returned 0 ads, none from a page matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:51:00.307960+00:00",
+    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Tina%20Cassaday%20Creations&search_type=keyword_unordered&media_type=all"
+   }
+  },
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "RISE DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora",
+   "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "newsletter",
+     "subscribe",
+     "privy"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-09-26T04:50:51.880070+00:00",
+   "source_url": "https://tinacassadaybh.com/"
+  },
+  "reviews": {
+   "data": {
+    "has_reviews": false
+   },
+   "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
+   "status": "empty",
+   "fetched_at": "2026-09-26T04:50:51.879001+00:00",
+   "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"
+  },
+  "shopify": {
+   "data": {
+    "oos_pct": 20,
+    "currency": "USD",
+    "platform": "shopify",
+    "non_merch": 0,
+    "gift_cards": 0,
+    "price_band": {
+     "max": 60,
+     "min": 4,
+     "median": 25,
+     "catalog_max": 60,
+     "in_stock_only": false,
+     "priced_products": 5
+    },
+    "catalog_size": 5,
+    "oos_variants": 1,
+    "has_subscription": false,
+    "new_products_90d": 0,
+    "auto_discount_pct": null,
+    "variant_depth_avg": 1,
+    "discount_depth_pct": 0,
+    "merch_catalog_size": 5,
+    "products_on_discount": 0,
+    "subscription_source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz.js"
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T04:50:26.538733+00:00",
+   "source_url": "https://tinacassadaybh.com/products.json",
+   "endpoint_used": "products.json"
+  },
+  "findings": [
+   {
+    "kind": "gap",
+    "lever": "profit_visibility",
+    "title": "No subscribe-and-save path for repeat buyers",
+    "bucket": "yours",
+    "signal": "shopify",
+    "evidence": "Your storefront runs 5 products with no subscription option we could find on the page. Repeat purchases are where contribution profit compounds, and a subscribe-and-save path turns one-time buyers into predictable revenue on the traffic you already pay for.",
+    "week_one": "A subscription option is a store decision on your side. It compounds every profitable order the paid engine buys.",
+    "source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz.js",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "gap",
+    "lever": "cro",
+    "title": "Your price band is wide and the median sits low",
+    "bucket": "split",
+    "signal": "shopify",
+    "evidence": "Catalog runs $4 to $60 with a $25 median. A wide band with a low median makes blended AOV fragile on paid. The lever is threshold and bundle offers on the landing path the ads point to.",
+    "week_one": "We point spend at the offers and price points that hold blended profit. Bundle and threshold builds on the store are yours to green-light.",
+    "source_url": "https://tinacassadaybh.com/products.json",
+    "bucket_pillar": "Optimized Media Buying"
+   },
+   {
+    "kind": "negative",
+    "lever": "paid_media",
+    "title": "You're not running paid social right now",
+    "bucket": "rise",
+    "signal": "ads.meta",
+    "evidence": "The public Meta Ad Library shows zero ads for this brand. For a brand at your catalog depth, that's unclaimed demand, and a cold-audience paid engine is the fastest lever we pull.",
+    "week_one": "Multi-network ads management targeted at your ideal customer, optimized for profit from the first campaign.",
+    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills",
+    "bucket_pillar": "Optimized Media Buying"
+   },
+   {
+    "kind": "negative",
+    "lever": "cro",
+    "title": "No visible reviews on the page paid traffic hits",
+    "bucket": "yours",
+    "signal": "reviews",
+    "evidence": "We couldn't find review markup on your product page. Cold paid traffic converts on social proof, so surfacing reviews on the PDP is a direct conversion lever.",
+    "week_one": "Getting reviews visible on the product page is a store change on your side. Cold traffic buys on proof.",
+    "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
+    "bucket_pillar": null
+   },
+   {
+    "kind": "strength",
+    "lever": "cro",
+    "title": "Email capture is already live where paid traffic lands",
+    "bucket": "asset",
+    "signal": "signup",
+    "evidence": "Your storefront shows email capture on the page paid traffic hits. That gives the paid engine an owned audience to bring back and lifts the return on every click you buy.",
+    "week_one": "Capture is already on the page paid traffic hits. That audience compounds the return on every click.",
+    "source_url": "https://tinacassadaybh.com/",
+    "bucket_pillar": null
+   }
+  ],
+  "hero_hook": "A public read of your store, and where the growth is.",
+  "integrity": {
+   "flags": [],
+   "checked_at": "2026-09-26T04:51:31.651916+00:00"
+  },
+  "pagespeed": {
+   "reason": "pagespeed retired 2026-08-07 (v3): deliberately not collected",
+   "status": "absent"
+  },
+  "shippable": {
+   "ok": true,
+   "reason": null,
+   "min_gaps": 2,
+   "gap_findings": 4
+  },
+  "dm_insight": null,
+  "dm_message": null,
+  "fact_table": [
+   "0",
+   "1",
+   "102",
+   "12",
+   "120",
+   "133",
+   "20",
+   "239",
+   "25",
+   "30",
+   "334",
+   "4",
+   "5",
+   "56",
+   "60",
+   "7",
+   "72"
+  ],
+  "profit_gap": {
+   "seed_aov": 25,
+   "source_note": "AOV seed is your public median product price; discount is the catalog average. Editable, so type your real numbers.",
+   "seed_discount_pct": 0
+  },
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "shopify web pixels"
+    ],
+    "is_shopify": true,
+    "pdp_checked": false,
+    "missing_critical": [
+     "klaviyo",
+     "attentive",
+     "recharge",
+     "rebuy"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T04:50:21.512431+00:00",
+   "source_url": "https://tinacassadaybh.com/"
+  },
+  "competitors": {
+   "data": {
+    "capped": true,
+    "keywords": [
+     "conditioner",
+     "oil"
+    ],
+    "creatives": [
+     {
+      "keyword": "conditioner",
+      "page_id": "104957167940094",
+      "age_days": 102,
+      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/724442529_27505171109076279_5486413324165431034_n.jpg?_nc_cat=108&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_KnP8AZmDhAQ7kNvwHjWPck&_nc_oc=AdoBTS1rNCNohxdrDBQ8XbsJMihZ8nCQI8JqEPGgUs3cYME0BQz_HMtx0b0L3fw4OtA&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQIMXfUPBkntGC1IhxmCxAKOnaSFo4W4anMpZT7xNNucdw&oe=6ABD3477",
+      "advertiser": "Humby Organics",
+      "start_date": "2026-06-16",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-0.jpg",
+      "opening_text": "I've helped over 80,000 women stop thinning."
+     },
+     {
+      "keyword": "oil",
+      "page_id": "102507806502481",
+      "age_days": 334,
+      "image_url": "https://scontent.fmex12-1.fna.fbcdn.net/v/t39.35426-6/571158648_1431824565614822_8938271719069099064_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RpXm9ruPFJAQ7kNvwHQgPGX&_nc_oc=Adp7ComhLYZ52Llos3U5WG7BjEOc1IkOPjK1FCnRtb2LBqB1AKruVt7fDN8cb7SQljU&_nc_zt=14&_nc_ht=scontent.fmex12-1.fna&_nc_gid=fIP5btYXhYq-XSwLjQ3Rjg&_nc_ss=7f289&oh=00_AQIyJ1UMYNhY-coM-H2EEKV-fYxhlttS4gh0rJ8I-AllnQ&oe=6ABD26F7",
+      "advertiser": "Wild Growth Hair Care",
+      "start_date": "2025-10-27",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-1.jpg",
+      "opening_text": "Never Before Now is Wild Growth's latest 1X more concentrated hair oil."
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "244335642891847",
+      "age_days": 56,
+      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/761497327_2104706303555670_3094369942284442718_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Pud6sAaD1xQQ7kNvwFzWSmD&_nc_oc=AdrYYyA60zid6pzBVLdfmn1hy0nOtMFNObAkCciip8w7m2pENnFk63BP_OGbblM-gr8&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLVVWdJc3U6AnmgQwtP0HGYR3NsPiq4WGb8g2XDdgS3qA&oe=6ABD340B",
+      "advertiser": "Bare Anatomy",
+      "start_date": "2026-08-01",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-2.jpg",
+      "opening_text": "One Spray, Multiple Benefits \u2728"
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "444025482768886",
+      "age_days": 239,
+      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/622873639_912262191454500_8346141100030364649_n.jpg?_nc_cat=110&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=eEUBEmyfes0Q7kNvwHLxOwq&_nc_oc=AdqcTA_PlwBG6igNmjMn1MkV4QH4cbgoMKyhciw1bcnRHssPr1PK9FCXAyT20DfhK6E&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQKOQTZ7YgXXNPoD4-gOac5J0PFCWJ63gh-aytGxHYsSNw&oe=6ABD2546",
+      "advertiser": "Plix",
+      "start_date": "2026-01-30",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-3.jpg",
+      "opening_text": "\u2728 Glossy, soft hair on a budget?"
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "104086772515156",
+      "age_days": 133,
+      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/700343307_1541775130888524_553323202010607279_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=SlPNoNjezSkQ7kNvwGG0wiV&_nc_oc=Adond0YU-YRh2H0m4FNNTk6zYWSSf_PPmjKbNCW_laBN7A4FBs_4TrqrZCEfosWIGYc&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLiI27Uqdke9rHI7K0rgrJDlWPMg6JPwpEWt7uLjWBE1A&oe=6ABD0A36",
+      "advertiser": "Alif Ahlam /\u0623\u0644\u0641 \u0623\u062d\u0644\u0627\u0645",
+      "start_date": "2026-05-16",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-4.jpg",
+      "opening_text": "Introducing the Alifahlam Hair Care Kit \u2013 your complete solution for strong, shiny, and"
+     }
+    ],
+    "checked_at": "2026-09-26T04:51:27.801984+00:00",
+    "max_results": 60,
+    "sampled_items": 120,
+    "market_country": null,
+    "relevance_judge": {
+     "kept": 5,
+     "model": "claude-opus-5",
+     "status": "ok",
+     "dropped": 7,
+     "candidates": 12,
+     "dropped_advertisers": [
+      "CeraVe India",
+      "Bella Vita",
+      "Dermatouch",
+      "Takhfee",
+      "Dot & Key",
+      "Bellavitaskincare",
+      "Dermorepubliq"
+     ]
+    },
+    "advertisers_seen": 72,
+    "keywords_requested": [
+     "conditioner",
+     "oil"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T04:51:27.802002+00:00",
+   "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=conditioner&search_type=keyword_unordered&media_type=all"
+  },
+  "screenshots": {
+   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-pdp.png",
+   "captured_at": "2026-09-26T04:50:51.982792+00:00",
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da.png"
+  },
+  "completeness": {
+   "tier": "partial",
+   "present": [
+    "shopify",
+    "tech_stack",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "empty",
+    "shopify": "present",
+    "ads.meta": "empty",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 3
+  },
+  "growth_score": null,
+  "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+  "dm_insight_why": null,
+  "score_breakdown": {},
+  "dm_insight_source": null
+ }
+}

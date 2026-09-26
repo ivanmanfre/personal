@@ -28,7 +28,7 @@
 import React, { useEffect, useState } from 'react';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
-import type { ReportJson, Scan } from '../lib/scanTypes';
+import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
   paid_media: 'Paid media',
@@ -332,6 +332,37 @@ function BucketGlyph({ b, accent, ink, size = 8 }: { b: BucketKey; accent: strin
 }
 
 // ── Evidence-first dark spread ─────────────────────────────────────────────────────────
+// The other-advertisers instrument's frame. Condensed, its content sits behind one
+// disclosure line naming the keywords; otherwise it renders open, as it always has.
+function CompWrap({
+  condensed,
+  keywords,
+  surface,
+  headingFont,
+  children,
+}: {
+  condensed: boolean;
+  keywords?: string[];
+  surface: string;
+  headingFont: string;
+  children: React.ReactNode;
+}) {
+  const frame = { borderTop: '1px solid rgba(255,255,255,.16)' };
+  if (!condensed) return <div className="mt-16 pt-10" style={frame}>{children}</div>;
+  const kw = Array.isArray(keywords) ? keywords.slice(0, 3).map((k) => `"${clean(k)}"`) : [];
+  return (
+    <details className="mt-12 pt-4" style={frame} data-comp-disclosure="1">
+      <summary
+        className="cursor-pointer inline-flex items-center min-h-[44px] text-[0.95rem] font-bold underline underline-offset-4"
+        style={{ fontFamily: headingFont, color: surface }}
+      >
+        {kw.length ? `See who else advertises on ${kw.join(', ')}` : 'See who else advertises on your keywords'}
+      </summary>
+      <div className="mt-8">{children}</div>
+    </details>
+  );
+}
+
 // An ink-on-surface band with a drawn-first discipline.
 // Three instruments, each one dated at the source. Nothing here states a present-tense ad
 // status: a creative carries a first-shown date and a last-shown date, and the gap between
@@ -345,6 +376,7 @@ function AdEvidenceSpread({
   ink,
   surface,
   headingFont,
+  condensed,
 }: {
   google: any;
   metaPage: any;
@@ -354,6 +386,9 @@ function AdEvidenceSpread({
   ink: string;
   surface: string;
   headingFont: string;
+  // New-contract rows: the other-advertisers strip folds behind one disclosure line, so the
+  // store's own content always leads and other brands' ads are opt-in.
+  condensed?: boolean;
 }) {
   const g = google?.status === 'present' && google.data ? google.data : null;
   // Meta zero is provable two ways: the brand page read, and the brand-wide keyword sweep.
@@ -619,7 +654,7 @@ function AdEvidenceSpread({
 
         {/* ── Instrument 3: the counterpoint ─────────────────────────────────────── */}
         {compCreatives.length > 0 ? (
-          <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+          <CompWrap condensed={!!condensed} keywords={comp?.keywords} surface={surface} headingFont={headingFont}>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 mb-8">
               <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                 The same keywords, other advertisers
@@ -711,9 +746,335 @@ function AdEvidenceSpread({
                 ) : null}
               </div>
             ) : null}
-          </div>
+          </CompWrap>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+// ══ 2026-09-26 "deliver the promise" contract ══════════════════════════════════════════
+// The DM promises two things: where shoppers drop off, and how to get more of them ordering
+// a second time. A row whose builder stamped `builder_version` carries exactly those two
+// blocks, and the page leads with them: first screen names one concrete thing on THEIR
+// store (their product, its image, the public fact), then one section per promise, then
+// RISE's own side (paid media, creative), then the other-advertisers strip, folded.
+// Rows without builder_version keep the legacy layout below.
+type PromiseItem = DtcPromiseItem;
+type PromiseBlock = DtcPromiseBlock;
+
+function isPromiseRow(d: any): boolean {
+  return typeof d?.builder_version === 'string' && d.builder_version.length > 0 && !!d.drop_off && !!d.second_order;
+}
+
+function promiseItems(block?: PromiseBlock | null): PromiseItem[] {
+  return Array.isArray(block?.items) ? block!.items.filter((it) => it && typeof it.title === 'string' && it.title.trim()) : [];
+}
+
+// The item the headline is about. Falls back to the first item on the page, so a missing or
+// stale ref never blanks the proof card.
+function heroItemOf(d: any): PromiseItem | null {
+  const ref: string = d?.hero?.item_ref || '';
+  const [key, idx] = ref.split('.');
+  const block = key === 'drop_off' ? d.drop_off : key === 'second_order' ? d.second_order : null;
+  return promiseItems(block)[Number(idx) || 0] || promiseItems(d.drop_off)[0] || promiseItems(d.second_order)[0] || null;
+}
+
+function productPrice(p?: PromiseItem['product']): string | null {
+  if (!p || p.price == null) return null;
+  const n = typeof p.price === 'number' ? p.price : parseFloat(String(p.price));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return fmtPrice(n, curSymbol(p.currency));
+}
+
+function shortDay(s?: string | null): string | null {
+  const ms = dayMs(s);
+  if (ms == null) return null;
+  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+// Marks the item's public fact inside the headline when the headline states it verbatim
+// ("sold out"). Nothing is marked when it does not appear: the mark never invents emphasis.
+function markedHeadline(headline: string, mark: string | undefined, accent: string): React.ReactNode {
+  const m = clean(mark);
+  if (!m || m.length < 3) return headline;
+  const at = headline.toLowerCase().indexOf(m.toLowerCase());
+  if (at < 0) return headline;
+  return (
+    <>
+      {headline.slice(0, at)}
+      <mark data-hero-mark="1" style={{ background: `linear-gradient(transparent 58%, ${accent} 58%)`, color: 'inherit' }}>
+        {headline.slice(at, at + m.length)}
+      </mark>
+      {headline.slice(at + m.length)}
+    </>
+  );
+}
+
+// Their product image off their own catalog. A failed load renders nothing: never a broken
+// img, never a placeholder box.
+function ProductImg({ src, alt, className, ink }: { src?: string | null; alt: string; className?: string; ink: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return null;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      decoding="async"
+      onError={() => setFailed(true)}
+      className={className}
+      data-store-img="1"
+      style={{ aspectRatio: '4 / 5', objectFit: 'contain', background: '#ffffff', border: `1px solid ${ink}14`, borderRadius: 8, flexShrink: 0, display: 'block' }}
+    />
+  );
+}
+
+function PromiseHero({
+  d,
+  companyName,
+  readDate,
+  accent,
+  ink,
+  surface,
+  headingFont,
+  ctaHref,
+}: {
+  d: any;
+  companyName: string;
+  readDate: string | null;
+  accent: string;
+  ink: string;
+  surface: string;
+  headingFont: string;
+  ctaHref: string;
+}) {
+  const item = heroItemOf(d);
+  const headline = clean(d.hero?.headline) || (item ? clean(item.title) : '');
+  const product = item?.product && item.product.image_url ? item.product : null;
+  const shots = d.screenshots;
+  const shotDate = shortDay(shots?.captured_at);
+  // No product on the item: the dated capture of their product page stands in, cropped to the
+  // part of the page a shopper reads first. An undated capture is not evidence.
+  const capture = !product && shots?.pdp_url && shotDate ? String(shots.pdp_url) : null;
+  const price = productPrice(product || undefined);
+  const proofUrl = product?.url || item?.evidence?.source_url || null;
+  const rows = [
+    { n: 1, k: 'Where shoppers drop off', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
+    { n: 2, k: 'The second order', href: '#second-order', it: promiseItems(d.second_order)[0] },
+  ].filter((r) => r.it);
+
+  return (
+    <section aria-label="The short version" data-promise-hero="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 pt-6 sm:pt-14 pb-12 sm:pb-16">
+      <div className="grid lg:grid-cols-12 gap-y-5 lg:gap-x-12">
+        <div className="lg:col-span-7 lg:row-start-1">
+          <p className="text-[0.75rem] font-bold uppercase tracking-[0.14em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+            {companyName}
+            {readDate ? ` · Read ${readDate}` : ''}
+          </p>
+          <h1
+            className="mt-3 font-extrabold tracking-[-0.02em]"
+            style={{ fontFamily: headingFont, fontSize: 'clamp(1.8rem, 4.2vw, 3.3rem)', lineHeight: 1.08, color: ink }}
+          >
+            {markedHeadline(headline, item?.evidence?.value, accent)}
+          </h1>
+        </div>
+
+        {item && (product || capture) ? (
+          <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
+            <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
+              {product ? (
+                <div className="flex gap-3 items-start">
+                  <ProductImg src={product.image_url} alt={clean(product.title)} className="w-[118px] sm:w-[160px] lg:w-[180px]" ink={ink} />
+                  <div className="min-w-0 flex-1 py-1">
+                    <div className="font-bold leading-snug" style={{ fontFamily: headingFont, fontSize: '0.98rem', color: ink }}>{clean(product.title)}</div>
+                    {price ? <div className="mt-1 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>{price}</div> : null}
+                    <div className="mt-3 text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+                      {clean(item.evidence?.label)}
+                    </div>
+                    <div
+                      data-hero-fact="1"
+                      className="mt-1.5 inline-block font-bold text-[1rem] px-3 py-1.5"
+                      style={{ fontFamily: headingFont, color: ink, background: surface, border: `3px solid ${accent}`, boxShadow: `0 0 0 1.5px ${ink}`, borderRadius: 6, overflowWrap: 'anywhere' }}
+                    >
+                      {clean(item.evidence?.value)}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ borderRadius: 8, overflow: 'hidden', background: surface, border: `1px solid ${ink}14` }}>
+                    <img
+                      src={capture as string}
+                      alt={`${companyName} product page`}
+                      decoding="async"
+                      data-store-img="1"
+                      style={{ display: 'block', width: '100%', height: 210, objectFit: 'cover', objectPosition: '50% 30%' }}
+                    />
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>{clean(item.evidence?.label)}</span>
+                    <span data-hero-fact="1" className="font-bold text-[1rem] px-2.5 py-1" style={{ fontFamily: headingFont, color: ink, border: `3px solid ${accent}`, boxShadow: `0 0 0 1.5px ${ink}`, borderRadius: 6 }}>
+                      {clean(item.evidence?.value)}
+                    </span>
+                  </div>
+                </>
+              )}
+              <figcaption className="mt-2 text-[0.8rem] leading-snug" style={{ color: ink, opacity: 0.75 }}>
+                {product ? `Your product page${readDate ? `, read ${readDate}` : ''}.` : `Your product page, captured ${shotDate}.`}{' '}
+                {proofUrl ? (
+                  <a href={proofHref(proofUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
+                    See it on your store
+                  </a>
+                ) : null}
+              </figcaption>
+            </figure>
+          </div>
+        ) : null}
+
+        <div className="lg:col-span-7 lg:row-start-2">
+          {rows.length ? (
+            <ol className="mt-1" style={{ listStyle: 'none', padding: 0, margin: 0, borderTop: `1px solid ${ink}1f` }}>
+              {rows.map((r) => (
+                <li key={r.n} className="grid py-3.5" style={{ gridTemplateColumns: '30px minmax(0,1fr)', columnGap: 8, borderBottom: `1px solid ${ink}1f` }}>
+                  <span className="font-extrabold text-[1.25rem] leading-none" style={{ fontFamily: headingFont, color: ink }}>{r.n}</span>
+                  <div className="min-w-0">
+                    <div className="text-[0.75rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink }}>{r.k}</div>
+                    <a href={r.href} className="block mt-1 text-[1rem] leading-[1.45] underline-offset-4 hover:underline" style={{ color: ink }}>
+                      {clean(r.it!.title)}
+                    </a>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          <div className="flex items-center gap-3 pt-5">
+            <img
+              src={MATTAN_PHOTO}
+              alt="Mattan Danino"
+              width={900}
+              height={639}
+              decoding="async"
+              style={{ width: 48, height: 48, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 10, flexShrink: 0 }}
+            />
+            <p className="text-[0.95rem] leading-snug" style={{ color: ink }}>
+              <span className="font-bold">Mattan Danino</span>, CEO, RISE DTC. I'll walk you through {rows.length > 1 ? 'both' : 'it'} on your live store in 30 minutes.
+            </p>
+          </div>
+          <a
+            href={ctaHref}
+            data-cta="hero"
+            data-pill-hide="1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cedt-anim mt-4 flex sm:inline-flex items-center justify-center min-h-[52px] rounded-full px-8 text-[1rem] font-bold transition-transform hover:-translate-y-0.5"
+            style={{ background: accent, color: ink }}
+          >
+            Walk my scan with Mattan
+          </a>
+          <p className="mt-2.5 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.75 }}>
+            Read from your public store pages, with no login and nothing you sent us.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PromiseSection({
+  id,
+  n,
+  title,
+  block,
+  accent,
+  ink,
+  headingFont,
+}: {
+  id: string;
+  n: number;
+  title: string;
+  block?: PromiseBlock | null;
+  accent: string;
+  ink: string;
+  headingFont: string;
+}) {
+  const items = promiseItems(block);
+  const note = clean(block?.note);
+  if (!items.length && !note) return null;
+  return (
+    <section id={id} aria-label={title} data-promise-section={id} className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 py-14 sm:py-20" style={{ borderTop: `1px solid ${ink}14`, scrollMarginTop: 12 }}>
+      <div className="flex items-center gap-3.5">
+        <span
+          className="inline-flex items-center justify-center font-extrabold text-[1.1rem]"
+          style={{ width: 34, height: 34, background: accent, color: ink, fontFamily: headingFont, borderRadius: 4, flexShrink: 0 }}
+        >
+          {n}
+        </span>
+        <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4.4vw, 3rem)', color: ink, lineHeight: 1.05 }}>
+          {title}
+        </h2>
+      </div>
+
+      {items.length ? (
+        <ol className="mt-10" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {items.map((it, i) => {
+            const product = it.product && it.product.image_url ? it.product : null;
+            const price = productPrice(product || undefined);
+            const ev = it.evidence;
+            return (
+              <li
+                key={`${it.id}-${i}`}
+                data-promise-item={it.id}
+                className="grid lg:grid-cols-12 gap-y-4 lg:gap-x-12"
+                style={i > 0 ? { borderTop: `1px solid ${ink}14`, paddingTop: '2.5rem', marginTop: '2.5rem' } : undefined}
+              >
+                <div className="lg:col-span-8 min-w-0">
+                  <div className="flex gap-4 items-start">
+                    {product ? <ProductImg src={product.image_url} alt={clean(product.title)} className="lg:hidden w-[72px]" ink={ink} /> : null}
+                    <h3 className="min-w-0 font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.3rem, 2.5vw, 1.85rem)', color: ink, lineHeight: 1.15 }}>
+                      {clean(it.title)}
+                    </h3>
+                  </div>
+                  {it.detail ? (
+                    <p className="mt-4 text-[1.0625rem] sm:text-[1.15rem] leading-[1.6]" style={{ color: ink, opacity: 0.85, maxWidth: '64ch' }}>
+                      {clean(it.detail)}
+                    </p>
+                  ) : null}
+                  {it.fix ? (
+                    <div className="mt-5" style={{ borderLeft: `3px solid ${accent}`, paddingLeft: '1rem' }}>
+                      <div className="text-[0.75rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>The fix</div>
+                      <p className="mt-1 text-[1.05rem] leading-[1.55] font-semibold" style={{ color: ink, maxWidth: '64ch' }}>{clean(it.fix)}</p>
+                    </div>
+                  ) : null}
+                  {ev && (ev.label || ev.value) ? (
+                    <p className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
+                      <span className="font-semibold">{clean(ev.label)}</span>
+                      {ev.value ? `: ${clean(ev.value)}. ` : '. '}
+                      {ev.source_url ? (
+                        <a href={proofHref(ev.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
+                          {sourceLabel(ev.source_url)}
+                        </a>
+                      ) : null}
+                    </p>
+                  ) : null}
+                </div>
+                {product ? (
+                  <aside className="hidden lg:block lg:col-span-4">
+                    <ProductImg src={product.image_url} alt={clean(product.title)} className="w-full max-w-[260px]" ink={ink} />
+                    <div className="mt-3 font-bold leading-snug text-[0.95rem]" style={{ fontFamily: headingFont, color: ink }}>{clean(product.title)}</div>
+                    {price ? <div className="mt-0.5 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>{price}</div> : null}
+                  </aside>
+                ) : null}
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
+
+      {note ? (
+        <p data-promise-note="1" className="mt-12 pt-5 text-[0.95rem] leading-relaxed" style={{ borderTop: `1px dashed ${ink}33`, color: ink, opacity: 0.8, maxWidth: '64ch' }}>
+          {note}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -869,9 +1230,15 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     bookingUrl + (bookingUrl.includes('?') ? '&' : '?') +
     'utm_source=scan&utm_medium=cta&utm_campaign=growth-scan&utm_content=' + slot;
 
-  // Scan date from the row itself. Never fabricated: absent field renders no date at all.
-  const scanDate = scan.created_at
-    ? new Date(scan.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  // New-contract rows lead with the two promised sections (see PromiseHero).
+  const promise = isPromiseRow(d);
+
+  // Read date from the row itself. Never fabricated: absent field renders no date at all.
+  // `dtc.completed_at` is restamped on every build (a rebuild reads the store again), so it
+  // wins over the scan row's created_at, which only dates the first build.
+  const readIso = (d as any).completed_at || scan.created_at;
+  const scanDate = readIso
+    ? new Date(readIso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null;
 
   // REAL DEFECT the floor never fixed: the brand fonts were declared but never loaded. Load them.
@@ -879,7 +1246,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   useMetadata({
     title: `A growth scan for ${companyName}`,
-    description: clean(d.hero_hook) || `A public read of ${companyName}'s store, and where the growth is.`,
+    description: (promise && clean((d as any).hero?.headline)) || clean(d.hero_hook) || `A public read of ${possessive(companyName)} store, and where the growth is.`,
     canonical: `${(import.meta as any).env?.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
@@ -888,7 +1255,13 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   // Retired 2026-09-26: the "Email capture is already live" strength card. It rested on
   // substring hits in the homepage HTML (a capture app's script can load with no campaign
   // configured), so it told founders they had something they may not have.
-  const findings = (d.findings || []).filter((f) => !(f.signal === 'signup' && f.kind === 'strength'));
+  // New-contract rows carry the store's own gaps in drop_off / second_order, so the findings
+  // list keeps only RISE's side (paid media, creative) and never restates an item above it.
+  const findings = (d.findings || []).filter(
+    (f) =>
+      !(f.signal === 'signup' && f.kind === 'strength') &&
+      (!promise || f.lever === 'paid_media' || f.lever === 'performance_creative'),
+  );
 
   // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
   // honest negative, the source WAS reached). Fixed order, deduped, pagespeed skipped entirely.
@@ -909,7 +1282,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   // its binding is visible. A fact with no consequence attached does not render.
   const adsMeta = d.ads?.meta;
   const shop = d.shopify;
-  const thinRead = findings.length === 0;
+  const thinRead = !promise && findings.length === 0;
 
   // Dated storefront capture: present ONLY after a human QA pass wrote it to the row.
   // Attaches under the finding named by attach_signal, defaulting to the lead finding.
@@ -1212,7 +1585,23 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         </div>
       </header>
 
-      {/* Chapter — Cover / hook */}
+      {promise ? (
+        <>
+          <PromiseHero
+            d={d}
+            companyName={companyName}
+            readDate={shortDay(readIso)}
+            accent={accent}
+            ink={ink}
+            surface={surface}
+            headingFont={headingFont}
+            ctaHref={ctaUrl('hero')}
+          />
+          <PromiseSection id="drop-off" n={1} title="Where shoppers drop off" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection id="second-order" n={2} title="Getting the second order" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
+        </>
+      ) : (
+      /* Chapter — Cover / hook (legacy rows) */
       <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pt-16 sm:pt-24 pb-14">
         <div className="grid lg:grid-cols-12 gap-y-8 lg:gap-x-12 items-end">
           <div className="lg:col-span-9">
@@ -1262,11 +1651,13 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
         </div>
       </section>
+      )}
 
       {/* Chapter — Evidence-first dark spread. Sits straight after the hook because the ad
           record is the one thing on this page the reader cannot argue with: it is dated, it
-          is public, and it was read without them. Born-absent on a pre-v3 row. */}
-      {hasAdEvidence ? (
+          is public, and it was read without them. Born-absent on a pre-v3 row. New-contract
+          rows render it after RISE's findings instead, folded (below). */}
+      {!promise && hasAdEvidence ? (
         <AdEvidenceSpread
           google={gAds}
           metaPage={adsMeta}
@@ -1282,7 +1673,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       {/* Chapter — Sourced vitals receipt. Every line is a public fact we read AND that a
           finding below cites, which is what the foot line claims.
           Under three bound lines the whole band collapses. */}
-      {showReceipt ? (
+      {!promise && showReceipt ? (
         <section
           aria-label="Sourced vitals"
           style={{ background: '#f6f7f8', borderTop: `1px solid ${ink}14`, borderBottom: `1px solid ${ink}14` }}
@@ -1368,10 +1759,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14` }}>
           <div className="flex items-center gap-3 mb-3">
             <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>What we found</span>
+            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>{promise ? 'What RISE runs' : 'What we found'}</span>
           </div>
           <h2 className="font-extrabold tracking-[-0.02em] mb-12" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: ink, lineHeight: 1.03 }}>
-            Where the growth is
+            {promise ? 'Where RISE comes in' : 'Where the growth is'}
           </h2>
 
           <div className="space-y-16">
@@ -1598,10 +1989,24 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
           {/* The chapter closes on the split of labor, drawn: the whole bucket read in one
               glance. Absent entirely when no finding on the row carries a bucket. */}
-          {anyBucket ? (
+          {!promise && anyBucket ? (
             <WeekOnePanel findings={findings} accent={accent} ink={ink} surface={surface} headingFont={headingFont} />
           ) : null}
         </section>
+      ) : null}
+
+      {promise && hasAdEvidence ? (
+        <AdEvidenceSpread
+          google={gAds}
+          metaPage={adsMeta}
+          metaSweep={metaSweep}
+          competitors={competitors}
+          accent={accent}
+          ink={ink}
+          surface={surface}
+          headingFont={headingFont}
+          condensed
+        />
       ) : null}
 
       {/* Honest thin-read note — only when there is genuinely little to show */}
