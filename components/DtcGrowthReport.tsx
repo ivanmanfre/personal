@@ -370,6 +370,27 @@ function dayWord(n: number): string {
   return n === 1 ? 'day' : 'days';
 }
 
+// The marker label is centred on its marker, except near an end of the axis, where it hangs
+// inward so it never runs off the screen ("VEST, 1066 DAYS" at 390px, 09-26).
+function mklShift(pos: number): string {
+  return pos < 30 ? 'translateX(0)' : pos > 70 ? 'translateX(-100%)' : 'translateX(-50%)';
+}
+
+// The competitor tiles a page may show: named advertisers, most direct substitute first (the
+// judge's `relevance`, when the row carries it), then most recent. Fewer than 2 is not a
+// competitive set, so the strip is omitted outright (round 4, 09-26), old rows included.
+function compStrip(competitors: any): any[] {
+  const data = competitors?.status === 'present' ? competitors.data : null;
+  const cs: any[] = Array.isArray(data?.creatives) ? data.creatives.filter((c: any) => c && c.advertiser) : [];
+  if (cs.length < 2) return [];
+  const rel = (c: any) => (typeof c.relevance === 'number' ? c.relevance : -1);
+  const age = (c: any) => (typeof c.age_days === 'number' ? c.age_days : Infinity);
+  return cs
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => rel(b.c) - rel(a.c) || age(a.c) - age(b.c) || a.i - b.i)
+    .map((x) => x.c);
+}
+
 // An ink-on-surface band with a drawn-first discipline.
 // Three instruments, each one dated at the source. Nothing here states a present-tense ad
 // status: a creative carries a first-shown date and a last-shown date, and the gap between
@@ -405,7 +426,7 @@ function AdEvidenceSpread({
   const metaReadDate = longDay(sweep?.checked_at || metaPage?.fetched_at);
   const showMeta = (pageZero || sweep) && metaReadDate;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
-  const compCreatives: any[] = Array.isArray(comp?.creatives) ? comp.creatives.filter((c: any) => c && c.advertiser) : [];
+  const compCreatives: any[] = compStrip(competitors);
 
   if (!g && !showMeta && !compCreatives.length) return null;
 
@@ -431,8 +452,13 @@ function AdEvidenceSpread({
   // Competitor recency axis: left is the oldest sampled start date, right is the read date.
   // Three tiles carry the point (08-07 length cut); the axis and the fresher-than count stay
   // computed over the SHOWN set so the drawn claim always matches the visible tiles.
+  // Tiles arrive ordered most direct substitute first, then most recent (compStrip), so the
+  // three shown are the most relevant, not the first three stored (Paleonola hid a 12-day ad).
   const compShown = compCreatives.slice(0, 3);
-  const compAges = compShown.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
+  const ageList = (cs: any[]) => cs.map((c) => (typeof c.age_days === 'number' ? c.age_days : null)).filter((n): n is number => n != null);
+  const compAges = ageList(compShown);
+  // "N days since the most recent competitor start" is a claim about EVERY kept tile.
+  const compAllAges = ageList(compCreatives);
   // Corpus-level recency claims ("N days since the most recent competitor start", the drawn
   // axis, the fresher-than sentence) need a minimum population of DATED creatives. Noisy Clan
   // (08-17) shipped "504 days since the most recent competitor start date" computed over ONE
@@ -440,6 +466,7 @@ function AdEvidenceSpread({
   // most-recent-X over a population of 1 is not a population claim. Below the floor the tiles
   // still render (each states only its own age); the corpus stats render as silence.
   const compDatedEnough = compAges.length >= 3;
+  const compAllDatedEnough = compAllAges.length >= 3;
   const maxAge = compAges.length ? Math.max(...compAges, newestAge ?? 0) : newestAge ?? 0;
   const axisMax = Math.max(7, Math.ceil((maxAge + 4) / 5) * 5);
   const agePos = (d: number) => Math.max(0, Math.min(100, (1 - d / axisMax) * 100));
@@ -452,7 +479,8 @@ function AdEvidenceSpread({
     ? metaPage.data.active_ad_count as number : null;
   const headCounts = [
     metaN != null ? { k: 'meta', v: metaN, t: `${metaN} on Meta.` } : null,
-    g && gCount ? { k: 'google', v: g.ads_found as number, t: `${gCount.pre ? `${gCount.pre} ` : ''}${gCount.n} on Google.` } : null,
+    // each head count is its own sentence: "At least 100 on Google.", never ". at least"
+    g && gCount ? { k: 'google', v: g.ads_found as number, t: `${gCount.pre ? `${gCount.pre.charAt(0).toUpperCase()}${gCount.pre.slice(1)} ` : ''}${gCount.n} on Google.` } : null,
   ].filter((x): x is { k: string; v: number; t: string } => !!x).sort((a, b) => b.v - a.v);
 
   const eyebrow = (t: string) => (
@@ -693,8 +721,8 @@ function AdEvidenceSpread({
               {typeof comp?.sampled_items === 'number' ? (
                 <Stat {...countParts(comp.sampled_items, comp.capped)} label="ads read across the sweep" />
               ) : null}
-              {compDatedEnough ? (
-                <Stat n={String(Math.min(...compAges))} unit={dayWord(Math.min(...compAges))} label="since the most recent competitor start date" />
+              {compAllDatedEnough ? (
+                <Stat n={String(Math.min(...compAllAges))} unit={dayWord(Math.min(...compAllAges))} label="since the most recent competitor start date" />
               ) : null}
             </div>
 
@@ -748,7 +776,7 @@ function AdEvidenceSpread({
                   <span className="end l">{`${axisMax} days back`}</span>
                   <span className="end r">{compReadLong ? `read ${compReadLong}` : 'read date'}</span>
                   {newestAge != null ? (
-                    <span className="mkl" style={{ left: `${agePos(newestAge)}%`, color: accent }}>{`your newest, ${newestAge} ${dayWord(newestAge)}`}</span>
+                    <span className="mkl" style={{ left: `${agePos(newestAge)}%`, color: accent, transform: mklShift(agePos(newestAge)) }}>{`your newest, ${newestAge} ${dayWord(newestAge)}`}</span>
                   ) : null}
                 </div>
                 {fresherThanBrand != null && newestAge != null ? (
@@ -1360,7 +1388,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const hasAdEvidence =
     gAds?.status === 'present' ||
     sweepZero ||
-    (competitors?.status === 'present' && Array.isArray(competitors.data?.creatives) && competitors.data.creatives.length > 0);
+    compStrip(competitors).length > 0;
 
   // Dated storefront plates. A URL with no capture date, or a capture date with no URL,
   // renders nothing: an undated screenshot is not evidence.

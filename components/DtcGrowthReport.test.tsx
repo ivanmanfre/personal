@@ -485,7 +485,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     // competitor creatives are what makes the section render at all (hasAdEvidence)
     (dtc as any).competitors = {
       status: 'present', checked_at: '2026-08-15T09:00:00Z',
-      data: { creatives: [{ advertiser: 'Solara Home', start_date: '2026-07-17', keyword: 'air fry' }] },
+      data: { creatives: [{ advertiser: 'Solara Home', start_date: '2026-07-17', keyword: 'air fry' },
+                          { advertiser: 'Matero Cookware', start_date: '2026-08-01', keyword: 'air fry' }] },
     };
     const html = renderDtc(dtc, fixture.company_name);
     expect(html).not.toContain('Two public ad archives');
@@ -517,7 +518,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
       status: 'present', checked_at: '2026-08-17T09:00:00Z',
       data: {
         advertisers_seen: 81, sampled_items: 109, keywords: ['music stand'],
-        creatives: [{ advertiser: 'Theaheng Music', start_date: '2025-03-31', age_days: 504, keyword: 'music stand' }],
+        creatives: [{ advertiser: 'Theaheng Music', start_date: '2025-03-31', age_days: 504, keyword: 'music stand' },
+                    { advertiser: 'Stand Co', keyword: 'music stand' }],
       },
     };
     const html = renderDtc(dtc, fixture.company_name);
@@ -547,6 +549,69 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     const html = renderDtc(dtc, fixture.company_name);
     expect(html).toContain('since the most recent competitor start date');
     expect(html).toContain('Start dates, drawn back from the read');
+  });
+});
+
+// ── Round 4 (09-26): competitor strip order, floor, recency; head-count case; axis label ──
+describe('DtcGrowthReport — competitor strip round 4', () => {
+  const withComp = (creatives: any[], google?: any) => {
+    const fixture = loadFixture('rodial-com.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
+    (dtc as any).competitors = {
+      status: 'present', checked_at: '2026-09-26T09:00:00Z',
+      data: { advertisers_seen: 40, sampled_items: 90, keywords: ['grain free granola'], creatives },
+    };
+    if (google) (dtc as any).ads = { ...((dtc as any).ads || {}), google };
+    return renderDtc(dtc, fixture.company_name);
+  };
+  // Paleonola's saved strip (09-26): the 12-day Paleovalley ad sat 5th, behind three older tiles.
+  const paleonola = [
+    { advertiser: 'Howdysnax', age_days: 46, start_date: '2026-08-11' },
+    { advertiser: 'Carnivore Snax', age_days: 65, start_date: '2026-07-23' },
+    { advertiser: 'Struesli', age_days: 107, start_date: '2026-06-11' },
+    { advertiser: 'Seven Sundays', age_days: 42, start_date: '2026-08-15' },
+    { advertiser: 'Paleovalley', age_days: 12, start_date: '2026-09-14' },
+    { advertiser: 'Crazy Monkey Baking', age_days: 49, start_date: '2026-08-08' },
+  ];
+  // tile captions, in page order (tiles without an image render a text fallback, no alt)
+  const tiles = (html: string) => [...html.matchAll(/<figcaption[\s\S]*?leading-tight" style="[^"]*">([^<]+)<\/span>/g)].map((m) => m[1]);
+
+  it('days since the most recent competitor counts every kept tile, and the newest are shown', () => {
+    const html = withComp(paleonola);
+    expect(html).toMatch(/>12<\/span><span[^>]*>days<\/span><\/div><div[^>]*>since the most recent competitor start date/);
+    expect(tiles(html)).toEqual(['Paleovalley', 'Seven Sundays', 'Howdysnax']);
+  });
+
+  it("the judge's relevance orders the tiles before recency", () => {
+    const html = withComp([
+      { advertiser: 'Old Direct', age_days: 90, relevance: 10 },
+      { advertiser: 'New Loose', age_days: 3, relevance: 7 },
+      { advertiser: 'Mid Direct', age_days: 30, relevance: 10 },
+    ]);
+    expect(tiles(html)).toEqual(['Mid Direct', 'Old Direct', 'New Loose']);
+  });
+
+  it('one kept advertiser is no strip at all', () => {
+    const html = withComp([{ advertiser: 'Stocked Vintage', age_days: 348 }]);
+    expect(html).not.toContain('Stocked Vintage');
+    expect(html).not.toContain('The same keywords, other advertisers');
+  });
+
+  it('a capped Google count opening a sentence reads "At least", never ". at least"', () => {
+    const html = withComp(paleonola.slice(0, 2), {
+      status: 'present', fetched_at: '2026-09-26T09:00:00Z',
+      data: { ads_found: 100, capped: true, checked_at: '2026-09-26', creatives: [], newest_first_shown: '2023-10-28' },
+    });
+    expect(html).toContain('At least 100 on Google.');
+    expect(html).not.toMatch(/\. at least/);
+  });
+
+  it('the "your newest" label near the left end of the axis hangs inward, never off-screen', () => {
+    const html = withComp(paleonola, {
+      status: 'present', fetched_at: '2026-09-26T09:00:00Z',
+      data: { ads_found: 3, checked_at: '2026-09-26', creatives: [], newest_first_shown: '2023-10-28' },
+    });
+    expect(html).toMatch(/class="mkl" style="left:[\d.]+%;color:[^;]+;transform:translateX\(0\)">your newest, 1064 days/);
   });
 });
 
