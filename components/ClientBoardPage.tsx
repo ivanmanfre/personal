@@ -9177,7 +9177,9 @@ export default function ClientBoardPage() {
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
-  const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
+  // Feeds the calendars' "Approved" check mark and legend key: none on a live board
+  // without review mode (nothing there is approved; its posts are simply scheduled).
+  const scheduledIds = new Set((isLive && !reviewMode) ? [] : viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
   const approvedIds = new Set<string>((isLive && !reviewMode) ? [] : Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
   // One props object per switched surface: the desk variant and the original take the SAME
   // wiring, so the skin can never change behaviour — only which presentation renders it.
