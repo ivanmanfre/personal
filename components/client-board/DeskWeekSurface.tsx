@@ -256,9 +256,12 @@ const WEEK_CSS = `
 
 /* ────────────────────────── the surface ────────────────────────── */
 
-export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false }: {
+export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false, reviewMode = false }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
+  /** board.review_mode (ARCH). A LIVE board shows post sources only in review mode; a live
+   *  board without it is the buffer only (Ivan, 27 Sep). Preview boards unchanged. */
+  reviewMode?: boolean;
   /** Live board: publishing runs from the buffer — no approve gate. The deck shows every
    *  buffered draft with the client powers (edit / swap / remove), each recorded. */
   live?: boolean;
@@ -539,7 +542,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     const slides = slidesOf(q);
     const cover = cardImageUrl(q);
     const perf = perfFor(q);
-    const prov = provenanceOf(q);
+    const prov = (!live || reviewMode) ? provenanceOf(q) : null;
     const isOut = stageOf(q) === 'published';
     const swapped = !!angleSwaps[q.id];
     return (

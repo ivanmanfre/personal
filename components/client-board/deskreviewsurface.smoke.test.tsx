@@ -405,7 +405,7 @@ describe('DeskReviewSurface', () => {
     const { container } = render(
       <div data-skin="desk" style={SKIN_VARS}>
         <DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOfLive} onOpen={noop} onOpenIdea={noop}
-          onApprove={onApprove} flashId={null} view="list" setView={noop} skips={{}} live approvedIds={new Set(['q-buffer-approved'])} />
+          onApprove={onApprove} flashId={null} view="list" setView={noop} skips={{}} live reviewMode approvedIds={new Set(['q-buffer-approved'])} />
       </div>,
     );
     openDisclosure(container, 'In buffer');
@@ -439,7 +439,7 @@ describe('DeskReviewSurface', () => {
     board.queue = [{ id: 'q-full', kind: 'post', stage: 'review', title: 'Full draft', body }];
     window.history.replaceState(null, '', '/');
     const opened: unknown[] = [];
-    const { container, getByRole } = render(<DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...args) => opened.push(args)} onOpenIdea={noop} onApprove={noop} flashId={null} view="feed" setView={noop} skips={{}} live />);
+    const { container, getByRole } = render(<DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...args) => opened.push(args)} onOpenIdea={noop} onApprove={noop} flashId={null} view="feed" setView={noop} skips={{}} live reviewMode />);
     openDisclosure(container, 'In buffer');
     const copy = container.querySelector('[data-review-copy]')!;
     expect(copy.textContent).toBe(body);
@@ -458,7 +458,7 @@ describe('Inline buffer approval', () => {
   function props() {
     const board = makeBoard(); board.queue = [queueFixture()[2]];
     board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH', avatar_url: 'https://example.com/avatar.jpg' };
-    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true };
+    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true, reviewMode: true };
   }
   it('shows a recognizable platform preview with distinct review controls', () => {
     const p = props(); const r = render(<DeskReviewSurface {...p} />);
@@ -535,7 +535,7 @@ describe('In-place post text', () => {
   function props() {
     const board = makeBoard(); board.queue = [queueFixture()[2]];
     board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH' };
-    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true };
+    return { board, accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: vi.fn(), onOpenIdea: noop, onApprove: noopAsync, flashId: null, view: 'feed' as const, setView: noop, skips: {}, live: true, reviewMode: true };
   }
   it('saves the typed text on blur from the Review feed card and reports Saved', async () => {
     const p = props(); const edit = vi.fn().mockResolvedValue({ ok: true });

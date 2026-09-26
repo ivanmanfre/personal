@@ -176,7 +176,7 @@ const emptyBoard: Board = {
 const noop = () => {};
 const asyncOk = async () => ({ ok: true });
 
-function render(b: Board) {
+function render(b: Board, reviewMode = false) {
   return renderToStaticMarkup(
     React.createElement(DeskWeekSurface, {
       board: b,
@@ -208,6 +208,7 @@ function render(b: Board) {
       flashId: null,
       modalOpen: false,
       live: true,
+      reviewMode,
     })
   );
 }
@@ -469,10 +470,16 @@ describe('DeskWeekSurface', () => {
     expect(html).toContain('Weekends are not posting days');
   });
 
-  it('only chips REAL provenance, never a curation fallback', () => {
-    expect(html).toContain('From your sales call');
+  it('only chips REAL provenance, never a curation fallback (review-mode boards)', () => {
+    const reviewHtml = render(board, true);
+    expect(reviewHtml).toContain('From your sales call');
+    expect(reviewHtml).not.toMatch(/hand-?picked/i);
+    expect(reviewHtml).not.toMatch(/picked by/i);
+  });
+
+  it('a live board without review mode chips no post source at all (27 Sep)', () => {
+    expect(html).not.toContain('From your sales call');
     expect(html).not.toMatch(/hand-?picked/i);
-    expect(html).not.toMatch(/picked by/i);
   });
 
   it('keeps the locked copy register', () => {

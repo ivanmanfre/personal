@@ -425,6 +425,26 @@ interface OutreachSpec {
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
 /** One row of the client-visible draft history (client_board_draft_history RPC). */
 interface HistoryEntry { action: string; at: string; by?: string | null; event?: string | null; note?: string | null; before?: string | null; after?: string | null }
+/** Who a draft-history row reads as on the client's screen (27 Sep). `by` is whatever wrote
+ *  the row: the client's email, an operator email, a tooling session id, or null. The
+ *  client's own writes (an address on the board's own domain, or the founder's name) read
+ *  "You"; everything else reads "<company> team". A raw `by` string never renders. */
+export function clientHistoryAuthor(by: string | null | undefined, board: Pick<Board, 'company_name' | 'domain' | 'founder'>): { label: string; client: boolean } {
+  const raw = (by || '').trim().toLowerCase();
+  const team = { label: `${(board.company_name || '').trim() || 'Your'} team`, client: false };
+  if (!raw) return team;
+  const domain = (board.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  if (raw.includes('@')) {
+    const host = raw.slice(raw.lastIndexOf('@') + 1);
+    if (domain && (host === domain || host.endsWith(`.${domain}`))) return { label: 'You', client: true };
+  }
+  const norm = (x: string) => x.toLowerCase().replace(/[._\-+]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const full = norm(board.founder?.name || '');
+  const first = norm(board.founder?.first_name || '') || full.split(' ')[0] || '';
+  const local = norm(raw.includes('@') ? raw.slice(0, raw.indexOf('@')) : raw);
+  if (local && (local === full || local === first)) return { label: 'You', client: true };
+  return team;
+}
 /** Line-level LCS diff for the history's edit rows: only changed lines are shown. */
 function diffLines(before: string, after: string): { t: '-' | '+'; s: string }[] {
   const a = before.split('\n'), b = after.split('\n');
@@ -3769,6 +3789,10 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   };
   const historyLabel = (h: HistoryEntry): string => {
     if (h.action === 'edit_copy') return 'Copy edited';
+    if (h.action === 'edit_title') return 'Title edited';
+    if (h.action === 'set_schedule') return h.after ? 'Rescheduled' : 'Taken off the calendar';
+    if (h.action === 'set_media') return h.after ? 'Photo changed' : 'Photo removed';
+    if (h.action === 'hide_draft') return 'Removed from the buffer';
     if (h.action === 'approve') return 'Approved';
     if (h.action === 'request_changes') return 'Change requested';
     if (h.action === 'note') {
@@ -3783,10 +3807,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     }
     return h.action.replace(/_/g, ' ');
   };
+  // Every history time reads in the board's own zone, labelled, never the viewer's clock.
   const historyWhen = (iso: string): string => {
     const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { timeZone: clientTz(), day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 }) + ' ' + boardZone().label;
   };
+  // Client-safe rows only: operator notes (lane markers, cleanup stamps) never render, and a
+  // note's free text shows only when the client wrote it.
+  const CLIENT_NOTE_EVENTS = new Set(['angle_swap', 'angle_swap_undone', 'post_removed', 'post_restored', 'undo_approve']);
+  const shownHistory = (history || []).filter((h) => h.action !== 'note' || CLIENT_NOTE_EVENTS.has(h.event || '') || clientHistoryAuthor(h.by, board).client);
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
@@ -3799,7 +3828,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const nextLine = stage === 'review' ? (isLive
       ? (reviewMode
           ? 'Approve it, edit it, or request a change. Approval saves your sign-off. Scheduling is separate.'
-          : 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.')
+          : (isScheduled(item)
+            ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.'
+            : 'Ready in the buffer. Give it a date and time to schedule it, edit it, or remove it. Every change you make lands in the log.'))
       : 'Approve it, edit it, or request a change. Approved posts publish on their dates.')
     : stage === 'scheduled' ? (isLive ? (isScheduled(item) ? 'Scheduled. It publishes on its date.' : 'Approved. Still in the buffer until scheduled.') : 'Approved. It publishes on its date.')
     : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
@@ -3878,7 +3909,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
-          {isLive && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
+          {isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
           <LmResourceBlock gate={item.lm_gate} accent={accent} />
           {/* Content preview / edit */}
           <div className="min-w-0">
@@ -4183,16 +4214,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           </div>
 
           {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
-          {isLive && history && history.length > 0 && (
+          {isLive && shownHistory.length > 0 && (
             <div className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
               <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</div>
               <div className="mt-2.5 flex flex-col">
-                {history.map((h, i) => (
+                {shownHistory.map((h, i) => { const author = clientHistoryAuthor(h.by, board); return (
                   <div key={i} className="flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
                     <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}{h.by ? <span style={{ fontWeight: 400, color: DIM }}> · {h.by}</span> : null}</span>
-                      {h.note && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
+                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}<span style={{ fontWeight: 400, color: DIM }}> · {author.label}</span></span>
+                      {h.note && author.client && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
                       {h.action === 'edit_copy' && h.after && (h.before ? (
                         openDiff === i ? (
                           <span className="block mt-1">
@@ -4209,9 +4240,10 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       ) : (
                         <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>
                       ))}
+                      {h.action === 'set_schedule' && h.after && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: {fmtSchedLA(h.after)}</span>}
                     </span>
                   </div>
-                ))}
+                ); })}
               </div>
             </div>
           )}
@@ -8838,6 +8870,9 @@ export default function ClientBoardPage() {
     q.generating ? 'drafted'
       : angleSwaps[q.id] ? 'drafted'
         : q.stage === 'published' ? 'published'
+          // Live boards without review mode have no approvals: a stale local approve tick
+          // (left in localStorage while review mode was forced on) must not move a post.
+          : (isLive && !reviewMode) ? q.stage
           : stageOverride[q.id] ?? q.stage
   );
   // Display resolution for swapped slots: the chosen angle replaces topic + pillar and
@@ -8968,7 +9003,10 @@ export default function ClientBoardPage() {
   const isLive = !isPreview;
   isLiveRef.current = isLive;
   const reviewMode = isLive && !!board?.review_mode;
-  reviewModeRef.current = reviewMode || (isLive && skin === 'desk');
+  // Approval UI (Approve / Request changes / pending split / source notes) belongs ONLY to
+  // boards with board.review_mode (ARCH). A live board without it is the buffer only
+  // (Ivan, 27 Sep: RISE never approves posts), whatever its skin.
+  reviewModeRef.current = reviewMode;
 
   // Per-board share metadata (mirrors ScanReportPage). Sets the title + a NEUTRAL OG about
   // a content preview built for this company — never Ivan's agency pitch — and an OG image
@@ -9131,7 +9169,7 @@ export default function ClientBoardPage() {
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
   const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
-  const approvedIds = new Set(Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
+  const approvedIds = new Set<string>((isLive && !reviewMode) ? [] : Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
   // One props object per switched surface: the desk variant and the original take the SAME
   // wiring, so the skin can never change behaviour — only which presentation renders it.
   const weekSurfaceProps = {
@@ -9145,9 +9183,9 @@ export default function ClientBoardPage() {
     flashId, modalOpen: !!detail, live: isLive,
   };
   const surfaces: Record<TabId, React.ReactNode> = {
-    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} /> : <WeekSurface {...weekSurfaceProps} />,
+    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -9671,7 +9709,7 @@ export default function ClientBoardPage() {
           setSchedule={isLive ? setScheduleRPC : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
-          reviewMode={reviewMode || (isLive && skin === 'desk')}
+          reviewMode={reviewMode}
           approved={approvedIds.has(detail.id)}
         />
       )}

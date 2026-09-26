@@ -178,7 +178,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   );
 }
 import {
-  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz,
+  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, clientHistoryAuthor,
 } from '../ClientBoardPage';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
@@ -389,8 +389,13 @@ export default function DeskReviewSurface({
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
+  reviewMode = false,
 }: {
   board: Board; accent: string; mint: string;
+  /** board.review_mode (ARCH). Only then does a LIVE board get approval: Approve / Request
+   *  changes, the Pending approval / Approved split, the Review 2-up and the source notes.
+   *  A live board without it is the buffer only (Ivan, 27 Sep). Preview boards unchanged. */
+  reviewMode?: boolean;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
@@ -446,7 +451,11 @@ export default function DeskReviewSurface({
   const pendingN = board.queue.filter((x) => stageOf(x) === 'review' && !isScheduledLocal(x)).length;
   const approvedN = board.queue.filter((x) => stageOf(x) === 'scheduled' && !isScheduledLocal(x)).length;
   const total = sched + buffer;
-  const parts = [pendingN ? `${pendingN} pending approval` : null, approvedN ? `${approvedN} approved` : null, sched ? `${sched} scheduled` : null].filter(Boolean) as string[];
+  // Approval vocabulary only where approval exists: preview boards and review-mode boards.
+  const approvals = !live || reviewMode;
+  const parts = (approvals
+    ? [pendingN ? `${pendingN} pending approval` : null, approvedN ? `${approvedN} approved` : null, sched ? `${sched} scheduled` : null]
+    : [buffer ? `${buffer} with no date yet` : null, sched ? `${sched} scheduled` : null]).filter(Boolean) as string[];
 
   // Aim mix across the whole queue.
   const aim = { reach: 0, trust: 0, buyers: 0 } as Record<'reach' | 'trust' | 'buyers', number>;
@@ -607,7 +616,7 @@ export default function DeskReviewSurface({
     const slides = (q.kind === 'carousel' || q.style === 'carousel') ? (q.image_urls || []).filter(Boolean) : [];
     const dateLabel = inBuffer(bucket) ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
     const chip = bucket === 'approved' ? { label: 'Approved ✓' } : statusChipFor(stage, q, live, todayIso);
-    const provenance = live ? sourceChipLocal(q) : null;
+    const provenance = live && reviewMode ? sourceChipLocal(q) : null;
     const perf = bucket === 'published' ? perfFor(board, q) : null;
     const flashed = flashId === q.id;
     const shipsToday = chip?.accent;
@@ -715,7 +724,7 @@ export default function DeskReviewSurface({
           </div>
           {bucket !== 'published' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-              {live && onApprove && bucket === 'buffer' && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => { void onApprove(q.id); }}>Approve ✓</Pill>}
+              {live && reviewMode && onApprove && bucket === 'buffer' && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => { void onApprove(q.id); }}>Approve ✓</Pill>}
               {/* 2026-09-10 (Ivan): the text edits in place when onEditBody is wired, so the Edit copy control is redundant there. */}
               {!(live && onEditBody) && <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>}
               <Pill style={{ fontSize: 15, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>Edit time</Pill>
@@ -781,7 +790,7 @@ export default function DeskReviewSurface({
     const src = sourceChipLocal(q);
     return (
       <div data-review-card={q.id} key={q.id} className="cb-licard" style={{ minWidth: 0, fontFamily: LI_FONT }}>
-      {live && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
+      {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
           size, its grey ink, its head, its action bar. */}
@@ -823,7 +832,16 @@ export default function DeskReviewSurface({
         {bucket === 'approved' && <Chip>Approved ✓</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
-      {bucket !== 'published' && <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />}
+      {bucket !== 'published' && (approvals
+        ? <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
+        : (
+          /* Buffer-only board: the normal post tools, no sign-off. Photo and remove live in
+             the post drawer these open. */
+          <div data-card-tools style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '12px 2px 0' }}>
+            {!(live && onEditBody) && <Pill style={{ fontSize: 13, minHeight: 44 }} onClick={() => onOpen(q, { editing: true })}>Edit copy</Pill>}
+            <Pill style={{ fontSize: 13, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>{isScheduledLocal(q) ? 'Edit time' : 'Set date & time'}</Pill>
+          </div>
+        ))}
       </div>
     );
   };
@@ -839,7 +857,7 @@ export default function DeskReviewSurface({
     return 0;
   };
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || (view === 'feed' && inBuffer(bucket))
+    topic === 'personal' || (view === 'feed' && inBuffer(bucket) && approvals)
       ? <div className="cb-licard-grid">{[...list].sort((a, b) => formatRank(a) - formatRank(b)).map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
@@ -963,11 +981,14 @@ export default function DeskReviewSurface({
             <Footnote on="plate" style={{ marginTop: 6 }}>waiting to go out</Footnote>
           </div>
           <div data-viz="" style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-            {[
+            {(approvals ? [
               { v: pendingN, label: 'pending approval', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
               { v: approvedN, label: 'approved', bg: 'var(--cb-accent)', tone: 'plate' as const },
               { v: sched, label: 'scheduled', bg: 'rgba(255,255,255,0.62)', tone: 'plate' as const },
-            ].map((seg) => (
+            ] : [
+              { v: buffer, label: 'in buffer', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
+              { v: sched, label: 'scheduled', bg: 'rgba(255,255,255,0.62)', tone: 'plate' as const },
+            ]).map((seg) => (
               /* minWidth keeps a zero segment's label from stacking onto its neighbour
                  (the "0 34 / SCHEDULED IN BUFFER" overlap Ivan screenshotted 2026-09-10). */
               <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: 118 }}>
@@ -1059,19 +1080,19 @@ export default function DeskReviewSurface({
           {live ? (
             <>
               {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
-              {section('In buffer', fBuffer.length, 'written, no date yet', (
+              {section('In buffer', fBuffer.length, 'written, no date yet', reviewMode ? (
                 <>
                   {subSection('Approved', fApproved.length, 'Approved. Takes the next open slot.', rowsFor(fApproved, 'approved'), 'approved')}
                   {subSection('Pending approval', fPending.length, 'Waiting for your approval.', rowsFor(fPending, 'buffer'), 'pending')}
                 </>
-              ), 'buffer', (
+              ) : rowsFor(fBuffer, 'buffer'), 'buffer', reviewMode ? (
                 <>
                   {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
                   <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
                   <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
                 </>
-              ))}
-              {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
+              ) : undefined)}
+              {section('Drafting', fDrafted.length, reviewMode ? 'Being written now. They move to your review when ready.' : 'Being written now. They land in the buffer when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
               {section('Published', fPublished.length, 'published, newest first', [
                 <React.Fragment key="recent-out">{rowsFor(fPublished.slice(-6).reverse(), 'published')}</React.Fragment>,
                 fPublished.length > 6 ? (
@@ -1157,7 +1178,9 @@ export default function DeskReviewSurface({
                         />
                       </Drill>
                     )}
-                    {!hasDiff && h.note && <div style={{ marginTop: 4, fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>&ldquo;{h.note}&rdquo;</div>}
+                    {/* Free-text notes render only when the client wrote them; operator
+                        notes (cleanup stamps, tooling remarks) never reach this log. */}
+                    {!hasDiff && h.note && clientHistoryAuthor(h.by, board).client && <div style={{ marginTop: 4, fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>&ldquo;{h.note}&rdquo;</div>}
                   </div>
                 );
               })}
@@ -1210,7 +1233,6 @@ export default function DeskReviewSurface({
         <Stat value={total} caption="written" />
         <Stat value={sched} caption="scheduled" />
         <Stat value={buffer} caption="in buffer" />
-        {board.ideas && <Stat value={board.ideas.length} caption="ideas banked, ready to write" />}
       </StatStrip>
     </div>
   );
