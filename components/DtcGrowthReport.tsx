@@ -787,10 +787,11 @@ function productPrice(p?: PromiseItem['product']): string | null {
   return fmtPrice(n, curSymbol(p.currency));
 }
 
+// "Sep 26": the eyebrow is one line on a phone; the masthead carries the full date.
 function shortDay(s?: string | null): string | null {
   const ms = dayMs(s);
   if (ms == null) return null;
-  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 // Marks the item's public fact inside the headline when the headline states it verbatim
@@ -933,7 +934,7 @@ function PromiseHero({
 
         <div className="lg:col-span-7 lg:row-start-2">
           {rows.length ? (
-            <ol className="mt-1" style={{ listStyle: 'none', padding: 0, margin: 0, borderTop: `1px solid ${ink}1f` }}>
+            <ol className="mt-1" style={{ listStyle: 'none', padding: 0, borderTop: `1px solid ${ink}1f` }}>
               {rows.map((r) => (
                 <li key={r.n} className="grid py-3.5" style={{ gridTemplateColumns: '30px minmax(0,1fr)', columnGap: 8, borderBottom: `1px solid ${ink}1f` }}>
                   <span className="font-extrabold text-[1.25rem] leading-none" style={{ fontFamily: headingFont, color: ink }}>{r.n}</span>
@@ -1015,7 +1016,7 @@ function PromiseSection({
       </div>
 
       {items.length ? (
-        <ol className="mt-10" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ol className="mt-10" style={{ listStyle: 'none', padding: 0 }}>
           {items.map((it, i) => {
             const product = it.product && it.product.image_url ? it.product : null;
             const price = productPrice(product || undefined);

@@ -564,7 +564,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     // Masthead dates from dtc.completed_at (restamped on every build), not the scan row.
     assertConversionLayer(html, /Growth Scan · September 2[56], 2026/, false);
     // Eyebrow: brand + read date from dtc.completed_at, never the generic hook.
-    expect(html).toMatch(/Tina Cassaday Creations · Read Sep 2[56], 2026/);
+    expect(html).toMatch(/Tina Cassaday Creations · Read Sep 2[56]</);
     expect(html).toContain('data-promise-hero="1"');
     expect(html).not.toContain(escHtml(d.hero_hook));
     // Headline with the public fact marked where it states it verbatim.
@@ -649,7 +649,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     assertNoRetiredChrome(html, dtc);
     // Stale ref falls back to the first drop-off item; no product, so the dated capture stands in.
     expect(html).toContain(escHtml(dtc.screenshots.pdp_url));
-    expect(html).toMatch(/Your product page, captured Sep 2[56], 2026/);
+    expect(html).toMatch(/Your product page, captured Sep 2[56]\./);
     expect(html).toMatch(/data-hero-fact="1"[^>]*>Blank</);
     // The empty block renders its honest note, and the hero drops its second row.
     expect(html).toContain('Your repeat rate is private, so we did not guess it.');
