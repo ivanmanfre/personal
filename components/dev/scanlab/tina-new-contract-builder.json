@@ -1,0 +1,470 @@
+{
+ "company_name": "Tina Cassaday Creations",
+ "label": "tina new contract, builder output (backend fixture 2026-09-26)",
+ "dtc": {
+  "builder_version": "dtc-2026-09-26",
+  "brand": {
+   "wordmark": "RISE DTC",
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "accent_hex": "#ffc71d",
+   "ink_hex": "#111111",
+   "surface_hex": "#ffffff",
+   "is_dark": false,
+   "font_heading": "Sora",
+   "font_body": "Manrope",
+   "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+   "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+  },
+  "competitors": {
+   "data": {
+    "capped": true,
+    "keywords": [
+     "conditioner",
+     "oil"
+    ],
+    "creatives": [
+     {
+      "keyword": "conditioner",
+      "page_id": "104957167940094",
+      "age_days": 102,
+      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/724442529_27505171109076279_5486413324165431034_n.jpg?_nc_cat=108&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_KnP8AZmDhAQ7kNvwHjWPck&_nc_oc=AdoBTS1rNCNohxdrDBQ8XbsJMihZ8nCQI8JqEPGgUs3cYME0BQz_HMtx0b0L3fw4OtA&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQIMXfUPBkntGC1IhxmCxAKOnaSFo4W4anMpZT7xNNucdw&oe=6ABD3477",
+      "advertiser": "Humby Organics",
+      "start_date": "2026-06-16",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-0.jpg",
+      "opening_text": "I've helped over 80,000 women stop thinning."
+     },
+     {
+      "keyword": "oil",
+      "page_id": "102507806502481",
+      "age_days": 334,
+      "image_url": "https://scontent.fmex12-1.fna.fbcdn.net/v/t39.35426-6/571158648_1431824565614822_8938271719069099064_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RpXm9ruPFJAQ7kNvwHQgPGX&_nc_oc=Adp7ComhLYZ52Llos3U5WG7BjEOc1IkOPjK1FCnRtb2LBqB1AKruVt7fDN8cb7SQljU&_nc_zt=14&_nc_ht=scontent.fmex12-1.fna&_nc_gid=fIP5btYXhYq-XSwLjQ3Rjg&_nc_ss=7f289&oh=00_AQIyJ1UMYNhY-coM-H2EEKV-fYxhlttS4gh0rJ8I-AllnQ&oe=6ABD26F7",
+      "advertiser": "Wild Growth Hair Care",
+      "start_date": "2025-10-27",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-1.jpg",
+      "opening_text": "Never Before Now is Wild Growth's latest 1X more concentrated hair oil."
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "244335642891847",
+      "age_days": 56,
+      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/761497327_2104706303555670_3094369942284442718_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Pud6sAaD1xQQ7kNvwFzWSmD&_nc_oc=AdrYYyA60zid6pzBVLdfmn1hy0nOtMFNObAkCciip8w7m2pENnFk63BP_OGbblM-gr8&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLVVWdJc3U6AnmgQwtP0HGYR3NsPiq4WGb8g2XDdgS3qA&oe=6ABD340B",
+      "advertiser": "Bare Anatomy",
+      "start_date": "2026-08-01",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-2.jpg",
+      "opening_text": "One Spray, Multiple Benefits \u2728"
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "444025482768886",
+      "age_days": 239,
+      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/622873639_912262191454500_8346141100030364649_n.jpg?_nc_cat=110&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=eEUBEmyfes0Q7kNvwHLxOwq&_nc_oc=AdqcTA_PlwBG6igNmjMn1MkV4QH4cbgoMKyhciw1bcnRHssPr1PK9FCXAyT20DfhK6E&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQKOQTZ7YgXXNPoD4-gOac5J0PFCWJ63gh-aytGxHYsSNw&oe=6ABD2546",
+      "advertiser": "Plix",
+      "start_date": "2026-01-30",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-3.jpg",
+      "opening_text": "\u2728 Glossy, soft hair on a budget?"
+     },
+     {
+      "keyword": "conditioner",
+      "page_id": "104086772515156",
+      "age_days": 133,
+      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/700343307_1541775130888524_553323202010607279_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=SlPNoNjezSkQ7kNvwGG0wiV&_nc_oc=Adond0YU-YRh2H0m4FNNTk6zYWSSf_PPmjKbNCW_laBN7A4FBs_4TrqrZCEfosWIGYc&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLiI27Uqdke9rHI7K0rgrJDlWPMg6JPwpEWt7uLjWBE1A&oe=6ABD0A36",
+      "advertiser": "Alif Ahlam /\u0623\u0644\u0641 \u0623\u062d\u0644\u0627\u0645",
+      "start_date": "2026-05-16",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-4.jpg",
+      "opening_text": "Introducing the Alifahlam Hair Care Kit \u2013 your complete solution for strong, shiny, and"
+     }
+    ],
+    "checked_at": "2026-09-26T04:51:27.801984+00:00",
+    "max_results": 60,
+    "sampled_items": 120,
+    "market_country": null,
+    "relevance_judge": {
+     "kept": 5,
+     "model": "claude-opus-5",
+     "status": "ok",
+     "dropped": 7,
+     "candidates": 12,
+     "dropped_advertisers": [
+      "CeraVe India",
+      "Bella Vita",
+      "Dermatouch",
+      "Takhfee",
+      "Dot & Key",
+      "Bellavitaskincare",
+      "Dermorepubliq"
+     ]
+    },
+    "advertisers_seen": 72,
+    "keywords_requested": [
+     "conditioner",
+     "oil"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T04:51:27.802002+00:00",
+   "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=conditioner&search_type=keyword_unordered&media_type=all"
+  },
+  "screenshots": {
+   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-pdp.png",
+   "captured_at": "2026-09-26T04:50:51.982792+00:00",
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da.png"
+  },
+  "shippable": {
+   "ok": true,
+   "drop_off_items": 3,
+   "second_order_items": 3,
+   "gap_findings": 2,
+   "reason": null
+  },
+  "hero": {
+   "headline": "Your best seller, Banana-Banana Deep Conditioner Sachet 6-Pack, is sold out",
+   "item_ref": "drop_off.0"
+  },
+  "drop_off": {
+   "items": [
+    {
+     "id": "bestseller_sold_out",
+     "title": "Your best seller, Banana-Banana Deep Conditioner Sachet 6-Pack, is sold out",
+     "detail": "Shoppers who click through to Banana-Banana Deep Conditioner Sachet 6-Pack reach a Sold out button, so anyone who came for it can't order it today.",
+     "fix": "Restock it, or move an in-stock product into its best-seller and homepage spots until it's back.",
+     "evidence": {
+      "label": "Best-selling order on your store",
+      "value": "Your best seller, marked sold out",
+      "source_url": "https://tinacassadaybh.com/collections/all?sort_by=best-selling"
+     },
+     "lever": "cro",
+     "product": {
+      "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
+      "url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
+      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/2039086819966666085-6VH-006.JPG?v=1548870171",
+      "price": 25.0,
+      "currency": "USD"
+     }
+    },
+    {
+     "id": "no_free_shipping",
+     "title": "Your shipping policy page is blank",
+     "detail": "A shopper who checks what delivery costs before buying finds an empty page, and your homepage mentions no free-shipping offer.",
+     "fix": "Publish your real rates and delivery times, and add a free-shipping threshold just above your typical order.",
+     "evidence": {
+      "label": "Shipping policy page",
+      "value": "Blank, and no free-shipping offer on your homepage",
+      "source_url": "https://tinacassadaybh.com/policies/shipping-policy"
+     },
+     "lever": "cro"
+    },
+    {
+     "id": "reviews_hidden",
+     "title": "6 five-star reviews on your best sellers don't show to shoppers",
+     "detail": "The rating is in your product page code, but the star badge under the product name renders empty and the review list is blank, so a first-time shopper sees no proof from past buyers.",
+     "fix": "Move to a review app that renders on your theme and import the reviews you already have.",
+     "evidence": {
+      "label": "Rating in your product page code",
+      "value": "5.0 stars from 3 reviews",
+      "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"
+     },
+     "lever": "cro",
+     "product": {
+      "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
+      "url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
+      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/2039086819966666085-6VH-006.JPG?v=1548870171",
+      "price": 25.0,
+      "currency": "USD"
+     }
+    }
+   ],
+   "note": "Your checkout and analytics aren't public, so we read the pages a shopper sees before checkout."
+  },
+  "second_order": {
+   "items": [
+    {
+     "id": "no_reorder_path",
+     "title": "No subscribe or refill option on Banana-Banana Conditioner",
+     "detail": "Banana-Banana Conditioner is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
+     "fix": "Add subscribe and save to Banana-Banana Conditioner, with a small discount on each repeat delivery.",
+     "evidence": {
+      "label": "Subscribe option on the products you sell most",
+      "value": "None on the 5 we checked",
+      "source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner"
+     },
+     "lever": "retention_path",
+     "product": {
+      "title": "Banana-Banana Conditioner",
+      "url": "https://tinacassadaybh.com/products/banana-banana-conditioner",
+      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/BBC_6a4ec4a0-28c4-44f8-ae43-088ca3daf9c8.png?v=1670608643",
+      "price": 60.0,
+      "currency": "USD"
+     }
+    },
+    {
+     "id": "capture_no_offer",
+     "title": "Your sign-up form sits in the footer with nothing offered for joining",
+     "detail": "There's no sign-up pop-up and no reason to leave an email, so a first visit that ends without an order leaves you no way to reach that shopper again.",
+     "fix": "Add a sign-up pop-up with a first-order offer so first-time visitors join before they leave.",
+     "evidence": {
+      "label": "Sign-up pop-up",
+      "value": "Privy installed with no active campaign",
+      "source_url": "https://tinacassadaybh.com/"
+     },
+     "lever": "retention_path"
+    },
+    {
+     "id": "no_loyalty",
+     "title": "We didn't find a rewards program on your store",
+     "detail": "A first-time buyer earns no points or credit toward a next order, so nothing on the store itself gives them a reason to come back.",
+     "fix": "Add a simple points or next-order credit program and mention it on the order confirmation page.",
+     "evidence": {
+      "label": "Rewards program",
+      "value": "None found on your storefront",
+      "source_url": "https://tinacassadaybh.com/"
+     },
+     "lever": "retention_path"
+    }
+   ],
+   "note": "Your repeat-order rate isn't public, so we read what your store gives a first-time buyer to come back for."
+  },
+  "store_meta": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:45.083287+00:00",
+   "source_url": "https://tinacassadaybh.com/meta.json",
+   "data": {
+    "currency": "USD",
+    "country": "US",
+    "published_products_count": 5,
+    "ships_to_home_country": true
+   }
+  },
+  "bestsellers": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:45.313176+00:00",
+   "source_url": "https://tinacassadaybh.com/collections/all?sort_by=best-selling",
+   "data": {
+    "handles": [
+     "banana-banana-sachet-6-pack",
+     "banana-banana-conditioner",
+     "banana-bliss-shampoo",
+     "banana-blossom-elixir",
+     "banana-banana-conditioner-sachet-0-5-fl-oz"
+    ],
+    "source_url": "https://tinacassadaybh.com/collections/all?sort_by=best-selling"
+   }
+  },
+  "dm_insight": null,
+  "dm_insight_why": null,
+  "dm_message": null,
+  "dm_insight_source": null,
+  "completeness": {
+   "signals": {
+    "shopify": "present",
+    "ads.meta": "empty",
+    "tech_stack": "present",
+    "reviews": "present",
+    "pagespeed": "absent",
+    "signup": "present"
+   },
+   "present_count": 4,
+   "scored_of": 6,
+   "present": [
+    "shopify",
+    "tech_stack",
+    "reviews",
+    "signup"
+   ],
+   "tier": "partial"
+  },
+  "shopify": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:44.632967+00:00",
+   "source_url": "https://tinacassadaybh.com/products.json",
+   "endpoint_used": "products.json",
+   "data": {
+    "catalog_size": 5,
+    "price_band": {
+     "min": 4.0,
+     "max": 60.0,
+     "median": 25.0,
+     "priced_products": 5,
+     "in_stock_only": false,
+     "catalog_max": 60.0
+    },
+    "variant_depth_avg": 1.0,
+    "oos_pct": 20.0,
+    "oos_variants": 1,
+    "new_products_90d": 0,
+    "has_subscription": false,
+    "subscription_source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz.js",
+    "discount_depth_pct": 0.0,
+    "products_on_discount": 0,
+    "gift_cards": 0,
+    "non_merch": 0,
+    "merch_catalog_size": 5,
+    "currency": "USD",
+    "auto_discount_pct": null,
+    "catalog_capped": false,
+    "newest_product_days": 1030,
+    "newest_product_year": 2023,
+    "newest_product_month": 11,
+    "platform": "shopify"
+   }
+  },
+  "ads": {
+   "meta": {
+    "data": {
+     "active_ad_count": 0
+    },
+    "reason": "Meta transparency: \"This Page isn't currently running ads.\" (declared page zero; cross-checked ad-library search: no identity-matched advertiser)",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:50:51.377798+00:00",
+    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills"
+   },
+   "google": {
+    "data": {
+     "query": "Tina Cassaday Creations",
+     "capped": false,
+     "region": "US",
+     "formats": {
+      "text": 0,
+      "image": 0,
+      "video": 0
+     },
+     "ads_found": 0,
+     "creatives": [],
+     "advertiser": null,
+     "checked_at": "2026-09-26T04:51:09.185487+00:00",
+     "max_results": 60,
+     "queries_tried": [
+      "tinacassadaybh.com",
+      "Tina Cassaday Creations"
+     ],
+     "latest_last_shown": null,
+     "newest_first_shown": null,
+     "oldest_first_shown": null,
+     "advertisers_matched": 0
+    },
+    "reason": "google actor returned 0 items across 2 queries, none matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:51:09.185504+00:00",
+    "source_url": "https://adstransparency.google.com/?region=US&q=tinacassadaybh.com"
+   },
+   "meta_sweep": {
+    "data": {
+     "capped": false,
+     "keywords": [
+      "Tina Cassaday Creations"
+     ],
+     "checked_at": "2026-09-26T04:51:00.307929+00:00",
+     "max_results": 30,
+     "matched_pages": [],
+     "sampled_items": 0,
+     "identity_matched_ads": 0
+    },
+    "reason": "ad-library keyword sweep returned 0 ads, none from a page matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T04:51:00.307960+00:00",
+    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Tina%20Cassaday%20Creations&search_type=keyword_unordered&media_type=all"
+   }
+  },
+  "tech_stack": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:43.639018+00:00",
+   "source_url": "https://tinacassadaybh.com/",
+   "data": {
+    "confirmed": [
+     "shopify web pixels"
+    ],
+    "missing_critical": [
+     "klaviyo",
+     "attentive",
+     "recharge",
+     "rebuy"
+    ],
+    "is_shopify": true,
+    "pdp_checked": false
+   }
+  },
+  "reviews": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:44.917197+00:00",
+   "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
+   "data": {
+    "rating": 5.0,
+    "review_count": 3,
+    "has_reviews": true
+   }
+  },
+  "pagespeed": {
+   "status": "absent",
+   "reason": "pagespeed retired 2026-08-07 (v3): deliberately not collected"
+  },
+  "signup": {
+   "status": "present",
+   "fetched_at": "2026-09-26T08:59:44.920167+00:00",
+   "source_url": "https://tinacassadaybh.com/",
+   "partial": true,
+   "data": {
+    "capture_markers": [
+     "newsletter",
+     "subscribe",
+     "privy"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null
+  },
+  "growth_score": null,
+  "score_breakdown": {},
+  "findings": [
+   {
+    "signal": "shopify",
+    "kind": "gap",
+    "lever": "retention_path",
+    "title": "No subscribe-and-save path for repeat buyers",
+    "evidence": "Your storefront runs 5 products with no subscription option we could find on the page. A subscribe-and-save path turns a one-time buyer into an order that repeats without them having to come back and reorder.",
+    "source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz.js",
+    "bucket": "yours",
+    "bucket_pillar": "Profit Over Sales",
+    "week_one": "A subscription option is a store decision on your side, and it keeps the customers our campaigns bring in ordering."
+   },
+   {
+    "signal": "ads.meta",
+    "kind": "negative",
+    "lever": "paid_media",
+    "title": "You're not running paid social right now",
+    "evidence": "The public Meta Ad Library shows zero ads for this brand, so paid social is an open channel for you. Launching it to cold audiences is the fastest lever we pull.",
+    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills",
+    "bucket": "rise",
+    "bucket_pillar": "Optimized Media Buying",
+    "week_one": "Multi-network ads management targeted at your ideal customer, optimized for profit from the first campaign."
+   }
+  ],
+  "hero_hook": "A public read of your store, and where the growth is.",
+  "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+  "fact_table": [
+   "0",
+   "1",
+   "102",
+   "1030",
+   "11",
+   "12",
+   "120",
+   "133",
+   "2",
+   "20",
+   "2023",
+   "239",
+   "25",
+   "3",
+   "30",
+   "334",
+   "4",
+   "48",
+   "5",
+   "56",
+   "6",
+   "60",
+   "7",
+   "72"
+  ],
+  "completed_at": "2026-09-26T09:00:07.436214+00:00"
+ }
+}

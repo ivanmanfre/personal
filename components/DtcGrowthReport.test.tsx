@@ -99,8 +99,12 @@ function escHtml(t: string): string {
 // The page minus every string the ROW supplied (finding prose, hero hook). What is left is
 // copy the renderer itself owns.
 function chromeOnly(html: string, dtc: any): string {
-  const rowStrings: string[] = [dtc.hero_hook];
+  const rowStrings: string[] = [dtc.hero_hook, dtc.hero?.headline];
   for (const f of dtc.findings || []) rowStrings.push(f.title, f.evidence, f.week_one);
+  for (const b of [dtc.drop_off, dtc.second_order]) {
+    rowStrings.push(b?.note);
+    for (const it of b?.items || []) rowStrings.push(it.title, it.detail, it.fix, it.evidence?.label, it.evidence?.value, it.product?.title);
+  }
   let out = html;
   for (const t of rowStrings) {
     if (typeof t !== 'string' || !t.trim()) continue;
@@ -690,5 +694,35 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).toContain('your catalog');
     // Ad records still lead on the legacy layout, uncondensed.
     expect(html).not.toContain('data-comp-disclosure');
+  });
+});
+
+// The builder's own output for Tina (backend fixture). Structure-level checks only: the copy
+// is the builder's, so the renderer's own chrome is what these hold to the rules.
+describe('DtcGrowthReport — promise contract, builder fixture', () => {
+  it('renders every promised item in order, leads with her product image, keeps RISE-only findings', () => {
+    const { fixture, html } = renderFixture('tina-new-contract-builder.json');
+    const d = fixture.dtc as any;
+    assertNoForbidden(chromeOnly(html, d));
+    expect(html).toContain('data-promise-hero="1"');
+    expect(html).toContain(escHtml(d.hero.headline));
+    let last = html.indexOf('data-promise-hero="1"');
+    for (const block of [d.drop_off, d.second_order]) {
+      for (const it of block.items) {
+        const at = html.indexOf(`data-promise-item="${it.id}"`);
+        expect(at, it.id).toBeGreaterThan(last);
+        last = at;
+        expect(html).toContain(escHtml(it.title));
+        expect(html).toContain(escHtml(it.fix));
+      }
+      expect(html).toContain(escHtml(block.note));
+    }
+    expect(html.indexOf('data-store-img="1"')).toBeLessThan(html.indexOf('data-promise-section="drop-off"'));
+    // RISE side only: the builder's retention finding restates a second-order item.
+    for (const f of d.findings) {
+      const shown = html.includes(escHtml(f.title));
+      expect(shown, f.title).toBe(f.lever === 'paid_media' || f.lever === 'performance_creative');
+    }
+    expect(html).not.toMatch(/paid traffic/i);
   });
 });
