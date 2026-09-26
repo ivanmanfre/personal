@@ -76,6 +76,8 @@ const FORBIDDEN_PATTERNS: Array<[string, RegExp]> = [
   ['aphorism shape "worth running"', /worth running/],
   // Retired 07-31: the bare pull-stat band. A fact with no argument attached does not render.
   ['retired stat band "The store, in numbers"', /The store, in numbers/],
+  // 2026-09-26: receipts speak human. No endpoint names or raw detector markers.
+  ['machine source label', /products\.json|product \.js|wc\/store|woocommerce store api|\bprivy\b/i],
 ];
 
 // Retired 2026-09-26 (Ivan): the profit-per-order angle. The page's own chrome never says it,
@@ -307,7 +309,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
       for (const token of figs) expect(prose, `finding ${i} figure ${token}`).toContain(token);
       expect(figs.length).toBeLessThanOrEqual(2);
     });
-    expect(html).toContain('shopify products.json');
+    expect(html).toContain('your catalog');
 
     // A finding whose prose carries no whitelisted numeral renders NOTHING in the margin:
     // a source label floating on an empty rail reads as a half-populated component
@@ -327,7 +329,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     const aside = mutated.match(/<aside class="cedt-margin lg:col-span-3">(.*?)<\/aside>/s);
     const asideInner = aside ? aside[1] : '';
     expect(asideInner).not.toContain('class="fig');
-    expect(asideInner).not.toContain('shopify products.json');
+    expect(asideInner).not.toContain('your catalog');
     expect(asideInner.trim()).toBe('');
   });
 
@@ -339,9 +341,9 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
       expect(rules.length).toBeGreaterThan(0);
       for (const style of rules) expect(style.toLowerCase()).not.toContain(accent.toLowerCase());
       // "Ready when you are" no longer carries the accent color.
-      const readyLabel = html.match(/<div class="text-\[0\.72rem\][^"]*" style="([^"]*)">Ready when you are<\/div>/)![1];
+      const readyLabel = html.match(/<div class="text-\[0\.75rem\][^"]*" style="([^"]*)">Ready when you are<\/div>/)![1];
       expect(readyLabel.toLowerCase()).not.toContain(accent.toLowerCase());
-      const feeLabel = html.match(/<div class="text-\[0\.72rem\][^"]*" style="([^"]*)">How RISE charges<\/div>/)![1];
+      const feeLabel = html.match(/<div class="text-\[0\.75rem\][^"]*" style="([^"]*)">How RISE charges<\/div>/)![1];
       expect(feeLabel.toLowerCase()).not.toContain(accent.toLowerCase());
     }
     // The lever chip keeps its gold DOT but its border goes ink.
@@ -350,18 +352,32 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('<span class="w-1.5 h-1.5 rounded-full" style="background:#ffc71d">');
   });
 
-  it('sticky pill: dense panels are marked per rendered panel and the pill carries its hook class', () => {
-    const rich = renderFixture('rodial-com.json');
-    // receipt card only (the Profit Gap band is retired).
-    expect((rich.html.match(/data-densepanel="1"/g) || []).length).toBe(1);
-    const thin = renderFixture('apple-com.json');
-    expect((thin.html.match(/data-densepanel="1"/g) || []).length).toBe(0);
-    const blocked = renderFixture('gopure-com.json');
-    expect((blocked.html.match(/data-densepanel="1"/g) || []).length).toBe(0);
-    // SSR renders the pill visible, with the effect's className hook in place.
-    expect(rich.html).toContain('cedt-sticky');
-    expect(rich.html).toMatch(/data-cta="sticky"[^>]*cedt-sticky/);
-    expect(rich.html).not.toMatch(/cedt-sticky[^>]*opacity:0[;"]/);
+  it('sticky booking bar: docked on an opaque ground, page reserves its height, other CTAs hide it', () => {
+    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+      const { html } = renderFixture(file);
+      // SSR renders the bar visible, docked to the bottom edge, never a floating pill.
+      expect(html).toMatch(/class="cedt-sticky fixed inset-x-0 bottom-0 z-40" data-sticky-bar="1" style="background:#ffffff/);
+      expect(html).not.toMatch(/cedt-sticky[^>]*translateY\(110%\)/);
+      expect(html).not.toContain('bottom-5 right-5');
+      // The page reserves the bar's height so the last line clears it.
+      expect(html).toMatch(/padding-bottom:calc\(64px \+ env\(safe-area-inset-bottom\)\)/);
+      // The masthead CTA and the close band are the CTAs that hide it.
+      expect((html.match(/data-pill-hide="1"/g) || []).length).toBeGreaterThanOrEqual(2);
+      // The booking target is a 44px tap target.
+      expect(html).toMatch(/min-h-\[44px\][^"]*"[^>]*>30 min with Mattan/);
+    }
+  });
+
+  it('type floor: no rendered label is set below 12px', () => {
+    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json', 'panther-v3.json']) {
+      const { html } = renderFixture(file);
+      const tw = [...html.matchAll(/text-\[([0-9.]+)rem\]/g)].map((m) => Number(m[1]));
+      expect(tw.filter((v) => v < 0.75), `${file} tailwind sizes`).toEqual([]);
+      const css = [...html.matchAll(/font-size:\s*([0-9.]+)rem/g)].map((m) => Number(m[1]));
+      expect(css.filter((v) => v < 0.75), `${file} css rem sizes`).toEqual([]);
+      const px = [...html.matchAll(/font-size:\s*([0-9.]+)px/g)].map((m) => Number(m[1]));
+      expect(px.filter((v) => v < 12), `${file} px sizes`).toEqual([]);
+    }
   });
 
   it('evidence plate: born-absent everywhere, renders once from a QA-passed capture, under the named finding', () => {
@@ -408,8 +424,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).not.toMatch(/href="https:\/\/rodial\.com\/products\.json"/);
     // label is unchanged, so the reader still knows where they are going
     expect(html).toContain('see this on your storefront');
-    // provenance is untouched in the evidence rail
-    expect(html).toContain('shopify products.json');
+    // the evidence rail names the source in human words
+    expect(html).toContain('your catalog');
   });
 
   it('a WooCommerce store links to its storefront and the receipt names the Store API', () => {
@@ -429,8 +445,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('href="https://rodial.com"');
     expect(html).not.toContain('wp-json');
     expect(html).toContain('see this on your storefront');
-    expect(html).toContain('woocommerce store api');
-    expect(html).not.toContain('shopify products.json');
+    expect(html).toContain('your catalog');
+    expect(html).not.toContain('products.json');
   });
 
   it('a per-product .js probe URL links to the product page and labels it as one', () => {
@@ -478,8 +494,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     const html = renderDtc(dtc, fixture.company_name);
     expect(html).toContain('Subscription option');
     const row = html.slice(html.indexOf('Subscription option'), html.indexOf('Subscription option') + 400);
-    expect(row).not.toContain('products.json');
-    expect(row).toContain('product .js');
+    expect(row).not.toContain('your catalog');
+    expect(row).toContain('your product pages');
   });
 
   // Noisy Clan (2026-08-17) shipped "504 days since the most recent competitor start date"

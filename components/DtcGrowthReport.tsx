@@ -98,6 +98,9 @@ function proofHref(url: string): string {
 // only. Rendered as a rounded rectangle, NEVER a circle.
 const MATTAN_PHOTO = 'https://resources.risedtc.com/tools/assets/mattan.jpg';
 
+// Height of the docked booking bar; the page reserves it as bottom padding.
+const STICKY_BAR_H = 64;
+
 // The store's own currency, read off its storefront by the collector. A EUR catalogue printed
 // in dollars is the tell that costs the reader's trust before he reaches a finding (B.me,
 // 2026-08-12: a Dutch founder got "$11.90 to $200" for a €-priced range). Falls back to "$"
@@ -116,6 +119,11 @@ function curSymbol(code?: string | null): string {
 // ("$1,285", never "$1285").
 function fmtPrice(v: number, sym = '$'): string {
   return sym + v.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(v) ? 0 : 2 });
+}
+
+// "Tina Cassaday Creations'" never "Creations's".
+function possessive(name: string): string {
+  return /s$/i.test(name.trim()) ? `${name.trim()}'` : `${name.trim()}'s`;
 }
 
 function escapeRe(s: string): string {
@@ -178,19 +186,14 @@ function marginFigures(text: string): string[] {
 }
 
 // Where each signal was read from. Small-caps source line under a finding's margin figures.
-// 2026-09-18: the catalogue tag used to be the literal string "shopify products.json" on every
-// scan. StrollAir is WooCommerce, read at `wc/store/v1/products`, so the receipt named a payload
-// the founder's store does not serve, under numbers she was being asked to trust.
-function catalogSource(sourceUrl?: string | null): string {
-  return sourceUrl && sourceUrl.includes('/wc/store/') ? 'woocommerce store api' : 'shopify products.json';
-}
-
+// 2026-09-26: human words only. Endpoint names ("products.json", "product .js", the Store API
+// path) read as a machine report to a founder, and they never told her where to look anyway.
 const MARGIN_SOURCE: Record<string, string> = {
-  shopify: 'shopify products.json',
-  reviews: 'product page',
-  signup: 'storefront',
-  'ads.meta': 'meta ad library',
-  tech_stack: 'homepage source',
+  shopify: 'your catalog',
+  reviews: 'your product page',
+  signup: 'your storefront',
+  'ads.meta': 'Meta Ad Library',
+  tech_stack: 'your homepage',
 };
 
 // One line of the sourced vitals receipt. `signal` is what binds it to a finding (and picks
@@ -405,14 +408,14 @@ function AdEvidenceSpread({
   const eyebrow = (t: string) => (
     <div className="flex items-center gap-3 mb-6">
       <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: 'rgba(255,255,255,.35)' }} />
-      <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: surface, opacity: 0.65 }}>{t}</span>
+      <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: surface, opacity: 0.7 }}>{t}</span>
     </div>
   );
 
   const Stat = ({ pre, n, unit, label }: { pre?: string | null; n: string; unit?: string; label: string }) => (
     <div>
       {pre ? (
-        <div className="text-[0.66rem] font-bold uppercase tracking-[0.22em]" style={{ color: surface, opacity: 0.55 }}>{pre}</div>
+        <div className="text-[0.75rem] font-bold uppercase tracking-[0.22em]" style={{ color: surface, opacity: 0.7 }}>{pre}</div>
       ) : null}
       <div className="flex items-baseline gap-2">
         <span
@@ -422,15 +425,15 @@ function AdEvidenceSpread({
           {n}
         </span>
         {unit ? (
-          <span className="text-[0.9rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.6 }}>{unit}</span>
+          <span className="text-[0.9rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>{unit}</span>
         ) : null}
       </div>
-      <div className="mt-2 text-[0.86rem] leading-snug" style={{ color: surface, opacity: 0.62, maxWidth: '22ch' }}>{label}</div>
+      <div className="mt-2 text-[0.86rem] leading-snug" style={{ color: surface, opacity: 0.7, maxWidth: '22ch' }}>{label}</div>
     </div>
   );
 
   return (
-    <section aria-label="Public ad records" data-densepanel="1" data-adspread="1" style={{ background: ink, color: surface }}>
+    <section aria-label="Public ad records" data-adspread="1" style={{ background: ink, color: surface }}>
       <div className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-20 sm:py-24">
         {eyebrow('Public ad records')}
         <div className="grid lg:grid-cols-12 gap-y-6 lg:gap-x-12 items-end">
@@ -469,11 +472,11 @@ function AdEvidenceSpread({
         {g ? (
           <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-9">
-              <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                 Google Ads Transparency
               </span>
               {g.advertiser ? (
-                <span className="text-[0.86rem]" style={{ color: surface, opacity: 0.62 }}>
+                <span className="text-[0.86rem]" style={{ color: surface, opacity: 0.7 }}>
                   {clean(String(g.advertiser))}{g.region ? `, region ${g.region}` : ''}
                 </span>
               ) : null}
@@ -503,7 +506,7 @@ function AdEvidenceSpread({
             {/* Format split, drawn against its own sum. */}
             {fmts.length > 0 && fmtTotal > 0 ? (
               <div className="mt-12">
-                <div className="text-[0.62rem] font-bold uppercase tracking-[0.24em] mb-3" style={{ fontFamily: headingFont, color: surface, opacity: 0.5 }}>
+                <div className="text-[0.75rem] font-bold uppercase tracking-[0.24em] mb-3" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>
                   Formats on record
                 </div>
                 <div className="cedt-fmtbar" aria-hidden="true">
@@ -515,7 +518,7 @@ function AdEvidenceSpread({
                   {fmts.map((f) => (
                     <span key={f.k} className="inline-flex items-center gap-2.5">
                       <span style={{ width: 11, height: 11, borderRadius: 2, background: f.fill, display: 'inline-block' }} />
-                      <span className="text-[0.8rem] uppercase tracking-[0.14em]" style={{ color: surface, opacity: 0.6 }}>{f.label}</span>
+                      <span className="text-[0.8rem] uppercase tracking-[0.14em]" style={{ color: surface, opacity: 0.7 }}>{f.label}</span>
                       <span className="text-[1.05rem] font-bold tabular-nums" style={{ fontFamily: headingFont, color: surface }}>{f.v}</span>
                     </span>
                   ))}
@@ -538,18 +541,18 @@ function AdEvidenceSpread({
                       className="absolute inset-0 flex flex-col justify-end p-2.5"
                       style={{ background: 'rgba(255,255,255,.05)' }}
                     >
-                      <span className="text-[0.6rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>
+                      <span className="text-[0.75rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>
                         {String(c.format || 'ad')}
                       </span>
                       {first ? (
-                        <span className="text-[0.72rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{first}</span>
+                        <span className="text-[0.75rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{first}</span>
                       ) : null}
                     </span>
                   );
                   return (
                     <figure key={i} style={{ margin: 0 }}>
                       <EvidenceImg src={src} alt={`${String(c.format || 'ad')} creative first shown ${first || ''}`} ratio="4 / 3" fallback={fallback} />
-                      <figcaption className="mt-2 text-[0.6rem] font-bold uppercase tracking-[0.14em] tabular-nums" style={{ fontFamily: headingFont, color: surface, opacity: 0.55 }}>
+                      <figcaption className="mt-2 text-[0.75rem] font-bold uppercase tracking-[0.14em] tabular-nums" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>
                         {String(c.format || 'ad')}
                         {first ? (
                           <span className="block mt-0.5" style={{ opacity: 0.85 }}>
@@ -570,7 +573,7 @@ function AdEvidenceSpread({
           <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
             <div className="grid lg:grid-cols-12 gap-y-8 lg:gap-x-12 items-start">
               <div className="lg:col-span-4">
-                <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+                <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                   Meta Ad Library
                 </span>
                 <div
@@ -618,7 +621,7 @@ function AdEvidenceSpread({
         {compCreatives.length > 0 ? (
           <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 mb-8">
-              <span className="text-[0.68rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                 The same keywords, other advertisers
               </span>
               {Array.isArray(comp?.keywords) ? (
@@ -626,7 +629,7 @@ function AdEvidenceSpread({
                   {comp.keywords.slice(0, 3).map((k: string) => (
                     <span
                       key={k}
-                      className="text-[0.72rem] font-semibold px-2.5 py-1 rounded-full"
+                      className="text-[0.75rem] font-semibold px-2.5 py-1 rounded-full"
                       style={{ border: '1px solid rgba(255,255,255,.28)', color: surface, opacity: 0.75 }}
                     >
                       {clean(k)}
@@ -654,8 +657,8 @@ function AdEvidenceSpread({
                 const start = isoDay(c.start_date);
                 const fallback = (
                   <span className="absolute inset-0 flex flex-col justify-end p-2.5" style={{ background: 'rgba(255,255,255,.05)' }}>
-                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>ad</span>
-                    {start ? <span className="text-[0.72rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{start}</span> : null}
+                    <span className="text-[0.75rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.75 }}>ad</span>
+                    {start ? <span className="text-[0.75rem] font-bold tabular-nums mt-1" style={{ fontFamily: headingFont, color: surface, opacity: 0.85 }}>{start}</span> : null}
                   </span>
                 );
                 return (
@@ -665,13 +668,13 @@ function AdEvidenceSpread({
                       {typeof c.age_days === 'number' ? (
                         <span className="flex items-baseline gap-1.5">
                           <span className="font-extrabold tabular-nums leading-none" style={{ fontFamily: headingFont, fontSize: '1.55rem', color: surface }}>{c.age_days}</span>
-                          <span className="text-[0.62rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.55 }}>days</span>
+                          <span className="text-[0.75rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>days</span>
                         </span>
                       ) : null}
                       <span className="block mt-1 text-[0.78rem] font-bold leading-tight" style={{ color: surface, opacity: 0.9 }}>{clean(String(c.advertiser))}</span>
-                      {start ? <span className="block mt-0.5 text-[0.68rem] tabular-nums" style={{ color: surface, opacity: 0.5 }}>{start}</span> : null}
+                      {start ? <span className="block mt-0.5 text-[0.75rem] tabular-nums" style={{ color: surface, opacity: 0.7 }}>{start}</span> : null}
                       {c.keyword ? (
-                        <span className="block mt-1.5 text-[0.6rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: accent, opacity: 0.85 }}>{clean(String(c.keyword))}</span>
+                        <span className="block mt-1.5 text-[0.75rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: accent, opacity: 0.85 }}>{clean(String(c.keyword))}</span>
                       ) : null}
                     </figcaption>
                   </figure>
@@ -682,7 +685,7 @@ function AdEvidenceSpread({
             {/* Shared recency axis: the counterpoint, drawn. */}
             {compDatedEnough ? (
               <div className="mt-14">
-                <div className="text-[0.62rem] font-bold uppercase tracking-[0.24em] mb-4" style={{ fontFamily: headingFont, color: surface, opacity: 0.5 }}>
+                <div className="text-[0.75rem] font-bold uppercase tracking-[0.24em] mb-4" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>
                   Start dates, drawn back from the read
                 </div>
                 <div className="cedt-axis">
@@ -749,7 +752,7 @@ function WeekOnePanel({
     <div>
       <div className="flex items-center gap-2.5">
         <BucketGlyph b={b} accent={accent} ink={ink} size={9} />
-        <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+        <span className="text-[0.75rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
           {BUCKETS[b].label}
         </span>
       </div>
@@ -773,7 +776,7 @@ function WeekOnePanel({
     <div className="mt-20 pt-12" data-weekone="1" style={{ borderTop: `2px solid ${ink}` }}>
       <div className="flex items-center gap-3 mb-4">
         <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-        <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Week one</span>
+        <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Week one</span>
       </div>
       <h3 className="font-extrabold tracking-[-0.02em] mb-9" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4vw, 2.9rem)', color: ink, lineHeight: 1.04 }}>
         Who does what
@@ -804,7 +807,7 @@ function WeekOnePanel({
             <div className="md:col-span-3">
               <div className="flex items-center gap-2.5">
                 <BucketGlyph b="split" accent={accent} ink={ink} size={9} />
-                <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+                <span className="text-[0.75rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
                   {BUCKETS.split.label}
                 </span>
               </div>
@@ -829,7 +832,7 @@ function WeekOnePanel({
         <div className="mt-12 p-6 sm:p-7" style={{ background: ink, color: surface, borderRadius: 4 }}>
           <div className="flex items-center gap-2.5 mb-4">
             <BucketGlyph b="asset" accent={accent} ink={surface} size={9} />
-            <span className="text-[0.68rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.8 }}>
+            <span className="text-[0.75rem] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.8 }}>
               {BUCKETS.asset.label}
             </span>
           </div>
@@ -962,9 +965,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const shopData = shop?.status === 'present' && shop.data ? shop.data : null;
   if (shopData) {
     const rest: ReceiptLine[] = [];
-    // The receipt names the endpoint the number was actually read from. WooCommerce stores are
-    // read through the Store API, so "products.json" would name a payload they do not serve.
-    const catalogSrc = (shopData as any).platform === 'woocommerce' ? 'wc/store/v1/products' : 'products.json';
+    // Human source words (2026-09-26): the catalog, whichever platform served it.
+    const catalogSrc = 'your catalog';
     const depthCited = shopData.discount_depth_pct != null && cited(haysShopify, `${shopData.discount_depth_pct}%`);
     if (
       typeof shopData.products_on_discount === 'number' &&
@@ -995,11 +997,9 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     if (shopData.oos_pct != null && (cited(haysShopify, `${shopData.oos_pct}%`) || /out[- ]of[- ]stock/i.test(haysShopify))) {
       rest.push({ signal: 'shopify', label: 'Out of stock', value: `${shopData.oos_pct}%`, source: catalogSrc });
     }
-    // 🔴 products.json has NEVER carried selling_plan_groups at any Shopify version, so it is
-    // the one row in this table it cannot source. The verdict is read from /products/{handle}.js;
-    // the vitals line has to say so or it re-tells the 08-12 lie in the evidence rail while the
-    // finding above it cites the right endpoint.
-    const subSrc = shopData.subscription_source_url ? 'product .js' : 'storefront';
+    // 🔴 products.json has NEVER carried selling_plan_groups at any Shopify version, so the
+    // subscription verdict is never sourced to the catalog. It is read from the product pages.
+    const subSrc = shopData.subscription_source_url ? 'your product pages' : 'your storefront';
     if (shopData.has_subscription === false && /subscri/i.test(haysShopify)) {
       rest.push({ signal: 'shopify', label: 'Subscription option', value: 'none found', source: subSrc, none: true });
     } else if (shopData.has_subscription === true && /subscri/i.test(haysShopify)) {
@@ -1017,16 +1017,18 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const rev = d.reviews;
   if (rev?.status === 'present' && rev.data && rev.data.rating != null && rev.data.review_count != null && hasFinding('reviews')) {
     // Ratings read "5.0", never "5": one decimal is how the PDP itself states them.
-    pageLines.push({ signal: 'reviews', label: 'Product page rating', value: `${rev.data.rating.toFixed(1)} from ${rev.data.review_count}`, source: 'product page' });
+    pageLines.push({ signal: 'reviews', label: 'Product page rating', value: `${rev.data.rating.toFixed(1)} from ${rev.data.review_count}`, source: 'your product page' });
   } else if (rev?.status === 'empty' && hasFinding('reviews')) {
-    pageLines.push({ signal: 'reviews', label: 'Product page reviews', value: 'none visible', source: 'product page', none: true });
+    pageLines.push({ signal: 'reviews', label: 'Product page reviews', value: 'none visible', source: 'your product page', none: true });
   }
   const sig = d.signup;
   const markers = sig?.data?.capture_markers || [];
   if (sig?.status === 'present' && sig.data?.has_capture_markers && markers.length > 0 && hasFinding('signup')) {
-    pageLines.push({ signal: 'signup', label: 'Email capture', value: markers.join(', '), source: 'storefront' });
+    // Never the raw detector markers ("newsletter, subscribe, privy"): they are substring hits,
+    // not words a founder would use, and a long list broke the 390px layout (rnwy, cflwr).
+    pageLines.push({ signal: 'signup', label: 'Email sign-up', value: 'on your homepage', source: 'your storefront' });
   } else if (sig?.status === 'empty' && hasFinding('signup')) {
-    pageLines.push({ signal: 'signup', label: 'Email capture', value: 'none found', source: 'storefront', none: true });
+    pageLines.push({ signal: 'signup', label: 'Email sign-up', value: 'none found', source: 'your storefront', none: true });
   }
 
   const paidLines: ReceiptLine[] = [];
@@ -1036,15 +1038,15 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     // stands untouched, so an old row's receipt is byte-identical to the floor.
     paidLines.push(
       sweepZero
-        ? { signal: 'ads.meta', label: 'Meta Ad Library', value: 'zero ads on record', source: 'meta ad library', none: true }
-        : { signal: 'ads.meta', label: 'Meta Ad Library', value: 'no active ads', source: 'meta ad library', none: true },
+        ? { signal: 'ads.meta', label: 'Meta Ad Library', value: 'zero ads on record', source: 'Meta Ad Library', none: true }
+        : { signal: 'ads.meta', label: 'Meta Ad Library', value: 'no active ads', source: 'Meta Ad Library', none: true },
     );
   } else if (
     adsMeta?.status === 'present' && adsMeta.data &&
     typeof adsMeta.data.active_ad_count === 'number' && adsMeta.data.active_ad_count > 0 &&
     hasFinding('ads.meta')
   ) {
-    paidLines.push({ signal: 'ads.meta', label: 'Meta Ad Library', value: `${adsMeta.data.active_ad_count} active`, source: 'meta ad library' });
+    paidLines.push({ signal: 'ads.meta', label: 'Meta Ad Library', value: `${adsMeta.data.active_ad_count} active`, source: 'Meta Ad Library' });
   }
 
   const receiptGroups = [
@@ -1078,15 +1080,17 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     if (!flagLine) flagLine = allLines.find((l) => l.signal === flagSignal) || null;
   }
 
-  // Sticky pill collision: while a dense panel (receipt card, Profit Gap band) sits in the
-  // bottom band of the viewport, the pill steps out of the way. SSR renders it visible.
+  // Sticky booking bar (2026-09-26). The old floating pill sat over finding headings at 14
+  // of 19 phone scroll stops, and its guard only knew about two dense panels. The bar docks
+  // to the bottom edge on an opaque ground, the page reserves its height so the last line
+  // clears it, and it steps away whenever another booking CTA (masthead, hero, close band)
+  // is on screen, so two yellow asks never stack. SSR renders it visible.
   const [pillHidden, setPillHidden] = useState(false);
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined' || typeof document === 'undefined') return;
-    const nodes = Array.from(document.querySelectorAll('[data-densepanel]'));
+    const nodes = Array.from(document.querySelectorAll('[data-pill-hide]'));
     if (nodes.length === 0) return;
     const hits = new Set<Element>();
-    const topInset = Math.max(0, (typeof window !== 'undefined' ? window.innerHeight : 800) - 160);
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -1095,14 +1099,14 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         }
         setPillHidden(hits.size > 0);
       },
-      { root: null, rootMargin: `-${topInset}px 0px 0px 0px`, threshold: 0 },
+      { root: null, threshold: 0 },
     );
     nodes.forEach((n) => io.observe(n));
     return () => io.disconnect();
-  }, [showReceipt]);
+  }, []);
 
   return (
-    <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
+    <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', paddingBottom: `calc(${STICKY_BAR_H}px + env(safe-area-inset-bottom))`, ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
       <style>{`
         @media (prefers-reduced-motion: reduce) {
           .cedt-anim { transition: none !important; }
@@ -1113,7 +1117,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           .cedt-sig-avatar { width: 76px !important; height: 76px !important; border-radius: 18px !important; }
         }
         /* Receipt line: label with dotted leader, value, source tag. */
-        .cedt-rcl { display: grid; grid-template-columns: minmax(0,1fr) auto 132px; align-items: baseline; column-gap: 14px; padding: 7px 0; }
+        .cedt-rcl { display: grid; grid-template-columns: minmax(0,1fr) auto 150px; align-items: baseline; column-gap: 14px; padding: 7px 0; }
         .cedt-rcl .lb { position: relative; overflow: hidden; white-space: nowrap; }
         .cedt-rcl .lb::after { content: " ........................................................................"; color: #c9ccd0; letter-spacing: .09em; font-size: .8rem; }
         @media (max-width: 640px) {
@@ -1128,27 +1132,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         @media (min-width: 1024px) {
           .cedt-margin { border-top: 0; border-left: 1px solid var(--cedt-hair); padding-left: 1.25rem; padding-top: 0; margin-top: 0; }
         }
-        /* Waterfall: drawn at width, proportional strip under 760px. */
-        .cedt-wfsvg { display: block; width: 100%; height: auto; overflow: visible; }
-        .cedt-wfsvg .lb { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .06em; fill: rgba(255,255,255,.8); }
-        .cedt-wfsvg .lb.g { fill: ${accent}; font-size: 17px; }
-        .cedt-wfsvg .lbm { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: .12em; fill: rgba(255,255,255,.45); }
-        .cedt-wfsvg .ld { stroke: rgba(255,255,255,.3); stroke-width: 1; }
-        .cedt-wfbar-m, .cedt-wfmk { display: none; }
-        @media (max-width: 760px) {
-          .cedt-wfsvg { display: none; }
-          .cedt-wfmk { display: flex; justify-content: space-between; font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.45); margin: 0 0 7px; }
-          .cedt-wfbar-m { display: flex; height: 34px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,.34); }
-          .cedt-wfbar-m span { height: 100%; flex: 0 0 auto; border-right: 1px solid rgba(17,17,17,.35); }
-          .cedt-wfbar-m span:last-child { border-right: none; }
-        }
-        /* Ledger row: swatch, name, dollar, percent of the order. */
-        .cedt-lgd { display: grid; grid-template-columns: 14px minmax(0,1fr) 92px 78px; align-items: center; column-gap: 12px; padding: 11px 0; }
-        @media (max-width: 640px) {
-          .cedt-lgd { grid-template-columns: 14px minmax(0,1fr) 76px; column-gap: 10px; }
-          .cedt-lgd .pc { display: none; }
-        }
-        .cedt-sticky { transition: opacity .18s ease, transform .18s ease; }
+        .cedt-sticky { transition: transform .18s ease; }
 
         /* ── audit v3: evidence spread instruments ─────────────────────────────── */
         /* Format split: one strip, segments proportional to their own sum. */
@@ -1157,24 +1141,24 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         .cedt-fmtbar span:last-child { border-right: none; }
         /* Dated strip: format tag, then a track carrying one bar between two dates. */
         .cedt-gan { display: grid; grid-template-columns: 74px minmax(0,1fr); align-items: center; column-gap: 16px; padding: 5px 0; }
-        .cedt-gan .lbl { font-family: 'Sora', sans-serif; font-size: .58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: rgba(255,255,255,.5); }
+        .cedt-gan .lbl { font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: rgba(255,255,255,.5); }
         .cedt-gan .trk { position: relative; display: block; height: 26px; border-radius: 3px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
         .cedt-gan .bar { position: absolute; top: 4px; bottom: 4px; border-radius: 2px; min-width: 3px; }
         .cedt-gan .dts { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; pointer-events: none; }
-        .cedt-gan .dts b { font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .04em; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
+        .cedt-gan .dts b { font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .04em; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
         .cedt-gan-head .trk, .cedt-gan-foot .trk { height: 18px; background: transparent; border: none; }
-        .cedt-gan-head .yr { position: absolute; top: 0; transform: translateX(-50%); font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.4); }
+        .cedt-gan-head .yr { position: absolute; top: 0; transform: translateX(-50%); font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .14em; color: rgba(255,255,255,.4); }
         .cedt-gan-head .yr::after { content: ""; position: absolute; left: 50%; top: 15px; width: 1px; height: 7px; background: rgba(255,255,255,.22); }
-        .cedt-gan-foot .trk b { position: absolute; top: 4px; font-family: 'Sora', sans-serif; font-size: .62rem; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
+        .cedt-gan-foot .trk b { position: absolute; top: 4px; font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
         @media (max-width: 640px) {
           .cedt-gan { grid-template-columns: minmax(0,1fr); row-gap: 3px; padding: 7px 0; }
-          .cedt-gan .dts b { font-size: .56rem; }
+          .cedt-gan .dts b { font-size: .75rem; }
         }
         /* Meta ledger row. */
         .cedt-mrow { display: grid; grid-template-columns: minmax(0,1fr) auto 160px; align-items: baseline; column-gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.14); }
         .cedt-mrow .nm { font-size: .94rem; color: rgba(255,255,255,.8); }
         .cedt-mrow .vl { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; font-variant-numeric: tabular-nums; }
-        .cedt-mrow .dt { font-family: 'Sora', sans-serif; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; text-align: right; color: rgba(255,255,255,.45); }
+        .cedt-mrow .dt { font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; text-align: right; color: rgba(255,255,255,.7); }
         @media (max-width: 640px) {
           .cedt-mrow { grid-template-columns: minmax(0,1fr) auto; row-gap: 3px; }
           .cedt-mrow .dt { grid-column: 1 / -1; text-align: left; }
@@ -1184,8 +1168,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         .cedt-axis .ln { position: absolute; left: 0; right: 0; top: 52px; height: 1px; background: rgba(255,255,255,.28); }
         .cedt-axis .dot { position: absolute; top: 45px; width: 15px; height: 15px; margin-left: -7.5px; border-radius: 50%; background: rgba(255,255,255,.62); border: 1px solid rgba(17,17,17,.5); }
         .cedt-axis .mkr { position: absolute; top: 30px; height: 44px; width: 3px; margin-left: -1.5px; }
-        .cedt-axis .mkl { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; font-family: 'Sora', sans-serif; font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
-        .cedt-axis .end { position: absolute; top: 74px; font-family: 'Sora', sans-serif; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: rgba(255,255,255,.45); }
+        .cedt-axis .mkl { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+        .cedt-axis .end { position: absolute; top: 74px; font-family: 'Sora', sans-serif; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: rgba(255,255,255,.7); }
         .cedt-axis .end.l { left: 0; }
         .cedt-axis .end.r { right: 0; }
         /* Week-one split bar. */
@@ -1210,15 +1194,16 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             )}
           </a>
           <div className="flex items-center gap-4">
-            <span className="hidden sm:inline text-[0.72rem] uppercase tracking-[0.22em]" style={{ color: ink, opacity: 0.55 }}>
+            <span className="hidden sm:inline text-[0.75rem] uppercase tracking-[0.22em]" style={{ color: ink, opacity: 0.7 }}>
               {scanDate ? `Growth Scan · ${scanDate}` : 'Growth Scan'}
             </span>
             <a
               href={ctaUrl('header')}
               data-cta="header"
+              data-pill-hide="1"
               target="_blank"
               rel="noopener noreferrer"
-              className="cedt-anim text-[0.85rem] font-bold px-4 py-2 rounded-full whitespace-nowrap transition-transform hover:-translate-y-0.5"
+              className="cedt-anim inline-flex items-center min-h-[44px] text-[0.85rem] font-bold px-4 rounded-full whitespace-nowrap transition-transform hover:-translate-y-0.5"
               style={{ background: accent, color: ink }}
             >
               Book 30 min with Mattan
@@ -1233,11 +1218,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="lg:col-span-9">
             <div className="flex items-center gap-3 mb-6">
               <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
+              <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
                 A RISE DTC growth feature
               </span>
             </div>
-            <p className="text-[1rem] font-semibold uppercase tracking-[0.2em] mb-5" style={{ color: ink, opacity: 0.55 }}>{companyName}</p>
+            <p className="text-[1rem] font-semibold uppercase tracking-[0.2em] mb-5" style={{ color: ink, opacity: 0.7 }}>{companyName}</p>
             <h1
               className="font-extrabold tracking-[-0.02em]"
               style={{ fontFamily: headingFont, fontSize: 'clamp(2.25rem, 6.4vw, 5rem)', lineHeight: 1.02, color: ink }}
@@ -1259,19 +1244,19 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               />
               <div>
                 <div className="font-bold" style={{ color: ink }}>Mattan Danino</div>
-                <div className="text-[0.72rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.55 }}>CEO, RISE DTC</div>
+                <div className="text-[0.75rem] uppercase tracking-[0.18em]" style={{ color: ink, opacity: 0.7 }}>CEO, RISE DTC</div>
               </div>
             </div>
             <p className="mt-2 text-[0.95rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
-              My team ran this scan on {companyName}'s public data. The call puts your live store and ad numbers next to it.
+              My team ran this scan on {possessive(companyName)} public data. The call puts your live store and ad numbers next to it.
             </p>
-            <a href="https://risedtc.com" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-[0.8rem] underline underline-offset-4" style={{ color: ink, opacity: 0.55 }}>
+            <a href="https://risedtc.com" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-[0.8rem] underline underline-offset-4" style={{ color: ink, opacity: 0.7 }}>
               risedtc.com
             </a>
             {credibilityLine ? (
-              <div className="mt-3 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.55 }}>{credibilityLine}</div>
+              <div className="mt-3 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>{credibilityLine}</div>
             ) : null}
-            <p className="mt-3 text-[0.85rem] leading-relaxed" style={{ color: ink, opacity: 0.6 }}>
+            <p className="mt-3 text-[0.85rem] leading-relaxed" style={{ color: ink, opacity: 0.7 }}>
               For qualifying brands, RISE gets paid on performance: a lower fixed fee + a share of growth above an agreed baseline. The terms are at the end of this page.
             </p>
           </div>
@@ -1307,13 +1292,13 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <div className="mx-auto w-full max-w-[680px]">
             <div className="flex items-center gap-3 mb-7">
               <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
+              <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>
                 Everything we read, and where
               </span>
             </div>
 
             <div
-              data-densepanel="1"
+             
               className="w-full"
               style={{ background: surface, border: `1px solid ${ink}14`, borderRadius: 4 }}
             >
@@ -1321,14 +1306,14 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 <span className="font-extrabold text-[1.02rem] tracking-[-0.01em]" style={{ fontFamily: headingFont, color: ink }}>
                   Store vitals
                 </span>
-                <span className="text-[0.66rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.45 }}>
+                <span className="text-[0.75rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>
                   {scan.domain}
                 </span>
               </div>
 
               {receiptGroups.map((g, gi) => (
                 <div key={g.label} className="px-[22px] pt-1.5 pb-3" style={gi > 0 ? { borderTop: `1px solid ${ink}0f` } : undefined}>
-                  <div className="pt-3 pb-2 text-[0.6rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.45 }}>
+                  <div className="pt-3 pb-2 text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>
                     {g.label}
                   </div>
                   {g.lines.map((l) => {
@@ -1343,17 +1328,19 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                       >
                         <span className="lb text-[0.94rem]" style={{ color: ink, opacity: isFlag ? 1 : 0.8, fontWeight: isFlag ? 700 : 400 }}>{l.label}</span>
                         <span
-                          className="vl tabular-nums whitespace-nowrap font-bold"
+                          className="vl tabular-nums font-bold"
                           style={{
                             fontFamily: headingFont,
                             color: ink,
-                            opacity: l.none ? 0.6 : 1,
+                            overflowWrap: 'anywhere',
+                            textAlign: 'right',
+                            opacity: l.none ? 0.7 : 1,
                             fontSize: l.none ? '0.86rem' : isFlag ? '1.12rem' : '1rem',
                           }}
                         >
                           {l.value}
                         </span>
-                        <span className="sr text-[0.58rem] font-bold uppercase tracking-[0.16em] text-right whitespace-nowrap" style={{ fontFamily: headingFont, color: ink, opacity: 0.45 }}>
+                        <span className="sr text-[0.75rem] font-bold uppercase tracking-[0.08em] text-right" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>
                           {l.source}
                         </span>
                       </div>
@@ -1365,7 +1352,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               {/* Sentence-case running prose, never shouted micro-caps (slop pass, 07-31). */}
               <div
                 className="px-[22px] py-3 text-[0.78rem] leading-relaxed"
-                style={{ borderTop: '1px dashed #dfe3e7', color: ink, opacity: 0.55 }}
+                style={{ borderTop: '1px dashed #dfe3e7', color: ink, opacity: 0.7 }}
               >
                 {scanDate ? `Read ${scanDate} from public pages, with no login and nothing you sent us. ` : ''}
                 Every line above backs a finding below.
@@ -1381,7 +1368,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14` }}>
           <div className="flex items-center gap-3 mb-3">
             <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>What we found</span>
+            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>What we found</span>
           </div>
           <h2 className="font-extrabold tracking-[-0.02em] mb-12" style={{ fontFamily: headingFont, fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: ink, lineHeight: 1.03 }}>
             Where the growth is
@@ -1393,7 +1380,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               // A lever with no label (the retired profit_visibility on older rows) renders no chip.
               const chip = LEVER_LABEL[f.lever] ? (
                 <span
-                  className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] px-3 py-1.5 rounded-full"
+                  className="inline-flex items-center gap-2 text-[0.75rem] font-bold uppercase tracking-[0.16em] px-3 py-1.5 rounded-full"
                   style={{ border: `1px solid ${ink}33`, color: ink }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
@@ -1407,7 +1394,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               const bucketChip = bk ? (
                 <span
                   data-bucket={bk}
-                  className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full whitespace-nowrap"
+                  className="inline-flex items-center gap-2 text-[0.75rem] font-bold uppercase tracking-[0.14em] px-3 py-1.5 rounded-full whitespace-nowrap"
                   style={
                     bk === 'rise'
                       ? { background: accent, color: ink }
@@ -1433,11 +1420,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                   }}
                 >
                   <div>
-                    <span className="block text-[0.6rem] font-bold uppercase tracking-[0.22em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}>
+                    <span className="block text-[0.75rem] font-bold uppercase tracking-[0.22em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>
                       Week one
                     </span>
                     {f.bucket_pillar && !/profit/i.test(String(f.bucket_pillar)) ? (
-                      <span className="block mt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
+                      <span className="block mt-1.5 text-[0.75rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
                         {clean(String(f.bucket_pillar))}
                       </span>
                     ) : null}
@@ -1447,7 +1434,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               ) : null;
 
               const sourceLink = f.source_url ? (
-                <a href={proofHref(f.source_url)} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.6 }}>
+                <a href={proofHref(f.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] mt-2 text-[0.85rem] font-semibold underline underline-offset-4" style={{ color: ink, opacity: 0.7 }}>
                   {sourceLabel(f.source_url)}
                 </a>
               ) : null;
@@ -1458,7 +1445,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               // source label floating on an empty rail reads as a half-populated component
               // (template-tell pass, 07-31). The source link under the finding carries it.
               const figures = marginFigures(`${clean(f.title)} ${clean(f.evidence)}`);
-              const marginSource = f.signal === 'shopify' ? catalogSource(f.source_url) : MARGIN_SOURCE[f.signal];
+              const marginSource = MARGIN_SOURCE[f.signal];
               const marginAside = (
                 <aside className="cedt-margin lg:col-span-3">
                   {figures.length > 0 ? (
@@ -1475,8 +1462,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                       ))}
                       {marginSource ? (
                         <span
-                          className="src block text-[0.58rem] font-bold uppercase tracking-[0.16em] mt-2.5 pt-2"
-                          style={{ fontFamily: headingFont, color: ink, opacity: 0.45, borderTop: '1px dashed #dfe3e7' }}
+                          className="src block text-[0.75rem] font-bold uppercase tracking-[0.16em] mt-2.5 pt-2"
+                          style={{ fontFamily: headingFont, color: ink, opacity: 0.7, borderTop: '1px dashed #dfe3e7' }}
                         >
                           {marginSource}
                         </span>
@@ -1559,8 +1546,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                     />
                   </div>
                   <figcaption
-                    className="mt-2.5 text-[0.62rem] font-bold uppercase tracking-[0.16em]"
-                    style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}
+                    className="mt-2.5 text-[0.75rem] font-bold uppercase tracking-[0.16em]"
+                    style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}
                   >
                     {captureDate ? `Your storefront, captured ${captureDate}` : 'Your storefront'}
                   </figcaption>
@@ -1583,8 +1570,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                       />
                     </div>
                     <figcaption
-                      className="mt-2.5 text-[0.62rem] font-bold uppercase tracking-[0.16em]"
-                      style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}
+                      className="mt-2.5 text-[0.75rem] font-bold uppercase tracking-[0.16em]"
+                      style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}
                     >
                       {`${p.label}, captured ${shotDate}`}
                     </figcaption>
@@ -1623,7 +1610,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-5">
               <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The read</span>
+              <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>The read</span>
             </div>
             <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', color: ink, lineHeight: 1.05 }}>
               The public read gave us the basics
@@ -1642,7 +1629,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             >
               Get the full teardown live
             </a>
-            <p className="mt-3 text-[0.85rem]" style={{ color: ink, opacity: 0.55 }}>
+            <p className="mt-3 text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
               30 minutes with Mattan Danino, CEO of RISE DTC. We go through your store live.
             </p>
           </div>
@@ -1658,7 +1645,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <div className="mx-auto w-full max-w-[820px]">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Work RISE has run</span>
+            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Work RISE has run</span>
           </div>
           <div>
             <p className="py-5 text-[1.0625rem] leading-relaxed" style={{ borderTop: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
@@ -1674,7 +1661,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               With RISE running paid: $2.2M to $6.5M+ in 24 months.
             </p>
           </div>
-          <p className="mt-6 text-[0.85rem]" style={{ color: ink, opacity: 0.55 }}>
+          <p className="mt-6 text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
             Ask Mattan for the mechanism behind any of these on the call. Full case studies at risedtc.com.
           </p>
         </div>
@@ -1684,7 +1671,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           ctaband + signature-card pattern. Fee card keeps the qualifying-brands gate: RISE's
           own pricing page publishes TWO models, and the Performance Model is gated, never
           universal (see content_prompts rise-company-facts). */}
-      <section style={{ background: ink, color: surface, position: 'relative', overflow: 'hidden' }}>
+      <section data-pill-hide="1" style={{ background: ink, color: surface, position: 'relative', overflow: 'hidden' }}>
         <img
           src="https://resources.risedtc.com/tools/assets/rise-sun-wht.png"
           alt=""
@@ -1694,7 +1681,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           style={{ position: 'absolute', bottom: '-60px', left: '50%', transform: 'translateX(-50%)', width: 420, opacity: 0.07, pointerEvents: 'none' }}
         />
         <div className="mx-auto w-full max-w-[820px] px-6 text-center" style={{ position: 'relative', padding: '70px 24px 74px' }}>
-          <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.6)' }}>Ready when you are</div>
+          <div className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.7)' }}>Ready when you are</div>
           <h2
             className="mt-4 font-extrabold tracking-[-0.02em]"
             style={{ fontFamily: headingFont, fontSize: 'clamp(1.9rem, 4.6vw, 3.2rem)', lineHeight: 1.05, color: surface }}
@@ -1706,14 +1693,14 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </p>
 
           <div className="my-8 text-left p-6 sm:p-7" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
-            <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.6)' }}>How RISE charges</div>
+            <div className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.7)' }}>How RISE charges</div>
             {/* Performance leads and carries the accent: it is the model this page is selling.
                 The qualifying gate stays — RISE's own pricing publishes it as gated, never
                 universal (content_prompts rise-company-facts). */}
             <div className="mt-5 p-5 sm:p-6" style={{ background: 'rgba(255,199,29,.09)', borderLeft: `3px solid ${accent}`, borderRadius: 2 }}>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="text-[1.05rem]" style={{ fontFamily: headingFont, fontWeight: 800, color: accent }}>Performance Model</span>
-                <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.55)' }}>for qualifying brands</span>
+                <span className="text-[0.75rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.7)' }}>for qualifying brands</span>
               </div>
               <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
                 Fixed monthly fee plus a share of growth above your baseline, typically 20%, measured in your own ad account and store backend.
@@ -1723,12 +1710,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               <span style={{ fontFamily: headingFont, fontWeight: 700, color: 'rgba(255,255,255,.85)' }}>Growth Model.</span>{' '}
               Base from $2,000 per month plus a percentage of ad spend, senior strategist included.
             </p>
-            <p className="mt-4 text-[0.875rem]" style={{ color: 'rgba(255,255,255,.55)' }}>
+            <p className="mt-4 text-[0.875rem]" style={{ color: 'rgba(255,255,255,.7)' }}>
               Which model fits your brand gets settled on the call.
             </p>
           </div>
 
-          <p className="text-[0.84rem]" style={{ color: 'rgba(255,255,255,.55)' }}>
+          <p className="text-[0.84rem]" style={{ color: 'rgba(255,255,255,.7)' }}>
             Direct with Mattan and the team. No pitch deck.
           </p>
 
@@ -1748,7 +1735,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             />
             <div>
               <div style={{ fontFamily: headingFont, fontWeight: 700, color: '#ffffff' }}>Mattan Danino</div>
-              <div style={{ fontFamily: headingFont, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', color: 'rgba(255,255,255,.5)' }}>CEO, RISE DTC</div>
+              <div style={{ fontFamily: headingFont, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', color: 'rgba(255,255,255,.7)' }}>CEO, RISE DTC</div>
             </div>
             <a
               href={ctaUrl('close')}
@@ -1769,7 +1756,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             </a>
           </div>
 
-          <p className="mx-auto mt-6 text-[0.9rem] leading-relaxed text-left" style={{ color: 'rgba(255,255,255,.6)', maxWidth: '60ch' }}>
+          <p className="mx-auto mt-6 text-[0.9rem] leading-relaxed text-left" style={{ color: 'rgba(255,255,255,.7)', maxWidth: '60ch' }}>
             RISE DTC is run by Mattan Danino and Matt Moore. Mattan has 15+ years in DTC, with work published by HubSpot, Inc. Magazine, Klaviyo and Shopify, and guest lectures at UCLA. RISE is selective: when a brand qualifies, platform work starts within 48 hours of onboarding.
           </p>
         </div>
@@ -1785,31 +1772,40 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               <span className="font-bold" style={{ fontFamily: headingFont, color: ink, opacity: 0.7 }}>{wordmark}</span>
             )}
           </a>
-          <p className="text-[0.85rem]" style={{ color: ink, opacity: 0.55 }}>
+          <p className="text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
             Prepared for {companyName}. Unlisted link, shared with you only.
           </p>
         </div>
       </footer>
 
-      {/* Sticky mini-CTA — kills the mid-page CTA-free gap the baseline had at 90% of height */}
-      <a
-        href={ctaUrl('sticky')}
-        data-cta="sticky"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="cedt-anim cedt-sticky fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full px-5 py-3 text-[0.85rem] font-bold shadow-lg transition-transform hover:-translate-y-0.5"
+      {/* Sticky booking bar: docked, opaque, never over text (see the effect above). */}
+      <div
+        className="cedt-sticky fixed inset-x-0 bottom-0 z-40"
+        data-sticky-bar="1"
         style={{
-          background: accent,
-          color: ink,
-          boxShadow: `0 8px 30px ${ink}26`,
-          opacity: pillHidden ? 0 : 1,
+          background: surface,
+          borderTop: `1px solid ${ink}1f`,
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          transform: pillHidden ? 'translateY(110%)' : 'none',
           pointerEvents: pillHidden ? 'none' : undefined,
-          transform: pillHidden ? 'translateY(8px)' : undefined,
         }}
       >
-        <span className="w-1.5 h-1.5 rounded-full" style={{ background: ink }} />
-        30 min with Mattan
-      </a>
+        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-8 flex items-center justify-between gap-3" style={{ height: STICKY_BAR_H }}>
+          <span className="text-[0.85rem] leading-tight" style={{ color: ink, opacity: 0.8 }}>
+            <span className="font-bold">Mattan Danino</span>, CEO, RISE DTC
+          </span>
+          <a
+            href={ctaUrl('sticky')}
+            data-cta="sticky"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cedt-anim inline-flex items-center justify-center min-h-[44px] rounded-full px-5 text-[0.9rem] font-bold whitespace-nowrap transition-transform hover:-translate-y-0.5"
+            style={{ background: accent, color: ink }}
+          >
+            30 min with Mattan
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
