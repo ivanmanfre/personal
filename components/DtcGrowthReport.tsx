@@ -1221,7 +1221,8 @@ function WeekOnePanel({
       total++;
     }
   }
-  if (total === 0) return null;
+  // One finding has no split to show: the panel would only restate it under an empty bar.
+  if (total < 2) return null;
   const present = BUCKET_ORDER.filter((b) => byBucket[b].length > 0);
   const segFill = (b: BucketKey) =>
     b === 'rise' ? accent : b === 'split' ? `repeating-linear-gradient(45deg, ${accent} 0 3px, ${ink}14 3px 8px)` : b === 'asset' ? ink : `${ink}0f`;
@@ -1260,8 +1261,8 @@ function WeekOnePanel({
         Who does what
       </h3>
 
-      {/* The whole read in one glance: every finding, sized by side. */}
-      <div className="cedt-splitbar" aria-hidden="true">
+      {/* The whole read in one glance: every finding, sized by side (a one-side bar splits nothing). */}
+      {present.length > 1 ? <div className="cedt-splitbar" aria-hidden="true">
         {present.map((b) => (
           <span
             key={b}
@@ -1272,7 +1273,7 @@ function WeekOnePanel({
             }}
           />
         ))}
-      </div>
+      </div> : null}
 
       <div className="mt-10 grid md:grid-cols-2 gap-y-10 md:gap-x-14">
         {byBucket.rise.length > 0 ? column('rise') : null}
@@ -1351,8 +1352,29 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const promise = isPromiseRow(d);
   // Legacy prose scrub (see scrubProse): paid wording only ships when Meta ads were read live.
   const paidOk = d.ads?.meta?.status === 'present';
+  // Retired 2026-09-26: the "Email capture is already live" strength card. It rested on
+  // substring hits in the homepage HTML (a capture app's script can load with no campaign
+  // configured), so it told founders they had something they may not have.
+  // New-contract rows carry the store's own gaps in drop_off / second_order, so the findings
+  // list keeps only RISE's side (paid media, creative) and never restates an item above it.
+  const findings = (d.findings || []).filter(
+    (f) =>
+      !(f.signal === 'signup' && f.kind === 'strength') &&
+      // The sold-out-variants finding (lever paid_media, read off the catalog) is the same fact as
+      // the drop-off section's sold-out item, so only ad-read findings survive on promise rows.
+      (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
+  )
+    .map((f) => (promise ? f : scrubLegacyFinding(f, paidOk)))
+    .filter((f): f is NonNullable<typeof f> => !!f);
+
   // A hook that loses a sentence to the scrub reads as a fragment: it takes the default hook.
-  const legacyHook = clean(scrubProse(d.hero_hook, paidOk)) === clean(d.hero_hook)
+  // So does a hook whose numbers no rendered finding carries (round 5: 20 legacy hooks led with a
+  // discount count whose finding the scrub or the builder had dropped).
+  const findingNums = new Set(
+    findings.flatMap((f) => `${f.title || ''} ${f.evidence || ''}`.match(/\d[\d,.]*\d|\d/g) || []).map((n) => n.replace(/,/g, '')),
+  );
+  const hookBacked = (clean(d.hero_hook).match(/\d[\d,.]*\d|\d/g) || []).every((n) => findingNums.has(n.replace(/,/g, '')));
+  const legacyHook = clean(scrubProse(d.hero_hook, paidOk)) === clean(d.hero_hook) && hookBacked
     ? clean(d.hero_hook)
     : 'A public read of your store, and where the growth is.';
 
@@ -1374,21 +1396,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
   });
-
-  // Retired 2026-09-26: the "Email capture is already live" strength card. It rested on
-  // substring hits in the homepage HTML (a capture app's script can load with no campaign
-  // configured), so it told founders they had something they may not have.
-  // New-contract rows carry the store's own gaps in drop_off / second_order, so the findings
-  // list keeps only RISE's side (paid media, creative) and never restates an item above it.
-  const findings = (d.findings || []).filter(
-    (f) =>
-      !(f.signal === 'signup' && f.kind === 'strength') &&
-      // The sold-out-variants finding (lever paid_media, read off the catalog) is the same fact as
-      // the drop-off section's sold-out item, so only ad-read findings survive on promise rows.
-      (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
-  )
-    .map((f) => (promise ? f : scrubLegacyFinding(f, paidOk)))
-    .filter((f): f is NonNullable<typeof f> => !!f);
 
   // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
   // honest negative, the source WAS reached). Fixed order, deduped, pagespeed skipped entirely.

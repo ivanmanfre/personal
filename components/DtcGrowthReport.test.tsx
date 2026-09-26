@@ -925,6 +925,27 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(text).toContain('No subscribe-and-save path for repeat buyers');
   });
 
+  it('RPNZL: a hook whose discount count no rendered finding carries takes the default; one finding = no Who-does-what panel', () => {
+    const { fixture, html } = renderFixture('rpnzl-legacy.json');
+    const d = fixture.dtc as any;
+    expect(d.hero_hook).toMatch(/^9 of your 40 live products are discounted/);
+    const text = visible(html);
+    expect(text).not.toContain('9 of your 40');
+    expect(text).toContain('A public read of your store, and where the growth is.');
+    // one finding survives the scrub: no split bar, no panel restating it
+    expect(html).not.toContain('data-weekone="1"');
+    expect(html).not.toContain('Who does what');
+    expect(html).not.toContain('cedt-splitbar"');
+    // the same hook stays when a rendered finding carries its numbers
+    const backed = JSON.parse(JSON.stringify(d));
+    backed.findings.push({ signal: 'shopify', kind: 'gap', lever: 'cro', bucket: 'yours',
+      title: 'Discounting is running across your catalog',
+      evidence: '9 of your 40 live products are discounted, averaging 20.6% off.', source_url: 'https://rpnzlbeauty.com/products.json' });
+    const out = visible(renderDtc(backed, fixture.company_name));
+    expect(out).toContain('9 of your 40 live products are discounted right now, averaging 20.6% off.');
+    expect(renderDtc(backed, fixture.company_name)).toContain('Who does what');
+  });
+
   it('Brotherly Sole (legacy, Meta empty): no paid-traffic or engine wording, reviews title rewritten', () => {
     const { fixture, html } = renderFixture('brotherly-sole-legacy.json');
     expect((fixture.dtc as any).ads.meta.status).toBe('empty');
