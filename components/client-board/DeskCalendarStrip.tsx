@@ -199,7 +199,10 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   const spanDays = Math.round((parseIso(lastDated).getTime() - spanStart.getTime()) / DAY_MS);
   const weeks = Math.max(1, Math.min(10, Math.floor(spanDays / 7) + 1));
   const days: Date[] = [];
-  for (let i = 0; i < weeks * 7; i++) days.push(new Date(spanStart.getTime() + i * DAY_MS));
+  // Step by calendar DATE, never by 24h of milliseconds: local midnight + n * 24h lands on
+  // 23:00 of the same day after a DST fall-back and printed that date twice ("24, 25, 25, 26"
+  // in Europe, "31, 1 Nov, 1 Nov, 2" in LA), pushing every later post to the wrong weekday.
+  for (let i = 0; i < weeks * 7; i++) days.push(new Date(spanStart.getFullYear(), spanStart.getMonth(), spanStart.getDate() + i));
   const gridEnd = days[days.length - 1];
   const gridEndIso = isoOf(gridEnd);
   const approvedShown = marks.some((m) => m.approved);

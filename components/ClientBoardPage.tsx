@@ -1249,8 +1249,8 @@ const FUNNEL_DOT: Record<string, number> = { reach: 30, trust: 55, buyers: 85 };
 function FunnelChip({ stage, accent, source }: { stage?: string; accent: string; source?: string }) {
   const meta = stage ? FUNNEL_META[stage] : undefined;
   if (!meta) return null;
-  // Inferred tags (classifier guess, not declared at generation) draw a hollow dot; the
-  // tooltip says so. A filled dot means the stage was chosen when the post was made.
+  // Inferred tags (classifier guess, not declared at generation) draw a hollow dot. A
+  // filled dot means the stage was chosen when the post was made.
   const inferred = source === 'inferred';
   const dotColor = `color-mix(in srgb, ${accent} ${FUNNEL_DOT[stage!] ?? 55}%, white)`;
   return (
@@ -2665,7 +2665,9 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
 
 // ---------- Week home: "Your next 7 days" ----------
 function weekDayList(startIso: string): string[] {
-  const start = new Date(startIso + 'T00:00:00');
+  // Noon UTC, not local midnight: toISOString() of a local midnight is the previous date for
+  // viewers east of UTC (same fix as DeskWeekSurface's copy). Noon + whole days is DST-proof.
+  const start = new Date(startIso + 'T12:00:00Z');
   return Array.from({ length: 7 }, (_, i) => new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10));
 }
 const KIND_SORT: Record<string, number> = { newsletter: 0, post: 1, carousel: 2, lm: 3, newsjack: 4 };
@@ -4371,7 +4373,12 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 }) {
   const cal = board.calendar;
   if (!cal) return null;
-  const start = new Date(cal.start + 'T00:00:00');
+  // Every grid day is a CALENDAR DATE held as UTC midnight and read back with UTC getters,
+  // so the viewer's own zone never enters. Local midnight + n * 24h printed one date twice
+  // at the viewer's DST change, and toISOString() of a local midnight is the day BEFORE for
+  // anyone east of UTC, which put every post one cell late in Europe and Israel.
+  const [sy, sm, sd] = cal.start.split('-').map(Number);
+  const start = new Date(Date.UTC(sy, sm - 1, sd));
   // One source for titles: a chip linked to a queue item always shows that item's hook.
   const labelOf = (it: CalendarItem): string => {
     const linked = it.ref ? board.queue.find((q) => q.id === it.ref) : null;
@@ -4451,21 +4458,21 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
   // Span the grid from cal.start through the END of the last scheduled item's month, so a
   // plan that runs into next month renders whole (cal.weeks is only the seeded minimum).
   const lastIso = [...cal.items, ...queueItems].reduce((m, it) => (it.date > m ? it.date : m), cal.start);
-  const lastD = new Date(lastIso + 'T00:00:00');
-  const endOfSpan = new Date(lastD.getFullYear(), lastD.getMonth() + 1, 0);
+  const [ly, lm] = lastIso.split('-').map(Number);
+  const endOfSpan = new Date(Date.UTC(ly, lm, 0));
   const spanDays = Math.max(1, Math.round((endOfSpan.getTime() - start.getTime()) / 86400000) + 1);
   const weekCount = Math.max(cal.weeks || 1, Math.ceil(spanDays / 7));
   const weeks: Date[][] = [];
   for (let w = 0; w < weekCount; w++) {
     const row: Date[] = [];
-    for (let d = 0; d < 7; d++) row.push(new Date(start.getTime() + (w * 7 + d) * 86400000));
+    for (let d = 0; d < 7; d++) row.push(new Date(Date.UTC(sy, sm - 1, sd + w * 7 + d)));
     weeks.push(row);
   }
   // Header label covers the whole span ("July · August 2026" across a month boundary).
   const monthLabel = (() => {
-    const a = start.toLocaleDateString('en-GB', { month: 'long' });
-    const b = endOfSpan.toLocaleDateString('en-GB', { month: 'long' });
-    const yr = endOfSpan.getFullYear();
+    const a = start.toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+    const b = endOfSpan.toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' });
+    const yr = endOfSpan.getUTCFullYear();
     return a === b ? `${a} ${yr}` : `${a} · ${b} ${yr}`;
   })();
   const num = (n: number) => <CountUpNum n={n} size={26} />;
@@ -4571,13 +4578,13 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
                 const iso = d.toISOString().slice(0, 10);
                 const items = byDate.get(iso) || [];
                 const visible = items.slice(0, 3);
-                const weekend = d.getDay() === 0 || d.getDay() === 6;
+                const weekend = d.getUTCDay() === 0 || d.getUTCDay() === 6;
                 return (
                   <div key={iso} className="cb-cal-cell min-h-[112px] bg-white p-1.5" style={{ borderTop: wi > 0 ? `1px solid ${DIVIDE}` : 'none', borderLeft: di > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
                     {/* Month turns are marked in the cell itself: the 1st renders "1 Aug" in
                         quiet mono ink, so the two-month span reads without extra rows. */}
-                    <div className="px-0.5 pb-1 text-[12px] font-medium tabular-nums" style={d.getDate() === 1 ? { fontFamily: MONO, fontSize: 11, color: INK } : { color: weekend ? '#c2cccb' : FAINT }}>
-                      {d.getDate() === 1 ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : d.getDate()}
+                    <div className="px-0.5 pb-1 text-[12px] font-medium tabular-nums" style={d.getUTCDate() === 1 ? { fontFamily: MONO, fontSize: 11, color: INK } : { color: weekend ? '#c2cccb' : FAINT }}>
+                      {d.getUTCDate() === 1 ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : d.getUTCDate()}
                     </div>
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
@@ -7749,7 +7756,7 @@ function TeamSurface({ slug, accent, session }: { slug: string; accent: string; 
  *  import types + the platform-artifact components from here; the page imports the desk
  *  surfaces back. The cycle is safe (every cross-reference is deferred to render), and the
  *  alternative — moving ~20 declarations out of this file — would churn hundreds of lines. */
-export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
+export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, CalendarSurface, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
 export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, OutreachTruthLead, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, PerfNetwork, PerfDemographics, PerfDemoBucket, CalendarItem, AgentStep };
 
 export default function ClientBoardPage() {
