@@ -365,6 +365,11 @@ function CompWrap({
   );
 }
 
+// "1 day", never "1 DAYS" (the units render uppercase).
+function dayWord(n: number): string {
+  return n === 1 ? 'day' : 'days';
+}
+
 // An ink-on-surface band with a drawn-first discipline.
 // Three instruments, each one dated at the source. Nothing here states a present-tense ad
 // status: a creative carries a first-shown date and a last-shown date, and the gap between
@@ -441,6 +446,14 @@ function AdEvidenceSpread({
   const fresherThanBrand = newestAge != null ? compAges.filter((a) => a < newestAge).length : null;
   const compReadLong = longDay(comp?.checked_at || competitors?.fetched_at);
   const gCount = g && typeof g.ads_found === 'number' ? countParts(g.ads_found, g.capped) : null;
+  // Headline counts, biggest first (Meta first on a tie): Rebalance (09-26) led with "1 on Google."
+  // while it runs 46 Meta ads.
+  const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
+    ? metaPage.data.active_ad_count as number : null;
+  const headCounts = [
+    metaN != null ? { k: 'meta', v: metaN, t: `${metaN} on Meta.` } : null,
+    g && gCount ? { k: 'google', v: g.ads_found as number, t: `${gCount.pre ? `${gCount.pre} ` : ''}${gCount.n} on Google.` } : null,
+  ].filter((x): x is { k: string; v: number; t: string } => !!x).sort((a, b) => b.v - a.v);
 
   const eyebrow = (t: string) => (
     <div className="flex items-center gap-3 mb-6">
@@ -479,12 +492,9 @@ function AdEvidenceSpread({
               className="font-extrabold leading-[0.98] tracking-[-0.02em]"
               style={{ fontFamily: headingFont, fontSize: 'clamp(2.4rem, 6.4vw, 4.6rem)', color: surface }}
             >
-              {g && gCount ? (
-                <>
-                  {gCount.pre ? `${gCount.pre} ` : ''}
-                  {gCount.n} on Google.{' '}
-                </>
-              ) : null}
+              {headCounts.map((h) => (
+                <span key={h.k} data-head-count={h.k}>{h.t}{' '}</span>
+              ))}
               {/* The headline absolute is page-confirmed-only (same rule as the statement below). */}
               {pageZero ? <span style={{ color: accent }}>Zero on Meta.</span> : null}
             </h2>
@@ -522,10 +532,10 @@ function AdEvidenceSpread({
             <div className="grid sm:grid-cols-3 gap-y-9 sm:gap-x-8">
               {gCount ? <Stat pre={gCount.pre} n={gCount.n} label="creatives on record for this advertiser" /> : null}
               {newestAge != null && g.newest_first_shown ? (
-                <Stat n={String(newestAge)} unit="days" label={`since the newest first-shown date, ${isoDay(g.newest_first_shown)}`} />
+                <Stat n={String(newestAge)} unit={dayWord(newestAge)} label={`since the newest first-shown date, ${isoDay(g.newest_first_shown)}`} />
               ) : null}
               {lastAge != null && g.latest_last_shown ? (
-                <Stat n={String(lastAge)} unit="days" label={`since the most recent last-shown date, ${isoDay(g.latest_last_shown)}`} />
+                <Stat n={String(lastAge)} unit={dayWord(lastAge)} label={`since the most recent last-shown date, ${isoDay(g.latest_last_shown)}`} />
               ) : null}
             </div>
 
@@ -536,7 +546,7 @@ function AdEvidenceSpread({
                 gets no manufactured drama). */}
             {newestAge != null && lastAge != null && newestAge >= 60 && lastAge <= 14 ? (
               <p className="mt-9 text-[1.2rem] sm:text-[1.35rem] leading-[1.45] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}`, maxWidth: '58ch' }}>
-                {`The record shows ads served as recently as ${lastAge === 0 ? 'today' : `${lastAge} days ago`} and nothing new entering it for ${newestAge} days. The spend is riding on creative from ${isoDay(g.newest_first_shown)} or older.`}
+                {`The record shows ads served as recently as ${lastAge === 0 ? 'today' : `${lastAge} ${dayWord(lastAge)} ago`} and nothing new entering it for ${newestAge} ${dayWord(newestAge)}. The spend is riding on creative from ${isoDay(g.newest_first_shown)} or older.`}
               </p>
             ) : null}
 
@@ -684,7 +694,7 @@ function AdEvidenceSpread({
                 <Stat {...countParts(comp.sampled_items, comp.capped)} label="ads read across the sweep" />
               ) : null}
               {compDatedEnough ? (
-                <Stat n={String(Math.min(...compAges))} unit="days" label="since the most recent competitor start date" />
+                <Stat n={String(Math.min(...compAges))} unit={dayWord(Math.min(...compAges))} label="since the most recent competitor start date" />
               ) : null}
             </div>
 
@@ -705,7 +715,7 @@ function AdEvidenceSpread({
                       {typeof c.age_days === 'number' ? (
                         <span className="flex items-baseline gap-1.5">
                           <span className="font-extrabold tabular-nums leading-none" style={{ fontFamily: headingFont, fontSize: '1.55rem', color: surface }}>{c.age_days}</span>
-                          <span className="text-[0.75rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>days</span>
+                          <span className="text-[0.75rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: surface, opacity: 0.7 }}>{dayWord(c.age_days)}</span>
                         </span>
                       ) : null}
                       <span className="block mt-1 text-[0.78rem] font-bold leading-tight" style={{ color: surface, opacity: 0.9 }}>{clean(String(c.advertiser))}</span>
@@ -728,7 +738,7 @@ function AdEvidenceSpread({
                 <div className="cedt-axis">
                   {compShown.map((c, i) =>
                     typeof c.age_days === 'number' ? (
-                      <span key={i} className="dot" style={{ left: `${agePos(c.age_days)}%` }} title={`${clean(String(c.advertiser))}, ${c.age_days} days`} />
+                      <span key={i} className="dot" style={{ left: `${agePos(c.age_days)}%` }} title={`${clean(String(c.advertiser))}, ${c.age_days} ${dayWord(c.age_days)}`} />
                     ) : null,
                   )}
                   {newestAge != null ? (
@@ -738,12 +748,12 @@ function AdEvidenceSpread({
                   <span className="end l">{`${axisMax} days back`}</span>
                   <span className="end r">{compReadLong ? `read ${compReadLong}` : 'read date'}</span>
                   {newestAge != null ? (
-                    <span className="mkl" style={{ left: `${agePos(newestAge)}%`, color: accent }}>{`your newest, ${newestAge} days`}</span>
+                    <span className="mkl" style={{ left: `${agePos(newestAge)}%`, color: accent }}>{`your newest, ${newestAge} ${dayWord(newestAge)}`}</span>
                   ) : null}
                 </div>
                 {fresherThanBrand != null && newestAge != null ? (
                   <p className="mt-7 text-[1.05rem] leading-relaxed" style={{ color: surface, opacity: 0.82, maxWidth: '66ch' }}>
-                    {`${fresherThanBrand} of the ${compShown.length} competitor creatives shown carry a start date more recent than your newest first-shown date, which is ${newestAge} days back.`}
+                    {`${fresherThanBrand} of the ${compShown.length} competitor creatives shown carry a start date more recent than your newest first-shown date, which is ${newestAge} ${dayWord(newestAge)} back.`}
                   </p>
                 ) : null}
               </div>
@@ -846,6 +856,15 @@ function sameProductPage(itemUrl?: string | null, shotPath?: string | null): boo
   return !!a && a === productHandle(shotPath);
 }
 
+// Their #1 best seller's product record, when any item on the page carries it with an image.
+function bestSellerProduct(d: any): { title?: string; url?: string; image_url?: string } | null {
+  const top = String(d?.bestsellers?.data?.handles?.[0] || '').toLowerCase();
+  if (!top) return null;
+  const all = [...promiseItems(d.drop_off), ...promiseItems(d.second_order)];
+  const hit = all.find((it) => it?.product?.image_url && productHandle(it.product.url) === top);
+  return hit ? (hit.product as any) : null;
+}
+
 function PromiseHero({
   d,
   companyName,
@@ -875,6 +894,12 @@ function PromiseHero({
   // An undated capture, or one of another page, is not evidence for this item.
   const capture = !product && shots?.pdp_url && shotDate && sameProductPage(item?.product?.url || item?.evidence?.source_url, shots?.pdp_path)
     ? String(shots.pdp_url) : null;
+  // Still nothing (a store-wide item: shipping threshold, sold-out share): the first screen still
+  // shows their store (VMI, Safecourt, Neeshi 09-26 had none). Their dated homepage capture, else
+  // the image of their #1 best seller when an item carries it. Never another page's PDP capture.
+  const homeShot = !product && !capture && shots?.homepage_url && shotDate ? String(shots.homepage_url) : null;
+  const bestProduct = !product && !capture && !homeShot ? bestSellerProduct(d) : null;
+  const still = capture || homeShot || bestProduct?.image_url || null;
   const price = productPrice(product || undefined);
   const proofUrl = product?.url || item?.evidence?.source_url || null;
   // Numbered after the filter: a page with only a second-order item lists it as 1, not 2.
@@ -899,7 +924,7 @@ function PromiseHero({
           </h1>
         </div>
 
-        {item && (product || capture) ? (
+        {item && (product || still) ? (
           <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
             <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
               {product ? (
@@ -924,11 +949,12 @@ function PromiseHero({
                 <>
                   <div style={{ borderRadius: 8, overflow: 'hidden', background: surface, border: `1px solid ${ink}14` }}>
                     <img
-                      src={capture as string}
-                      alt={`${companyName} product page`}
+                      src={still as string}
+                      alt={capture ? `${companyName} product page` : homeShot ? `${companyName} homepage` : clean(bestProduct?.title) || `${companyName} best seller`}
                       decoding="async"
                       data-store-img="1"
-                      style={{ display: 'block', width: '100%', height: 210, objectFit: 'cover', objectPosition: '50% 30%' }}
+                      data-store-img-kind={capture ? 'pdp' : homeShot ? 'home' : 'best'}
+                      style={{ display: 'block', width: '100%', height: 210, objectFit: bestProduct && !capture && !homeShot ? 'contain' : 'cover', objectPosition: homeShot ? '50% 0%' : '50% 30%' }}
                     />
                   </div>
                   <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -940,7 +966,13 @@ function PromiseHero({
                 </>
               )}
               <figcaption className="mt-2 text-[0.8rem] leading-snug" style={{ color: ink, opacity: 0.75 }}>
-                {product ? `Your product page${readDate ? `, read ${readDate}` : ''}.` : `Your product page, captured ${shotDate}.`}{' '}
+                {product
+                  ? `Your product page${readDate ? `, read ${readDate}` : ''}.`
+                  : capture
+                    ? `Your product page, captured ${shotDate}.`
+                    : homeShot
+                      ? `Your homepage, captured ${shotDate}.`
+                      : `Your best seller, ${clean(bestProduct?.title)}.`}{' '}
                 {proofUrl ? (
                   <a href={proofHref(proofUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
                     See it on your store

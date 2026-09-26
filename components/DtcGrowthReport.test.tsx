@@ -654,9 +654,9 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     assertNoForbidden(html);
     assertNoRetiredChrome(html, dtc);
     // Stale ref falls back to the first drop-off item. It has no product, so a capture of some
-    // other product page is NOT proof for it: no image in the hero (09-26 validation).
+    // other product page is NOT proof for it (09-26 validation): their homepage capture shows.
     expect(html).not.toContain(escHtml(dtc.screenshots.pdp_url));
-    expect(html).not.toContain('data-hero-proof');
+    expect(html).toContain(escHtml(dtc.screenshots.homepage_url));
     // The empty block renders its honest note, and the hero drops its second row.
     expect(html).toContain('Your repeat rate is private, so we did not guess it.');
     expect(html).not.toContain('href="#second-order"');
@@ -780,6 +780,51 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     expect(hero).toMatch(/leading-none"[^>]*>1<\/span>/);
     expect(hero).not.toMatch(/leading-none"[^>]*>2<\/span>/);
     expect(hero).toContain('The second order');
+  });
+
+  it('a store-wide hero item still shows their store: homepage capture, else their best seller, never another PDP', () => {
+    // VMI / Safecourt / Neeshi (09-26): shipping threshold or sold-out share, no product on the item
+    const fixture = loadFixture('tina-new-contract.json');
+    const base = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    base.drop_off.items = [base.drop_off.items[2], base.drop_off.items[0]];     // no_free_shipping first
+    base.hero = { headline: base.drop_off.items[0].title, item_ref: 'drop_off.0' };
+    base.screenshots.pdp_path = '/products/banana-bliss-shampoo';              // unrelated capture
+    const html = renderDtc(base, fixture.company_name);
+    const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('data-promise-section="drop-off"'));
+    expect(hero).toContain(escHtml(base.screenshots.homepage_url));
+    expect(hero).toContain('data-store-img-kind="home"');
+    expect(hero).toMatch(/Your homepage, captured Sep 2[56]\./);
+    expect(hero).not.toContain(escHtml(base.screenshots.pdp_url));
+    expect(html.indexOf('data-store-img="1"')).toBeLessThan(html.indexOf('data-promise-section="drop-off"'));
+    // no homepage capture: the #1 best seller's image, carried by another item on the page
+    const noHome = JSON.parse(JSON.stringify(base));
+    delete noHome.screenshots.homepage_url;
+    const h2 = renderDtc(noHome, fixture.company_name);
+    const hero2 = h2.slice(h2.indexOf('data-promise-hero'), h2.indexOf('data-promise-section="drop-off"'));
+    expect(hero2).toContain(escHtml(noHome.drop_off.items[1].product.image_url));
+    expect(hero2).toContain('data-store-img-kind="best"');
+    expect(hero2).toContain('Your best seller, ');
+    expect(hero2).not.toContain(escHtml(noHome.screenshots.pdp_url));
+  });
+
+  it('ad records lead with the bigger count (Meta first) and say 1 DAY, never 1 DAYS', () => {
+    // Rebalance (09-26): 46 Meta ads, 1 Google creative; the headline led with "1 on Google."
+    const fixture = loadFixture('tina-new-contract.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    dtc.ads.meta = { status: 'present', fetched_at: '2026-09-26T12:56:32Z', data: { active_ad_count: 46 } };
+    dtc.ads.google = { status: 'present', fetched_at: '2026-09-26T10:47:49Z',
+      data: { ads_found: 1, capped: false, advertiser: 'Rebalance Vintage', region: 'CA', checked_at: '2026-09-26T10:47:49Z',
+              newest_first_shown: '2026-09-25', latest_last_shown: '2026-09-25', formats: { text: 0, image: 1, video: 0 }, creatives: [] } };
+    delete dtc.ads.meta_sweep;
+    const html = renderDtc(dtc, fixture.company_name);
+    const spread = html.slice(html.indexOf('data-adspread'));
+    const meta = spread.indexOf('46 on Meta.');
+    const goog = spread.indexOf('1 on Google.');
+    expect(meta).toBeGreaterThan(-1);
+    expect(goog).toBeGreaterThan(meta);
+    expect(spread).toMatch(/>day<\/span>/);
+    expect(spread).not.toMatch(/>1<\/span>\s*<span[^>]*>days</);
+    expect(spread).not.toContain('1 days');
   });
 
   it('zero-ads copy is second person', () => {
