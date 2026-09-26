@@ -1,0 +1,254 @@
+{
+ "company_name": "RPNZL",
+ "label": "RPNZL legacy live row (pre-builder), Profit Gap finding + meta error, fetched read-only 2026-09-26",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "status": "error"
+   },
+   "google": {
+    "data": {
+     "query": "rpnzlbeauty.com",
+     "capped": false,
+     "region": "US",
+     "formats": {
+      "text": 0,
+      "image": 0,
+      "video": 0
+     },
+     "ads_found": 0,
+     "creatives": [],
+     "advertiser": null,
+     "checked_at": "2026-08-17T18:25:58.788650+00:00",
+     "max_results": 60,
+     "queries_tried": [
+      "rpnzlbeauty.com"
+     ],
+     "latest_last_shown": null,
+     "newest_first_shown": null,
+     "oldest_first_shown": null,
+     "advertisers_matched": 0
+    },
+    "reason": "google actor returned 1 items across 1 query, none matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-08-17T18:25:58.788671+00:00",
+    "source_url": "https://adstransparency.google.com/?region=US&q=rpnzlbeauty.com"
+   }
+  },
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "RISE DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora",
+   "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "popup",
+     "newsletter",
+     "subscribe"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-08-17T18:25:53.859468+00:00",
+   "source_url": "https://rpnzlbeauty.com/"
+  },
+  "reviews": {
+   "data": {
+    "has_reviews": false
+   },
+   "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
+   "status": "empty",
+   "fetched_at": "2026-08-17T18:25:53.856377+00:00",
+   "source_url": "https://rpnzlbeauty.com/products/insta-bond"
+  },
+  "shopify": {
+   "data": {
+    "oos_pct": 50.0,
+    "currency": "USD",
+    "platform": "shopify",
+    "non_merch": 0,
+    "gift_cards": 0,
+    "price_band": {
+     "max": 43.0,
+     "min": 11.0,
+     "median": 16.0,
+     "catalog_max": 43.0,
+     "in_stock_only": true,
+     "priced_products": 20
+    },
+    "catalog_size": 40,
+    "oos_variants": 20,
+    "has_subscription": false,
+    "new_products_90d": 10,
+    "auto_discount_pct": null,
+    "variant_depth_avg": 1.0,
+    "discount_depth_pct": 20.6,
+    "merch_catalog_size": 40,
+    "products_on_discount": 9,
+    "subscription_source_url": "https://rpnzlbeauty.com/products/insta-bond.js"
+   },
+   "status": "present",
+   "fetched_at": "2026-08-17T18:25:32.507395+00:00",
+   "source_url": "https://rpnzlbeauty.com/products.json",
+   "endpoint_used": "products.json"
+  },
+  "findings": [
+   {
+    "kind": "gap",
+    "lever": "profit_visibility",
+    "title": "The Profit Gap is running through your discount line",
+    "bucket": "rise",
+    "signal": "shopify",
+    "evidence": "9 of your 40 live products are discounted, averaging 20.6% off. That can hold your revenue while contribution profit slips underneath it. The gap between the two is the first number RISE looks at.",
+    "week_one": "Before a dollar of spend moves, we model where money is made or lost, discounts included.",
+    "source_url": "https://rpnzlbeauty.com/products.json",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "gap",
+    "lever": "profit_visibility",
+    "title": "No subscribe-and-save path for repeat buyers",
+    "bucket": "yours",
+    "signal": "shopify",
+    "evidence": "Your storefront runs 40 products with no subscription option we could find on the page. Repeat purchases are where contribution profit compounds, and a subscribe-and-save path turns one-time buyers into predictable revenue on the traffic you already pay for.",
+    "week_one": "A subscription option is a store decision on your side. It compounds every profitable order the paid engine buys.",
+    "source_url": "https://rpnzlbeauty.com/products/insta-bond.js",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "negative",
+    "lever": "paid_media",
+    "title": "Paid clicks are landing on sold-out variants",
+    "bucket": "split",
+    "signal": "shopify",
+    "evidence": "50.0% of your variants read out-of-stock right now. Every paid click that hits a sold-out variant is spend with no shot at converting, a direct drag on blended MER.",
+    "week_one": "We prune sold-out items out of your product feeds and spend routing in the first optimization pass. Restocking is your call.",
+    "source_url": "https://rpnzlbeauty.com/products.json",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "strength",
+    "lever": "cro",
+    "title": "Email capture is already live where paid traffic lands",
+    "bucket": "asset",
+    "signal": "signup",
+    "evidence": "Your storefront shows email capture on the page paid traffic hits. That gives the paid engine an owned audience to bring back and lifts the return on every click you buy.",
+    "week_one": "Capture is already on the page paid traffic hits. That audience compounds the return on every click.",
+    "source_url": "https://rpnzlbeauty.com/",
+    "bucket_pillar": null
+   }
+  ],
+  "hero_hook": "9 of your 40 live products are discounted right now, averaging 20.6% off.",
+  "integrity": {
+   "flags": [
+    "Meta unread, no ad claim shipped: unknown",
+    "brand name is a single short word ('RPNZL'); identity matching ran exact-only"
+   ],
+   "checked_at": "2026-08-17T18:26:37.063211+00:00"
+  },
+  "pagespeed": {
+   "status": "absent"
+  },
+  "shippable": {
+   "ok": true,
+   "reason": null,
+   "min_gaps": 2,
+   "gap_findings": 3
+  },
+  "dm_insight": "50% of your product variants read out of stock right now",
+  "dm_message": "took a look at RPNZL before reaching out and 50% of your variants are showing out of stock right now.\n\nI took the liberty of putting together a free growth scan of your own store so you can see how we help before we ever talk.\n\nWant me to send one over?",
+  "fact_table": [
+   "0",
+   "1",
+   "10",
+   "11",
+   "117",
+   "12",
+   "158",
+   "16",
+   "20",
+   "20.6",
+   "40",
+   "43",
+   "45",
+   "50",
+   "51",
+   "6",
+   "60",
+   "73",
+   "9"
+  ],
+  "profit_gap": {
+   "seed_aov": 16.0,
+   "source_note": "AOV seed is your public median product price; discount is the catalog average. Editable, so type your real numbers.",
+   "seed_discount_pct": 20.6
+  },
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "klaviyo",
+     "judge.me",
+     "loox",
+     "shopify web pixels"
+    ],
+    "is_shopify": true,
+    "pdp_checked": false,
+    "missing_critical": [
+     "attentive",
+     "recharge",
+     "rebuy"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-08-17T18:25:20.216793+00:00",
+   "source_url": "https://rpnzlbeauty.com/"
+  },
+  "competitors": {
+   "data": null,
+   "reason": "legacy strip removed: never vetted by the current relevance judge",
+   "status": "skipped",
+   "fetched_at": "2026-09-26T17:43:49.307365+00:00"
+  },
+  "screenshots": {
+   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/rpnzl-1d-pdp.png",
+   "captured_at": "2026-08-17T18:25:54.050292+00:00",
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/rpnzl-1d.png"
+  },
+  "completeness": {
+   "tier": "partial",
+   "present": [
+    "shopify",
+    "tech_stack",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "empty",
+    "shopify": "present",
+    "ads.meta": "error",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 3
+  },
+  "growth_score": null,
+  "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+  "dm_insight_why": "Part of the ad clicks you pay for are landing on pages that can't take the order.",
+  "score_breakdown": {},
+  "dm_insight_source": {
+   "signal": "shopify",
+   "finding_title": "Paid clicks are landing on sold-out variants"
+  }
+ }
+}

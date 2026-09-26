@@ -1,0 +1,349 @@
+{
+ "company_name": "Charleston Soy Works",
+ "label": "Charleston Soy Works promise row (dtc-2026-09-26d), em dash inside a product title",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "reason": "no identity-confirmed Facebook page (homepage private/absent, search no match)",
+    "status": "blocked",
+    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Charleston%20Soy%20Works&search_type=keyword_unordered&media_type=all",
+    "resolved_via": "blocked"
+   },
+   "google": {
+    "data": {
+     "query": "charlestonsoyworks.com",
+     "capped": false,
+     "region": "US",
+     "formats": {
+      "text": 0,
+      "image": 0,
+      "video": 0
+     },
+     "ads_found": 0,
+     "creatives": [],
+     "advertiser": null,
+     "checked_at": "2026-09-26T17:41:14.870281+00:00",
+     "max_results": 60,
+     "queries_tried": [
+      "charlestonsoyworks.com"
+     ],
+     "latest_last_shown": null,
+     "newest_first_shown": null,
+     "oldest_first_shown": null,
+     "advertisers_matched": 0
+    },
+    "reason": "google actor returned 4 items across 1 query, none matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T17:41:14.870297+00:00",
+    "source_url": "https://adstransparency.google.com/?region=US&q=charlestonsoyworks.com"
+   },
+   "meta_sweep": {
+    "data": {
+     "capped": true,
+     "keywords": [
+      "Charleston Soy Works"
+     ],
+     "checked_at": "2026-09-26T17:41:27.061169+00:00",
+     "max_results": 30,
+     "matched_pages": [],
+     "sampled_items": 60,
+     "identity_matched_ads": 0
+    },
+    "reason": "ad-library keyword sweep returned 60 ads, none from a page matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T17:41:27.061184+00:00",
+    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Charleston%20Soy%20Works&search_type=keyword_unordered&media_type=all"
+   }
+  },
+  "hero": {
+   "headline": "Your $17 trial size has no path to the $24 full size",
+   "item_ref": "second_order.0"
+  },
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "RISE DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora",
+   "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "popup",
+     "subscribe"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-09-26T17:41:10.269296+00:00",
+   "source_url": "https://charlestonsoyworks.com/"
+  },
+  "reviews": {
+   "data": {
+    "has_reviews": false,
+    "review_signals": [
+     "junip"
+    ]
+   },
+   "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
+   "status": "empty",
+   "fetched_at": "2026-09-26T17:41:10.266200+00:00",
+   "source_url": "https://charlestonsoyworks.com/products/fragrance-spray"
+  },
+  "shopify": {
+   "data": {
+    "oos_pct": 0.3,
+    "currency": "USD",
+    "platform": "shopify",
+    "non_merch": 1,
+    "gift_cards": 1,
+    "price_band": {
+     "max": 528,
+     "min": 6,
+     "median": 24,
+     "catalog_max": 528,
+     "in_stock_only": true,
+     "priced_products": 327
+    },
+    "catalog_size": 70,
+    "oos_variants": 1,
+    "catalog_capped": false,
+    "has_subscription": false,
+    "new_products_90d": 27,
+    "auto_discount_pct": null,
+    "variant_depth_avg": 4.7,
+    "discount_depth_pct": 18.1,
+    "merch_catalog_size": 69,
+    "newest_product_days": 18,
+    "newest_product_year": 2026,
+    "newest_product_month": 9,
+    "products_on_discount": 3,
+    "subscription_source_url": "https://charlestonsoyworks.com/products/apples-bourbon-body-oil-candle-everything-spray-duo-copy.js"
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:40:03.309421+00:00",
+   "source_url": "https://charlestonsoyworks.com/products.json",
+   "endpoint_used": "products.json"
+  },
+  "drop_off": {
+   "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
+   "items": []
+  },
+  "findings": [
+   {
+    "kind": "gap",
+    "lever": "cro",
+    "title": "Discounting is running across your catalog",
+    "bucket": "rise",
+    "signal": "shopify",
+    "evidence": "3 of your 69 live products are discounted, averaging 18.1% off. When that much of the catalog carries a markdown, shoppers learn to expect one, and full-price orders get harder to win.",
+    "week_one": "Before a dollar of spend moves, we check which offers your ads should carry, discounts included.",
+    "source_url": "https://charlestonsoyworks.com/products.json",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "gap",
+    "lever": "retention_path",
+    "title": "No subscribe-and-save path for repeat buyers",
+    "bucket": "yours",
+    "signal": "shopify",
+    "evidence": "Your storefront runs 69 products with no subscription option we could find on the page. A subscribe-and-save path turns a one-time buyer into an order that repeats without them having to come back and reorder.",
+    "week_one": "A subscription option is a store decision on your side, and it keeps the customers our campaigns bring in ordering.",
+    "source_url": "https://charlestonsoyworks.com/products/apples-bourbon-body-oil-candle-everything-spray-duo-copy.js",
+    "bucket_pillar": "Profit Over Sales"
+   },
+   {
+    "kind": "gap",
+    "lever": "cro",
+    "title": "Your price band is wide and the median sits low",
+    "bucket": "split",
+    "signal": "shopify",
+    "evidence": "Your in-stock catalog runs $6 to $528 with a $24 median. With most of your products priced near the bottom of that range, threshold and bundle offers are how an order grows past one item.",
+    "week_one": "We point spend at the offers and price points that hold blended profit. Bundle and threshold builds on the store are yours to green-light.",
+    "source_url": "https://charlestonsoyworks.com/products.json",
+    "bucket_pillar": "Optimized Media Buying"
+   }
+  ],
+  "hero_hook": "3 of your 69 live products are discounted right now, averaging 18.1% off.",
+  "integrity": {
+   "flags": [
+    "Meta zero is SWEEP-ONLY: no identity-confirmed page was found"
+   ],
+   "checked_at": "2026-09-26T17:42:15.560830+00:00"
+  },
+  "pagespeed": {
+   "reason": "pagespeed retired 2026-08-07 (v3): deliberately not collected",
+   "status": "absent"
+  },
+  "shippable": {
+   "ok": true,
+   "reason": null,
+   "gap_findings": 3,
+   "drop_off_items": 0,
+   "rise_gap_findings": 0,
+   "second_order_items": 2
+  },
+  "dm_insight": "3 of your 69 products are running discounted right now, at 18.1% off on average",
+  "dm_message": "went over Charleston Soy Works before reaching out and 3 of your 69 products are discounted right now at 18.1% off.\n\nI took the liberty of putting together a free growth scan of your own store so you can see how we help before we ever talk.\n\nWant me to send one over?",
+  "fact_table": [
+   "0",
+   "0.3",
+   "1",
+   "11",
+   "18",
+   "18.1",
+   "2026",
+   "22",
+   "24",
+   "25",
+   "27",
+   "3",
+   "30",
+   "327",
+   "39",
+   "4.7",
+   "46",
+   "528",
+   "6",
+   "60",
+   "69",
+   "70",
+   "9"
+  ],
+  "store_meta": {
+   "data": {
+    "country": "US",
+    "currency": "USD",
+    "ships_to_home_country": true,
+    "published_products_count": 69
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:40:03.444744+00:00",
+   "source_url": "https://charlestonsoyworks.com/meta.json"
+  },
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "shopify web pixels",
+     "junip"
+    ],
+    "is_shopify": true,
+    "pdp_checked": true,
+    "missing_critical": [
+     "klaviyo",
+     "attentive",
+     "recharge",
+     "rebuy"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:40:01.846356+00:00",
+   "source_url": "https://charlestonsoyworks.com/"
+  },
+  "bestsellers": {
+   "data": {
+    "handles": [
+     "his-hers-massage-oil-candle",
+     "moonflower-lotion-candle",
+     "petals-lotion-candle",
+     "amber-noir-lotion-candle",
+     "strawberries-champagne-lotion-candle",
+     "chocolate-tempation-lotion-candles",
+     "do-not-disturb-10-oz-body-oil-candle",
+     "you-want-a-massage",
+     "one-thing-led-to-another",
+     "you-re-getting-lucky",
+     "plans-are-cancelled",
+     "tonight-s-the-night",
+     "this-candle-melts-so-do-i-copy"
+    ],
+    "source_url": "https://charlestonsoyworks.com/collections/all?sort_by=best-selling"
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:40:04.169570+00:00",
+   "source_url": "https://charlestonsoyworks.com/collections/all?sort_by=best-selling"
+  },
+  "competitors": {
+   "reason": "competitors arm timed out inside the build budget",
+   "status": "error"
+  },
+  "screenshots": {
+   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/charleston-soy-works-7c-pdp.png",
+   "pdp_path": "/products/fragrance-spray",
+   "captured_at": "2026-09-26T17:41:10.385716+00:00",
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/charleston-soy-works-7c.png",
+   "market_country": "US"
+  },
+  "completed_at": "2026-09-26T17:42:15.560816+00:00",
+  "completeness": {
+   "tier": "partial",
+   "present": [
+    "shopify",
+    "tech_stack",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "empty",
+    "shopify": "present",
+    "ads.meta": "blocked",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 3
+  },
+  "growth_score": null,
+  "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+  "second_order": {
+   "note": "Your repeat-order rate isn't public, so we read what your store gives a first-time buyer to come back for.",
+   "items": [
+    {
+     "id": "trial_no_path",
+     "fix": "Link the full size from the trial page and give trial buyers credit toward it.",
+     "lever": "retention_path",
+     "title": "Your $17 trial size has no path to the $24 full size",
+     "detail": "A shopper can start with Magnolia Gardens Lotion Candle at $17, but that page doesn't point them to Magnolia Gardens Body Oil Candle— 10 oz, so the trial ends as a one-off order.",
+     "product": {
+      "url": "https://charlestonsoyworks.com/products/magnolia-gardens-lotion-candle",
+      "price": 17,
+      "title": "Magnolia Gardens Lotion Candle",
+      "currency": "USD",
+      "image_url": null
+     },
+     "evidence": {
+      "label": "Trial and full size on your store",
+      "value": "$17 and $24",
+      "source_url": "https://charlestonsoyworks.com/products/magnolia-gardens-lotion-candle"
+     }
+    },
+    {
+     "id": "no_loyalty",
+     "fix": "Add a simple points or next-order credit program and mention it on the order confirmation page.",
+     "lever": "retention_path",
+     "title": "We didn't find a rewards program on your store",
+     "detail": "A first-time buyer earns no points or credit toward a next order, so nothing on the store itself gives them a reason to come back.",
+     "evidence": {
+      "label": "Rewards program",
+      "value": "None found on your storefront",
+      "source_url": "https://charlestonsoyworks.com/"
+     }
+    }
+   ]
+  },
+  "dm_insight_why": "Revenue can look fine while that quietly eats what you keep per order.",
+  "builder_version": "dtc-2026-09-26d",
+  "score_breakdown": {},
+  "dm_insight_source": {
+   "signal": "shopify",
+   "finding_title": "Discounting is running across your catalog"
+  }
+ }
+}

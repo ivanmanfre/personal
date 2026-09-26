@@ -1,0 +1,243 @@
+{
+ "company_name": "realfruitpeelz.com",
+ "label": "realfruitpeelz.com held promise row (shippable.ok false, 0 items)",
+ "dtc": {
+  "ads": {
+   "meta": {
+    "reason": "declared page returned no usable ad items (page-scoped read unusable, search found no identity-matched advertiser)",
+    "status": "error",
+    "source_url": "https://www.facebook.com/fruitpeelz",
+    "resolved_via": "declared_page_unread"
+   },
+   "google": {
+    "data": {
+     "query": "realfruitpeelz.com",
+     "capped": false,
+     "region": "US",
+     "formats": {
+      "text": 0,
+      "image": 0,
+      "video": 0
+     },
+     "ads_found": 0,
+     "creatives": [],
+     "advertiser": null,
+     "checked_at": "2026-09-26T10:54:31.976507+00:00",
+     "from_cache": true,
+     "max_results": 60,
+     "queries_tried": [
+      "realfruitpeelz.com"
+     ],
+     "latest_last_shown": null,
+     "newest_first_shown": null,
+     "oldest_first_shown": null,
+     "advertisers_matched": 0
+    },
+    "reason": "google actor returned 0 items across 1 query, none matching this brand identity",
+    "status": "empty",
+    "fetched_at": "2026-09-26T10:54:31.976525+00:00",
+    "source_url": "https://adstransparency.google.com/?region=US&q=realfruitpeelz.com"
+   }
+  },
+  "hero": null,
+  "brand": {
+   "ink_hex": "#111111",
+   "is_dark": false,
+   "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+   "wordmark": "RISE DTC",
+   "font_body": "Manrope",
+   "accent_hex": "#ffc71d",
+   "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+   "surface_hex": "#ffffff",
+   "font_heading": "Sora",
+   "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+  },
+  "signup": {
+   "data": {
+    "capture_markers": [
+     "popup"
+    ],
+    "has_capture_markers": true
+   },
+   "reason": null,
+   "status": "present",
+   "partial": true,
+   "fetched_at": "2026-09-26T17:33:03.113184+00:00",
+   "source_url": "https://realfruitpeelz.com/"
+  },
+  "reviews": {
+   "reason": "no PDP URL discoverable",
+   "status": "blocked",
+   "source_url": "https://realfruitpeelz.com/"
+  },
+  "shopify": {
+   "data": {
+    "oos_pct": 0,
+    "platform": "woocommerce",
+    "oos_basis": "product",
+    "price_band": {
+     "max": 65,
+     "min": 5,
+     "median": 15
+    },
+    "catalog_size": 8,
+    "has_subscription": null,
+    "new_products_90d": null,
+    "variant_depth_avg": null,
+    "discount_depth_pct": 0,
+    "products_on_discount": 0
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:32:47.855562+00:00",
+   "source_url": "https://realfruitpeelz.com/wp-json/wc/store/v1/products?per_page=100&page=1",
+   "endpoint_used": "wc/store/v1/products"
+  },
+  "drop_off": {
+   "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
+   "items": []
+  },
+  "findings": [],
+  "hero_hook": "A public read of your store, and where the growth is.",
+  "integrity": {
+   "flags": [
+    "Meta unread, no ad claim shipped: declared page returned no usable ad items (page-scoped read unusable, search found no identity-matched advertiser)",
+    "12 of 12 surfaced competitor advertiser(s) judged irrelevant — no strip shipped; category keywords may be off",
+    "page HELD, not shippable: Held: nothing we could show about where shoppers drop off or getting a second order."
+   ],
+   "checked_at": "2026-09-26T17:33:23.422678+00:00"
+  },
+  "pagespeed": {
+   "reason": "pagespeed retired 2026-08-07 (v3): deliberately not collected",
+   "status": "absent"
+  },
+  "shippable": {
+   "ok": false,
+   "reason": "Held: nothing we could show about where shoppers drop off or getting a second order.",
+   "gap_findings": 0,
+   "drop_off_items": 0,
+   "rise_gap_findings": 0,
+   "second_order_items": 0
+  },
+  "dm_insight": null,
+  "dm_message": null,
+  "fact_table": [
+   "0",
+   "12",
+   "15",
+   "159",
+   "5",
+   "60",
+   "65",
+   "8",
+   "86",
+   "90"
+  ],
+  "store_meta": {
+   "reason": "not a readable Shopify storefront",
+   "status": "absent"
+  },
+  "tech_stack": {
+   "data": {
+    "confirmed": [
+     "google tag"
+    ],
+    "is_shopify": false,
+    "pdp_checked": false,
+    "missing_critical": [
+     "klaviyo",
+     "attentive",
+     "recharge",
+     "rebuy"
+    ]
+   },
+   "status": "present",
+   "fetched_at": "2026-09-26T17:32:41.383433+00:00",
+   "source_url": "https://realfruitpeelz.com/"
+  },
+  "bestsellers": {
+   "reason": "not a readable Shopify storefront",
+   "status": "absent"
+  },
+  "competitors": {
+   "data": {
+    "capped": true,
+    "keywords": [
+     "box",
+     "raspberry",
+     "strawberry"
+    ],
+    "creatives": [],
+    "checked_at": "2026-09-26T13:03:15.010249+00:00",
+    "from_cache": true,
+    "max_results": 90,
+    "sampled_items": 159,
+    "market_country": null,
+    "relevance_judge": {
+     "kept": 0,
+     "model": "claude-opus-5",
+     "status": "ok",
+     "dropped": 12,
+     "candidates": 12,
+     "dropped_advertisers": [
+      "MCaffeine",
+      "Lipton Ice Tea",
+      "The Farmer's Dog",
+      "Orbit Polska",
+      "Hula Hoop ",
+      "Chemist At Play",
+      "American Health Support Community",
+      "Ben & Jerry's",
+      "Strawberryhouseuz",
+      "Bare Anatomy",
+      "Dove",
+      "Try Strawberry"
+     ]
+    },
+    "advertisers_seen": 86,
+    "keywords_requested": [
+     "box",
+     "raspberry",
+     "strawberry"
+    ]
+   },
+   "reason": "12 advertiser(s) surfaced but none judged category-relevant",
+   "status": "empty",
+   "fetched_at": "2026-09-26T13:03:15.010264+00:00",
+   "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=box&search_type=keyword_unordered&media_type=all"
+  },
+  "screenshots": {
+   "pdp_url": null,
+   "captured_at": "2026-09-26T17:33:03.183433+00:00",
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/realfruitpeelz-com-ee.png"
+  },
+  "completed_at": "2026-09-26T17:33:23.422654+00:00",
+  "completeness": {
+   "tier": "partial",
+   "present": [
+    "shopify",
+    "tech_stack",
+    "signup"
+   ],
+   "signals": {
+    "signup": "present",
+    "reviews": "blocked",
+    "shopify": "present",
+    "ads.meta": "error",
+    "pagespeed": "absent",
+    "tech_stack": "present"
+   },
+   "scored_of": 6,
+   "present_count": 3
+  },
+  "growth_score": null,
+  "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+  "second_order": {
+   "note": "We couldn't see a clear second-order gap from your public pages. Your repeat-order rate lives in your store backend, so that's where Mattan looks on a call.",
+   "items": []
+  },
+  "dm_insight_why": null,
+  "builder_version": "dtc-2026-09-26d",
+  "score_breakdown": {},
+  "dm_insight_source": null
+ }
+}

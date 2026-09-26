@@ -239,8 +239,10 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     const { html } = renderFixture('gopure-com.json');
     assertNoForbidden(html);
     assertConversionLayer(html);
-    // reviews is a genuine EMPTY -> renders as the negative FINDING already in the payload.
-    expect(html).toContain('No visible reviews on the page paid traffic hits');
+    // reviews is a genuine EMPTY -> renders as the negative FINDING already in the payload,
+    // minus the paid-traffic wording (no active Meta ads were read on this row).
+    expect(html).toContain('No visible reviews on your product page');
+    expect(html).not.toMatch(/paid traffic/i);
     expect(html).not.toMatch(/0 reviews/i);
     // its source URL is a PDP -> the derived label.
     expect(html).toContain('see this on your product page');
@@ -897,5 +899,85 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     const spread = html.slice(html.indexOf('data-adspread'));
     expect(spread).toContain('zero ads for your brand');
     expect(spread).not.toContain('this brand');
+  });
+});
+
+// ── Round 5 (2026-09-26): real saved rows ─────────────────────────────────────────────
+// Fixtures are live rows read through the anon REST API (legacy) or saved by the builder
+// validation run (promise), unedited.
+describe('DtcGrowthReport — round 5 real rows', () => {
+  const visible = (html: string) =>
+    html.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/&amp;/g, '&').replace(/\s+/g, ' ');
+
+  it('RPNZL (legacy): no retired phrase, no Profit Gap card, the surviving finding still renders', () => {
+    const { fixture, html } = renderFixture('rpnzl-legacy.json');
+    const d = fixture.dtc as any;
+    expect(d.builder_version).toBeUndefined();
+    expect(d.findings.map((f: any) => f.title)).toContain('The Profit Gap is running through your discount line');
+    const text = visible(html);
+    expect(text).not.toMatch(/profit gap|contribution profit|profit per order|paid engine/i);
+    expect(html).not.toContain('data-calc');
+    // Meta read errored on this row, so no paid wording either.
+    expect(d.ads.meta.status).not.toBe('present');
+    expect(text).not.toMatch(/paid traffic|paid clicks?/i);
+    expect(html).not.toContain('data-promise-hero');
+    expect(text).toContain('Where the growth is');
+    expect(text).toContain('No subscribe-and-save path for repeat buyers');
+  });
+
+  it('Brotherly Sole (legacy, Meta empty): no paid-traffic or engine wording, reviews title rewritten', () => {
+    const { fixture, html } = renderFixture('brotherly-sole-legacy.json');
+    expect((fixture.dtc as any).ads.meta.status).toBe('empty');
+    const text = visible(html);
+    expect(text).not.toMatch(/paid traffic|paid engine|paid clicks?|traffic you already pay for/i);
+    expect(text).not.toMatch(/profit gap|contribution profit/i);
+    expect(text).toContain('No visible reviews on your product page');
+    expect(text).toContain("We couldn't find review markup on your product page.");
+    expect(text).toContain("You're not running paid social right now");
+    expect(text).toContain('The public Meta Ad Library shows zero active ads.');
+    // Its hook closes on the retired margin angle, so the hero takes the default hook whole.
+    expect((fixture.dtc as any).hero_hook).toMatch(/where your margin is going/);
+    expect(text).not.toMatch(/margin is going/i);
+    expect(text).toContain('A public read of your store, and where the growth is.');
+  });
+
+  it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
+    const { fixture, html } = renderFixture('charleston-soy-works-promise.json');
+    const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    expect(JSON.stringify(d)).toContain('Magnolia Gardens Body Oil Candle— 10 oz');
+    expect(html).toContain('Magnolia Gardens Body Oil Candle, 10 oz');
+    expect(html).not.toMatch(/[—–]/);
+    // Product cards render only with an image; give both items one so their titles show.
+    const img = 'https://charlestonsoyworks.com/cdn/shop/files/candle.jpg';
+    d.second_order.items[0].product = { ...d.second_order.items[0].product, image_url: img, title: 'Magnolia Gardens Body Oil Candle— 10 oz' };
+    d.second_order.items[1].product = { ...d.second_order.items[0].product, title: 'Sampler Set 3–6 Pack — Lavender' };
+    const out = renderDtc(d, fixture.company_name);
+    expect(out).not.toMatch(/[—–]/);
+    expect(out).toContain('Magnolia Gardens Body Oil Candle, 10 oz');
+    expect(out).toContain('Sampler Set 3-6 Pack, Lavender');
+    expect(out).not.toMatch(/,\s*,/);
+  });
+
+  it('held promise row (shippable.ok false) takes the legacy layout with no empty promised sections', () => {
+    const { fixture, html } = renderFixture('realfruitpeelz-held.json');
+    const d = fixture.dtc as any;
+    expect(d.builder_version).toMatch(/^dtc-/);
+    expect(d.shippable.ok).toBe(false);
+    assertNoForbidden(html);
+    expect(html).not.toContain('data-promise-hero');
+    expect(html).not.toContain('data-promise-section');
+    expect(html).not.toContain('Where shoppers drop off');
+    expect(html).not.toContain('Getting the second order');
+    expect(html).toContain('A public read of your store, and where the growth is.');
+    expect(html).toContain('The public read gave us the basics');
+
+    // Held with items still on the row: the hold wins, never a half-promised page.
+    const tina = loadFixture('tina-new-contract.json');
+    const held = JSON.parse(JSON.stringify(tina.dtc)) as any;
+    held.shippable = { ok: false, reason: 'Held: no second-order item.' };
+    const heldHtml = renderDtc(held, tina.company_name);
+    expect(heldHtml).not.toContain('data-promise-hero');
+    expect(heldHtml).not.toContain('data-promise-section');
+    expect(heldHtml).toContain('Where the growth is');
   });
 });

@@ -48,10 +48,45 @@ const READ_SOURCE_LABELS: Array<[string, string]> = [
 
 // Every rendered data string passes through this. It strips em/en dashes (Rise copy rule:
 // zero em-dashes anywhere on the page) WITHOUT touching numerals, so grounded numbers stay
-// verbatim while punctuation is normalized to a clean comma break.
+// verbatim while punctuation is normalized to a clean comma break. A dash between two digits
+// is a range ("3–6 pack") and becomes a hyphen, never "3, 6".
 function clean(s: string | null | undefined): string {
   if (!s) return '';
-  return s.replace(/\s*[—–]\s*/g, ', ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/(\d)\s*[—–]\s*(?=\d)/g, '$1-')
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/\s*,(\s*,)+/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^,\s*|,$/g, '');
+}
+
+// Retired 2026-09-26: the profit-per-order angle, "engine" wording, and paid wording on a store
+// with no active Meta ads. Pre-builder rows still carry them in their stored finding prose, so
+// the legacy path scrubs that prose before it renders: a finding whose title IS the retired
+// point is dropped, any other sentence carrying it is cut. Nothing is reworded into a new claim.
+const RETIRED_PROFIT = /profit gap|contribution profit|profit per order|where (your|the) (margin|profit) is going/i;
+const RETIRED_ENGINE = /\bpaid engine\b/i;
+const PAID_WORDING = /\bpaid (traffic|clicks?|landing)\b|\bon paid\b|traffic you already pay for|\bthe ads point to\b|\byour ads land\b/i;
+
+function scrubProse(s: string | null | undefined, paidOk: boolean): string {
+  if (!s) return '';
+  return s
+    .replace(/([.!?])\s+/g, '$1\u0000')
+    .split('\u0000')
+    .filter((t) => !RETIRED_PROFIT.test(t) && !RETIRED_ENGINE.test(t) && (paidOk || !PAID_WORDING.test(t)))
+    .join(' ')
+    .trim();
+}
+
+function scrubLegacyFinding<F extends { title?: string; evidence?: string; week_one?: string | null }>(f: F, paidOk: boolean): F | null {
+  const title = paidOk
+    ? String(f.title || '')
+    : String(f.title || '').replace(/\bon the page paid traffic hits\b/i, 'on your product page').replace(/\bon the pages your ads land on\b/i, 'on your product pages');
+  if (RETIRED_PROFIT.test(title) || RETIRED_ENGINE.test(title) || (!paidOk && PAID_WORDING.test(title))) return null;
+  const evidence = scrubProse(f.evidence, paidOk);
+  if (!evidence) return null;
+  return { ...f, title, evidence, week_one: f.week_one ? scrubProse(f.week_one, paidOk) || null : f.week_one };
 }
 
 // Number-free source-link label derived from the finding's source URL, so the link says
@@ -803,10 +838,12 @@ function AdEvidenceSpread({
 type PromiseItem = DtcPromiseItem;
 type PromiseBlock = DtcPromiseBlock;
 
-// A held row with nothing in either section (e.g. a WooCommerce store the builder could only
-// read the homepage of) would render a hero with no headline: it takes the legacy layout.
+// A held row (shippable.ok === false, or nothing in either section, e.g. a WooCommerce store
+// the builder could only read the homepage of) would render a hero with no headline or a
+// promised section with nothing in it: it takes the legacy layout.
 function isPromiseRow(d: any): boolean {
   return typeof d?.builder_version === 'string' && d.builder_version.length > 0 && !!d.drop_off && !!d.second_order
+    && d.shippable?.ok !== false
     && promiseItems(d.drop_off).length + promiseItems(d.second_order).length > 0;
 }
 
@@ -1312,6 +1349,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   // New-contract rows lead with the two promised sections (see PromiseHero).
   const promise = isPromiseRow(d);
+  // Legacy prose scrub (see scrubProse): paid wording only ships when Meta ads were read live.
+  const paidOk = d.ads?.meta?.status === 'present';
+  // A hook that loses a sentence to the scrub reads as a fragment: it takes the default hook.
+  const legacyHook = clean(scrubProse(d.hero_hook, paidOk)) === clean(d.hero_hook)
+    ? clean(d.hero_hook)
+    : 'A public read of your store, and where the growth is.';
 
   // Read date from the row itself. Never fabricated: absent field renders no date at all.
   // `dtc.completed_at` is restamped on every build (a rebuild reads the store again), so it
@@ -1326,7 +1369,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   useMetadata({
     title: `A growth scan for ${companyName}`,
-    description: (promise && clean((d as any).hero?.headline)) || clean(d.hero_hook) || `A public read of ${possessive(companyName)} store, and where the growth is.`,
+    description: (promise && clean((d as any).hero?.headline)) || legacyHook || `A public read of ${possessive(companyName)} store, and where the growth is.`,
     canonical: `${(import.meta as any).env?.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
@@ -1343,7 +1386,9 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       // The sold-out-variants finding (lever paid_media, read off the catalog) is the same fact as
       // the drop-off section's sold-out item, so only ad-read findings survive on promise rows.
       (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
-  );
+  )
+    .map((f) => (promise ? f : scrubLegacyFinding(f, paidOk)))
+    .filter((f): f is NonNullable<typeof f> => !!f);
 
   // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
   // honest negative, the source WAS reached). Fixed order, deduped, pagespeed skipped entirely.
@@ -1698,7 +1743,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               className="font-extrabold tracking-[-0.02em]"
               style={{ fontFamily: headingFont, fontSize: 'clamp(2.25rem, 6.4vw, 5rem)', lineHeight: 1.02, color: ink }}
             >
-              {clean(d.hero_hook)}
+              {legacyHook}
             </h1>
           </div>
           <div className="lg:col-span-3">

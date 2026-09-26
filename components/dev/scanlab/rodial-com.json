@@ -70,9 +70,9 @@
    {
     "kind": "gap",
     "lever": "profit_visibility",
-    "title": "The Profit Gap is running through your discount line",
+    "title": "Discounting is running across your catalog",
     "signal": "shopify",
-    "evidence": "59 of your 180 live products are discounted, averaging 42.7% off. That can hold your revenue while contribution profit slips underneath it. The gap between the two is the first number Rise looks at.",
+    "evidence": "59 of your 180 live products are discounted, averaging 42.7% off. When that much of the catalog carries a markdown, shoppers learn to expect one, and full-price orders get harder to win.",
     "source_url": "https://rodial.com/products.json"
    },
    {
@@ -80,23 +80,23 @@
     "lever": "cro",
     "title": "Your price band is wide and the median sits low",
     "signal": "shopify",
-    "evidence": "Catalog runs $1.90 to $1,285 with a $42 median. A wide band with a low median makes blended AOV fragile on paid. The lever is threshold and bundle offers on the landing path the ads point to.",
+    "evidence": "Catalog runs $1.90 to $1,285 with a $42 median. With most of your products priced near the bottom of that range, threshold and bundle offers are how an order grows past one item.",
     "source_url": "https://rodial.com/products.json"
    },
    {
     "kind": "negative",
     "lever": "paid_media",
-    "title": "Paid clicks are landing on sold-out variants",
+    "title": "Shoppers are landing on sold-out variants",
     "signal": "shopify",
-    "evidence": "14.4% of your variants read out-of-stock right now. Every paid click that hits a sold-out variant is spend with no shot at converting, a direct drag on blended MER.",
+    "evidence": "14.4% of your variants read out-of-stock right now. A shopper who lands on a sold-out variant has nothing to order.",
     "source_url": "https://rodial.com/products.json"
    },
    {
     "kind": "gap",
     "lever": "cro",
-    "title": "Strong rating, thin review volume on the pages your ads land on",
+    "title": "Strong rating, thin review volume on your product pages",
     "signal": "reviews",
-    "evidence": "Your PDP shows a 4.7 rating across 23 reviews. The rating earns trust; the low count undersells it on a paid landing page. Review velocity is a conversion-rate lever on cold traffic.",
+    "evidence": "Your PDP shows a 4.7 rating across 23 reviews. The rating earns trust; the low count undersells it.",
     "source_url": "https://rodial.com/products/spf-50-drops-mini"
    }
   ],
