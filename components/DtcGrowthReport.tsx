@@ -3,7 +3,7 @@
 //
 // Rise-DTC-branded teardown of a Shopify brand's PUBLIC data, staged as a premium editorial
 // long-read: dramatic Sora display heads, an asymmetric magazine grid, generous whitespace,
-// pull-quote findings, and the Profit Gap as the climactic spread. Wears Rise's own brand
+// pull-quote findings. Wears Rise's own brand
 // (gold #ffc71d as rule lines / chip dots / CTA only, Sora/Manrope, Rise logo, Rise booking
 // link) — NEVER Ivan/InboundOnSteroids chrome.
 //
@@ -11,19 +11,18 @@
 // `SignalMeta.status === 'present'` (or `'empty'` for a genuine negative), never on
 // payload-presence. A `blocked`/`error`/`absent` signal collapses silently and emits NO
 // number — a WAF-blocked source must never read as "they have zero". Empty is an honest
-// negative, not a fabricated zero. Every rendered numeral comes verbatim from the data; the
-// only editable/derived numerals live in the Profit Gap calculator and carry data-calc tags.
+// negative, not a fabricated zero. Every rendered numeral comes verbatim from the data.
+//
+// 2026-09-26: the Profit Gap calculator (profit-per-order angle) is retired for RISE and no
+// longer renders on any row, old or new. `profit_gap` on older rows is ignored.
 //
 // Receipt elevation (2026-07-31): three drawn instruments sit on top of that spine.
 //   1. The sourced vitals receipt after the hero: one line per public fact, and a line only
-//      renders when the fact is BOUND — i.e. a rendered finding below cites it, or it seeds
-//      the Profit Gap. Fewer than three bound lines and the whole band collapses, so a
-//      blocked-heavy scan never ships an empty shell.
+//      renders when the fact is BOUND — i.e. a rendered finding below cites it. Fewer than
+//      three bound lines and the whole band collapses, so a blocked-heavy scan never ships
+//      an empty shell.
 //   2. Margin data tags beside each finding: numeral tokens lifted VERBATIM out of that
 //      finding's own grounded prose by a pattern whitelist. Nothing is invented or reformatted.
-//   3. The contribution waterfall inside the Profit Gap: the component's own arithmetic
-//      decomposition of the live slider state (segments sum to AOV exactly), so it is all
-//      calculator-derived and every numeral node carries data-calc="1".
 // Store facts (tech_stack app names, growth_score, pagespeed, peer comparisons) are
 // deliberately NOT rendered as standalone display anywhere.
 import React, { useEffect, useState } from 'react';
@@ -34,7 +33,6 @@ import type { ReportJson, Scan } from '../lib/scanTypes';
 const LEVER_LABEL: Record<string, string> = {
   paid_media: 'Paid media',
   performance_creative: 'Performance creative',
-  profit_visibility: 'Profit visibility',
   cro: 'Conversion',
 };
 
@@ -111,11 +109,6 @@ const CUR_SYMBOL: Record<string, string> = {
 function curSymbol(code?: string | null): string {
   if (!code) return '$';
   return CUR_SYMBOL[code.toUpperCase()] || code.toUpperCase() + ' ';
-}
-
-function fmtMoneyBase(n: number, sym = '$'): string {
-  const sign = n < 0 ? '-' : '';
-  return `${sign}${sym}${Math.abs(n).toFixed(2)}`;
 }
 
 // Receipt price formatting: whole prices stay whole, fractional prices get two decimals,
@@ -198,7 +191,6 @@ const MARGIN_SOURCE: Record<string, string> = {
   signup: 'storefront',
   'ads.meta': 'meta ad library',
   tech_stack: 'homepage source',
-  profit_gap: 'public catalog',
 };
 
 // One line of the sourced vitals receipt. `signal` is what binds it to a finding (and picks
@@ -210,387 +202,6 @@ type ReceiptLine = {
   source: string;
   none?: boolean;
 };
-
-// The climactic spread. Formula lifted verbatim from the floor / True Profit X-Ray. Seeded
-// from the prospect's public median price (never asserted as their real margin). EVERY node
-// holding a calculator input/output numeral carries data-calc="1" — those are user-editable
-// by design and derive from user inputs, so they are exempt from the fabrication instrument.
-function ProfitGapSpread({
-  seedAov,
-  sourceNote,
-  accent,
-  ink,
-  surface,
-  headingFont,
-  ctaHref,
-  adsEmpty,
-  metaSweepZero,
-  currency,
-}: {
-  seedAov: number | null;
-  sourceNote: string;
-  accent: string;
-  ink: string;
-  surface: string;
-  headingFont: string;
-  ctaHref: string;
-  adsEmpty: boolean;
-  // audit v3: true only when a brand-wide meta_sweep proved the zero. Gates the wording so a
-  // pre-v3 row (no sweep) keeps the exact original sentence, byte-identical to the floor.
-  metaSweepZero?: boolean;
-  currency?: string | null;
-}) {
-  // Local shadow so every fmtMoney call in this component prints the store's own currency
-  // without threading a symbol through thirteen call sites.
-  const _sym = curSymbol(currency);
-  const fmtMoney = (n: number) => fmtMoneyBase(n, _sym);
-  const [aov, setAov] = useState(seedAov ?? 68);
-  // seed_aov is number|null and the 68 above is a placeholder, so every "seeded from your
-  // catalog" sentence gates on this: prose must never claim a public seed that was not read.
-  const seeded = seedAov != null;
-  const [cogsPct, setCogsPct] = useState(35);
-  const [returnsPct, setReturnsPct] = useState(8);
-  const [shipping, setShipping] = useState(6);
-  const [procPct, setProcPct] = useState(2.9);
-  const [cac, setCac] = useState(0);
-
-  const returnsRate = returnsPct / 100;
-  const cogsRate = cogsPct / 100;
-  const procFrac = procPct / 100;
-  const contribution = (1 - returnsRate) * aov * (1 - cogsRate) - shipping - (procFrac * aov + 0.3);
-  const profitPerOrder = contribution - cac;
-  // 2026-08-05: break-even ROAS is the number DTC founders actually speak in ("1.4 ROAS means
-  // losing £5 per sale, I needed 1.9 just to break even" — rise-buyer-pain-taxonomy v2). The
-  // page already had every input it needs, it just never printed the threshold.
-  // Break-even is CAC = contribution, and ROAS = revenue / ad spend = AOV / CAC, so the
-  // threshold is AOV / contribution. Null when contribution <= 0: an order that loses money
-  // before a cent of ad spend has no ad efficiency that rescues it.
-  const breakEvenRoas = contribution > 0 ? aov / contribution : null;
-
-  const sliders: Array<{ key: string; label: string; value: number; set: (v: number) => void; min: number; max: number; step: number; fmt: (v: number) => string }> = [
-    { key: 'aov', label: 'AOV', value: aov, set: setAov, min: 10, max: 300, step: 1, fmt: (v) => fmtMoney(v) },
-    { key: 'cogs', label: 'COGS', value: cogsPct, set: setCogsPct, min: 5, max: 80, step: 1, fmt: (v) => `${v}%` },
-    { key: 'returns', label: 'Returns', value: returnsPct, set: setReturnsPct, min: 0, max: 40, step: 1, fmt: (v) => `${v}%` },
-    { key: 'shipping', label: 'Shipping', value: shipping, set: setShipping, min: 0, max: 30, step: 0.5, fmt: (v) => fmtMoney(v) },
-    { key: 'proc', label: 'Processing', value: procPct, set: setProcPct, min: 1, max: 6, step: 0.1, fmt: (v) => `${v.toFixed(1)}%` },
-    { key: 'cac', label: 'CAC', value: cac, set: setCac, min: 0, max: 150, step: 1, fmt: (v) => fmtMoney(v) },
-  ];
-
-  const profitNegative = profitPerOrder < 0;
-
-  // ── Drawn contribution waterfall ────────────────────────────────────────────────────
-  // The component's own arithmetic decomposition of the LIVE slider state. The six segments
-  // sum to AOV exactly, so a segment's width is the same fact as its ledger row. All of it is
-  // calculator-derived, so every node holding one of these numerals carries data-calc="1".
-  const safeAov = aov > 0 ? aov : 1;
-  const returnsSeg = returnsRate * aov;
-  const cogsSeg = (1 - returnsRate) * aov * cogsRate;
-  const shippingSeg = shipping;
-  const processingSeg = procFrac * aov + 0.3;
-  const profitSeg = profitPerOrder;
-  const pctOf = (v: number) => Math.max(0, (v / safeAov) * 100);
-  const HATCH_CSS = 'repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 1.4px,rgba(255,255,255,.10) 1.4px 4.2px)';
-  // One sub-line for every state: the intro prose already explains WHY CAC starts at $0
-  // (ads-empty read), so this row never restates it (slop pass, 07-31).
-  const cacSub = 'set this to what a new customer costs you';
-
-  type WfSeg = { key: string; short: string; name: string; v: number; fill: string };
-  const barSegs: WfSeg[] = [
-    { key: 'returns', short: 'Returns', name: 'Returns allowance', v: returnsSeg, fill: 'rgba(255,255,255,.20)' },
-    { key: 'cogs', short: 'COGS', name: 'Cost of goods', v: cogsSeg, fill: 'url(#cedt-wf-hatch)' },
-    { key: 'shipping', short: 'Shipping', name: 'Shipping', v: shippingSeg, fill: 'rgba(255,255,255,.30)' },
-    { key: 'processing', short: 'Processing', name: 'Payment processing', v: processingSeg, fill: 'rgba(255,255,255,.46)' },
-  ];
-  if (cac > 0) barSegs.push({ key: 'cac', short: 'CAC', name: 'CAC', v: cac, fill: 'rgba(255,255,255,.62)' });
-  if (profitSeg > 0) barSegs.push({ key: 'profit', short: 'Contribution', name: 'Contribution per order', v: profitSeg, fill: accent });
-
-  // Mobile strip fills mirror the SVG fills; the hatch becomes a CSS gradient.
-  const mobileFill = (key: string) => {
-    if (key === 'cogs') return HATCH_CSS;
-    const s = barSegs.find((b) => b.key === key);
-    return s ? s.fill : 'transparent';
-  };
-
-  const r2 = (n: number) => Math.round(n * 100) / 100;
-  let wfCum = 0;
-  const drawn = barSegs.map((s) => {
-    const w = r2(Math.max(0, (s.v / safeAov) * 960));
-    const x = r2(20 + Math.max(0, (wfCum / safeAov) * 960));
-    wfCum += Math.max(0, s.v);
-    return { seg: s, x, w, center: r2(x + w / 2), p: pctOf(s.v) };
-  });
-  // A segment under 4% of the bar gets no in-drawing label; the ledger below carries it. The
-  // profit segment is never labelled up here either: the gold answer line below IS its label.
-  const labeled = drawn.filter((dd) => dd.p >= 4 && dd.seg.key !== 'profit');
-  const profitDrawn = drawn.find((dd) => dd.seg.key === 'profit');
-  const wfAria =
-    `Contribution waterfall: one order of ${fmtMoney(aov)} splits into ` +
-    barSegs.map((s) => `${s.name} ${fmtMoney(s.v)}`).join(', ') + '.';
-
-  const ledgerRows: Array<{ key: string; name: string; sub: string; v: number; swatch: string; dashed?: boolean; gold?: boolean }> = [
-    { key: 'returns', name: 'Returns allowance', sub: `${returnsPct}% of orders come back`, v: returnsSeg, swatch: 'rgba(255,255,255,.20)' },
-    { key: 'cogs', name: 'Cost of goods', sub: `${cogsPct}% after returns`, v: cogsSeg, swatch: HATCH_CSS },
-    { key: 'shipping', name: 'Shipping', sub: 'flat per order', v: shippingSeg, swatch: 'rgba(255,255,255,.30)' },
-    { key: 'proc', name: 'Payment processing', sub: `${procPct.toFixed(1)}% plus ${_sym}0.30`, v: processingSeg, swatch: 'rgba(255,255,255,.46)' },
-    { key: 'contribution', name: 'Contribution per order', sub: 'before any ad spend', v: contribution, swatch: accent, gold: true },
-    { key: 'cac', name: 'CAC', sub: cacSub, v: cac, swatch: 'transparent', dashed: true },
-  ];
-
-  return (
-    <section aria-label="The Profit Gap" data-densepanel="1" style={{ background: ink, color: surface }}>
-      <div className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-20 sm:py-28">
-        <div className="flex items-center gap-3 mb-8">
-          <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: 'rgba(255,255,255,.35)' }} />
-          <span className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]" style={{ color: surface, opacity: 0.65 }}>Profit per order</span>
-        </div>
-
-        <div className="grid lg:grid-cols-12 gap-y-12 lg:gap-x-12 items-end">
-          {/* Left: the story + the hero numeral */}
-          <div className="lg:col-span-7">
-            <h2
-              className="font-extrabold leading-[0.95] tracking-[-0.02em]"
-              style={{ fontFamily: headingFont, fontSize: 'clamp(2.75rem, 8vw, 5.5rem)', color: surface }}
-            >
-              The Profit Gap
-            </h2>
-            <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: surface, opacity: 0.8 }}>
-              {adsEmpty
-                ? metaSweepZero
-                  ? `This is the first number RISE looks at. The public Meta Ad Library shows zero ads on record for your brand, so the seed carries ${_sym}0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.`
-                  : `This is the first number RISE looks at. The public Meta Ad Library shows no active ads on your brand right now, so the seed carries ${_sym}0 of paid CAC. Slide CAC to the right and watch how much acquisition cost each order can absorb before contribution profit goes negative. That is the number a paid program on your brand has to clear.`
-                : seeded
-                  ? `This is the first number RISE looks at on any brand. AOV is seeded from your public catalog. CAC starts at ${_sym}0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.`
-                  : `This is the first number RISE looks at on any brand. AOV starts at a placeholder, so type your real number in. CAC starts at ${_sym}0: drag it to what you pay per new customer today, or find the number a paid program would need to beat to stay profit-positive on every order.`}
-            </p>
-
-            <div className="mt-10" data-calc="1">
-              <div className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: surface, opacity: 0.65 }} data-calc="1">
-                Profit per order, after CAC
-              </div>
-              <div
-                className="mt-1 font-extrabold tabular-nums leading-none tracking-[-0.03em]"
-                style={{ fontFamily: headingFont, fontSize: 'clamp(3.5rem, 13vw, 8rem)', color: profitNegative ? accent : surface }}
-                data-calc="1"
-              >
-                {fmtMoney(profitPerOrder)}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2.5" data-calc="1">
-                <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
-                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Contribution per order</span>
-                  <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{fmtMoney(contribution)}</span>
-                </div>
-                <div className="inline-flex items-center gap-2.5 rounded-full px-4 py-2" style={{ border: `1px solid ${surface}33` }} data-calc="1">
-                  <span className="text-[0.8rem] uppercase tracking-[0.16em]" style={{ color: surface, opacity: 0.7 }} data-calc="1">Break-even ROAS</span>
-                  <span className="text-[1.0625rem] font-bold tabular-nums" style={{ color: breakEvenRoas === null ? accent : surface }} data-calc="1">
-                    {breakEvenRoas === null ? 'unreachable' : `${breakEvenRoas.toFixed(2)}x`}
-                  </span>
-                </div>
-              </div>
-              {/* The threshold is only as good as the cost mix behind it, and five of the six
-                  inputs seed from defaults rather than their data. Framing it as a comparison
-                  keeps the page from asserting a break-even we cannot know. */}
-              <p className="mt-3 text-[0.9rem] leading-relaxed" style={{ color: surface, opacity: 0.6 }} data-calc="1">
-                Set your real COGS, then compare it to the ROAS on your dashboard this week.
-              </p>
-            </div>
-          </div>
-
-          {/* Right: the editable inputs */}
-          <div className="lg:col-span-5" data-calc="1">
-            <div className="mb-3 font-bold text-[0.9rem]" style={{ color: surface, opacity: 0.9 }}>
-              {seeded ? 'Seeded from public data. Every input is editable.' : 'Every input is editable.'}
-            </div>
-            <div className="rounded-2xl p-6 sm:p-7" style={{ background: `${surface}0d`, border: `1px solid ${surface}1f` }} data-calc="1">
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5" data-calc="1">
-                {sliders.map((s) => (
-                  <label key={s.key} className="block" data-calc="1">
-                    <div className="flex items-center justify-between mb-2" data-calc="1">
-                      <span className="text-[0.8rem] uppercase tracking-[0.14em]" style={{ color: surface, opacity: 0.65 }} data-calc="1">{s.label}</span>
-                      <span className="text-[1rem] font-bold tabular-nums" style={{ color: surface }} data-calc="1">{s.fmt(s.value)}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={s.min}
-                      max={s.max}
-                      step={s.step}
-                      value={s.value}
-                      onChange={(e) => s.set(Number(e.target.value))}
-                      className="w-full"
-                      style={{ accentColor: accent }}
-                      data-calc="1"
-                      aria-label={s.label}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-            <p className="mt-4 text-[0.85rem] leading-relaxed" style={{ color: surface, opacity: 0.65 }}>
-              {clean(sourceNote)}
-            </p>
-          </div>
-        </div>
-
-        {/* The drawn waterfall: one order, split. Widths are the ledger, drawn. */}
-        <div className="mt-16">
-          <svg
-            className="cedt-wfsvg"
-            viewBox="0 0 1000 210"
-            role="img"
-            aria-label={wfAria}
-            data-calc="1"
-          >
-            <defs>
-              <pattern id="cedt-wf-hatch" width="4.6" height="4.6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="4.6" stroke="#ffffff" strokeWidth="1.15" opacity=".55" />
-              </pattern>
-              <clipPath id="cedt-wf-clip">
-                <rect x="20" y="104" width="960" height="52" rx="5" />
-              </clipPath>
-            </defs>
-
-            {/* Total bracket. Two separate anchored text nodes, never one run-on label. */}
-            <text className="lbm" x="20" y="14" data-calc="1">{`AOV ${fmtMoney(aov)}`}</text>
-            <text className="lbm" x="980" y="14" textAnchor="end" data-calc="1">100% of the order</text>
-            <line className="ld" x1="20" y1="26" x2="980" y2="26" />
-            <line className="ld" x1="20" y1="20" x2="20" y2="32" />
-            <line className="ld" x1="980" y1="20" x2="980" y2="32" />
-
-            {/* Dollar labels lead, staggered on two rows, leaders down to the segment center. */}
-            {labeled.map((dd, i) => {
-              const y = i % 2 === 0 ? 58 : 88;
-              const startAnchored = i === 0 && dd.center < 90;
-              const tx = startAnchored ? 20 : Math.min(980, Math.max(20, dd.center));
-              return (
-                <g key={dd.seg.key}>
-                  <text
-                    className="lb"
-                    x={tx}
-                    y={y}
-                    textAnchor={startAnchored ? undefined : 'middle'}
-                    data-calc="1"
-                  >
-                    {`${dd.seg.short} ${fmtMoney(dd.seg.v)}`}
-                  </text>
-                  <line className="ld" x1={dd.center} y1={y + 6} x2={dd.center} y2={104} />
-                </g>
-              );
-            })}
-
-            <g clipPath="url(#cedt-wf-clip)">
-              {drawn.map((dd, si) => (
-                <g key={dd.seg.key}>
-                  {dd.seg.key === 'cogs' ? (
-                    <rect x={dd.x} y={104} width={dd.w} height={52} fill="rgba(255,255,255,.10)" />
-                  ) : null}
-                  <rect x={dd.x} y={104} width={dd.w} height={52} fill={dd.seg.fill} />
-                  {si > 0 ? (
-                    <line x1={dd.x} y1={104} x2={dd.x} y2={156} stroke={ink} strokeWidth="1.2" opacity=".35" />
-                  ) : null}
-                </g>
-              ))}
-            </g>
-            <rect x="20" y="104" width="960" height="52" rx="5" fill="none" stroke="rgba(255,255,255,.34)" strokeWidth="1" />
-
-            {/* The gold answer: what one order carries. */}
-            {profitDrawn ? (
-              <g>
-                <line x1={profitDrawn.x} y1={168} x2={980} y2={168} stroke={accent} strokeWidth="2" />
-                <text className="lb g" x={profitDrawn.x} y={192} data-calc="1">
-                  {cac > 0
-                    ? `Profit per order ${fmtMoney(profitPerOrder)}`
-                    : `Contribution per order ${fmtMoney(contribution)}`}
-                </text>
-              </g>
-            ) : null}
-          </svg>
-
-          {/* Under 760px the in-drawing labels stop being legible: same widths, labels move
-              to the ledger. Marker row is two separate nodes for the same run-on reason. */}
-          <div className="cedt-wfmk" data-calc="1">
-            <span data-calc="1">{`AOV ${fmtMoney(aov)}`}</span>
-            <span data-calc="1">100% of the order</span>
-          </div>
-          <div className="cedt-wfbar-m" data-calc="1" aria-hidden="true">
-            {drawn.map((dd) => (
-              <span
-                key={dd.seg.key}
-                data-wfseg={dd.seg.key}
-                style={{ width: `${dd.p.toFixed(2)}%`, background: mobileFill(dd.seg.key) }}
-              />
-            ))}
-          </div>
-
-          {/* Legend states the drawing's invariant and nothing else: the seed story and the
-              call push already live in the intro prose and the CTA (slop pass, 07-31). */}
-          <p className="mt-4 text-[0.84rem] leading-relaxed" style={{ color: surface, opacity: 0.5, maxWidth: '66ch' }}>
-            Segment widths are proportional to the ledger below.
-          </p>
-
-          {/* The ledger: swatch, name, dollar, percent of the order. */}
-          <div className="mt-8" style={{ borderTop: '2px solid rgba(255,255,255,.85)' }} data-calc="1">
-            {ledgerRows.map((r) => (
-              <div
-                key={r.key}
-                className="cedt-lgd"
-                data-calc="1"
-                style={{ borderBottom: '1px solid rgba(255,255,255,.12)' }}
-              >
-                <span
-                  className="sw"
-                  style={{
-                    width: 13,
-                    height: 13,
-                    borderRadius: 3,
-                    background: r.swatch,
-                    border: r.dashed ? '1px dashed rgba(255,255,255,.4)' : undefined,
-                  }}
-                />
-                <span className="text-[0.94rem]" style={{ color: 'rgba(255,255,255,.86)' }}>
-                  {r.name}
-                  <span className="block mt-0.5 text-[0.84rem]" style={{ color: 'rgba(255,255,255,.45)' }} data-calc="1">{r.sub}</span>
-                </span>
-                <span
-                  className="font-bold tabular-nums text-right"
-                  style={{ fontFamily: headingFont, color: r.gold ? accent : surface }}
-                  data-calc="1"
-                >
-                  {fmtMoney(r.v)}
-                </span>
-                <span className="pc font-semibold tabular-nums text-right text-[0.86rem]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.5)' }} data-calc="1">
-                  {`${pctOf(r.v).toFixed(1)}%`}
-                </span>
-              </div>
-            ))}
-            <div className="cedt-lgd mt-1 pt-3" data-calc="1" style={{ borderTop: '1px solid rgba(255,255,255,.4)' }}>
-              <span className="sw" style={{ width: 13, height: 13, borderRadius: 3, background: 'transparent' }} />
-              <span className="text-[0.94rem] font-bold" style={{ color: surface }}>Profit per order, after CAC</span>
-              <span className="font-bold tabular-nums text-right text-[1.15rem]" style={{ fontFamily: headingFont, color: accent }} data-calc="1">
-                {fmtMoney(profitPerOrder)}
-              </span>
-              <span className="pc" />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-14 flex flex-col sm:flex-row sm:items-center gap-4">
-          <a
-            href={ctaHref}
-            data-cta="profitgap"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-[0.95rem] font-bold transition-transform hover:-translate-y-0.5"
-            style={{ background: accent, color: ink }}
-          >
-            See it on your real numbers
-          </a>
-          <span className="text-[0.95rem]" style={{ color: surface, opacity: 0.6 }}>
-            30 minutes with Mattan, on your live ad account and P&amp;L. This page stays yours either way.
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ══ audit v3 additions ═══════════════════════════════════════════════════════════════
 // Everything below is ADDITIVE and presence-gated. A pre-v3 row carries no bucket, no
@@ -718,7 +329,7 @@ function BucketGlyph({ b, accent, ink, size = 8 }: { b: BucketKey; accent: strin
 }
 
 // ── Evidence-first dark spread ─────────────────────────────────────────────────────────
-// A sibling of the Profit Gap band: same ink-on-surface flip, same drawn-first discipline.
+// An ink-on-surface band with a drawn-first discipline.
 // Three instruments, each one dated at the source. Nothing here states a present-tense ad
 // status: a creative carries a first-shown date and a last-shown date, and the gap between
 // a date and the read date is stated as a measured number of days.
@@ -1260,9 +871,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     ? new Date(scan.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null;
 
-  // Genuine ads-empty (source reached, zero active ads) switches the calculator intro.
-  const adsEmpty = d.ads?.meta?.status === 'empty';
-
   // REAL DEFECT the floor never fixed: the brand fonts were declared but never loaded. Load them.
   useGoogleFonts([brand.font_heading, brand.font_body]);
 
@@ -1274,8 +882,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     noindex: true,
   });
 
-  const findings = d.findings || [];
-  const pg = d.profit_gap;
+  // Retired 2026-09-26: the "Email capture is already live" strength card. It rested on
+  // substring hits in the homepage HTML (a capture app's script can load with no campaign
+  // configured), so it told founders they had something they may not have.
+  const findings = (d.findings || []).filter((f) => !(f.signal === 'signup' && f.kind === 'strength'));
 
   // Credibility line: name ONLY sources that were actually read (present OR empty — empty is an
   // honest negative, the source WAS reached). Fixed order, deduped, pagespeed skipped entirely.
@@ -1341,14 +951,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   // ── Sourced vitals receipt ──────────────────────────────────────────────────────────
   // Two gates per line: the signal status has to allow it (correctness spine) AND the fact
-  // has to be BOUND, meaning a rendered finding cites it or it seeds the Profit Gap. Binding
+  // has to be BOUND, meaning a rendered finding cites it. Binding
   // hay is the prose the reader actually sees, per signal.
   const hayFor = (sig: string) =>
     findings.filter((f) => f.signal === sig).map((f) => `${clean(f.title)} ${clean(f.evidence)}`).join(' ');
   const hasFinding = (sig: string) => findings.some((f) => f.signal === sig);
   const haysShopify = hayFor('shopify');
-  const pgRenders = !!pg;
-  const pgSeeded = !!pg && pg.seed_aov != null;
 
   const catalogLines: ReceiptLine[] = [];
   const shopData = shop?.status === 'present' && shop.data ? shop.data : null;
@@ -1381,8 +989,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     ) {
       rest.push({ signal: 'shopify', label: 'Price band, low to high', value: `${fmtPrice(band.min, shopSym)} to ${fmtPrice(band.max, shopSym)}`, source: catalogSrc });
     }
-    // The median is what seeds the calculator, so a rendered Profit Gap binds it on its own.
-    if (band && band.median != null && (pgSeeded || citedAmount(haysShopify, band.median))) {
+    if (band && band.median != null && citedAmount(haysShopify, band.median)) {
       rest.push({ signal: 'shopify', label: 'Median price', value: fmtPrice(band.median, shopSym), source: catalogSrc });
     }
     if (shopData.oos_pct != null && (cited(haysShopify, `${shopData.oos_pct}%`) || /out[- ]of[- ]stock/i.test(haysShopify))) {
@@ -1423,8 +1030,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   }
 
   const paidLines: ReceiptLine[] = [];
-  if (adsMeta?.status === 'empty' && (hasFinding('ads.meta') || pgRenders)) {
-    // The $0 CAC seed under the calculator rests on this read, which is what binds it.
+  if (adsMeta?.status === 'empty' && hasFinding('ads.meta')) {
     // With the brand-wide sweep on the row the line can state the dated record instead of a
     // status, which is what the evidence spread argues from. Without it, the pre-v3 wording
     // stands untouched, so an old row's receipt is byte-identical to the floor.
@@ -1493,7 +1099,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     );
     nodes.forEach((n) => io.observe(n));
     return () => io.disconnect();
-  }, [showReceipt, pgRenders]);
+  }, [showReceipt]);
 
   return (
     <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
@@ -1689,7 +1295,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       ) : null}
 
       {/* Chapter — Sourced vitals receipt. Every line is a public fact we read AND that a
-          finding below cites or the Profit Gap runs on, which is what the foot line claims.
+          finding below cites, which is what the foot line claims.
           Under three bound lines the whole band collapses. */}
       {showReceipt ? (
         <section
@@ -1762,7 +1368,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 style={{ borderTop: '1px dashed #dfe3e7', color: ink, opacity: 0.55 }}
               >
                 {scanDate ? `Read ${scanDate} from public pages, with no login and nothing you sent us. ` : ''}
-                Every line above backs a finding below or feeds the Profit Gap.
+                Every line above backs a finding below.
               </div>
             </div>
             </div>
@@ -1784,15 +1390,16 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <div className="space-y-16">
             {findings.map((f, i) => {
               const variant = findingVariant(i);
-              const chip = (
+              // A lever with no label (the retired profit_visibility on older rows) renders no chip.
+              const chip = LEVER_LABEL[f.lever] ? (
                 <span
                   className="inline-flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] px-3 py-1.5 rounded-full"
                   style={{ border: `1px solid ${ink}33`, color: ink }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
-                  {LEVER_LABEL[f.lever] || f.lever}
+                  {LEVER_LABEL[f.lever]}
                 </span>
-              );
+              ) : null;
               // Bucket chip: the deal shape, on the finding it applies to. Locked copy, and
               // the same two-square glyph the week-one panel uses, so a chip and the panel
               // read as one instrument. Bucket null renders no chip at all.
@@ -1829,7 +1436,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                     <span className="block text-[0.6rem] font-bold uppercase tracking-[0.22em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.5 }}>
                       Week one
                     </span>
-                    {f.bucket_pillar ? (
+                    {f.bucket_pillar && !/profit/i.test(String(f.bucket_pillar)) ? (
                       <span className="block mt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
                         {clean(String(f.bucket_pillar))}
                       </span>
@@ -2022,8 +1629,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               The public read gave us the basics
             </h2>
             <p className="mt-5 text-[1.2rem] leading-relaxed" style={{ color: ink, opacity: 0.8 }}>
-              The public surfaces we read gave us the basics. The full teardown, catalog economics and
-              the Profit Gap, comes off a live look together.
+              The public surfaces we read gave us the basics. The full teardown comes off a live
+              look together.
             </p>
             <a
               href={ctaUrl('thinread')}
@@ -2040,22 +1647,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             </p>
           </div>
         </section>
-      ) : null}
-
-      {/* Chapter — Profit Gap climax (collapses when the seed is absent) */}
-      {pg ? (
-        <ProfitGapSpread
-          seedAov={pg.seed_aov}
-          sourceNote={pg.source_note}
-          accent={accent}
-          ink={ink}
-          surface={surface}
-          headingFont={headingFont}
-          ctaHref={ctaUrl('profitgap')}
-          adsEmpty={adsEmpty}
-          metaSweepZero={sweepZero}
-          currency={(d.shopify?.data as any)?.currency ?? null}
-        />
       ) : null}
 
       {/* Chapter: proof strip. Static, number-verbatim work RISE has already run. No images,
@@ -2108,10 +1699,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             className="mt-4 font-extrabold tracking-[-0.02em]"
             style={{ fontFamily: headingFont, fontSize: 'clamp(1.9rem, 4.6vw, 3.2rem)', lineHeight: 1.05, color: surface }}
           >
-            Want this math on <span style={{ color: accent }}>your real numbers?</span>
+            Want this read on <span style={{ color: accent }}>your live store?</span>
           </h2>
           <p className="mx-auto mt-5 text-[1.0625rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.74)', maxWidth: '52ch' }}>
-            From week one we run this on live store and ad data. On the call Mattan walks this exact page with you and runs the Profit Gap on your real CAC and margins.
+            On the call Mattan walks this exact page with you, next to your live store numbers.
           </p>
 
           <div className="my-8 text-left p-6 sm:p-7" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
@@ -2125,7 +1716,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 <span className="text-[0.68rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.55)' }}>for qualifying brands</span>
               </div>
               <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
-                Fixed monthly fee plus a % of contribution profit. RISE earns a share of growth above your baseline, typically 20%, measured in your own ad account and store backend.
+                Fixed monthly fee plus a share of growth above your baseline, typically 20%, measured in your own ad account and store backend.
               </p>
             </div>
             <p className="mt-4 text-[0.95rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.7)' }}>

@@ -50,7 +50,9 @@ function renderDtc(dtc: NonNullable<ReportJson['dtc']>, companyName: string) {
 
 function renderFixture(file: string) {
   const fixture = loadFixture(file);
-  return { fixture, html: renderDtc(fixture.dtc, fixture.company_name) };
+  const html = renderDtc(fixture.dtc, fixture.company_name);
+  assertNoRetiredChrome(html, fixture.dtc);
+  return { fixture, html };
 }
 
 // Artifacts that must NEVER appear in rendered output, regardless of fixture richness.
@@ -76,10 +78,41 @@ const FORBIDDEN_PATTERNS: Array<[string, RegExp]> = [
   ['retired stat band "The store, in numbers"', /The store, in numbers/],
 ];
 
-// Same money format the component ships, recomputed here so the test never imports it.
-function fmtMoney(n: number): string {
-  const sign = n < 0 ? '-' : '';
-  return `${sign}$${Math.abs(n).toFixed(2)}`;
+// Retired 2026-09-26 (Ivan): the profit-per-order angle. The page's own chrome never says it,
+// on any row. Older rows can still carry it inside their stored finding prose, which the
+// renderer shows verbatim, so these run against the page with the row's own prose removed.
+const RETIRED_CHROME: Array<[string, RegExp]> = [
+  ['retired "Profit Gap"', /Profit Gap/i],
+  ['retired "profit per order"', /profit per order/i],
+  ['retired "contribution profit"', /contribution profit/i],
+  ['retired "Profit visibility" chip', /Profit visibility/i],
+  ['retired "Profit Over Sales" pillar', /Profit Over Sales/i],
+  ['retired calculator tag', /data-calc/],
+];
+
+function escHtml(t: string): string {
+  return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
+// The page minus every string the ROW supplied (finding prose, hero hook). What is left is
+// copy the renderer itself owns.
+function chromeOnly(html: string, dtc: any): string {
+  const rowStrings: string[] = [dtc.hero_hook];
+  for (const f of dtc.findings || []) rowStrings.push(f.title, f.evidence, f.week_one);
+  let out = html;
+  for (const t of rowStrings) {
+    if (typeof t !== 'string' || !t.trim()) continue;
+    const cleaned = t.replace(/\s*[—–]\s*/g, ', ').replace(/\s+/g, ' ').trim();
+    for (const v of [t, cleaned]) out = out.split(escHtml(v)).join('');
+  }
+  return out;
+}
+
+function assertNoRetiredChrome(html: string, dtc: any) {
+  const chrome = chromeOnly(html, dtc);
+  for (const [label, re] of RETIRED_CHROME) {
+    expect(chrome, `page chrome should not contain ${label}`).not.toMatch(re);
+  }
 }
 
 // The close-band bio is shipped conversion copy that happens to name Klaviyo as one of the
@@ -120,13 +153,13 @@ function assertConversionLayer(html: string) {
   expect(html).toContain('$2.2M to $6.5M+ in 24 months');
   expect(html).toContain('Full case studies at risedtc.com.');
   // Close band: headline, fee card with the qualifying-brands gate, signature CTA.
-  expect(html).toContain('Want this math on');
-  expect(html).toContain('your real numbers?');
+  expect(html).toContain('Want this read on');
+  expect(html).toContain('your live store?');
   expect(html).toContain('How RISE charges');
   // Performance leads the fee card (Ivan 2026-08-11): accent-highlighted, gate intact.
   expect(html).toContain('Performance Model');
   expect(html).toContain('for qualifying brands');
-  expect(html).toContain('Fixed monthly fee plus a % of contribution profit.');
+  expect(html).toContain('Fixed monthly fee plus a share of growth above your baseline');
   expect(html).toContain('Base from $2,000 per month');
   expect(html.indexOf('Performance Model')).toBeLessThan(html.indexOf('Growth Model'));
   expect(html).toContain('Which model fits your brand gets settled on the call.');
@@ -144,8 +177,8 @@ function assertConversionLayer(html: string) {
 }
 
 describe('DtcGrowthReport — degradation-first correctness + conversion layer', () => {
-  it('rodial (RICH): findings + profit-gap render, source labels derive from URLs, calculator spine intact', () => {
-    const { html } = renderFixture('rodial-com.json');
+  it('rodial (RICH): findings render, source labels derive from URLs, the retired calculator never does', () => {
+    const { fixture, html } = renderFixture('rodial-com.json');
     assertNoForbidden(html);
     assertConversionLayer(html);
     // findings present -> real finding titles render, never the thin-read fallback.
@@ -155,42 +188,26 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('see this on your storefront');
     expect(html).toContain('see this on your product page');
     expect(html).not.toContain('read from your store<');
-    // profit_gap present -> the climactic calculator renders with its data-calc tagging.
-    expect(html).toContain('Profit per order, after CAC');
-    expect(html).toContain('Contribution per order');
-    expect(html).toContain('data-calc');
-    expect(html).toContain('AOV seed is your public median product price');
-    // CAC seeds at $0 (ads.meta is absent here, not empty -> the default intro renders).
-    expect(html).toContain('$0.00');
-    expect(html).toContain('CAC starts at $0');
-    expect(html).not.toContain('shows no active ads on your brand right now');
-    // assumption lead-in + attributed calculator CTA.
-    expect(html).toContain('Seeded from public data. Every input is editable.');
-    expect(html).toContain('See it on your real numbers');
-    expect(html).toContain('This page stays yours either way.');
-    expect(html).toContain('data-cta="profitgap"');
-    expect(html).toContain('utm_content=profitgap');
+    // profit_gap is still on this older row, and the retired calculator still never renders.
+    expect(fixture.dtc.profit_gap).toBeTruthy();
+    expect(html).not.toContain('AOV seed is your public median product price');
+    expect(html).not.toContain('See it on your real numbers');
+    expect(html).not.toContain('data-cta="profitgap"');
     // credibility line: only sources actually read, fixed order, number-free.
     expect(html).toContain('Read from your storefront, your product pages, your public catalog and your homepage source.');
   });
 
-  it('rodial with ads-empty: calculator intro switches to the no-active-ads read', () => {
+  it('rodial with ads-empty and no ads finding: nothing binds a Paid media receipt line any more', () => {
+    // The $0 CAC seed used to bind this line on its own. With the calculator retired, only a
+    // rendered ads finding can.
     const fixture = loadFixture('rodial-com.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).ads = { meta: { status: 'empty', data: null } };
     const html = renderDtc(dtc, fixture.company_name);
-    expect(html).toContain('shows no active ads on your brand right now');
-    expect(html).toContain('$0 of paid CAC');
-    expect(html).not.toContain('CAC starts at $0:');
-    // The receipt gains its Paid media group: the $0 CAC seed rests on that empty read,
-    // which is what binds the line even with no ads finding in the payload.
-    expect(html).toContain('Paid media');
-    expect(html).toContain('Meta Ad Library');
-    expect(html).toContain('no active ads');
-    // And the ledger's CAC row explains the zero instead of leaving it bare.
-    // The CAC row's sub-line never restates the intro's ads-empty story (slop pass, 07-31).
-    expect(html).toContain('set this to what a new customer costs you');
-    expect(html).not.toContain('seed carries none');
+    assertNoForbidden(html);
+    assertNoRetiredChrome(html, dtc);
+    expect(html).not.toContain('no active ads');
+    expect(html).not.toContain('of paid CAC');
   });
 
   it('apple (THIN): honest thin-read fallback, calculator absent, blocked signals emit nothing', () => {
@@ -203,8 +220,6 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('data-cta="thinread"');
     expect(html).toContain('utm_content=thinread');
     expect(html).toContain('30 minutes with Mattan Danino, CEO of RISE DTC. We go through your store live.');
-    // profit_gap is null -> the calculator collapses entirely.
-    expect(html).not.toContain('Profit per order, after CAC');
     // shopify + reviews BLOCKED -> no fabricated stat band, no catalog numbers.
     expect(html).not.toContain('The store, in numbers');
     expect(html).not.toMatch(/catalog_size|variant_depth|discount_depth/);
@@ -222,94 +237,6 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     // shopify blocked -> none of the catalog fields leak, no stat band.
     expect(html).not.toMatch(/catalog_size|variant_depth|discount_depth/);
     expect(html).not.toContain('The store, in numbers');
-    // profit_gap absent -> calculator collapses.
-    expect(html).not.toContain('Profit per order, after CAC');
-  });
-
-  it('geometry equals data: waterfall widths, ledger dollars and the SVG labels all recompute from the fixture seed', () => {
-    const fixture = loadFixture('rodial-com.json');
-    const seed = fixture.dtc.profit_gap!.seed_aov!;
-    const { html } = renderFixture('rodial-com.json');
-
-    // Recomputed independently of the component, from the seeded slider defaults.
-    const aov = seed;
-    const returnsRate = 8 / 100;
-    const cogsRate = 35 / 100;
-    const procFrac = 2.9 / 100;
-    const shipping = 6;
-    const returnsSeg = returnsRate * aov;
-    const cogsSeg = (1 - returnsRate) * aov * cogsRate;
-    const procSeg = procFrac * aov + 0.3;
-    const contribution = (1 - returnsRate) * aov * (1 - cogsRate) - shipping - procSeg;
-    const profitSeg = contribution; // CAC seeds at 0 on this fixture
-    const expected: Array<[string, number]> = [
-      ['returns', returnsSeg],
-      ['cogs', cogsSeg],
-      ['shipping', shipping],
-      ['processing', procSeg],
-      ['profit', profitSeg],
-    ];
-    // The decomposition is exact: the segments sum back to AOV.
-    expect(expected.reduce((a, [, v]) => a + v, 0)).toBeCloseTo(aov, 8);
-
-    // Rendered mobile-strip widths equal the recomputed percentages.
-    const widths: Record<string, number> = {};
-    const rx = /data-wfseg="([a-z]+)" style="width:([0-9.]+)%/g;
-    let m: RegExpExecArray | null;
-    while ((m = rx.exec(html)) !== null) widths[m[1]] = Number(m[2]);
-    expect(Object.keys(widths).sort()).toEqual(['cogs', 'processing', 'profit', 'returns', 'shipping']);
-    for (const [key, v] of expected) {
-      expect(Math.abs(widths[key] - (v / aov) * 100), `width for ${key}`).toBeLessThan(0.05);
-    }
-    const sum = Object.values(widths).reduce((a, b) => a + b, 0);
-    expect(Math.abs(sum - 100), 'widths sum to 100').toBeLessThan(0.1);
-
-    // Ledger dollar strings are the same arithmetic, spelled out.
-    for (const [key, v] of expected) {
-      expect(html, `ledger dollar for ${key}`).toContain(fmtMoney(v));
-    }
-    expect(html).toContain(fmtMoney(0)); // the CAC row at its $0 seed
-
-    // The SVG carries the total and the gold answer, and never runs the two together.
-    expect(html).toContain(`AOV ${fmtMoney(aov)}`);
-    expect(html).toContain('100% of the order');
-    expect(html).toContain(`Contribution per order ${fmtMoney(contribution)}`);
-    expect(html).not.toContain(`${fmtMoney(aov).replace('$', '')}100`); // "42.00100" run-on
-    expect(html).not.toContain('49.99100');
-    // Every calculator numeral lives under the tagged svg / ledger.
-    expect(html).toMatch(/<svg class="cedt-wfsvg"[^>]*data-calc="1"/);
-    expect(html).toContain('Returns $');
-    expect(html).toMatch(/<text class="lb" [^>]*data-calc="1">Returns \$/);
-
-    // data-calc law across the whole Profit Gap band: no dollar amount is written by a node
-    // that does not declare itself calculator-derived.
-    const band = html.slice(html.indexOf('aria-label="The Profit Gap"'), html.indexOf('Work RISE has run'));
-    const moneyNodes = [...band.matchAll(/<([a-z]+)([^>]*)>(-?\$[\d,]+\.\d\d)</g)];
-    expect(moneyNodes.length).toBeGreaterThan(5);
-    for (const node of moneyNodes) {
-      expect(node[2], `"${node[3]}" must sit in a data-calc node`).toContain('data-calc="1"');
-    }
-  });
-
-  // NOTE: the 'unreachable' branch (contribution <= 0) is NOT covered here. It is only
-  // reachable by dragging AOV below ~$11 at the default cost mix, and these are static
-  // render assertions with no slider interaction.
-  it('break-even ROAS: printed from the same seed arithmetic as the waterfall', () => {
-    const fixture = loadFixture('rodial-com.json');
-    const seed = fixture.dtc.profit_gap!.seed_aov!;
-    const { html } = renderFixture('rodial-com.json');
-
-    // Recomputed independently, from the seeded slider defaults (same basis as the geometry test).
-    const aov = seed;
-    const contribution = (1 - 0.08) * aov * (1 - 0.35) - 6 - (0.029 * aov + 0.3);
-    const expected = `${(aov / contribution).toFixed(2)}x`;
-
-    expect(contribution).toBeGreaterThan(0);
-    expect(html).toContain('Break-even ROAS');
-    expect(html).toContain(expected);
-
-    // The threshold is AOV / contribution, so it must sit above 1x on any profitable order.
-    expect(Number(expected.replace('x', ''))).toBeGreaterThan(1);
   });
 
   it('receipt: rodial renders the bound vitals lines, thin and blocked-heavy fixtures collapse the whole band', () => {
@@ -425,8 +352,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
 
   it('sticky pill: dense panels are marked per rendered panel and the pill carries its hook class', () => {
     const rich = renderFixture('rodial-com.json');
-    // receipt card + Profit Gap band.
-    expect((rich.html.match(/data-densepanel="1"/g) || []).length).toBe(2);
+    // receipt card only (the Profit Gap band is retired).
+    expect((rich.html.match(/data-densepanel="1"/g) || []).length).toBe(1);
     const thin = renderFixture('apple-com.json');
     expect((thin.html.match(/data-densepanel="1"/g) || []).length).toBe(0);
     const blocked = renderFixture('gopure-com.json');
