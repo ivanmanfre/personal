@@ -318,6 +318,8 @@ export interface DtcGrowth {
   // audit v3: dated storefront captures. A capture with no date does not render.
   screenshots?: {
     homepage_url?: string | null; pdp_url?: string | null; captured_at?: string | null;
+    // path the pdp capture is of (builder 09-26+); the hero shows it only for that product
+    pdp_path?: string | null;
   } | null;
   tech_stack?: DtcSignalMeta<{ confirmed: string[]; missing_critical: string[]; is_shopify: boolean; pdp_checked?: boolean }>;
   reviews?: DtcSignalMeta<{ rating: number | null; review_count: number | null; has_reviews: boolean }>;

@@ -56,13 +56,15 @@ function clean(s: string | null | undefined): string {
 
 // Number-free source-link label derived from the finding's source URL, so the link says
 // where the reader will land instead of a generic "read from your store".
-function sourceLabel(url: string): string {
+// `sentenceStart`: the label follows a full stop, so it opens a sentence and is capitalized.
+function sourceLabel(url: string, sentenceStart = false): string {
+  let label = 'see this on your storefront';
   try {
     const u = new URL(url);
-    if (u.hostname.includes('facebook.com')) return 'see this in the Meta Ad Library';
-    if (u.pathname.endsWith('.js') || u.pathname.includes('/products/')) return 'see this on your product page';
+    if (u.hostname.includes('facebook.com')) label = 'see this in the Meta Ad Library';
+    else if (u.pathname.endsWith('.js') || u.pathname.includes('/products/')) label = 'see this on your product page';
   } catch {}
-  return 'see this on your storefront';
+  return sentenceStart ? label.charAt(0).toUpperCase() + label.slice(1) : label;
 }
 
 // Where the PROOF LINK sends a human. `source_url` is provenance and must stay verbatim in the
@@ -626,8 +628,8 @@ function AdEvidenceSpread({
                     was measured and nothing more. */}
                 <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
                   {pageZero
-                    ? `Meta's Ad Library shows zero ads for this brand as of ${metaReadDate}.`
-                    : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to this brand.`}
+                    ? `Meta's Ad Library shows zero ads for your brand as of ${metaReadDate}.`
+                    : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to your brand.`}
                 </p>
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
                   {pageZero ? (
@@ -642,7 +644,7 @@ function AdEvidenceSpread({
                       <span className="nm">
                         {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
                       </span>
-                      <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to this brand`}</span>
+                      <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to your brand`}</span>
                       <span className="dt">{longDay(sweep.checked_at) || metaReadDate}</span>
                     </div>
                   ) : null}
@@ -763,8 +765,11 @@ function AdEvidenceSpread({
 type PromiseItem = DtcPromiseItem;
 type PromiseBlock = DtcPromiseBlock;
 
+// A held row with nothing in either section (e.g. a WooCommerce store the builder could only
+// read the homepage of) would render a hero with no headline: it takes the legacy layout.
 function isPromiseRow(d: any): boolean {
-  return typeof d?.builder_version === 'string' && d.builder_version.length > 0 && !!d.drop_off && !!d.second_order;
+  return typeof d?.builder_version === 'string' && d.builder_version.length > 0 && !!d.drop_off && !!d.second_order
+    && promiseItems(d.drop_off).length + promiseItems(d.second_order).length > 0;
 }
 
 function promiseItems(block?: PromiseBlock | null): PromiseItem[] {
@@ -830,6 +835,17 @@ function ProductImg({ src, alt, className, ink }: { src?: string | null; alt: st
   );
 }
 
+// "/products/<handle>" of a URL or path, locale and collection prefixes ignored.
+function productHandle(u?: string | null): string | null {
+  const m = /\/products\/([^/?#]+)/.exec(String(u || ''));
+  return m ? decodeURIComponent(m[1]).toLowerCase() : null;
+}
+
+function sameProductPage(itemUrl?: string | null, shotPath?: string | null): boolean {
+  const a = productHandle(itemUrl);
+  return !!a && a === productHandle(shotPath);
+}
+
 function PromiseHero({
   d,
   companyName,
@@ -854,15 +870,18 @@ function PromiseHero({
   const product = item?.product && item.product.image_url ? item.product : null;
   const shots = d.screenshots;
   const shotDate = shortDay(shots?.captured_at);
-  // No product on the item: the dated capture of their product page stands in, cropped to the
-  // part of the page a shopper reads first. An undated capture is not evidence.
-  const capture = !product && shots?.pdp_url && shotDate ? String(shots.pdp_url) : null;
+  // No product image on the item: the dated capture stands in, but ONLY when it is the capture of
+  // this item's own product page (09-26: an unrelated PDP shot sat under a rewards headline).
+  // An undated capture, or one of another page, is not evidence for this item.
+  const capture = !product && shots?.pdp_url && shotDate && sameProductPage(item?.product?.url || item?.evidence?.source_url, shots?.pdp_path)
+    ? String(shots.pdp_url) : null;
   const price = productPrice(product || undefined);
   const proofUrl = product?.url || item?.evidence?.source_url || null;
+  // Numbered after the filter: a page with only a second-order item lists it as 1, not 2.
   const rows = [
-    { n: 1, k: 'Where shoppers drop off', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
-    { n: 2, k: 'The second order', href: '#second-order', it: promiseItems(d.second_order)[0] },
-  ].filter((r) => r.it);
+    { k: 'Where shoppers drop off', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
+    { k: 'The second order', href: '#second-order', it: promiseItems(d.second_order)[0] },
+  ].filter((r) => r.it).map((r, i) => ({ ...r, n: i + 1 }));
 
   return (
     <section aria-label="The short version" data-promise-hero="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 pt-6 sm:pt-14 pb-12 sm:pb-16">
@@ -1052,7 +1071,7 @@ function PromiseSection({
                       {ev.value ? `: ${clean(ev.value)}. ` : '. '}
                       {ev.source_url ? (
                         <a href={proofHref(ev.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
-                          {sourceLabel(ev.source_url)}
+                          {sourceLabel(ev.source_url, true)}
                         </a>
                       ) : null}
                     </p>

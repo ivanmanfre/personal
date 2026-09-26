@@ -604,7 +604,9 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     }
     // Evidence links land on a page a person can read, with human link text.
     expect(html).toContain('href="https://tinacassadaybh.com/policies/shipping-policy"');
-    expect(html).toContain('see this on your product page');
+    // The link follows "value." so it opens a sentence: capitalized, never ". see this".
+    expect(html).toContain('See this on your product page');
+    expect(html).not.toMatch(/\. <a[^>]*>see this/);
   });
 
   it('tina (new contract): order is hero, drop-off, second order, RISE side, ad records (folded), proof, close', () => {
@@ -651,10 +653,10 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     const html = renderDtc(dtc, fixture.company_name);
     assertNoForbidden(html);
     assertNoRetiredChrome(html, dtc);
-    // Stale ref falls back to the first drop-off item; no product, so the dated capture stands in.
-    expect(html).toContain(escHtml(dtc.screenshots.pdp_url));
-    expect(html).toMatch(/Your product page, captured Sep 2[56]\./);
-    expect(html).toMatch(/data-hero-fact="1"[^>]*>Blank</);
+    // Stale ref falls back to the first drop-off item. It has no product, so a capture of some
+    // other product page is NOT proof for it: no image in the hero (09-26 validation).
+    expect(html).not.toContain(escHtml(dtc.screenshots.pdp_url));
+    expect(html).not.toContain('data-hero-proof');
     // The empty block renders its honest note, and the hero drops its second row.
     expect(html).toContain('Your repeat rate is private, so we did not guess it.');
     expect(html).not.toContain('href="#second-order"');
@@ -724,5 +726,66 @@ describe('DtcGrowthReport — promise contract, builder fixture', () => {
       expect(shown, f.title).toBe(f.lever === 'paid_media' || f.lever === 'performance_creative');
     }
     expect(html).not.toMatch(/paid traffic/i);
+  });
+});
+
+// ── 09-26 validation fixes ───────────────────────────────────────────────────────────
+describe('DtcGrowthReport — 09-26 validation fixes', () => {
+  it('a held row with no items in either section takes the legacy layout, never a blank hero', () => {
+    const fixture = loadFixture('tina-new-contract.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    dtc.drop_off = { items: [], note: 'Nothing on your public pages stood out.' };
+    dtc.second_order = { items: [], note: 'We could not see a clear second-order gap.' };
+    dtc.hero = null;
+    dtc.shippable = { ok: false, reason: 'Held: nothing we could show.' };
+    const html = renderDtc(dtc, fixture.company_name);
+    expect(html).not.toContain('data-promise-hero');
+    expect(html).toContain('Where the growth is');
+  });
+
+  it('the hero shows a product-page capture only when it is the capture of that item\'s product', () => {
+    const fixture = loadFixture('tina-new-contract.json');
+    const base = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    const it = base.drop_off.items[0];
+    it.product = { ...it.product, image_url: null, url: 'https://tinacassadaybh.com/products/banana-banana-sachet-6-pack' };
+    base.hero = { headline: base.hero.headline, item_ref: 'drop_off.0' };
+    // capture of another product: not shown
+    const other = JSON.parse(JSON.stringify(base));
+    other.screenshots.pdp_path = '/products/banana-bliss-shampoo';
+    const h1 = renderDtc(other, fixture.company_name);
+    expect(h1).not.toContain(escHtml(other.screenshots.pdp_url));
+    // an old row (no pdp_path): not shown
+    const old = JSON.parse(JSON.stringify(base));
+    delete old.screenshots.pdp_path;
+    expect(renderDtc(old, fixture.company_name)).not.toContain(escHtml(old.screenshots.pdp_url));
+    // capture of this product (locale prefix ignored): shown
+    const same = JSON.parse(JSON.stringify(base));
+    same.screenshots.pdp_path = '/en-us/products/banana-banana-sachet-6-pack';
+    const h3 = renderDtc(same, fixture.company_name);
+    expect(h3).toContain(escHtml(same.screenshots.pdp_url));
+    expect(h3).toMatch(/Your product page, captured Sep 2[56]\./);
+  });
+
+  it('a second-order-only hero shows its product image and numbers its row 1', () => {
+    const fixture = loadFixture('tina-new-contract.json');
+    const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
+    dtc.drop_off = { items: [], note: 'Nothing on your public pages stood out.' };
+    const so = dtc.second_order.items[0];
+    so.product = { title: 'Banana-Banana Conditioner', url: 'https://tinacassadaybh.com/products/banana-banana-conditioner',
+                   image_url: 'https://cdn.shopify.com/s/files/conditioner.jpg', price: 60, currency: 'USD' };
+    dtc.hero = { headline: so.title, item_ref: 'second_order.0' };
+    const html = renderDtc(dtc, fixture.company_name);
+    const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('data-promise-section="drop-off"'));
+    expect(hero).toContain('https://cdn.shopify.com/s/files/conditioner.jpg');
+    expect(hero).toMatch(/leading-none"[^>]*>1<\/span>/);
+    expect(hero).not.toMatch(/leading-none"[^>]*>2<\/span>/);
+    expect(hero).toContain('The second order');
+  });
+
+  it('zero-ads copy is second person', () => {
+    const { html } = renderFixture('tina-new-contract.json');
+    const spread = html.slice(html.indexOf('data-adspread'));
+    expect(spread).toContain('zero ads for your brand');
+    expect(spread).not.toContain('this brand');
   });
 });
