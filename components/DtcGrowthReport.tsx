@@ -583,7 +583,7 @@ function AdEvidenceSpread({
           <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-9">
               <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
-                Google Ads Transparency
+                Google's public ad library
               </span>
               {g.advertiser ? (
                 <span className="text-[0.86rem]" style={{ color: surface, opacity: 0.7 }}>

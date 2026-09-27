@@ -608,6 +608,15 @@ describe('DtcGrowthReport — competitor strip round 4', () => {
     expect(html).not.toMatch(/\. at least/);
   });
 
+  it('the Google strip is labelled in plain words, never the vendor tool name (round 8)', () => {
+    const html = withComp(paleonola.slice(0, 2), {
+      status: 'present', fetched_at: '2026-09-26T09:00:00Z',
+      data: { ads_found: 3, checked_at: '2026-09-26', creatives: [], newest_first_shown: '2023-10-28' },
+    });
+    expect(html).toContain('public ad library');
+    expect(html).not.toMatch(/Ads Transparency/i);
+  });
+
   it('the "your newest" label near the left end of the axis hangs inward, never off-screen', () => {
     const html = withComp(paleonola, {
       status: 'present', fetched_at: '2026-09-26T09:00:00Z',
