@@ -141,7 +141,6 @@ export function ReportHead({ ctx, f, fm, fAll, eyebrow }: { ctx: ReportCtx; f: F
         <PeriodPicker ctx={ctx} />
       </div>
       <DeskH2 style={{ maxWidth: '34ch' }}>{reportHeadline(ctx, f, fm, fAll)}</DeskH2>
-      {(() => { const none = callsLead(ctx, f, fm, fAll).none; return none ? <Footnote style={{ marginTop: 8 }}>{none.replace(/^None/, 'No call booked')}</Footnote> : null; })()}
     </>
   );
 }
@@ -168,7 +167,6 @@ function FigBlock({ fig }: { fig: Fig }) {
       <Num size="big">{fig.value.toLocaleString('en-GB')}</Num>
       <Footnote style={{ marginTop: 6, color: 'var(--cb-ink-soft)' }}>{fig.caption}</Footnote>
       {fig.sub && <Footnote style={{ marginTop: 4 }}>{fig.sub}</Footnote>}
-      {fig.weekZero && <Footnote style={{ marginTop: 4 }}>{fig.weekZero}</Footnote>}
     </div>
   );
 }
@@ -177,7 +175,7 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
   const { cfg, period: p } = ctx;
   const figs: Fig[] = [];
   const scoped = (s: Shown, caption: (v: number) => string) => (s ? `${caption(s.value)}${s.scope ? ` ${s.scope}` : ''}` : '');
-  const weekZero = (s: Shown) => (s && s.weekZero ? (p.current ? `none yet ${p.phrase}` : `none ${p.phrase}`) : null);
+  const weekZero = (s: Shown) => (s && s.weekZero ? s.scope : null);
   // Calls booked: always shown, with the names; a period without one shows its month or
   // the since-the-start figure, and the period's own "none yet" as a quiet line.
   const lead = callsLead(ctx, f, fm, fAll);
@@ -186,7 +184,7 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
     key: 'calls', strong: true, value: lead.n,
     caption: `${lead.n === 1 ? 'call booked' : 'calls booked'}${scopedLead ? ` ${lead.phrase}` : ''}`,
     sub: <>{lead.names.length ? nameList(lead.names, 4) : null}{!scopedLead && p.kind !== 'all' && fAll.calls.n > lead.n ? <>{lead.names.length ? <br /> : null}{fAll.calls.n} since {dm(cfg.start)}</> : null}</>,
-    weekZero: lead.none ? lead.none.toLowerCase().replace(/\.$/, '') : null,
+    weekZero: lead.none ? lead.phrase : null,
   });
   if (waiting > 0) figs.push({ key: 'waiting', strong: true, value: waiting, caption: waiting === 1 ? 'post waiting for your approval' : 'posts waiting for your approval', sub: 'as of now' });
   const came = shown(f.came?.n, fm?.came?.n, p);
@@ -205,7 +203,6 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
     figs.push({
       key: 'fit', value: fe.value,
       caption: scoped(fe, (v) => `${plural(v, cfg.fit)} engaged with your posts`),
-      sub: src?.fitEngaged ? `out of ${src.fitEngaged.of} ${src.fitEngaged.of === 1 ? 'person' : 'people'} who engaged` : null,
       weekZero: weekZero(fe),
     });
   }
@@ -230,11 +227,27 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
   return figs;
 }
 
-export function ReportFigures({ figs }: { figs: Fig[] }) {
+/** One quiet line under the number row when figures fell back from a short period to its
+ *  month or the start (never a "none yet" under every card). */
+export function fallbackNote(ctx: ReportCtx, figs: Fig[]): string | null {
+  const p = ctx.period;
+  const fell = figs.filter((x) => x.weekZero);
+  if (!fell.length) return null;
+  const scope = fell[0].weekZero as string;
+  const when = p.current ? `yet ${p.phrase}` : p.phrase;
+  return fell.length === figs.filter((x) => x.key !== 'waiting').length
+    ? `Nothing new ${when}; figures above are ${scope}.`
+    : `Where a figure says ${scope}, nothing new has come in ${when}.`;
+}
+
+export function ReportFigures({ figs, note }: { figs: Fig[]; note?: string | null }) {
   return (
-    <div data-report="figures" className="cb-report-figs" style={{ marginTop: 20 }}>
-      {figs.map((fig) => <FigBlock key={fig.key} fig={fig} />)}
-    </div>
+    <>
+      <div data-report="figures" className="cb-report-figs" style={{ marginTop: 20 }}>
+        {figs.map((fig) => <FigBlock key={fig.key} fig={fig} />)}
+      </div>
+      {note && <Footnote style={{ marginTop: 14 }}>{note}</Footnote>}
+    </>
   );
 }
 
@@ -245,7 +258,7 @@ export function ReportHome({ ctx, waiting = 0 }: { ctx: ReportCtx; waiting?: num
   return (
     <div data-report="home" style={{ marginBottom: 34, paddingBottom: 30, borderBottom: '1px solid var(--cb-line)' }}>
       <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} />
-      <ReportFigures figs={reportFigures(ctx, f, fm, fAll, 'home', waiting)} />
+      {(() => { const figs = reportFigures(ctx, f, fm, fAll, 'home', waiting); return <ReportFigures figs={figs} note={fallbackNote(ctx, figs)} />; })()}
     </div>
   );
 }
@@ -385,9 +398,7 @@ function PostsLedger({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
           {r.own && <Chip style={{ marginLeft: 6, padding: '2px 10px', fontSize: 11.5 }}>your own post</Chip>}
         </div>
         <div style={{ marginTop: 5, fontSize: 12.5, fontWeight: 600, color: MUTE }}>
-          {r.collected && r.engaged != null
-            ? <>out of {r.engaged} {r.engaged === 1 ? 'person' : 'people'} who engaged{(r.fitNew || 0) > 0 ? ` · ${r.fitNew} new to you` : ''}</>
-            : 'engagement not collected for this post'}
+          {r.collected ? null : 'engagement not collected for this post'}
         </div>
       </LedgerCell>
       <LedgerCell num align="right" width="1%" style={r.fit ? undefined : { color: MUTE, fontWeight: 500 }}>{r.collected && r.fit ? r.fit : '–'}</LedgerCell>
@@ -423,7 +434,7 @@ export function ReportResults({ ctx, more }: { ctx: ReportCtx; more: React.React
     <div data-report="results">
       <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} eyebrow="Results" />
       <CallsChart ctx={ctx} />
-      <ReportFigures figs={reportFigures(ctx, f, fm, fAll, 'results')} />
+      {(() => { const figs = reportFigures(ctx, f, fm, fAll, 'results'); return <ReportFigures figs={figs} note={fallbackNote(ctx, figs)} />; })()}
       <SliceLedger ctx={ctx} />
       <CameList ctx={ctx} f={f} fm={fm} />
       <PostsLedger ctx={ctx} f={f} />

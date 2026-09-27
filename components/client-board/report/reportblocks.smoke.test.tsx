@@ -42,7 +42,8 @@ describe('report blocks', () => {
     const ctx: ReportCtx = { cfg, periods, period: periods[0], onPeriod: () => {}, payload: archPayload, board: { queue: [] }, audience: null, today: '2026-09-28' };
     const html = renderToStaticMarkup(<ReportHome ctx={ctx} />);
     expect(html).toContain('2 calls booked</b> since 31 Aug, with Ofir Bello and Gustav Pastucha.');
-    expect(html).toContain('No call booked yet this week.');
+    expect(html).toContain('Nothing new yet this week; figures above are since 31 Aug.');
+    expect(html.match(/none yet/gi) || []).toHaveLength(0);
     expect(html).not.toMatch(/>0<\/span>/);
   });
   it('Home leads with calls booked and names them, then who came to you', () => {
@@ -50,7 +51,7 @@ describe('report blocks', () => {
     expect(html).toContain('2 calls booked</b> since 17 Sept, with Karin Nelson and Trent Hill.');
     expect(html).toContain('1 brand owner came to you on their own.');
     expect(html).toContain('aria-label="Report period"');
-    expect(html).toContain('out of 2 people who engaged');
+    expect(html).not.toContain('who engaged');
   });
   it('a past period reads in the past tense and never says still counting', () => {
     const html = renderToStaticMarkup(<ReportHome ctx={ctxFor('m:2026-08-17')} />);
