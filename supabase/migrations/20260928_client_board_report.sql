@@ -26,6 +26,9 @@
 --   assists[]   p post key, at booked_at: a call booked after the person engaged with that post
 --   updated_at  newest row time the payload read
 --
+-- Existing clients of the seat and their teams (the client guard's lists) are removed from
+-- every part of the payload: people, engagement, came to you.
+--
 -- Security: SECURITY DEFINER, token (or session) checked against client_boards exactly like
 -- client_board_audience; the client id comes from client_boards.client_id, never the slug.
 
@@ -40,6 +43,35 @@ with
 cfg as (
   select p_client_id as cid,
          case p_client_id when 'risedtc' then date '2026-07-21' when 'arch' then date '2026-08-31' end as start_date
+),
+-- The seat's existing clients and their teams: never a prospect, never "came to you", never
+-- counted anywhere on a client surface. Same lists the client guard reads
+-- (_client_guard_core: rise_do_not_target; arch_company_exclusions client + own-company
+-- entries with their aliases; arch_person_exclusions own employees), matched on domain,
+-- company, headline text and LinkedIn slug.
+roster as (
+  select 'd'::text as kind, lower(btrim(x)) as key
+    from jsonb_array_elements_text(coalesce((select value::jsonb from integration_config where key = 'rise_do_not_target'), '[]'::jsonb)) x
+   where p_client_id = 'risedtc' and position('.' in x) > 0
+  union
+  select 'n', regexp_replace(lower(x), '[^a-z0-9]', '', 'g')
+    from jsonb_array_elements_text(coalesce((select value::jsonb from integration_config where key = 'rise_do_not_target'), '[]'::jsonb)) x
+   where p_client_id = 'risedtc' and position('.' in x) = 0 and length(regexp_replace(lower(x), '[^a-z0-9]', '', 'g')) >= 4
+  union
+  select 'n', regexp_replace(lower(nm), '[^a-z0-9]', '', 'g')
+    from jsonb_array_elements(coalesce((select value::jsonb->'companies' from integration_config where key = 'arch_company_exclusions'), '[]'::jsonb)) e
+   cross join lateral (select e->>'name' union all select e->>'slug' union all select jsonb_array_elements_text(coalesce(e->'aliases', '[]'::jsonb))) a(nm)
+   where p_client_id = 'arch' and (coalesce(e->>'reason', '') ilike 'arch_client%' or e->>'reason' = 'arch_own_company')
+     and length(regexp_replace(lower(nm), '[^a-z0-9]', '', 'g')) >= 4
+  union
+  select 'd', lower(btrim(nm))
+    from jsonb_array_elements(coalesce((select value::jsonb->'companies' from integration_config where key = 'arch_company_exclusions'), '[]'::jsonb)) e
+   cross join lateral jsonb_array_elements_text(coalesce(e->'aliases', '[]'::jsonb)) a(nm)
+   where p_client_id = 'arch' and (coalesce(e->>'reason', '') ilike 'arch_client%' or e->>'reason' = 'arch_own_company') and position('.' in nm) > 0
+  union
+  select 'p', lower(e->>'slug')
+    from jsonb_array_elements(coalesce((select value::jsonb->'people' from integration_config where key = 'arch_person_exclusions'), '[]'::jsonb)) e
+   where p_client_id = 'arch' and e->>'reason' = 'arch_own_employee'
 ),
 camps as (
   select c.id, c.name from outreach_campaigns c, cfg
@@ -77,7 +109,13 @@ base as (
   select pr.*, agg.first_out, agg.ins, agg.yeses,
          (coalesce(agg.vendor_only, false) and pr.call_booked_at is null) as vendor_pitch,
          -- the operator's own profile (flagged in the audience labels) is never a prospect result
-         exists (select 1 from audn_person_label_v o where o.is_operator and o.person_key = pr.linkedin_profile_id) as is_operator
+         exists (select 1 from audn_person_label_v o where o.is_operator and o.person_key = pr.linkedin_profile_id) as is_operator,
+         exists (select 1 from roster r where
+            (r.kind = 'd' and (r.key = _bk_host(pr.company_domain) or r.key = _bk_email_domain(pr.email)
+                               or position(r.key in lower(coalesce(coalesce(pr.headline, '') || ' ' || coalesce(pr.title, ''), ''))) > 0))
+         or (r.kind = 'n' and (position(r.key in regexp_replace(lower(coalesce(pr.company, '')), '[^a-z0-9]', '', 'g')) > 0
+                               or position(r.key in regexp_replace(lower(coalesce(coalesce(pr.headline, '') || ' ' || coalesce(pr.title, ''), '')), '[^a-z0-9]', '', 'g')) > 0))
+         or (r.kind = 'p' and r.key = li_slug(pr.linkedin_url))) as is_client
     from pr left join agg on agg.prospect_id = pr.id
 ),
 -- RISE: de-duplicate by name|company keeping the most advanced row; closed non-buyers out.
@@ -102,6 +140,7 @@ rise_people as (
              and (coalesce(skip_reason, '') || ' ' || coalesce(skip_state_reason, '')) ~* 'phishing|duplicate|vendor|employee_title_regate|thread_deleted')
     and not vendor_pitch
     and not is_operator
+    and not is_client
     and (nullif(btrim(coalesce(title, '')), '') is not null or nullif(btrim(coalesce(headline, '')), '') is not null)
 ),
 -- ARCH: one person per LinkedIn URL, merged across campaigns; reached = an outbound message.
@@ -123,6 +162,7 @@ arch_people as (
     from base b
    where p_client_id = 'arch' and not b.is_operator
    group by b.url_key
+   having not bool_or(b.is_client)
 ),
 people as (
   select jsonb_build_object('n', name, 'c', company, 'out', coalesce(first_out, connection_sent_at),
@@ -174,7 +214,13 @@ ev_full as (
   select en.*, l.label, coalesce(l.op, r.op, false) as op, coalesce(l.ex, false) as ex,
          case when p_client_id = 'arch' then not coalesce(a.known_at_touch, false)
               else coalesce(r.state, 'unknown') = 'unknown' end as is_new,
-         p.company as pr_company, p.enrichment_data->>'icp_tier' as tier, p.enrichment_data->>'person_role' as prole
+         p.company as pr_company, p.enrichment_data->>'icp_tier' as tier, p.enrichment_data->>'person_role' as prole,
+         exists (select 1 from roster r where
+            (r.kind = 'd' and (r.key = _bk_host(p.company_domain) or r.key = _bk_email_domain(p.email)
+                               or position(r.key in lower(coalesce(en.pe_headline, ''))) > 0))
+         or (r.kind = 'n' and (position(r.key in regexp_replace(lower(coalesce(p.company, '')), '[^a-z0-9]', '', 'g')) > 0
+                               or position(r.key in regexp_replace(lower(coalesce(en.pe_headline, '')), '[^a-z0-9]', '', 'g')) > 0))
+         or (r.kind = 'p' and r.key = li_slug(coalesce(p.linkedin_url, '')))) as is_client
     from ev_named en
     left join labels l on l.person_key = en.k
     left join rel r on r.person_key = en.k
@@ -194,7 +240,7 @@ ev_fit as (
             and coalesce(prole, '') not in ('supplier', 'non_buyer', 'external_operator')
             and coalesce(nullif(btrim(pr_company), ''), substring(coalesce(pe_headline, '') from '(?:@| at )\s*([^|,·]+)')) is not null))) as fit
     from ev_full
-   where not op
+   where not op and not is_client
 ),
 engaged as (
   select jsonb_build_object('p', p, 'k', md5(k), 'at', at, 'fit', fit, 'checked', coalesce(label, 'unknown') <> 'unknown', 'new', is_new) as j
@@ -213,6 +259,7 @@ came_rows as (
      and (coalesce(b.skip_reason, '') || ' ' || coalesce(b.skip_state_reason, '')) !~* 'not_icp|vendor|phishing|duplicate|thread_deleted|regate'
      and not b.vendor_pitch
      and not b.is_operator
+     and not b.is_client
      -- a positive brand-owner verdict is required: the request/profile-view judge's score
      -- (enrichment_data.judge_score, else icp_score) at the lane's bar of 7. No verdict = not counted.
      and coalesce(nullif(b.enrichment_data->>'judge_score', '')::numeric, b.icp_score) >= 7
@@ -227,6 +274,12 @@ came_rows as (
   select v.viewer_name, p.company, v.viewer_headline, 'viewed', v.viewed_at, 'k:' || coalesce(v.viewer_provider_id, v.viewer_public_id)
     from profile_view_log v left join outreach_prospects p on p.id = v.prospect_id
    where p_client_id = 'arch' and v.seat = 'arch' and v.provenance = 'organic_icp' and v.icp_pass is true
+     and not exists (select 1 from roster r where
+            (r.kind = 'd' and (r.key = _bk_host(p.company_domain) or r.key = _bk_email_domain(p.email)
+                               or position(r.key in lower(coalesce(v.viewer_headline, ''))) > 0))
+         or (r.kind = 'n' and (position(r.key in regexp_replace(lower(coalesce(p.company, '')), '[^a-z0-9]', '', 'g')) > 0
+                               or position(r.key in regexp_replace(lower(coalesce(v.viewer_headline, '')), '[^a-z0-9]', '', 'g')) > 0))
+         or (r.kind = 'p' and r.key = li_slug(coalesce(p.linkedin_url, ''))))
      and coalesce(p.stage, '') <> 'disqualified'
      and coalesce(p.enrichment_data->>'icp_tier', '') not in ('supply_or_vendor', 'supplier_or_vendor')
      and coalesce(p.enrichment_data->>'person_role', '') not in ('supplier', 'non_buyer', 'external_operator')
@@ -236,7 +289,7 @@ came_rows as (
   select b.name, b.company, coalesce(nullif(b.title, ''), b.headline), 'hand',
          coalesce((b.enrichment_data->>'sourced_at')::timestamptz, b.created_at), 'u:' || b.url_key
     from base b
-   where p_client_id = 'arch' and b.enrichment_data->>'source_kind' = 'hand_raise'
+   where p_client_id = 'arch' and b.enrichment_data->>'source_kind' = 'hand_raise' and not b.is_client
      and b.enrichment_data->>'icp_tier' in ('buyer', 'budget_adjacent')
      and coalesce(b.enrichment_data->>'person_role', '') not in ('supplier', 'non_buyer', 'external_operator')
      and coalesce(b.stage, '') <> 'disqualified'
@@ -246,6 +299,12 @@ came_rows as (
   select t.who, p.company, coalesce(nullif(p.title, ''), p.headline), 'messaged', t.decided_at, 'p:' || p.id::text
     from inbound_triage_log t join outreach_prospects p on p.id = t.surfaced_prospect_id
    where p_client_id = 'arch' and t.client_id = 'arch' and t.verdict = 'buyer'
+     and not exists (select 1 from roster r where
+            (r.kind = 'd' and (r.key = _bk_host(p.company_domain) or r.key = _bk_email_domain(p.email)
+                               or position(r.key in lower(coalesce(coalesce(p.headline, '') || ' ' || coalesce(t.who, ''), ''))) > 0))
+         or (r.kind = 'n' and (position(r.key in regexp_replace(lower(coalesce(p.company, '')), '[^a-z0-9]', '', 'g')) > 0
+                               or position(r.key in regexp_replace(lower(coalesce(coalesce(p.headline, '') || ' ' || coalesce(t.who, ''), '')), '[^a-z0-9]', '', 'g')) > 0))
+         or (r.kind = 'p' and r.key = li_slug(p.linkedin_url)))
      and coalesce(p.stage, '') <> 'disqualified'
      and coalesce(p.enrichment_data->>'icp_tier', '') not in ('supply_or_vendor', 'supplier_or_vendor')
      and nullif(btrim(coalesce(p.company, '')), '') is not null
