@@ -51,6 +51,7 @@ import {
 } from './desk-kit';
 import { FeedPreview, FunnelChip, fmtDay, clientTz, boardZone } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
+import { ReportHome, type ReportCtx } from './report/ReportBlocks';
 
 /* ────────────────────────── local pure helpers ────────────────────────── */
 
@@ -256,9 +257,13 @@ const WEEK_CSS = `
 
 /* ────────────────────────── the surface ────────────────────────── */
 
-export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false, reviewMode = false }: {
+export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false, reviewMode = false, report = null }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
+  /** Stage 1 (2026-09-28): a board with a report period (RISE, ARCH) opens Home on it, and
+   *  the week below drops every cadence line (the 2/2/1 mix, working days, posts a week)
+   *  and the reads stat. Absent = unchanged. */
+  report?: ReportCtx | null;
   /** board.review_mode (ARCH). A LIVE board shows post sources only in review mode; a live
    *  board without it is the buffer only (Ivan, 27 Sep). Preview boards unchanged. */
   reviewMode?: boolean;
@@ -775,14 +780,16 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   return (
     <section className="tab" data-surface="week">
 
+      {report && <ReportHome ctx={report} waiting={reviewMode ? board.queue.filter((q) => stageOf(q) === 'review' && !approvedIds.has(q.id)).length : 0} />}
+
       {/* 1 — the real week range, then a headline computed off the live queue. */}
-      <Eyebrow>This week · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
+      <Eyebrow>{report ? 'Your posts this week' : 'This week'} · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
       {/* 1b — the week's funnel mix against the 2-2-1 target (2 reach / 2 trust / 1 buyers).
           Off-target tiers render in amber: a warning to read, never a gate. Only drawn once
           the week actually carries posts, so an empty preview board stays quiet. */}
-      {weekMix.total > 0 && (
+      {!report && weekMix.total > 0 && (
         <div data-viz style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
           {([['reach', 'Reach · Top'], ['trust', 'Trust · Mid'], ['buyers', 'Buyers · Bottom']] as const).map(([key, label]) => {
             const got = weekMix.cnt[key];
@@ -925,7 +932,9 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </div>
         <div style={{ height: 7, borderLeft: '1px solid var(--cb-line-bold)', borderRight: '1px solid var(--cb-line-bold)', borderBottom: '1px solid var(--cb-line-bold)', marginTop: 8 }} aria-hidden />
         <Footnote>
-          <Num size="row" inline>{daysWithPost}</Num> of the <Num size="row" inline>{workingDays}</Num> working days in this window carry a post. Weekends are not posting days. Pick a day to see it as it lands on LinkedIn.
+          {report
+            ? <>Pick a day to see it as it lands on LinkedIn.</>
+            : <><Num size="row" inline>{daysWithPost}</Num> of the <Num size="row" inline>{workingDays}</Num> working days in this window carry a post. Weekends are not posting days. Pick a day to see it as it lands on LinkedIn.</>}
           {/* The legend token renders ONLY when the drawn window really contains one, the
               same rule the calendar strip's mint key follows. */}
           {lmDays.length > 0 && (
@@ -1133,13 +1142,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       {/* 5 — the stat footer. Nothing here is typed in; a stat that cannot be computed is
              either an honest blank or is not rendered at all. */}
       <StatStrip>
-        {cadence !== null
+        {report ? null : cadence !== null
           ? <Stat value={cadence} caption={cadenceCaption} />
           : <StatBlank caption="posts a week, not tracked yet" />}
         {publishedItems.length > 0
           ? <Stat value={publishedItems.length} caption={`${publishedItems.length === 1 ? 'post' : 'posts'} out so far`} />
           : <StatBlank caption="posts out so far, none yet" />}
-        {readsLastWeek !== null && (
+        {!report && readsLastWeek !== null && (
           <Stat value={readsLastWeek.n.toLocaleString('en-GB')} caption={`reads, ${fmtDay(readsLastWeek.from)} to ${fmtDay(readsLastWeek.to)}`} />
         )}
       </StatStrip>

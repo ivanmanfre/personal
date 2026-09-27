@@ -31,6 +31,8 @@ import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import { expectationFor } from './client-board/expectation';
 import { AudienceSection } from './client-board/AudienceSection';
 import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
+import { reportConfigFor, reportPeriods, dayKey, type ReportPayload } from './client-board/report/reportModel';
+import { reportStripText, type ReportCtx } from './client-board/report/ReportBlocks';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
 import { SideNavToggle, SideNavRailNav, useSideNavCollapsed, SIDENAV_WIDTH, SIDENAV_RAIL_WIDTH } from './client-board/DeskSideNav';
@@ -8136,6 +8138,37 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token, audienceNonce]);
 
+  // Report period (stage 1, 2026-09-28): the raw rows behind Home and Results for a board
+  // that has a report config (RISE, ARCH). Same token/session routing and the same
+  // progressive-enhancement posture as the audience read above: until the RPC exists, or on
+  // any failure, the report falls back to what the board payload already carries.
+  const reportCfg = reportConfigFor(slug);
+  const [reportPayload, setReportPayload] = useState<ReportPayload | null>(null);
+  const [reportPeriodKey, setReportPeriodKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (state !== 'ready' || !slug || !reportConfigFor(slug)) return;
+    if (mode === 'demo' || mode === 'preview') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        let resp: { data: unknown; error: { message: string } | null };
+        if (token) {
+          resp = await supabase.rpc('client_board_report', { p_slug: slug, p_token: token });
+        } else {
+          const sess = sessionRef.current;
+          if (!sess?.token) return;
+          resp = await supabase.rpc('client_board_report_v2', { p_slug: slug, p_session: sess.token });
+        }
+        if (cancelled || resp.error) return;
+        const out = resp.data as { ok?: boolean; report?: ReportPayload | null } | null;
+        if (!out?.ok || !out.report) return;
+        setReportPayload(out.report);
+      } catch { /* progressive enhancement: absent = the fallback figures */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token]);
+
   // Recording accepted / rejected / deferred. Writes ONE audit row through the
   // RPC pair and nothing else: no idea status, no draft, no schedule, no
   // outreach object. On success the payload is re-read so the recorded decision
@@ -8961,6 +8994,16 @@ export default function ClientBoardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [board, angleSwaps, schedule, autoPhoto],
   );
+  const reportToday = reportCfg ? (dayKey(new Date().toISOString(), reportCfg.tz) as string) : '';
+  const reportPeriodList = useMemo(() => (reportCfg ? reportPeriods(reportCfg, reportToday) : []), [reportCfg, reportToday]);
+  const reportCtx: ReportCtx | null = useMemo(() => {
+    if (!reportCfg || !viewBoard || mode === 'demo' || mode === 'preview' || !reportPeriodList.length) return null;
+    const period = reportPeriodList.find((p) => p.key === reportPeriodKey) || reportPeriodList[0];
+    return {
+      cfg: reportCfg, periods: reportPeriodList, period, onPeriod: setReportPeriodKey,
+      payload: reportPayload, board: viewBoard, audience, today: reportToday,
+    };
+  }, [reportCfg, viewBoard, mode, reportPeriodList, reportPeriodKey, reportPayload, audience, reportToday]);
   // Deep-link: /client/:slug?token=...&post=<draft-id> (or #post-<id>) opens that post's
   // detail. The week-1 brief links each scheduled post this way. Harmless on any board:
   // an unknown id simply no-ops. Runs once the board is ready and clears the param so a
@@ -9189,7 +9232,7 @@ export default function ClientBoardPage() {
     flashId, modalOpen: !!detail, live: isLive,
   };
   const surfaces: Record<TabId, React.ReactNode> = {
-    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} /> : <WeekSurface {...weekSurfaceProps} />,
+    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
       ? <DeskReviewSurface reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
@@ -9209,7 +9252,7 @@ export default function ClientBoardPage() {
       : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: skin === 'desk'
-      ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />
+      ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} report={reportCtx} />
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
@@ -9251,7 +9294,11 @@ export default function ClientBoardPage() {
     : isLive
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
-  ).filter((t) => t.id !== 'outreach' || outreachAvailable);
+  ).filter((t) => t.id !== 'outreach' || outreachAvailable)
+    // A board with a report period opens on Home and reads its numbers under Results.
+    .map((t) => (reportCtx && skin === 'desk' && (t.id === 'week' || t.id === 'performance')
+      ? { ...t, label: t.id === 'week' ? 'Home' : 'Results' } as unknown as (typeof TABS)[number]
+      : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
     ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
@@ -9554,7 +9601,7 @@ export default function ClientBoardPage() {
           A hairline top rule carries the tab name + live-preview mark (mono, quiet). */}
       <div className={navCollapsed ? 'lg:ml-[56px]' : 'lg:ml-[216px]'} style={{ background: PAPER, transition: reduceMotion ? undefined : 'margin-left .18s cubic-bezier(.25,1,.5,1)' }}>
         <div className="sticky top-0 z-10 hidden h-12 items-center gap-2.5 px-8 backdrop-blur lg:flex" style={{ borderBottom: `1px solid ${LINE}`, background: 'rgba(247,244,239,0.86)' }}>
-          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{TABS.find((t) => t.id === activeTab)?.label}</span>
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{(visibleTabs.find((t) => t.id === activeTab) || TABS.find((t) => t.id === activeTab))?.label}</span>
           <span
             className="ml-auto inline-flex items-center gap-2 uppercase"
             title={isPreview ? 'Your first month, built ahead' : undefined}
@@ -9611,6 +9658,9 @@ export default function ClientBoardPage() {
             // early once the US falls back to PST in November - revisit or make it derived.
             // Saturday is view-only on this seat, so every other day sends.
             text = st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Invites go out 6am to 6pm PT, every day except Saturday.</>;
+          } else if (activeTab === 'performance' && reportCtx) {
+            text = <>{reportStripText(reportCtx)}</>;
+            cta = { label: 'Your posts →', go: () => { const el = document.getElementById('cb-report-posts'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
           } else if (activeTab === 'performance') {
             text = best ? <>{perfPosts.length} posts measured. Best: {(best.impressions as number).toLocaleString()} reads.</> : <>Numbers land here as posts publish.</>;
             cta = { label: 'Read the ledger →', go: () => scrollToText('the ledger') };

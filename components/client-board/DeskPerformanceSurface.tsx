@@ -40,6 +40,7 @@ import { expectationFor } from './expectation';
 import { AudienceSection } from './AudienceSection';
 import { splitOf, topBuckets, reachShares, formatShares, weightedSplit } from '../../lib/postReach';
 import type { AudiencePayload, DecideFn } from './AudienceSection';
+import { ReportResults, type ReportCtx } from './report/ReportBlocks';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Local helpers — small private utilities from the original PerformanceSurface
@@ -168,13 +169,18 @@ type Week = {
 };
 
 export function DeskPerformanceSurface({
-  board, accent, live = false, showAim = false, audience, onAudienceDecide,
+  board, accent, live = false, showAim = false, audience, onAudienceDecide, report,
 }: {
   board: Board; accent: string; live?: boolean; showAim?: boolean;
   /** The audience review payload, or null/undefined when the feature is not on
    *  for this client. Null renders NOTHING, never a placeholder. */
   audience?: AudiencePayload | null;
   onAudienceDecide?: DecideFn;
+  /** Stage 1 (2026-09-28): the report period for a board that has one (RISE, ARCH). When
+   *  given, the surface opens on the report for the chosen period and everything below
+   *  (reads, reach, the ledger, the audience review) folds shut under "More numbers".
+   *  Absent = the surface renders exactly as before. */
+  report?: ReportCtx | null;
 }) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
@@ -348,17 +354,15 @@ export function DeskPerformanceSurface({
     <div key={ind.key}>
       <Num size="big">{fmtNum(ind.value)}</Num>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)', marginTop: 6, lineHeight: 1.35 }}>{ind.label}</div>
-      {(ind.source || ind.captured_at) && <Footnote style={{ marginTop: 4 }}>{ind.source ? `from ${ind.source}` : ''}{ind.captured_at ? `${ind.source ? ' · ' : ''}counted ${new Date(ind.captured_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}</Footnote>}
+      {!report && (ind.source || ind.captured_at) && <Footnote style={{ marginTop: 4 }}>{ind.source ? `from ${ind.source}` : ''}{ind.captured_at ? `${ind.source ? ' · ' : ''}counted ${new Date(ind.captured_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}</Footnote>}
     </div>
   );
   const indicatorCard = (ind: PerfIndicator, expectation?: string) => (ind.captured_at ? liveCard(ind) : ghostCard(ind, expectation));
 
-  return (
-    <div data-surface="performance">
-      {/* Scoped hover/focus styles for this surface only (cb-perfh-* — see PERFH_CSS). */}
-      <style>{PERFH_CSS}</style>
+  const legacy = (
+    <>
       {/* Block 1 */}
-      <Eyebrow>Performance</Eyebrow>
+      <Eyebrow>{report ? 'Reads and reach' : 'Performance'}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
       {/* Block 2: dark chart Plate — measured posts only. A post whose reads are not
@@ -822,6 +826,14 @@ export function DeskPerformanceSurface({
       {/* Block 8: the audience review. Renders below the posts block, and renders
           nothing at all when the client's audience feature is off (payload null). */}
       <AudienceSection audience={audience} live={live} onDecide={onAudienceDecide} />
+    </>
+  );
+
+  return (
+    <div data-surface="performance">
+      {/* Scoped hover/focus styles for this surface only (cb-perfh-* — see PERFH_CSS). */}
+      <style>{PERFH_CSS}</style>
+      {report ? <ReportResults ctx={report} more={legacy} /> : legacy}
     </div>
   );
 }
