@@ -41,6 +41,7 @@ import { AudienceSection } from './AudienceSection';
 import { splitOf, topBuckets, reachShares, formatShares, weightedSplit } from '../../lib/postReach';
 import type { AudiencePayload, DecideFn } from './AudienceSection';
 import { ReportResults, type ReportCtx } from './report/ReportBlocks';
+import { openingLine } from './report/reportModel';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Local helpers — small private utilities from the original PerformanceSurface
@@ -204,6 +205,8 @@ export function DeskPerformanceSurface({
   const matchQueue = (title?: string, publishedAt?: string): QueueItem | undefined =>
     (title ? queueByTitle.get(normTitle(title)) : undefined)
     || (publishedAt ? queueByDate.get(publishedAt.slice(0, 10)) : undefined);
+  /** Report boards show a post by its opening line, never the queue's working title. */
+  const titleOf = (p: PerfPost): string => (report ? (openingLine(matchQueue(p.title, p.published_at)) || p.title || '') : (p.title || ''));
   const coverOf = (q?: QueueItem): string | undefined =>
     (q?.image_urls && q.image_urls[0]) || q?.image || q?.media_url || q?.cover_url || undefined;
 
@@ -411,7 +414,7 @@ export function DeskPerformanceSurface({
               <div style={{ position: 'absolute', left: 0, top: 0, width: `${heroBoxPct}%`, paddingRight: 10 }}>
                 <Num size="hero" tone="accent">{(bestInWindow!.impressions as number).toLocaleString()}</Num>
                 <Footnote on="plate" style={{ marginTop: 6 }}>
-                  reads on {bestInWindow!.title ? `the ${truncateWords(bestInWindow!.title, 40)} post` : 'the top post'}{bestInWindow!.published_at ? `, ${shortDate(bestInWindow!.published_at)}` : ''}
+                  reads on {titleOf(bestInWindow!) ? `the ${truncateWords(titleOf(bestInWindow!), 40)} post` : 'the top post'}{bestInWindow!.published_at ? `, ${shortDate(bestInWindow!.published_at)}` : ''}
                   {' '}<Chip tone="accent" style={{ marginLeft: 4 }}>best of these 2 weeks</Chip>
                 </Footnote>
               </div>
@@ -428,13 +431,13 @@ export function DeskPerformanceSurface({
             <div className="cb-perfh-grid">
               {measured.map((p, i) => {
                 const reads = p.impressions as number;
-                const label = `${p.title || 'Untitled post'}: ${reads.toLocaleString()} reads, ${shortDate(p.published_at)}`;
+                const label = `${titleOf(p) || 'Untitled post'}: ${reads.toLocaleString()} reads, ${shortDate(p.published_at)}`;
                 return (
                   <div key={i} className="cb-perfh-hit" tabIndex={0} aria-label={label} title={label}>
                     <span className="cb-perfh-tip" aria-hidden="true">
                       <Num size="row" inline tone={i === bestIndex ? 'accent' : 'plate'}>{reads.toLocaleString()}</Num>
                       <span className="cb-perfh-tip-m"><PlateMute>reads · {shortDate(p.published_at)}</PlateMute></span>
-                      <span className="cb-perfh-tip-t">{truncateWords(p.title || 'Untitled post', 60)}</span>
+                      <span className="cb-perfh-tip-t">{truncateWords(titleOf(p) || 'Untitled post', 60)}</span>
                     </span>
                   </div>
                 );
@@ -631,7 +634,7 @@ export function DeskPerformanceSurface({
                 const reads = typeof p.impressions === 'number' ? (p.impressions as number) : null;
                 const rate = reads != null && reads > 0 ? (((p.reactions || 0) + (p.comments || 0)) / reads) * 100 : null;
                 const pct = bestReadsInSet > 0 && reads != null ? (reads / bestReadsInSet) * 100 : 0;
-                const fullTitle = p.title || 'Untitled post';
+                const fullTitle = titleOf(p) || 'Untitled post';
                 const rowLabel = `${fullTitle}${reads != null ? `: ${reads.toLocaleString()} reads` : ''}`;
                 return (
                   // Hover/focus treatment (cb-perfh-lrow / cb-perfh-rowfocus): hovering the
@@ -749,7 +752,7 @@ export function DeskPerformanceSurface({
                 <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>Week of {shortDate(localKey(w.monday))} · {w.items.length} {w.items.length === 1 ? 'post' : 'posts'}{w.rate != null ? ` · ${w.rate.toFixed(2)}% rate` : ''}</div>
                 {w.items.map((it, i) => (
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '6px 0 0' }}>
-                    <span style={{ flex: '1 1 220px', minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)' }}>{it.title || 'Untitled post'}</span>
+                    <span style={{ flex: '1 1 220px', minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)' }}>{titleOf(it) || 'Untitled post'}</span>
                     {typeof it.impressions === 'number' && <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{it.impressions.toLocaleString()} reads</span>}
                     {/* An older post that pulled someone into the inbox keeps saying so in
                         the fold — that is the one number worth carrying out of an archived

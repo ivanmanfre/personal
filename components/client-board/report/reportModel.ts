@@ -39,7 +39,7 @@ export type ReportPayload = {
 /** The slice of the board payload the fallback path reads. Structural, so the page's
  *  Board type satisfies it without an import cycle. */
 export type ReportBoardSlice = {
-  queue: Array<{ id?: string; stage?: string; title?: string | null; hook?: string | null; published_at?: string | null; publish_date?: string | null; social_id?: string | null; post_url?: string | null }>;
+  queue: Array<{ id?: string; stage?: string; title?: string | null; hook?: string | null; post_body?: string | null; body?: string | null; published_at?: string | null; publish_date?: string | null; social_id?: string | null; post_url?: string | null }>;
   outreach_truth?: { booked?: Array<{ name?: string | null; company?: string | null; booked_at?: string | null }> } | null;
   performance?: { posts?: Array<{ title?: string; url?: string; published_at?: string }> } | null;
 };
@@ -189,7 +189,7 @@ export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
       key: `mo:${mStart}`, kind: 'month', start: from, end: cur ? addDays(today, 1) : next,
       label: cur ? `This month (${MONTHS_LONG[m - 1]})` : MONTHS_LONG[m - 1],
       eyebrow: cur ? `This month · ${MONTHS_LONG[m - 1]}` : MONTHS_LONG[m - 1],
-      phrase: cur ? 'this month' : `in ${MONTHS_LONG[m - 1]}`, current: cur,
+      phrase: cur ? `since ${dm(from)}` : `in ${MONTHS_LONG[m - 1]}`, current: cur,
     });
     mStart = next;
   }
@@ -242,6 +242,14 @@ export type Figures = {
   callsAfterPost: number | null;
   posts: PostRow[];
 };
+
+/** What a post says first on the feed: the hook, else the first line of the body. The
+ *  queue's own title is a working name and never reaches a client surface. */
+export function openingLine(q?: { hook?: string | null; post_body?: string | null; body?: string | null } | null): string {
+  if (!q) return '';
+  const pick = (t?: string | null) => (t || '').replace(/^\[[^\]]*\]\s*/, '').split(/\r?\n/).map((x) => x.trim()).find(Boolean) || '';
+  return pick(q.hook) || pick(q.post_body) || pick(q.body);
+}
 
 const nameKey = (n?: string | null, c?: string | null) => `${(n || '').trim().toLowerCase()}|${(c || '').trim().toLowerCase()}`;
 const activityId = (s?: string | null) => (s ? (s.match(/(\d{15,})/) || [])[1] || null : null);
@@ -329,11 +337,11 @@ export function computeFigures(
     // What the post says on the feed first (the performance sync, then the queue's hook,
     // then the metrics row, which is cut at a fixed length); the queue title last, since it
     // can carry a working name.
+    // The opening line only: the queue's hook / first body line, else the metrics row (the
+    // feed's own first ~80 characters, cut back to a whole word).
     const metricTitle = clean(s.title);
     const cut = metricTitle.length >= 75 ? `${metricTitle.slice(0, metricTitle.lastIndexOf(' ')).replace(/[\s,.:;-]+$/, '')}\u2026` : metricTitle;
-    const WORKING = /^(format test|test|draft|variant)\b/i; // a working name, never shown to the client
-    const ok = (t: string) => (t && !WORKING.test(t) ? t : '');
-    const title = ok(clean(act ? perfByAct.get(act)?.title : '')) || ok(cut) || ok(clean(q?.hook)) || ok(clean(q?.title)) || 'Post';
+    const title = clean(openingLine(q)) || cut || 'Post';
     posts.push({
       key: s.key, at: s.at, day, title, own: !q,
       fit, engaged, fitNew, collected,

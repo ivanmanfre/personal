@@ -162,7 +162,8 @@ ev as (
    group by e.post_social_id, e.person_key
 ),
 ev_named as (
-  select ev.*, coalesce(pe.name, ce.name) as pe_name, coalesce(pe.headline, ce.headline) as pe_headline, pe.prospect_id as pe_prospect
+  select ev.*, coalesce(pe.name, ce.name) as pe_name, coalesce(pe.headline, ce.headline) as pe_headline, pe.prospect_id as pe_prospect,
+         coalesce(pe.icp_score, ce.icp_score) as pe_score
     from ev
     left join post_engagers pe
       on pe.id = case when ev.src like 'post_engagers:%' then nullif(substring(ev.src from '^post_engagers:(.*)$'), '')::uuid end
@@ -183,6 +184,9 @@ ev_full as (
 ev_fit as (
   select ev_full.*,
          (label = 'positive' and not ex
+          -- the engager row's own fit score must agree when there is one (7 is the same bar the
+          -- inbound-request judge uses); a positive label over a score of 1-5 is not a buyer
+          and (pe_score is null or pe_score >= 7)
           -- ARCH hand-reviewed rule (27 Sep): a vendor/supplier tier, or no current company on
           -- record (prospect company, else "@ Company" / " at Company" in the headline), is out.
           and (p_client_id <> 'arch' or (
@@ -209,6 +213,9 @@ came_rows as (
      and (coalesce(b.skip_reason, '') || ' ' || coalesce(b.skip_state_reason, '')) !~* 'not_icp|vendor|phishing|duplicate|thread_deleted|regate'
      and not b.vendor_pitch
      and not b.is_operator
+     -- a positive brand-owner verdict is required: the request/profile-view judge's score
+     -- (enrichment_data.judge_score, else icp_score) at the lane's bar of 7. No verdict = not counted.
+     and coalesce(nullif(b.enrichment_data->>'judge_score', '')::numeric, b.icp_score) >= 7
   union all
   -- both: a buyer-fit person who engaged with a post while new to us
   select pe_name, coalesce(nullif(pr_company, ''), substring(coalesce(pe_headline, '') from '(?:@| at )\s*([^|,·]+)')),

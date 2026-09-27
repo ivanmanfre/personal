@@ -34,6 +34,17 @@ function ctxFor(key?: string): ReportCtx {
 }
 
 describe('report blocks', () => {
+  it('a week without a call never opens on a 0: it leads with the month and says none yet quietly', () => {
+    const cfg = REPORT_CONFIGS['arch-agency'];
+    const periods = reportPeriods(cfg, '2026-09-28');
+    const archPayload: ReportPayload = { ...payload, client: 'arch', start_date: '2026-08-31', came: [], engaged: [], posts: [],
+      people: [{ n: 'Ofir Bello', bk: '2026-09-27T19:44:02Z' }, { n: 'Gustav Pastucha', bk: '2026-09-24T13:52:02Z' }] };
+    const ctx: ReportCtx = { cfg, periods, period: periods[0], onPeriod: () => {}, payload: archPayload, board: { queue: [] }, audience: null, today: '2026-09-28' };
+    const html = renderToStaticMarkup(<ReportHome ctx={ctx} />);
+    expect(html).toContain('2 calls booked</b> since 31 Aug, with Ofir Bello and Gustav Pastucha.');
+    expect(html).toContain('No call booked yet this week.');
+    expect(html).not.toMatch(/>0<\/span>/);
+  });
   it('Home leads with calls booked and names them, then who came to you', () => {
     const html = renderToStaticMarkup(<ReportHome ctx={ctxFor()} />);
     expect(html).toContain('2 calls booked</b> since 17 Sept, with Karin Nelson and Trent Hill.');

@@ -68,7 +68,7 @@ describe('figures', () => {
   });
   it('the zero rule: a short week falls back to the month, a month 0 is hidden', () => {
     const [week] = reportPeriods(ARCH, '2026-09-28');
-    expect(shown(0, 2, week)).toEqual({ value: 2, scope: 'this month', weekZero: true });
+    expect(shown(0, 2, week)).toEqual({ value: 2, scope: 'since 31 Aug', weekZero: true });
     expect(shown(0, 0, week)).toBeNull();
     const month = reportPeriods(RISE, '2026-09-27')[0];
     expect(shown(0, null, month)).toBeNull();

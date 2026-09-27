@@ -96,21 +96,27 @@ export function PeriodPicker({ ctx }: { ctx: ReportCtx }) {
 
 /* ─────────────────────────── headline ─────────────────────────── */
 
+/** Calls booked never open on a 0: a period without one leads with its month (for a week)
+ *  or the since-the-start figure, and the period's own "none yet" drops to a quiet line. */
+export function callsLead(ctx: ReportCtx, f: Figures, fm: Figures | null, fAll: Figures): { n: number; names: string[]; phrase: string; none: string | null } {
+  const p = ctx.period;
+  if (f.calls.n > 0) return { n: f.calls.n, names: f.calls.names, phrase: p.phrase, none: null };
+  const none = p.current ? `None yet ${p.phrase}.` : `None ${p.phrase}.`;
+  if (fm && fm.calls.n > 0 && p.month) return { n: fm.calls.n, names: fm.calls.names, phrase: p.month.phrase, none };
+  if (fAll.calls.n > 0) return { n: fAll.calls.n, names: fAll.calls.names, phrase: `since ${dm(ctx.cfg.start)}`, none };
+  return { n: 0, names: [], phrase: p.phrase, none: null };
+}
+
 export function reportHeadline(ctx: ReportCtx, f: Figures, fm: Figures | null, fAll: Figures): React.ReactNode {
   const { cfg, period: p } = ctx;
-  const n = f.calls.n;
-  let calls: React.ReactNode;
-  if (n > 0) {
-    const names = nameList(f.calls.names);
-    calls = <><b>{n} {n === 1 ? 'call' : 'calls'} booked</b> {p.phrase}{names ? `, with ${names}` : ''}.</>;
-  } else if (p.current && p.kind !== 'all' && fAll.calls.n > 0) {
-    calls = <>No call booked yet {p.phrase}. <b>{fAll.calls.n} {fAll.calls.n === 1 ? 'call' : 'calls'} booked</b> since {dm(cfg.start)}.</>;
-  } else {
-    calls = <>No call booked {p.phrase}.</>;
-  }
+  const lead = callsLead(ctx, f, fm, fAll);
+  const names = nameList(lead.names);
+  const calls: React.ReactNode = lead.n > 0
+    ? <><b>{lead.n} {lead.n === 1 ? 'call' : 'calls'} booked</b> {lead.phrase}{names ? `, with ${names}` : ''}.</>
+    : <>Your calls booked {p.phrase} land here.</>;
   const came = shown(f.came?.n, fm?.came?.n, p);
   const cameLine = came
-    ? <> {came.value} {plural(came.value, cfg.who)} came to you on their own{came.scope ? ` ${came.scope}` : ''}.</>
+    ? <> {came.value} {plural(came.value, cfg.who)} came to you on their own{came.scope && came.scope !== lead.phrase ? ` ${came.scope}` : ''}.</>
     : null;
   return <>{calls}{cameLine}</>;
 }
@@ -119,10 +125,12 @@ export function reportHeadline(ctx: ReportCtx, f: Figures, fm: Figures | null, f
 export function reportStripText(ctx: ReportCtx): string {
   const f = computeFigures(ctx.cfg, ctx.period, ctx.payload, ctx.board, ctx.audience);
   const p = ctx.period;
-  if (f.calls.n > 0) return `${f.calls.n} ${f.calls.n === 1 ? 'call' : 'calls'} booked ${p.phrase}: ${nameList(f.calls.names)}.`;
+  const fm = p.kind === 'week' && p.month ? computeFigures(ctx.cfg, p.month, ctx.payload, ctx.board, ctx.audience) : null;
   const all = ctx.periods.find((x) => x.kind === 'all') as Period;
   const fa = computeFigures(ctx.cfg, all, ctx.payload, ctx.board, ctx.audience);
-  return fa.calls.n > 0 ? `${fa.calls.n} ${fa.calls.n === 1 ? 'call' : 'calls'} booked since ${dm(ctx.cfg.start)}.` : 'Your results, period by period.';
+  const lead = callsLead(ctx, f, fm, fa);
+  if (lead.n > 0) return `${lead.n} ${lead.n === 1 ? 'call' : 'calls'} booked ${lead.phrase}: ${nameList(lead.names)}.`;
+  return 'Your results, period by period.';
 }
 
 export function ReportHead({ ctx, f, fm, fAll, eyebrow }: { ctx: ReportCtx; f: Figures; fm: Figures | null; fAll: Figures; eyebrow?: string }) {
@@ -133,6 +141,7 @@ export function ReportHead({ ctx, f, fm, fAll, eyebrow }: { ctx: ReportCtx; f: F
         <PeriodPicker ctx={ctx} />
       </div>
       <DeskH2 style={{ maxWidth: '34ch' }}>{reportHeadline(ctx, f, fm, fAll)}</DeskH2>
+      {(() => { const none = callsLead(ctx, f, fm, fAll).none; return none ? <Footnote style={{ marginTop: 8 }}>{none.replace(/^None/, 'No call booked')}</Footnote> : null; })()}
     </>
   );
 }
@@ -169,13 +178,15 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
   const figs: Fig[] = [];
   const scoped = (s: Shown, caption: (v: number) => string) => (s ? `${caption(s.value)}${s.scope ? ` ${s.scope}` : ''}` : '');
   const weekZero = (s: Shown) => (s && s.weekZero ? (p.current ? `none yet ${p.phrase}` : `none ${p.phrase}`) : null);
-  // Calls booked: always shown, with the names.
+  // Calls booked: always shown, with the names; a period without one shows its month or
+  // the since-the-start figure, and the period's own "none yet" as a quiet line.
+  const lead = callsLead(ctx, f, fm, fAll);
+  const scopedLead = lead.phrase !== p.phrase;
   figs.push({
-    key: 'calls', strong: true, value: f.calls.n,
-    caption: f.calls.n === 1 ? 'call booked' : 'calls booked',
-    sub: f.calls.n > 0
-      ? <>{nameList(f.calls.names, 4)}{p.kind !== 'all' && fAll.calls.n > f.calls.n ? <><br />{fAll.calls.n} since {dm(cfg.start)}</> : null}</>
-      : (p.kind !== 'all' && fAll.calls.n > 0 ? <>{fAll.calls.n} since {dm(cfg.start)}</> : null),
+    key: 'calls', strong: true, value: lead.n,
+    caption: `${lead.n === 1 ? 'call booked' : 'calls booked'}${scopedLead ? ` ${lead.phrase}` : ''}`,
+    sub: <>{lead.names.length ? nameList(lead.names, 4) : null}{!scopedLead && p.kind !== 'all' && fAll.calls.n > lead.n ? <>{lead.names.length ? <br /> : null}{fAll.calls.n} since {dm(cfg.start)}</> : null}</>,
+    weekZero: lead.none ? lead.none.toLowerCase().replace(/\.$/, '') : null,
   });
   if (waiting > 0) figs.push({ key: 'waiting', strong: true, value: waiting, caption: waiting === 1 ? 'post waiting for your approval' : 'posts waiting for your approval', sub: 'as of now' });
   const came = shown(f.came?.n, fm?.came?.n, p);
@@ -313,7 +324,7 @@ function SliceLedger({ ctx }: { ctx: ReportCtx }) {
         {rows.map(({ p, f }) => (
           <LedgerRow key={p.key}>
             <LedgerCell valign="middle"><span style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.3 }}>{p.label}</span></LedgerCell>
-            {cols.map((c) => <LedgerCell key={c.k} num align="right" valign="middle">{c.get(f) ?? 0}</LedgerCell>)}
+            {cols.map((c) => { const v = c.get(f) ?? 0; return <LedgerCell key={c.k} num align="right" valign="middle" style={v ? undefined : { color: MUTE, fontWeight: 500 }}>{v}</LedgerCell>; })}
           </LedgerRow>
         ))}
       </Ledger>
@@ -379,7 +390,7 @@ function PostsLedger({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
             : 'engagement not collected for this post'}
         </div>
       </LedgerCell>
-      <LedgerCell num align="right" width="1%" style={r.fit ? undefined : { color: MUTE }}>{r.collected && r.fit != null ? r.fit : '–'}</LedgerCell>
+      <LedgerCell num align="right" width="1%" style={r.fit ? undefined : { color: MUTE, fontWeight: 500 }}>{r.collected && r.fit ? r.fit : '–'}</LedgerCell>
       {anyCall && <LedgerCell num align="right" width="1%">{r.calls > 0 ? r.calls : ''}</LedgerCell>}
     </LedgerRow>
   );
