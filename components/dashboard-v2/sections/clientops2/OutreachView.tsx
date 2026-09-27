@@ -7,6 +7,7 @@ import {
   useClientOutreach,
   useClientPendingDrafts,
   gateBlocking,
+  salesChannelTag,
   fmtDate,
   GATE,
   type OutreachPayload,
@@ -201,6 +202,7 @@ function ProspectRow({ p, armed, clientId, company }: { p: OutreachProspect; arm
   const [open, setOpen] = useState(false);
   const hasCopy = !!(p.connection_note || p.offer_angle || (p.messages && p.messages.length));
   const gated = gateBlocking(p.gate);
+  const salesTag = salesChannelTag(p);
   return (
     <div className={`co3-prow ${open ? 'co3-prow--open' : ''}`}>
       <button className="co3-prow-main" onClick={() => setOpen((v) => !v)}>
@@ -211,6 +213,7 @@ function ProspectRow({ p, armed, clientId, company }: { p: OutreachProspect; arm
         </span>
         <span className="co3-ptags">
           <span className="co3-chan">{channelLabel(p)}</span>
+          {salesTag && <span className={`co3-sales-tag co3-sales-tag--${salesTag.kind}`} title={salesTag.title}>{salesTag.label}</span>}
           {gated && <span className="co3-gate">name-gated</span>}
           {p.blacklisted && <span className="co3-skip">blacklisted</span>}
           {p.needs_manual_reply && <span className="co3-reply">replied</span>}
@@ -352,6 +355,9 @@ const CSS = `
 .ec .co3-pmeta { font-family:var(--ec-sans); font-size:11px; color:var(--ec-mutedc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ec .co3-ptags { display:flex; align-items:center; gap:0.4rem; flex:0 0 auto; flex-wrap:wrap; justify-content:flex-end; }
 .ec .co3-chan { font-family:var(--ec-sans); font-size:9.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--ec-mutedc); }
+.ec .co3-sales-tag { font-family:var(--ec-sans); font-size:10px; font-weight:700; padding:0.12rem 0.4rem; border:1px solid var(--ec-rule-strong); color:var(--ec-mutedc); }
+.ec .co3-sales-tag--direct { color:#246b4c; border-color:#8db9a2; }
+.ec .co3-sales-tag--retail { color:#8a5a12; border-color:#d9b87c; }
 .ec .co3-gate, .ec .co3-skip, .ec .co3-reply, .ec .co3-notarmed { font-family:var(--ec-sans); font-size:9.5px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; padding:0.12rem 0.4rem; }
 .ec .co3-gate { color:var(--ec-paper); background:var(--ec-ink); }
 .ec .co3-skip { color:var(--ec-mutedc); border:1px solid var(--ec-rule-strong); }

@@ -5,6 +5,7 @@ import {
   escalateRiseDraft,
   editRiseDraft,
   gateBlocking,
+  salesChannelTag,
   fmtDate,
   ageLabel,
   GATE,
@@ -314,6 +315,7 @@ export function OutreachInbox({ clientId, company, data, pendingDrafts, reload, 
 // ── List rows ────────────────────────────────────────────────────────────────
 function ConvoRow({ c, selected, onClick }: { c: Conversation; selected: boolean; onClick: () => void }) {
   const { p, status, draft } = c;
+  const salesTag = salesChannelTag(p);
   const age = ageLabel(c.lastActivityAt ? new Date(c.lastActivityAt).toISOString() : null);
   const inbound = status === 'needs_reply';
   return (
@@ -328,6 +330,7 @@ function ConvoRow({ c, selected, onClick }: { c: Conversation; selected: boolean
         <span className={`co4-row-snip ${inbound ? 'co4-row-snip--in' : ''}`}>{c.snippet}</span>
         <span className="co4-row-tags">
           <IcpChip score={p.icp_score} />
+          {salesTag && <span className={`co4-tag co4-tag--sales-${salesTag.kind}`} title={salesTag.title}>{salesTag.label}</span>}
           {(() => { const ch = convoChannel(p); return ch ? <span className={`co4-tag co4-tag--chan-${ch.kind}`}>{ch.label}</span> : null; })()}
           {draft && <span className="co4-tag co4-tag--draft">● {DRAFT_KIND_LABEL[draft.kind]}</span>}
           {draft?.has_link && <span className="co4-tag">scan ✓</span>}
@@ -340,6 +343,7 @@ function ConvoRow({ c, selected, onClick }: { c: Conversation; selected: boolean
 }
 
 function StagedRow({ p, selected, onClick }: { p: OutreachProspect; selected: boolean; onClick: () => void }) {
+  const salesTag = salesChannelTag(p);
   return (
     <button className={`co4-row ${selected ? 'co4-row--on' : ''}`} onClick={onClick}>
       <span className="co4-dot co4-dot--staged" aria-hidden />
@@ -351,6 +355,7 @@ function StagedRow({ p, selected, onClick }: { p: OutreachProspect; selected: bo
         <span className="co4-row-snip">Not contacted yet</span>
         <span className="co4-row-tags">
           <IcpChip score={p.icp_score} />
+          {salesTag && <span className={`co4-tag co4-tag--sales-${salesTag.kind}`} title={salesTag.title}>{salesTag.label}</span>}
           {gateBlocking(p.gate) && <span className="co4-tag co4-tag--gate">name-gated</span>}
         </span>
       </span>
@@ -373,6 +378,7 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
   afterWrite: () => void;
 }) {
   const firstName = (p.name || 'them').split(' ')[0];
+  const salesTag = salesChannelTag(p);
 
   const events = useMemo<ThreadEvent[]>(() => {
     const ev: ThreadEvent[] = [];
@@ -410,6 +416,7 @@ function ThreadPane({ p, draft, campaign, clientId, company, onBack, afterWrite 
         </div>
         <div className="co4-th-chips">
           <IcpChip score={p.icp_score} />
+          {salesTag && <span className={`co4-th-chip co4-th-chip--sales-${salesTag.kind}`} title={salesTag.title}>{salesTag.label}</span>}
           <span className="co4-th-chip">{channelLabel(p)}</span>
           {campaign && <span className="co4-th-chip">{campaign.name}</span>}
           {p.needs_manual_reply && <span className="co4-th-chip co4-th-chip--alert">Owe reply</span>}
@@ -717,6 +724,8 @@ const CSS = `
 .ec .co4-tag--chan-email { color:var(--ec-mutedc); border-color:var(--ec-rule-strong); }
 .ec .co4-tag--gate { color:var(--ec-paper); background:var(--ec-ink); border-color:var(--ec-ink); }
 .ec .co4-tag--mute { border-style:dashed; }
+.ec .co4-tag--sales-direct, .ec .co4-th-chip--sales-direct { color:#246b4c; border-color:#8db9a2; }
+.ec .co4-tag--sales-retail, .ec .co4-th-chip--sales-retail { color:#8a5a12; border-color:#d9b87c; }
 
 /* Right thread */
 .ec .co4-thread { display:flex; flex-direction:column; min-width:0; min-height:0; }

@@ -272,6 +272,8 @@ export interface OutreachProspect {
   offer_angle: string | null;
   gate: OutreachGate | null;
   anchor_client: string | null;
+  is_d2c?: boolean;
+  channel_tag?: { fit?: string; reason?: string; source_url?: string } | null;
   last_dm_sent_at: string | null;
   connection_sent_at: string | null;
   connected_at: string | null;
@@ -283,6 +285,20 @@ export interface OutreachProspect {
   messaged: boolean;
   awaiting_reply: boolean;
   messages: OutreachMessage[];
+}
+
+export function salesChannelTag(p: OutreachProspect): { label: string; kind: string; title: string } | null {
+  if (!p.is_d2c) return null;
+  const fit = p.channel_tag?.fit;
+  const reason = p.channel_tag?.reason;
+  const tag = fit === 'direct'
+    ? { label: 'Buy on brand website', kind: 'direct', title: 'The brand has a direct online purchase path.' }
+    : fit === 'retail_first'
+      ? { label: 'Mainly stores/delivery', kind: 'retail', title: 'Mainly sells through stores or delivery partners. Check before outreach.' }
+      : fit === 'unknown'
+        ? { label: 'Sales route unclear', kind: 'unknown', title: 'The sales route is unclear. This tag alone does not block outreach.' }
+        : { label: 'Not checked yet', kind: 'unchecked', title: 'No channel assessment is recorded for this lead.' };
+  return { ...tag, title: reason ? `${tag.title} ${reason}` : tag.title };
 }
 export interface OutreachSeqStep { label?: string; when?: string; text?: string; flag?: string }
 export interface OutreachSeq {
