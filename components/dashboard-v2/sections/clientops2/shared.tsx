@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { setLmActiveCover, type LmCover } from '../../../../lib/studioActions';
 import { strengthBand } from '../../../../lib/ideaProjection';
+import { nextBufferSlot, rescheduleInstant } from '../../../../lib/clientSlot';
 import type { AgentLogEntry } from '../../../../hooks/useContentLibrary';
 import type { Severity } from '../../types';
 
@@ -168,16 +169,6 @@ export const icpSeverity = (s: number | null | undefined): Severity => {
 export const icpBand = (s: number | null | undefined) => strengthBand(s ?? null);
 export const money = (n: number | null | undefined) => `$${(n ?? 0).toFixed(2)}`;
 export const isUrl = (s?: string | null) => !!s && /^https?:\/\//.test(s);
-
-/** Next open buffer slot: 4 days out, rolled off the weekend (round-1 verbatim). */
-export const nextBufferSlot = (): string => {
-  const d = new Date();
-  d.setDate(d.getDate() + 4);
-  const day = d.getDay();
-  if (day === 6) d.setDate(d.getDate() + 2);
-  else if (day === 0) d.setDate(d.getDate() + 1);
-  return d.toISOString();
-};
 
 // ── Aggregates — every figure derives from returned rows; null = no data ─────
 export interface Aggregates {
@@ -568,7 +559,7 @@ export function useClientDetail(client: ClientOverview | null) {
   }, []);
 
   const onSchedule = useCallback(async (d: Draft): Promise<{ ok: boolean; error?: string }> => {
-    const res = await supabase.rpc('operator_schedule_draft', { p_gate: GATE, p_draft_id: d.id, p_publish_at: nextBufferSlot() });
+    const res = await supabase.rpc('operator_schedule_draft', { p_gate: GATE, p_draft_id: d.id, p_publish_at: nextBufferSlot(client?.client_id) });
     if (res.data?.ok) {
       const scheduledAt = res.data.scheduled_at as string | undefined;
       setDrafts((prev) => prev?.map((x) => (x.id === d.id ? { ...x, status: 'scheduled', scheduled_at: scheduledAt ?? x.scheduled_at } : x)) ?? prev);
@@ -577,18 +568,16 @@ export function useClientDetail(client: ClientOverview | null) {
     const err: string | undefined = res.error?.message || res.data?.error;
     if (err !== 'awaiting_media') setErrors((e) => ({ ...e, drafts: err || 'schedule failed' }));
     return { ok: false, error: err };
-  }, []);
+  }, [client?.client_id]);
 
   // Drag-to-a-chosen-day reschedule. Reuses the SAME gated RPC as onSchedule —
   // the only difference is the operator picks a day on the calendar instead of
   // the auto next-buffer slot, and it also re-times an already-scheduled draft.
-  // Preserves the draft's existing time-of-day; defaults new schedules to 09:00.
+  // Preserves the draft's existing time-of-day ON THE CLIENT'S CLOCK (not the browser's,
+  // not UTC), so a drag across a DST change keeps 07:00 PT at 07:00 PT; new schedules get
+  // the client's slot.
   const onReschedule = useCallback(async (d: Draft, isoDate: string): Promise<{ ok: boolean; error?: string }> => {
-    const [y, m, day] = isoDate.split('-').map(Number);
-    const base = d.scheduled_at ? new Date(d.scheduled_at) : new Date();
-    base.setFullYear(y, m - 1, day);
-    if (!d.scheduled_at) base.setHours(9, 0, 0, 0);
-    const publishAt = base.toISOString();
+    const publishAt = rescheduleInstant(d.scheduled_at, isoDate, client?.client_id);
     const prev = { status: d.status, scheduled_at: d.scheduled_at };
     setDrafts((cur) => cur?.map((x) => (x.id === d.id ? { ...x, status: 'scheduled', scheduled_at: publishAt } : x)) ?? cur);
     const res = await supabase.rpc('operator_schedule_draft', { p_gate: GATE, p_draft_id: d.id, p_publish_at: publishAt });
@@ -602,7 +591,7 @@ export function useClientDetail(client: ClientOverview | null) {
     const err: string | undefined = res.error?.message || res.data?.error;
     if (err !== 'awaiting_media') setErrors((e) => ({ ...e, drafts: err || 'reschedule failed' }));
     return { ok: false, error: err };
-  }, []);
+  }, [client?.client_id]);
 
   const onDecideIdea = useCallback(async (idea: Idea, decision: 'approved' | 'rejected') => {
     setIdeas((prev) => prev?.filter((x) => x.id !== idea.id) ?? prev);

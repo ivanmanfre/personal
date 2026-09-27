@@ -36,6 +36,7 @@ import DeskCalendarStrip from './client-board/DeskCalendarStrip';
 import { SideNavToggle, SideNavRailNav, useSideNavCollapsed, SIDENAV_WIDTH, SIDENAV_RAIL_WIDTH } from './client-board/DeskSideNav';
 import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
+import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
 
@@ -697,13 +698,7 @@ function SchedChip({ scheduledAt, publishDate, scheduled, accent }: { scheduledA
  *  The client always enters + reads time in the BOARD'S zone; the offset is read from
  *  that zone so it stays correct across DST. */
 function laWallToUtcISO(dateStr: string, timeStr: string): string {
-  const probe = new Date(`${dateStr}T12:00:00Z`);
-  const asLA = new Date(probe.toLocaleString('en-US', { timeZone: clientTz() }));
-  const asUTC = new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offMin = Math.round((asUTC.getTime() - asLA.getTime()) / 60000); // +420 for PDT
-  const [hh, mm] = timeStr.split(':').map((n) => parseInt(n, 10));
-  const base = new Date(`${dateStr}T00:00:00Z`).getTime();
-  return new Date(base + (hh * 60 + mm + offMin) * 60000).toISOString();
+  return wallToUtcISO(dateStr, timeStr, clientTz());
 }
 /** The LA date parts (YYYY-MM-DD) + time (HH:MM) of a UTC instant, for prefilling inputs. */
 function laParts(scheduledAt?: string): { date: string; time: string } {
