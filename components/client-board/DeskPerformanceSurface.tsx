@@ -41,6 +41,11 @@ import { AudienceSection } from './AudienceSection';
 import { splitOf, topBuckets, reachShares, formatShares, weightedSplit } from '../../lib/postReach';
 import type { AudiencePayload, DecideFn } from './AudienceSection';
 import { ReportResults, type ReportCtx } from './report/ReportBlocks';
+/* TRIAL (2026-09-29): Results in the ARCH monthly report's look. Lazy, so the report's
+   motion kit and its stylesheet load only when this tab opens. `?perf=classic` shows the
+   stage-1 Results for side-by-side judging. */
+const PerfReport = React.lazy(() => import('./perf-kit/PerfReport'));
+const perfClassic = () => { try { return new URLSearchParams(window.location.search).get('perf') === 'classic'; } catch { return false; } };
 import { openingLine } from './report/reportModel';
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -836,7 +841,20 @@ export function DeskPerformanceSurface({
     <div data-surface="performance">
       {/* Scoped hover/focus styles for this surface only (cb-perfh-* — see PERFH_CSS). */}
       <style>{PERFH_CSS}</style>
-      {report ? <ReportResults ctx={report} more={legacy} /> : legacy}
+      {report && !perfClassic() ? (
+        <>
+          <React.Suspense fallback={<div aria-busy="true" style={{ minHeight: 640, background: '#111', borderRadius: '26px 8px 8px 8px' }} />}>
+            <PerfReport ctx={report} truth={board.outreach_truth} />
+          </React.Suspense>
+          <Drill
+            style={{ marginTop: 28 }}
+            label="open it"
+            summaryLeft={<><b>More numbers</b> <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 600 }}>reads, reach and who saw your posts</span></>}
+          >
+            {legacy}
+          </Drill>
+        </>
+      ) : report ? <ReportResults ctx={report} more={legacy} /> : legacy}
     </div>
   );
 }

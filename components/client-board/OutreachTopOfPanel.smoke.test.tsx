@@ -94,12 +94,20 @@ describe('OutreachTopOfPanel — the ten winner obligations', () => {
     const html = render();
     // Ivan 2026-09-02: the hero is the running week (9), the last closed week (26) sits under it
     expect(html).toMatch(/font-size:clamp\(26px[^>]*>9</); // hero demoted to 'big' (Ivan 2026-09-02: sizes too big)
-    expect(html).toContain('-17');
+    // the delta badge waits for a complete week: a part week against a full one is not a fall
+    expect(html).not.toContain('-17');
     expect(html).toContain('Week of 24 Aug, so far');
     expect(html).toContain('Last full week: 26.');
     // the in-progress week is the trailing bar and says so, in days
     expect(html).toContain('Week of 24 Aug is still counting');
     expect(html).toContain('9*');
+  });
+
+  it('O1b the delta badge shows once the running week covers all 7 days', () => {
+    // counted on the Sunday of the week of 24 Aug: day 7 of 7
+    const html = render({ truth: { ...TRUTH, counted_at: '2026-08-30T20:00:00Z' } });
+    expect(html).toContain('-17');
+    expect(html).toContain('7 of 7 days in');
   });
 
   it('O2 the imported "about 25 wrote back" quote never renders', () => {

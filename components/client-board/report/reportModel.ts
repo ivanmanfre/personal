@@ -80,6 +80,9 @@ export type ReportConfig = {
   postsRank: string;
   /** Column heading for the per-post count. */
   fitColumn: string;
+  /** The week page opens on the outreach results plate (calls booked this month, who
+   *  wrote back, replies week by week) with the period figures folded under it. */
+  homeResults?: boolean;
 };
 
 export const REPORT_CONFIGS: Record<string, ReportConfig> = {
@@ -93,6 +96,7 @@ export const REPORT_CONFIGS: Record<string, ReportConfig> = {
     postsTitle: 'Your posts, by the brand owners they reached',
     postsRank: 'most brand owners first',
     fitColumn: 'Brand owners',
+    homeResults: true,
   },
   'arch-agency': {
     slug: 'arch-agency', kind: 'weekly', start: '2026-08-31', tz: 'Europe/Zagreb',

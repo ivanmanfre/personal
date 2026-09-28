@@ -7327,6 +7327,13 @@ const NAV_GROUPS = ['Content', 'Outreach', 'Leads', 'Reports', 'Settings'] as co
  *  footer. The folded surfaces stay in the surfaces map and stay reachable by #hash, so an
  *  old bookmark still resolves — they are just off the nav. */
 const DESK_NAV_TABS: TabId[] = ['week', 'review', 'lm', 'newsletter', 'outreach', 'performance'];
+/** The phone tab bar's own words (2026-09-29). It used to print the label's first word,
+ *  which gave "This", "All", "Lead" and "Performan…". Keyed by label, so a report board's
+ *  renamed tabs (Home, Pipeline, Results) pass through as they are. */
+const NAV_SHORT: Record<string, string> = {
+  'This week': 'Week', 'All content': 'Posts', 'Lead magnets': 'Magnets',
+  'Outreach & leads': 'Outreach', Performance: 'Results',
+};
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
@@ -9243,7 +9250,7 @@ export default function ClientBoardPage() {
     flashId, modalOpen: !!detail, live: isLive,
   };
   const surfaces: Record<TabId, React.ReactNode> = {
-    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} /> : <WeekSurface {...weekSurfaceProps} />,
+    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
       ? <DeskReviewSurface compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
@@ -9648,7 +9655,9 @@ export default function ClientBoardPage() {
           let text: React.ReactNode = null; let cta: { label: string; go: () => void } | null = null;
           if (activeTab === 'week') {
             if (todays) { text = <>Ships today: {todays.hook || todays.title}</>; cta = { label: 'Open today’s post →', go: () => openDetail(todays) }; }
-            else if (next) { text = <>Next post {fmtD(next.publish_date)}: {(next.hook || next.title || '').slice(0, 60)}</>; cta = { label: 'Open the post →', go: () => openDetail(next) }; }
+            // The hook runs whole and the bar clamps it to two lines on a word (CSS below);
+            // the old .slice(0, 60) cut it mid-word ("...shooting myself in th").
+            else if (next) { text = <>Next post {fmtD(next.publish_date)}: {next.hook || next.title || ''}</>; cta = { label: 'Open the post →', go: () => openDetail(next) }; }
             else { text = <>{bufferN} drafts written and waiting in the buffer.</>; cta = { label: 'See the pipeline →', go: () => goTab('review') }; }
           } else if (activeTab === 'review') {
             text = reportCtx
@@ -9686,7 +9695,7 @@ export default function ClientBoardPage() {
           if (!text) return null;
           return (
             <div className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 34px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0 }}>{text}</div>
+              <div className="cb-stickybar-text" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', overflowWrap: 'break-word' }}>{text}</div>
               {cta && (
                 <button onClick={cta.go} style={{ background: 'var(--cb-ink)', color: 'var(--cb-paper)', border: 'none', borderRadius: 999, padding: '11px 22px', fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', cursor: 'pointer' }}>
                   {cta.label}
@@ -9729,7 +9738,7 @@ export default function ClientBoardPage() {
                     <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={weekBadge} /></span>
                   )}
                 </span>
-                <span className={`max-w-full truncate text-[10px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{skin === 'desk' ? t.label.split(' ')[0] : t.label}</span>
+                <span className={`max-w-full truncate text-[10px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{skin === 'desk' ? (NAV_SHORT[t.label] || t.label) : t.label}</span>
               </button>
             );
           })}

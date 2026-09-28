@@ -52,6 +52,7 @@ import {
 import { FeedPreview, FunnelChip, fmtDay, clientTz, boardZone } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
 import { ReportHome, type ReportCtx } from './report/ReportBlocks';
+import { WeekResultsPlate } from './WeekResultsPlate';
 
 /* ────────────────────────── local pure helpers ────────────────────────── */
 
@@ -184,6 +185,21 @@ function cadencePerWeek(headline?: string): number | null {
   return null;
 }
 const normTitle = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+/** The week's mix as one sentence: "This week: 2 posts to reach new people, 2 to build
+ *  trust and 1 for buyers close to reaching out." Zero tiers drop out. */
+function mixLine(cnt: Record<string, number>, untagged: number): string {
+  const parts: string[] = [];
+  if (cnt.reach) parts.push(`${cnt.reach} to reach new people`);
+  if (cnt.trust) parts.push(`${cnt.trust} to build trust`);
+  if (cnt.buyers) parts.push(`${cnt.buyers} for buyers close to reaching out`);
+  const first = parts[0].replace(/^(\d+) /, (_m, d) => `${d} ${d === '1' ? 'post' : 'posts'} `);
+  const list = [first, ...parts.slice(1)];
+  const joined = list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}` : list[0];
+  return `This week: ${joined}.${untagged ? ` ${untagged} more ${untagged === 1 ? 'has' : 'have'} no aim set.` : ''}`;
+}
+/** Sentence-start count: "Four", "Two"; digits past ten. */
+const SPELL_OUT = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+const spellOut = (n: number) => SPELL_OUT[n] || String(n);
 
 /** No em dash ever reaches the client; the glyph is reserved for the not-tracked mark. */
 const noDash = (s?: string) => (s || '').replace(/\s*—\s*/g, ', ').replace(/—/g, ', ');
@@ -249,6 +265,10 @@ const WEEK_CSS = `
    to drop on a phone, where seven tiles across leave ~44px and four lines is one word each. */
 .cb-glance-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 @media (max-width: 599px) { .cb-glance-clamp { -webkit-line-clamp: 2; } }
+/* Under 600px a tile is ~44px wide: the funnel/pillar tags truncated to "R…" / "Au…" and ran
+   into the day label, so they hide there (the day rows below still name them). The opening
+   line takes the space they left. */
+@media (max-width: 599px) { .cb-glance-tag { display: none; } .cb-glance-linebox { top: 6px !important; } }
 @media (prefers-reduced-motion: no-preference) {
   .cb-weekrail-tile { transition: transform .16s ease, filter .16s ease; }
   .cb-weekrail-tile:hover { transform: translateY(-2px); filter: brightness(1.04); }
@@ -257,7 +277,7 @@ const WEEK_CSS = `
 
 /* ────────────────────────── the surface ────────────────────────── */
 
-export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, flashId, modalOpen, live = false, reviewMode = false, report = null }: {
+export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, pool = [], onPickReplacement, onBackToBuffer, onLeaveDayEmpty, onSetSchedule, onClearDay, onScheduleToDay, recentlyCleared = {}, leftEmpty = {}, onLeaveEmpty, onRefillDay, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, onGoContent, onGoOutreach, flashId, modalOpen, live = false, reviewMode = false, report = null }: {
   board: Board; accent: string; mint: string;
   stageOf: (q: QueueItem) => Stage;
   /** Stage 1 (2026-09-28): a board with a report period (RISE, ARCH) opens Home on it, and
@@ -300,6 +320,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   onUnskip: (id: string) => void;
   /** "Behind this week" teaser → the Content ledger. */
   onGoContent: () => void;
+  /** The results plate's "See every call and reply" link → the Outreach tab. */
+  onGoOutreach?: () => void;
   flashId: string | null;
   modalOpen: boolean;
 }) {
@@ -383,7 +405,6 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
      1 buyers per 5-post week. Display-and-warn ONLY — nothing here blocks a schedule.
      Counts read the live week window (including already-published posts: a half-shipped
      week still shows its full shape), never a stored plan. ---- */
-  const FUNNEL_TARGET: Record<string, number> = { reach: 2, trust: 2, buyers: 1 };
   const weekMix = useMemo(() => {
     const posts = days.flatMap((d) => postsOnDay(d)).filter((q) => !skips[q.id]);
     const cnt: Record<string, number> = { reach: 0, trust: 0, buyers: 0 };
@@ -447,25 +468,43 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   };
 
   /* ---- headline: facts with numbers, computed. No couplets, no approval framing. ---- */
-  const behindCount = laterItems.length + bufferItems.length;
+  /* 2026-09-29: the headline counts a post that already went out today. It used to read
+     "Nothing ships today" right above an "Out today" block, because it only looked at the
+     unpublished queue. Now: what today's post did, then the rest of THIS window in one
+     computed clause ("Four more go out Tue to Fri."). The queue behind the window stays
+     under "Past this week" below, so the headline no longer carries it. */
   const nextDated = laterItems[0];
-  const headline: React.ReactNode = todayItems.length > 0
-    ? (
-      <>
-        There {todayItems.length === 1 ? 'is' : 'are'} <b>{todayItems.length === 1 ? 'one post' : `${todayItems.length} posts`} scheduled for today</b>
-        {behindCount > 0 ? `, and ${behindCount} more in the queue behind it.` : ', and nothing else in the queue behind it.'}
-      </>
-    )
-    : nextDated
-      ? (
-        <>
-          Nothing ships today. The next post is <b>scheduled for {fmtDay(nextDated.publish_date)}</b>
-          {behindCount > 1 ? `, with ${behindCount - 1} more in the queue behind it.` : '.'}
-        </>
-      )
-      : bufferItems.length > 0
-        ? (<>Nothing is dated this week. <b>{bufferItems.length} {bufferItems.length === 1 ? 'draft is' : 'drafts are'} in the buffer</b>, none with a date yet.</>)
-        : (<><b>Nothing is in the queue this week.</b></>);
+  const outToday = board.queue.filter((q) => stageOf(q) === 'published' && q.publish_date === today && notSkipped(q));
+  const restOfWindow = laterItems.filter((q) => (q.publish_date || '') <= windowEnd);
+  const todayInWindow = daySet.has(today);
+  const restClause = (lead: 'more' | 'first'): React.ReactNode => {
+    const n = restOfWindow.length;
+    if (!n) return null;
+    const first = weekdayShort(restOfWindow[0].publish_date);
+    const last = weekdayShort(restOfWindow[n - 1].publish_date);
+    const when = first === last ? `on ${first}` : `${first} to ${last}`;
+    const count = lead === 'more' ? `${spellOut(n)} more` : n === 1 ? 'One post' : `${spellOut(n)} posts`;
+    return <b>{count} {n === 1 ? 'goes' : 'go'} out {when}.</b>;
+  };
+  const todayTime = (() => {
+    const at = todayItems[0]?.scheduled_at;
+    const d = at ? new Date(at) : null;
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return ` at ${d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 })} ${boardZone().label}`;
+  })();
+  const headline: React.ReactNode = todayInWindow && todayItems.length > 0 && outToday.length > 0
+    ? (<>{spellOut(outToday.length)} {outToday.length === 1 ? 'post is' : 'posts are'} out today, {todayItems.length === 1 ? `one more goes out${todayTime}` : `${todayItems.length} more go out later today`}. {restClause('first') || 'Nothing else is dated this week.'}</>)
+    : todayInWindow && todayItems.length > 0
+    ? (<>{todayItems.length === 1 ? `Today's post goes out${todayTime}.` : `${spellOut(todayItems.length)} posts go out today.`} {restClause('more') || 'Nothing else is dated this week.'}</>)
+    : todayInWindow && outToday.length > 0
+      ? (<>{outToday.length === 1 ? "Today's post is out." : `Today's ${outToday.length} posts are out.`} {restClause('more') || 'Nothing else is dated this week.'}</>)
+      : restOfWindow.length > 0
+        ? (<>{todayInWindow && !isWeekendDay(today) ? 'Nothing goes out today. ' : ''}{restClause('first')}</>)
+        : nextDated
+          ? (<>Nothing is dated this week. The next post is <b>scheduled for {fmtDay(nextDated.publish_date)}</b>.</>)
+          : bufferItems.length > 0
+            ? (<>Nothing is dated this week. <b>{bufferItems.length} {bufferItems.length === 1 ? 'draft is' : 'drafts are'} in the buffer</b>, none with a date yet.</>)
+            : (<><b>Nothing is in the queue this week.</b></>);
 
   /* ---- the plate's featured post: what ships today, else the next dated post. ---- */
   const plateItem = todayItems[0] || nextDated;
@@ -780,40 +819,37 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   return (
     <section className="tab" data-surface="week">
 
-      {report && <ReportHome ctx={report} waiting={reviewMode ? board.queue.filter((q) => stageOf(q) === 'review' && !approvedIds.has(q.id)).length : 0} />}
+      {report && (() => {
+        const home = <ReportHome ctx={report} waiting={reviewMode ? board.queue.filter((q) => stageOf(q) === 'review' && !approvedIds.has(q.id)).length : 0} />;
+        // RISE (2026-09-29): the week page opens on the outreach results plate. The report
+        // period's figures (picker, came to you, said yes, new connections) fold under it,
+        // unchanged, so every figure the page carried is still one tap away.
+        if (!report.cfg.homeResults || !board.outreach_truth) return home;
+        return (
+          <div style={{ marginBottom: 30 }}>
+            <WeekResultsPlate truth={board.outreach_truth} today={today} tz={clientTz()} onSeeAll={onGoOutreach} style={{ marginTop: 0 }} />
+            <Drill
+              style={{ marginTop: 16 }}
+              label="open"
+              summaryLeft={<><b>All numbers</b> <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 600 }}>{report.period.eyebrow.replace(/^This month · /, 'report month, ')}</span></>}
+            >
+              <div style={{ paddingTop: 6 }}>{home}</div>
+            </Drill>
+          </div>
+        );
+      })()}
 
       {/* 1 — the real week range, then a headline computed off the live queue. */}
       <Eyebrow>{report ? 'Your posts this week' : 'This week'} · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
       <DeskH2>{headline}</DeskH2>
 
-      {/* 1b — the week's funnel mix against the 2-2-1 target (2 reach / 2 trust / 1 buyers).
-          Off-target tiers render in amber: a warning to read, never a gate. Only drawn once
-          the week actually carries posts, so an empty preview board stays quiet. */}
-      {!report && weekMix.total > 0 && (
-        <div data-viz style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 10, flexWrap: 'wrap' }}>
-          {([['reach', 'Reach · Top'], ['trust', 'Trust · Mid'], ['buyers', 'Buyers · Bottom']] as const).map(([key, label]) => {
-            const got = weekMix.cnt[key];
-            const want = FUNNEL_TARGET[key];
-            const off = got !== want;
-            return (
-              <span
-                key={key}
-                title={`Target for a 5-post week: ${want} ${label.toLowerCase()} post${want === 1 ? '' : 's'}`}
-                style={{
-                  fontSize: 11.5, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase',
-                  color: off ? '#b45309' : 'var(--cb-dim, #6b6b66)',
-                }}
-              >
-                {label} {got}/{want}
-              </span>
-            );
-          })}
-          {weekMix.untagged > 0 && (
-            <span style={{ fontSize: 11.5, color: 'var(--cb-dim, #6b6b66)' }}>
-              {weekMix.untagged} untagged
-            </span>
-          )}
-        </div>
+      {/* 1b — the week's mix in one plain sentence (2026-09-29). It replaces the
+          "REACH · TOP 1/2 · TRUST · MID 2/2" row: same counts off the same live window, said
+          as what each post is for. Display only; nothing here gates a schedule. */}
+      {!report && weekMix.total > 0 && (weekMix.cnt.reach + weekMix.cnt.trust + weekMix.cnt.buyers) > 0 && (
+        <Footnote style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.45 }}>
+          {mixLine(weekMix.cnt, weekMix.untagged)}
+        </Footnote>
       )}
 
       {/* 2 — the week at a glance, ABOVE the plate (Ivan 08-02 round 3): one tile a day, carrying the real cover. It is also the
@@ -889,7 +925,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
                 {!report && post?.funnel_stage && (
-                  <span style={{ position: 'absolute', left: 5, top: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="cb-glance-tag" style={{ position: 'absolute', left: 5, top: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {post.funnel_stage}
                   </span>
                 )}
@@ -898,7 +934,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                      five from board.strategy.pillars (Demand, Authority, Teardown,
                      Case Studies, Personal). Every post shows its pillar. Quiet light
                      chip under the dark funnel tag, deliberately smaller than it. */
-                  <span data-pillar-tag="" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 23 : 5, fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.9)', borderRadius: 4, padding: '0px 4px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span data-pillar-tag="" className="cb-glance-tag" style={{ position: 'absolute', left: 5, top: post?.funnel_stage ? 23 : 5, fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', color: '#141210', background: 'rgba(243,241,234,0.9)', borderRadius: 4, padding: '0px 4px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {prettyPillar(post.pillar)}
                   </span>
                 )}
@@ -906,7 +942,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   /* The post's own opening line, clamped. Sits UNDER whatever tags are
                      drawn (funnel, then pillar) and ABOVE the weekday band, so the three
                      signals stack instead of overlapping on a narrow tile. */
-                  <span data-glance-line="" style={{
+                  <span data-glance-line="" className="cb-glance-linebox" style={{
                     position: 'absolute', left: 5, right: 5,
                     top: report ? 6 : post!.funnel_stage && post!.pillar ? 39 : (post!.funnel_stage || post!.pillar) ? 23 : 6,
                     bottom: lm ? 24 : 20,
@@ -934,7 +970,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <Footnote>
           {report
             ? <>Pick a day to see it as it lands on LinkedIn.</>
-            : <><Num size="row" inline>{daysWithPost}</Num> of the <Num size="row" inline>{workingDays}</Num> working days in this window carry a post. Weekends are not posting days. Pick a day to see it as it lands on LinkedIn.</>}
+            : <>{daysWithPost >= workingDays ? 'A post lands every weekday this week.' : daysWithPost === 0 ? 'No weekday has a post yet this week.' : `Posts land on ${daysWithPost} of this week's ${workingDays} weekdays.`} Pick a day to see it as it lands on LinkedIn.</>}
           {/* The legend token renders ONLY when the drawn window really contains one, the
               same rule the calendar strip's mint key follows. */}
           {lmDays.length > 0 && (

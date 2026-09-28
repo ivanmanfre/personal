@@ -669,7 +669,10 @@ export default function OutreachTopOfPanel({
               >
                 <Num size="big" tone="plate" inline>{heroValue}</Num>
               </a>
-              {delta !== null && (
+              {/* The badge compares whole weeks only (2026-09-29): a week one day in against a
+                  full week read as a fall ("-21" on a Monday). It shows once the count covers
+                  all 7 days; until then the footnote carries "so far" and the last full week. */}
+              {delta !== null && daysIn === 7 && (
                 <Delta on="plate" dir={delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}>
                   {delta > 0 ? `+${delta}` : `${delta}`}
                 </Delta>

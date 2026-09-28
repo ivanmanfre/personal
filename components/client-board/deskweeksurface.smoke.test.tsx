@@ -219,11 +219,12 @@ describe('DeskWeekSurface', () => {
   it('renders every block, in frag order', () => {
     // 1 — eyebrow + computed headline (a fact with a number, no couplet)
     expect(html).toContain('This week');
-    expect(/There (is|are) <b>/.test(html)).toBe(true);
-    expect(html).toContain('in the queue behind it');
+    // 2026-09-29: the headline counts a post already out today, then the rest of the window
+    expect(html).toContain('One post is out today, one more goes out at');
+    expect(html).toMatch(/<b>One post goes out on (Mon|Tue|Wed|Thu|Fri)\.<\/b>/);
+    expect(html).not.toContain('Nothing ships today');
     // 2 — the plate
     expect(html).toContain('cb-plate');
-    expect(html).toContain('in the queue');
     expect(html).toContain('Ships today');
     expect(html).toContain('Edit copy');
     expect(html).toContain('Edit time');
@@ -240,7 +241,12 @@ describe('DeskWeekSurface', () => {
     expect(previewCol).not.toContain('Edit time');
     // 3 — the week at a glance
     expect(html).toContain('The week at a glance');
-    expect(html).toContain('working days in this window carry a post');
+    // plain words, no "N of the N working days" count-speak
+    expect(html).toMatch(/A post lands every weekday this week|Posts land on \d of this week&#x27;s \d weekdays|No weekday has a post yet/);
+    expect(html).not.toContain('working days in this window');
+    // the 2-2-1 row is one sentence now, never "REACH · TOP 1/2"
+    expect(html).toContain('This week: 2 posts to reach new people and 1 to build trust.');
+    expect(html).not.toMatch(/Reach · Top\s*\d\/\d/);
     // 4 — day by day
     expect(html).toContain('Day by day');
     expect(html).toContain('Open post');
@@ -467,7 +473,8 @@ describe('DeskWeekSurface', () => {
     // a "Weekend, not a posting day" row in Day-by-day said the same thing twice a week.
     const dayByDay = html.slice(html.indexOf('Day by day'));
     expect(dayByDay).not.toContain('Weekend, not a posting day');
-    expect(html).toContain('Weekends are not posting days');
+    // the weekend tile says so itself (the footnote no longer repeats it)
+    expect(html).toMatch(/(Saturday|Sunday), not a posting day/);
   });
 
   it('only chips REAL provenance, never a curation fallback (review-mode boards)', () => {
