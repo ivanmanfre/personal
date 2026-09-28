@@ -9652,7 +9652,9 @@ export default function ClientBoardPage() {
             else { text = <>{bufferN} drafts written and waiting in the buffer.</>; cta = { label: 'See the pipeline →', go: () => goTab('review') }; }
           } else if (activeTab === 'review') {
             text = reportCtx
-              ? <>{dated.length} posts scheduled{dated.length ? <> through {fmtD([...dated].map((q) => q.publish_date || '').sort().pop())}</> : null}, {outN} already out.</>
+              ? (dated.length || !bufferN
+                ? <>{dated.length} posts scheduled{dated.length ? <> through {fmtD([...dated].map((q) => q.publish_date || '').sort().pop())}</> : null}, {outN} already out.</>
+                : <>{bufferN} {bufferN === 1 ? 'post' : 'posts'} in the buffer, {outN} already out.</>)
               : <>Pipeline: {dated.length} scheduled, {bufferN} in the buffer, {outN} out.</>;
             cta = { label: 'See the calendar →', go: () => setContentView('calendar') };
           } else if (activeTab === 'lm') {

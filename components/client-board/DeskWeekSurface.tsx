@@ -1076,7 +1076,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           ) : (
             <>
               <Blank on="plate" style={{ height: 120 }}>nothing scheduled this day</Blank>
-              <Footnote on="plate">Pick another day above, or add a post to this one in the list below.</Footnote>
+              <Footnote on="plate">Pick another day above.</Footnote>
             </>
           )}
         </div>
