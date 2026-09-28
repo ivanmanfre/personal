@@ -923,7 +923,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
                 {lm && <span aria-hidden style={{ position: 'absolute', left: 4, right: 4, bottom: 3, height: 3, borderRadius: 2, background: 'var(--cb-mint)' }} />}
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'rgba(17,17,17,.84)' : 'none', padding: cover ? `4px 0 ${lm ? 7 : 4}px` : `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? '#1c1c1c' : 'none', padding: cover ? `4px 0 ${lm ? 7 : 4}px` : `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {weekdayShort(d)}
                 </span>
               </button>
