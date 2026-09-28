@@ -1391,7 +1391,9 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
             onExpand={() => setBodyExpanded(true)}
             renderText={withMentions}
           />
-          {size === 'lg' && foldSwitch && (
+          {/* Client boards never see the fold switch (it read as internal: "DESKTOP FOLD / PHONE
+              FOLD · 393PX"); a phone already opens on the phone fold. */}
+          {size === 'lg' && foldSwitch && !live && (
             // Desktop is one fixed column, phone scales with the handset, so the two really
             // are different hooks. Only the detail view offers the switch; list cards would
             // be noise.
@@ -9243,7 +9245,7 @@ export default function ClientBoardPage() {
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -9649,7 +9651,9 @@ export default function ClientBoardPage() {
             else if (next) { text = <>Next post {fmtD(next.publish_date)}: {(next.hook || next.title || '').slice(0, 60)}</>; cta = { label: 'Open the post →', go: () => openDetail(next) }; }
             else { text = <>{bufferN} drafts written and waiting in the buffer.</>; cta = { label: 'See the pipeline →', go: () => goTab('review') }; }
           } else if (activeTab === 'review') {
-            text = <>Pipeline: {dated.length} scheduled, {bufferN} in the buffer, {outN} out.</>;
+            text = reportCtx
+              ? <>{dated.length} posts scheduled{dated.length ? <> through {fmtD([...dated].map((q) => q.publish_date || '').sort().pop())}</> : null}, {outN} already out.</>
+              : <>Pipeline: {dated.length} scheduled, {bufferN} in the buffer, {outN} out.</>;
             cta = { label: 'See the calendar →', go: () => setContentView('calendar') };
           } else if (activeTab === 'lm') {
             text = <>{lmLive.length} lead magnet{lmLive.length === 1 ? '' : 's'} live on your site.</>;

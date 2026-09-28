@@ -317,7 +317,7 @@ describe('DeskReviewSurface', () => {
     // (see the CAL_* block at the top of this file), so the assertions track today's date
     // instead of rotting as fixture dates age past the 4-week history floor.
     expect(html).toContain(CAL_SPAN_LABEL);
-    expect(html).toMatch(/dated slots?/); // singular when the fixture window holds one mark
+    expect(html).toMatch(/posts? on the calendar/); // singular when the fixture window holds one mark
     expect(html).toContain('data-metric');
     expect(html).toMatch(new RegExp(`>${CAL_MARK_COUNT}<`));
 

@@ -59,12 +59,21 @@ const CAL_CSS = `
   display: none;
 }
 .cb-calstrip-more { font-size: 11.5px; font-weight: 800; color: var(--cb-ink-mute); display: none; }
+/* The post's cover beside its title (Ivan 2026-09-28: keep the v3 calendar's previews).
+   Width-gated with the title: a phone cell is 45px and carries the bar alone. */
+.cb-calstrip-thumb {
+  display: none; position: absolute; top: 26px; left: 7px; width: 40px; height: 50px;
+  object-fit: cover; object-position: top; border-radius: 5px; border: 1px solid var(--cb-line);
+  background: var(--cb-paper-sunk); pointer-events: none;
+}
 @container cb-calstrip (min-width: 520px) {
   /* !important because the 58px base stays INLINE (it is the read-only layout, and the
      desk-review smoke test asserts it); only the width-gated title layout raises it. */
   .cb-calstrip-cell { height: 118px !important; }
   .cb-calstrip-title { display: -webkit-box; font-size: 12.5px; -webkit-line-clamp: 4; top: 26px; }
   .cb-calstrip-more { display: inline; }
+  .cb-calstrip-thumb { display: block; }
+  .cb-calstrip-title.has-thumb { left: 53px; }
 }
 @supports not (container-type: inline-size) {
   @media (min-width: 900px) {
@@ -73,6 +82,8 @@ const CAL_CSS = `
   .cb-calstrip-cell { height: 118px !important; }
     .cb-calstrip-title { display: -webkit-box; font-size: 12.5px; -webkit-line-clamp: 4; top: 26px; }
     .cb-calstrip-more { display: inline; }
+    .cb-calstrip-thumb { display: block; }
+    .cb-calstrip-title.has-thumb { left: 53px; }
   }
 }
 `;
@@ -175,7 +186,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
     return (
       <div data-surface="calendar-strip" style={{ marginTop: 20 }}>
         <SectionRule label="Calendar" />
-        <Footnote style={{ marginTop: 12 }}>No dated slots yet.</Footnote>
+        <Footnote style={{ marginTop: 12 }}>Nothing on the calendar yet.</Footnote>
       </div>
     );
   }
@@ -292,7 +303,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
       <SectionRule
         label={`Calendar · ${shortDate(spanStart)} to ${shortDate(gridEnd)}`}
         count={marks.length}
-        blurb={marks.length === 1 ? 'dated slot' : 'dated slots'}
+        blurb={marks.length === 1 ? 'post on the calendar' : 'posts on the calendar'}
       />
 
       <div className="cb-calstrip-wrap" style={{ marginTop: 14 }}>
@@ -326,6 +337,8 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
             };
             const lead = dayMarks[0];
             const extra = dayMarks.length - 1;
+            const leadQ = lead?.item.ref ? (board.queue || []).find((q) => q.id === lead.item.ref) : undefined;
+            const cover = leadQ ? (leadQ.media_url || (leadQ.image_urls || []).find(Boolean) || leadQ.image || leadQ.cover_url || undefined) : undefined;
             const fullTitle = dayMarks.map((m) => m.item.label).join(' · ');
             const inner = (
               <>
@@ -333,8 +346,9 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
                 {extra > 0 && (
                   <span className="cb-calstrip-more" style={{ position: 'absolute', top: 5, right: 7, pointerEvents: 'none' }}>{`+${extra}`}</span>
                 )}
+                {cover && <img className="cb-calstrip-thumb" src={cover} alt="" loading="lazy" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
                 {lead && (
-                  <span className="cb-calstrip-title" title={lead.item.label}>{lead.item.label}</span>
+                  <span className={cover ? 'cb-calstrip-title has-thumb' : 'cb-calstrip-title'} title={lead.item.label}>{lead.item.label}</span>
                 )}
                 {dayMarks.length > 0 && (
                   <span style={{ position: 'absolute', left: 6, right: 6, bottom: 6, display: 'flex', gap: 3 }}>

@@ -108,7 +108,7 @@ describe('DeskCalendarStrip lead-magnet marks', () => {
 
   it('renders nothing dated (legend included) when the board has no dated items', () => {
     const html = renderStrip([]);
-    expect(html).toContain('No dated slots yet.');
+    expect(html).toContain('Nothing on the calendar yet.');
     expect(html).not.toContain('lead magnets');
     expect(html).not.toContain('data-viz');
   });

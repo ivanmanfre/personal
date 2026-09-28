@@ -389,9 +389,12 @@ export default function DeskReviewSurface({
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
-  reviewMode = false,
+  reviewMode = false, compact = false,
 }: {
   board: Board; accent: string; mint: string;
+  /** Report boards (stage 3, 28 Sep): headline by date, no aim mix, Scheduled open, tighter
+   *  rows led by the day (weekday + big day number, the old board's date), no footer repeat. */
+  compact?: boolean;
   /** board.review_mode (ARCH). Only then does a LIVE board get approval: Approve / Request
    *  changes, the Pending approval / Approved split, the Review 2-up and the source notes.
    *  A live board without it is the buffer only (Ivan, 27 Sep). Preview boards unchanged. */
@@ -563,7 +566,16 @@ export default function DeskReviewSurface({
   // The header row with the count always renders, the rows toggle on click. ----
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   /** Per-card body expansion in the 2-up buffer grid. */
-  const sectionOpen = (key: string) => openSections[key] ?? false;
+  // Report boards open what the client acts on: the dated list, and on a review board the
+  // posts waiting for approval (Davorin's job on this tab).
+  const sectionOpen = (key: string) => openSections[key] ?? (compact && (key === 'upnext' || (reviewMode && key === 'buffer')));
+  // A review board with no remembered view opens the 2-up Review grid, the old-size cards
+  // with the feedback bar under each post (Ivan 27 Sep).
+  React.useEffect(() => {
+    if (!compact || !live || !reviewMode) return;
+    try { if (!localStorage.getItem('client-board-view')) setView('feed'); } catch { /* private mode */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
   const [logOpen, setLogOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
@@ -624,7 +636,7 @@ export default function DeskReviewSurface({
       <div
         key={q.id}
         style={{
-          padding: shipsToday ? '26px 14px 20px' : '24px 14px 18px',
+          padding: compact ? (shipsToday ? '16px 14px 14px' : '13px 14px 12px') : shipsToday ? '26px 14px 20px' : '24px 14px 18px',
           marginTop: shipsToday ? 10 : 0,
           background: shipsToday ? 'color-mix(in srgb, var(--cb-accent) 6%, var(--cb-paper))' : (flashed ? 'color-mix(in srgb, var(--cb-accent) 7%, var(--cb-paper))' : undefined),
           borderLeft: shipsToday ? '3px solid var(--cb-accent)' : undefined,
@@ -639,11 +651,29 @@ export default function DeskReviewSurface({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
           style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
         >
-          {img && <Thumb src={img} size="lg" />}
-          <div style={{ flex: '1 1 210px', minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}>{truncAt(stripBrand(q.title || q.hook), 72)}</div>
-            <div style={{ marginTop: 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>
+          {compact && (
+            /* The old board's date: weekday in small caps over a big day number. */
+            <div aria-hidden style={{ flex: 'none', width: 46, textAlign: 'center', lineHeight: 1 }}>
+              {q.publish_date && !inBuffer(bucket) ? (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
+                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
+                  </div>
+                  <div style={{ marginTop: 3, fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 22, color: 'var(--cb-ink)' }}>
+                    {Number(q.publish_date.slice(8, 10))}
+                  </div>
+                  <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
+                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}
+                  </div>
+                </>
+              ) : <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>no date</div>}
+            </div>
+          )}
+          {img && <Thumb src={img} size={compact ? 'sm' : 'lg'} />}
+          <div style={{ flex: compact ? '1 1 150px' : '1 1 210px', minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: compact ? 15 : 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}>{truncAt(stripBrand(q.title || q.hook), compact ? 96 : 72)}</div>
+            <div style={{ marginTop: compact ? 5 : 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {!compact && <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
               <Chip>{kickerOfLocal(q)}</Chip>
               <FunnelChip stage={q.funnel_stage} accent={accent} />
               {q.post_url && <LivePostLink href={q.post_url} />}
@@ -699,7 +729,9 @@ export default function DeskReviewSurface({
             </div>
           )
         )}
-        <Drill label="open →" style={{ marginTop: 2 }}>
+        {/* Compact rows: the whole row opens the post (copy, time, history all live there), so
+            the second "open" affordance and the per-row change line go. Approval stays. */}
+        {(!compact || (live && reviewMode && bucket === 'buffer')) && <Drill label="open →" style={{ marginTop: 2 }}>
           <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Hook</div>
           <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--cb-ink)', lineHeight: 1.4, marginTop: 5 }}>{truncAt(stripBrand(q.hook || q.title), 88)}</div>
           {slides.length >= 2 ? (
@@ -731,12 +763,12 @@ export default function DeskReviewSurface({
               {!live && <Pill onClick={() => onOpen(q, { changing: true })}>Swap slot</Pill>}
             </div>
           )}
-        </Drill>
+        </Drill>}
         {/* This post's own history: only when it HAS whitelisted entries (zero-history posts
             render nothing — no "0 changes"). Same fetched set, same wording as the global
             log; a plain span (not a Chip) carries the author so the identity mapping still
             holds without adding card-level chip noise. */}
-        {(entriesByPost[q.id] || []).length > 0 && (
+        {!compact && (entriesByPost[q.id] || []).length > 0 && (
           <div data-post-log={q.id}>
             <Drill
               className="post-log" label="open it" ruled={false}
@@ -970,7 +1002,14 @@ export default function DeskReviewSurface({
       {/* Block 1: computed headline. */}
       <Eyebrow>All content</Eyebrow>
       <DeskH2>
-        {total} {total === 1 ? 'post' : 'posts'} in the buffer{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}
+        {compact && !approvals ? (() => {
+          const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
+            .map((x) => x.publish_date as string).sort().pop();
+          return <>
+            <b>{sched} {sched === 1 ? 'post' : 'posts'} scheduled</b>{lastDated ? <> through {fmtDay(lastDated)}</> : null}. {out} already out.
+            {buffer > 0 ? <> {buffer} more written, waiting for a day.</> : null}
+          </>;
+        })() : <>{total} {total === 1 ? 'post' : 'posts'} in the buffer{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}</>}
       </DeskH2>
 
       {/* Block 2: dark plate — pipeline counts + aim mix. */}
@@ -999,8 +1038,8 @@ export default function DeskReviewSurface({
             ))}
           </div>
         </div>
-        <PlateRule gap={20} />
-        {aimTotal > 0 ? (
+        {compact ? null : <PlateRule gap={20} />}
+        {compact ? null : aimTotal > 0 ? (
           <div style={{ marginTop: 15 }}>
             <div data-viz="" style={{ display: 'flex', gap: 4, height: 10 }}>
               <div style={{ flex: `${Math.max(aim.reach, 0.4)} 1 0`, minWidth: 0, background: 'var(--cb-accent)', borderRadius: 999 }} />
@@ -1119,7 +1158,7 @@ export default function DeskReviewSurface({
               {section('Published', fPublished.length, 'How live posts will report here once posting starts.', rowsFor(fPublished, 'published'), 'published')}
             </>
           )}
-          {publishedRows.length > 0 && <Footnote style={{ marginTop: 14 }}>Reach and rate per post live on Performance.</Footnote>}
+          {!compact && publishedRows.length > 0 && <Footnote style={{ marginTop: 14 }}>Reach and rate per post live on Performance.</Footnote>}
         </div>
       )}
 
@@ -1228,12 +1267,14 @@ export default function DeskReviewSurface({
         </div>
       )}
 
-      {/* Block 7: stat footer. */}
-      <StatStrip>
-        <Stat value={total} caption="written" />
-        <Stat value={sched} caption="scheduled" />
-        <Stat value={buffer} caption="in buffer" />
-      </StatStrip>
+      {/* Block 7: stat footer (the headline already says it on report boards). */}
+      {!compact && (
+        <StatStrip>
+          <Stat value={total} caption="written" />
+          <Stat value={sched} caption="scheduled" />
+          <Stat value={buffer} caption="in buffer" />
+        </StatStrip>
+      )}
     </div>
   );
 }
