@@ -140,7 +140,7 @@ export function ReportHead({ ctx, f, fm, fAll, eyebrow }: { ctx: ReportCtx; f: F
         <Eyebrow>{eyebrow ? `${eyebrow} · ` : ''}{ctx.period.eyebrow}</Eyebrow>
         <PeriodPicker ctx={ctx} />
       </div>
-      <DeskH2 style={{ maxWidth: '34ch' }}>{reportHeadline(ctx, f, fm, fAll)}</DeskH2>
+      <DeskH2 style={{ maxWidth: '40ch', textWrap: 'balance' } as React.CSSProperties}>{reportHeadline(ctx, f, fm, fAll)}</DeskH2>
     </>
   );
 }
@@ -165,8 +165,8 @@ function FigBlock({ fig }: { fig: Fig }) {
   return (
     <div data-report-figure={fig.key} style={{ borderLeft: `3px solid ${fig.strong ? 'var(--cb-accent)' : 'var(--cb-line)'}`, paddingLeft: 14 }}>
       <Num size="big">{fig.value.toLocaleString('en-GB')}</Num>
-      <Footnote style={{ marginTop: 6, color: 'var(--cb-ink-soft)' }}>{fig.caption}</Footnote>
-      {fig.sub && <Footnote style={{ marginTop: 4 }}>{fig.sub}</Footnote>}
+      <Footnote style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.4, color: 'var(--cb-ink-soft)' }}>{fig.caption}</Footnote>
+      {fig.sub && <Footnote style={{ marginTop: 4, fontSize: 13 }}>{fig.sub}</Footnote>}
     </div>
   );
 }
@@ -244,7 +244,7 @@ export function fallbackNote(ctx: ReportCtx, figs: Fig[]): string | null {
 export function ReportFigures({ figs, note }: { figs: Fig[]; note?: string | null }) {
   return (
     <>
-      <div data-report="figures" className="cb-report-figs" style={{ marginTop: 20 }}>
+      <div data-report="figures" className="cb-report-figs" style={{ marginTop: 28 }}>
         {figs.map((fig) => <FigBlock key={fig.key} fig={fig} />)}
       </div>
       {note && <Footnote style={{ marginTop: 14 }}>{note}</Footnote>}
@@ -308,7 +308,7 @@ export function CallsChart({ ctx }: { ctx: ReportCtx }) {
         labels={s.points.map((pt) => pt.label)}
         highlight={hi >= 0 ? hi : undefined}
         barPad="clamp(0px, 2.2vw, 28px)"
-        height="clamp(190px, 44vw, 260px)"
+        height="clamp(150px, 36vw, 200px)"
         style={{ marginTop: 18 }}
       />
       <div style={{ marginTop: 12, fontSize: 12, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -332,7 +332,7 @@ function SliceLedger({ ctx }: { ctx: ReportCtx }) {
     ? (rows[0].p.kind === 'week' ? 'Week by week' : 'Report month by report month')
     : 'Week by week';
   return (
-    <div style={{ marginTop: 28 }}>
+    <div style={{ marginTop: 36, maxWidth: 760 }}>
       <Eyebrow tone="ink">{title}</Eyebrow>
       <Ledger className="cb-report-tbl" style={{ marginTop: 10 }} columns={[{ label: ctx.period.kind === 'all' && rows[0].p.kind !== 'week' ? 'Month' : 'Week' }, ...cols.map((c) => ({ label: c.label, align: 'right' as const, width: '1%' }))]}>
         {rows.map(({ p, f }) => (

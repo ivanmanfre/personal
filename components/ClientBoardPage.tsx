@@ -1338,9 +1338,11 @@ export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax }: {
   item: QueueItem; board: Board; accent: string; fontStack: string;
-  size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none';
+  size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none'; foldSwitch?: boolean;
+  /** Caps the image/deck width (height follows) so a tall post stays compact while the caption keeps LinkedIn's size. */
+  mediaMax?: number;
   /** Live board: the typographic plate is a preview fabrication — render the real
    *  generated image (media_url) or nothing. */
   live?: boolean;
@@ -1348,7 +1350,9 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   // The body always folds where LinkedIn folds it, so the hook a client signs off on is
   // the hook the feed will actually show. "…see more" opens the rest in place.
   const [bodyExpanded, setBodyExpanded] = useState(false);
-  const [foldSurface, setFoldSurface] = useState<FoldSurface>('desktop');
+  // On a phone the preview opens on the phone fold: the desktop fold drawn at 555px and
+  // shrunk to a 300px card set the caption near 7px.
+  const [foldSurface, setFoldSurface] = useState<FoldSurface>(() => (typeof window !== 'undefined' && window.matchMedia?.('(max-width: 600px)').matches ? 'mobile' : 'desktop'));
   const founder = board.founder;
   const name = founder?.name || board.company_name;
   const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0];
@@ -1384,7 +1388,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
             onExpand={() => setBodyExpanded(true)}
             renderText={withMentions}
           />
-          {size === 'lg' && (
+          {size === 'lg' && foldSwitch && (
             // Desktop is one fixed column, phone scales with the handset, so the two really
             // are different hooks. Only the detail view offers the switch; list cards would
             // be noise.
@@ -1411,10 +1415,12 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         </div>
       )}
       {docPages.length >= 2 ? (
-        <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
+        <div style={mediaMax ? { maxWidth: mediaMax, margin: '0 auto' } : undefined}>
+          <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
+        </div>
       ) : (item.media_url || cardImageUrl(item, board)) ? (
         <>
-          <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', maxWidth: mediaMax, margin: mediaMax ? '0 auto' : undefined, borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           <SlideStrip item={item} />
         </>
       ) : showRender ? (

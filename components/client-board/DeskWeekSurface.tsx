@@ -888,12 +888,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 }}
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
-                {post?.funnel_stage && (
+                {!report && post?.funnel_stage && (
                   <span style={{ position: 'absolute', left: 5, top: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F3F1EA', background: 'rgba(17,17,17,0.66)', borderRadius: 5, padding: '1px 6px', maxWidth: 'calc(100% - 10px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {post.funnel_stage}
                   </span>
                 )}
-                {post?.pillar && (
+                {!report && post?.pillar && (
                   /* The second tag (Ivan 08-03): the content pillar — the canonical
                      five from board.strategy.pillars (Demand, Authority, Teardown,
                      Case Studies, Personal). Every post shows its pillar. Quiet light
@@ -908,7 +908,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                      signals stack instead of overlapping on a narrow tile. */
                   <span data-glance-line="" style={{
                     position: 'absolute', left: 5, right: 5,
-                    top: post!.funnel_stage && post!.pillar ? 39 : (post!.funnel_stage || post!.pillar) ? 23 : 6,
+                    top: report ? 6 : post!.funnel_stage && post!.pillar ? 39 : (post!.funnel_stage || post!.pillar) ? 23 : 6,
                     bottom: lm ? 24 : 20,
                     overflow: 'hidden', textAlign: 'left', whiteSpace: 'normal',
                     fontSize: 10.5, lineHeight: 1.3, fontWeight: 600, letterSpacing: '-0.005em',
@@ -923,7 +923,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
                 {lm && <span aria-hidden style={{ position: 'absolute', left: 4, right: 4, bottom: 3, height: 3, borderRadius: 2, background: 'var(--cb-mint)' }} />}
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'linear-gradient(0deg, rgba(17,17,17,.62), rgba(17,17,17,0))' : 'none', padding: `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? 'rgba(17,17,17,.84)' : 'none', padding: cover ? `4px 0 ${lm ? 7 : 4}px` : `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {weekdayShort(d)}
                 </span>
               </button>
@@ -1052,6 +1052,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   border: `1px solid ${PLATE_BORDER}`,
                   borderRadius: 18,
                   padding: 'clamp(8px, 1.3vw, 12px)',
+                  maxWidth: 579,
+                  margin: '0 auto',
                 }}
               >
                 <FeedPreview
@@ -1062,13 +1064,14 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   size="lg"
                   cover={selectedItem.generating ? 'render' : 'plate'}
                   live={live}
+                  foldSwitch={false}
+                  mediaMax={380}
                 />
               </div>
             </>
           ) : isWeekendDay(selectedDay) ? (
             <>
               <Blank on="plate" style={{ height: 120 }}>weekend, not a posting day</Blank>
-              <Footnote on="plate">The cadence runs Monday to Friday.</Footnote>
             </>
           ) : (
             <>
@@ -1141,8 +1144,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
       {/* 5 — the stat footer. Nothing here is typed in; a stat that cannot be computed is
              either an honest blank or is not rendered at all. */}
-      <StatStrip>
-        {report ? null : cadence !== null
+      {!report && <StatStrip>
+        {cadence !== null
           ? <Stat value={cadence} caption={cadenceCaption} />
           : <StatBlank caption="posts a week, not tracked yet" />}
         {publishedItems.length > 0
@@ -1151,8 +1154,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         {!report && readsLastWeek !== null && (
           <Stat value={readsLastWeek.n.toLocaleString('en-GB')} caption={`reads, ${fmtDay(readsLastWeek.from)} to ${fmtDay(readsLastWeek.to)}`} />
         )}
-      </StatStrip>
-      {bufferItems.length > 0 && (
+      </StatStrip>}
+      {!report && bufferItems.length > 0 && (
         <Footnote>
           Dates past {lastDated ? fmtDay(lastDated) : 'this week'} are not set yet.
         </Footnote>
