@@ -1352,7 +1352,8 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   const [bodyExpanded, setBodyExpanded] = useState(false);
   // On a phone the preview opens on the phone fold: the desktop fold drawn at 555px and
   // shrunk to a 300px card set the caption near 7px.
-  const [foldSurface, setFoldSurface] = useState<FoldSurface>(() => (typeof window !== 'undefined' && window.matchMedia?.('(max-width: 600px)').matches ? 'mobile' : 'desktop'));
+  const [onPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 600px)').matches);
+  const [foldSurface, setFoldSurface] = useState<FoldSurface>(onPhone ? 'mobile' : 'desktop');
   const founder = board.founder;
   const name = founder?.name || board.company_name;
   const wordmark = board.brand?.wordmark || board.company_name.split(/\s+/)[0];
@@ -1384,6 +1385,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
             body={item.body}
             surface={foldSurface}
             deviceWidth={foldSurface === 'mobile' ? PREVIEW_PHONE_WIDTH : undefined}
+            fitHost={onPhone}
             expanded={bodyExpanded}
             onExpand={() => setBodyExpanded(true)}
             renderText={withMentions}

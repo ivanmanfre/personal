@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { linkedInFold, LI_CAPTION_FONT, type FoldSurface } from '../../lib/linkedinFold';
+import { linkedInFold, LI_CAPTION_FONT, MOBILE_GUTTER, type FoldSurface } from '../../lib/linkedinFold';
 
 /** A post caption rendered at LinkedIn's OWN geometry, then shrunk to fit whatever space
  *  the surrounding card gives it.
@@ -30,7 +30,11 @@ export const LinkedInCaption: React.FC<{
   renderText?: (text: string) => React.ReactNode;
   /** Never scale past life size — a wide card should not blow the caption up. */
   maxScale?: number;
-}> = ({ body, surface = 'desktop', deviceWidth, expanded = false, onExpand, renderText, maxScale = 1 }) => {
+  /** Mobile only: lay the caption out at the host's own width, life-size. Used when the
+   *  viewer IS on a phone, where shrinking a 393px layout into a ~260px card set the
+   *  caption near 9px. The fold is then the one this narrower column would show. */
+  fitHost?: boolean;
+}> = ({ body, surface = 'desktop', deviceWidth, expanded = false, onExpand, renderText, maxScale = 1, fitHost = false }) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [avail, setAvail] = useState(0);
 
@@ -45,7 +49,8 @@ export const LinkedInCaption: React.FC<{
     return () => ro.disconnect();
   }, []);
 
-  const fold = linkedInFold(body, surface, { deviceWidth });
+  const fitted = fitHost && surface === 'mobile' && avail > 0 ? avail + MOBILE_GUTTER : undefined;
+  const fold = linkedInFold(body, surface, { deviceWidth: fitted ?? deviceWidth });
   const { box } = fold;
   const shown = expanded ? body : fold.visible;
   const showFoldToggle = fold.folded && !expanded;

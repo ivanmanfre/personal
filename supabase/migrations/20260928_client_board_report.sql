@@ -1,6 +1,6 @@
 -- client_board_report: the read behind the board's report period (Home + Results).
 --
--- NOT APPLIED. Written 2026-09-28 for the stage 1 board build (branch board-stage1-home-results).
+-- APPLIED 2026-09-28 (with the cache below). Written 2026-09-28 for the stage 1 board build (branch board-stage1-home-results).
 -- The board reads it as progressive enhancement: until this is applied the RPC 404s and the
 -- report shows only what the existing board payload already carries (calls booked + posts).
 --
@@ -341,6 +341,35 @@ select jsonb_build_object(
 where p_client_id in ('risedtc', 'arch');
 $$;
 
+
+-- The RISE payload takes ~10s to build (1,457 people) and the anon role has a 3s statement
+-- timeout, so the board reads a copy rebuilt every 5 minutes by pg_cron. A client with no row
+-- yet reads report=null and the board shows what its own payload carries.
+create table if not exists public.client_board_report_cache (
+  client_id text primary key,
+  payload   jsonb not null,
+  built_at  timestamptz not null default now()
+);
+alter table public.client_board_report_cache enable row level security;
+revoke all on table public.client_board_report_cache from anon, authenticated;
+
+create or replace function public.refresh_client_board_report_cache()
+returns void
+language plpgsql
+security definer
+set search_path to 'public', 'extensions'
+as $$
+declare c text;
+begin
+  foreach c in array array['risedtc', 'arch'] loop
+    insert into public.client_board_report_cache (client_id, payload, built_at)
+    values (c, public._client_board_report_payload(c), now())
+    on conflict (client_id) do update set payload = excluded.payload, built_at = excluded.built_at;
+  end loop;
+end;
+$$;
+revoke all on function public.refresh_client_board_report_cache() from public, anon, authenticated;
+
 create or replace function public.client_board_report(p_slug text, p_token text)
 returns jsonb
 language plpgsql
@@ -356,7 +385,7 @@ begin
   if coalesce(btrim(v_board.client_id), '') not in ('risedtc', 'arch') then
     return jsonb_build_object('ok', true, 'report', null);
   end if;
-  return jsonb_build_object('ok', true, 'report', public._client_board_report_payload(btrim(v_board.client_id)));
+  return jsonb_build_object('ok', true, 'report', (select c.payload from public.client_board_report_cache c where c.client_id = btrim(v_board.client_id)));
 end;
 $$;
 
@@ -379,10 +408,13 @@ begin
   if coalesce(btrim(v_board.client_id), '') not in ('risedtc', 'arch') then
     return jsonb_build_object('ok', true, 'report', null);
   end if;
-  return jsonb_build_object('ok', true, 'report', public._client_board_report_payload(btrim(v_board.client_id)));
+  return jsonb_build_object('ok', true, 'report', (select c.payload from public.client_board_report_cache c where c.client_id = btrim(v_board.client_id)));
 end;
 $$;
 
 revoke all on function public._client_board_report_payload(text) from public, anon, authenticated;
 grant execute on function public.client_board_report(text, text) to anon, authenticated;
 grant execute on function public.client_board_report_v2(text, text) to anon, authenticated;
+
+select public.refresh_client_board_report_cache();
+select cron.schedule('client-board-report-cache', '*/5 * * * *', 'select public.refresh_client_board_report_cache()');
