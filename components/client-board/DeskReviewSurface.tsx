@@ -178,7 +178,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   );
 }
 import {
-  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, clientHistoryAuthor,
+  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, boardZone, clientHistoryAuthor,
 } from '../ClientBoardPage';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
@@ -822,6 +822,15 @@ export default function DeskReviewSurface({
     const src = sourceChipLocal(q);
     return (
       <div data-review-card={q.id} key={q.id} className="cb-licard" style={{ minWidth: 0, fontFamily: LI_FONT }}>
+      {/* A scheduled card leads with when it goes out (2026-09-29, Ivan: "add the date tag in
+          the review so he can see"), in the board's own zone. */}
+      {bucket === 'upnext' && q.scheduled_at && (() => {
+        const d = new Date(q.scheduled_at);
+        if (Number.isNaN(d.getTime())) return null;
+        const day = d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
+        const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
+        return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>Goes out {day}, {time} {boardZone().label}</div>;
+      })()}
       {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
@@ -859,8 +868,8 @@ export default function DeskReviewSurface({
           Text post · Trust") — the Source line above and the mock itself say it; the date and
           status chips stay only where they carry news (scheduled / published cards). */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: '10px 2px 0' }}>
-        {!inBuffer(bucket) && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
-        {!inBuffer(bucket) && chip && <Chip>{chip.label}</Chip>}
+        {!inBuffer(bucket) && bucket !== 'upnext' && <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
+        {!inBuffer(bucket) && bucket !== 'upnext' && chip && <Chip>{chip.label}</Chip>}
         {bucket === 'approved' && <Chip>Approved ✓</Chip>}
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
@@ -888,9 +897,12 @@ export default function DeskReviewSurface({
     if (q.media_url || (q.image_urls && q.image_urls.length) || cardImageUrlLocal(q, board)) return 1;
     return 0;
   };
+  /* Scheduled posts get the full card too (2026-09-29, Ivan: dated posts dropped out of the
+     Review view, so the client could no longer read what is about to go out). They keep date
+     order and carry their date + "scheduled" tag under the post. */
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || (view === 'feed' && inBuffer(bucket) && approvals)
-      ? <div className="cb-licard-grid">{[...list].sort((a, b) => formatRank(a) - formatRank(b)).map((q) => renderLiCard(q, bucket))}</div>
+    topic === 'personal' || (view === 'feed' && (inBuffer(bucket) || bucket === 'upnext') && approvals)
+      ? <div className="cb-licard-grid">{(bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))).map((q) => renderLiCard(q, bucket))}</div>
       : list.map((q) => renderRow(q, bucket));
 
   const renderDraftedRow = (q: QueueItem) => (
