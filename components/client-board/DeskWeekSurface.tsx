@@ -686,7 +686,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             >{truncAt(noDash(stripBrand(q.hook || q.title)) || 'Untitled post', 72)}</button>
             {statusChip(q)}
           </div>
-          {q.funnel_stage && FUNNEL_WHY[q.funnel_stage] && (
+          {!report && q.funnel_stage && FUNNEL_WHY[q.funnel_stage] && (
             <div style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.4, color: 'var(--cb-ink-mute)' }}>
               {FUNNEL_WHY[q.funnel_stage]}
             </div>
@@ -1107,7 +1107,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           {/* Weekends carry no row here: the glance rail above already draws them dashed and
               its footnote says so. A "Weekend, not a posting day" line per weekend repeated
               that fact twice a week. */}
-          {days.filter((d) => postsOnDay(d).length > 0 || !isWeekendDay(d)).map((d, di, rowDays) => {
+          {days.filter((d) => postsOnDay(d).length > 0 || (!report && !isWeekendDay(d))).map((d, di, rowDays) => {
             const posts = postsOnDay(d);
             const last = di === rowDays.length - 1 && beyondWindow.length === 0;
             if (!posts.length) return emptyRow(d, last);
@@ -1138,7 +1138,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </div>
 
         <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Pill onClick={onGoContent}>See everything in the pipeline</Pill>
+          <Pill onClick={onGoContent}>{report ? 'See all your posts' : 'See everything in the pipeline'}</Pill>
         </div>
       </div>
 
