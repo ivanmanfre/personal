@@ -196,7 +196,8 @@ people as (
              (select v from unnest(array[enrichment_data->'store_recon_v2'->>'category', enrichment_data->'revenue_signal'->>'category',
                                          enrichment_data->'icp_category'->>'category', enrichment_data->>'vertical']) v
                where nullif(lower(btrim(v)), '') is not null and lower(btrim(v)) not in ('other', 'unclassified', 'unknown') limit 1)),
-           'li', last_intent) as j
+           'li', last_intent,
+           'lr', coalesce(ins[array_length(ins, 1)], last_reply_at)) as j
     from rise_people
   union all
   select jsonb_build_object('n', name, 'c', company, 'out', first_out, 'conn', connected_at,
@@ -206,7 +207,8 @@ people as (
            'gv', (select v from unnest(array[ed->>'copy_vertical', ed->>'company_vertical', ed->'gate'->>'vertical', ed->>'vertical']) v
                    where nullif(lower(btrim(v)), '') is not null and lower(btrim(v)) not in ('unknown', 'none') limit 1),
            'sk', ed->>'source_kind', 'ln', ed->>'lane', 'src', ed->>'source',
-           'li', ap.last_intent)
+           'li', ap.last_intent,
+           'lr', ai.ins[array_length(ai.ins, 1)])
     from arch_people ap
     left join arch_ins ai on ai.url_key = ap.url_key
     left join arch_yes ay on ay.url_key = ap.url_key
