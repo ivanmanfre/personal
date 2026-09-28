@@ -102,11 +102,13 @@ agg as (
             (p_client_id = 'risedtc' and reply_intent = 'positive' and not is_reaction)
             or (p_client_id = 'arch' and reply_intent in ('positive','soft_yes','info_ask','booking','price_ask')))) as yeses,
          -- a reply classified as a vendor pitch hides the person (a booked call always overrides this)
-         bool_or(direction = 'inbound' and reply_intent = 'vendor_pitch') as vendor_only
+         bool_or(direction = 'inbound' and reply_intent = 'vendor_pitch') as vendor_only,
+         -- latest classified reply: the Pipeline's "interested now" reads this
+         (array_agg(reply_intent order by t desc) filter (where direction = 'inbound' and reply_intent is not null and not is_reaction))[1] as last_intent
     from msg group by prospect_id
 ),
 base as (
-  select pr.*, agg.first_out, agg.ins, agg.yeses,
+  select pr.*, agg.first_out, agg.ins, agg.yeses, agg.last_intent,
          (coalesce(agg.vendor_only, false) and pr.call_booked_at is null) as vendor_pitch,
          -- the operator's own profile (flagged in the audience labels) is never a prospect result
          exists (select 1 from audn_person_label_v o where o.is_operator and o.person_key = pr.linkedin_profile_id) as is_operator,
@@ -158,7 +160,9 @@ arch_people as (
          (array_agg(nullif(b.company, '') order by b.created_at) filter (where nullif(b.company, '') is not null))[1] as company,
          min(b.first_out) as first_out,
          min(b.connected_at) as connected_at,
-         min(b.call_booked_at) as call_booked_at
+         min(b.call_booked_at) as call_booked_at,
+         (array_agg(b.enrichment_data order by b.created_at))[1] as ed,
+         (array_agg(b.last_intent order by b.created_at desc) filter (where b.last_intent is not null))[1] as last_intent
     from base b
    where p_client_id = 'arch' and not b.is_operator
    group by b.url_key
@@ -168,12 +172,41 @@ people as (
   select jsonb_build_object('n', name, 'c', company, 'out', coalesce(first_out, connection_sent_at),
            'conn', connected_at, 'w', case when w1 is null then '[]'::jsonb else jsonb_build_array(w1) end,
            'y', case when yeses is null then '[]'::jsonb else jsonb_build_array(yeses[1]) end,
-           'bk', call_booked_at) as j
+           'bk', call_booked_at,
+           -- Pipeline lines (v3 DATA-MAP s1). The headline is read first: title is a lane label.
+           'l', case
+             when coalesce(headline, '') || ' ' || coalesce(title, '') ~* '\m(co-?founder|founder|ceo|chief executive|owner|president|managing director)\M' then 'owner'
+             when coalesce(headline, '') || ' ' || coalesce(title, '') ~* '(\mcmo\M|chief marketing|head of (growth|marketing|e-?commerce|digital|brand|performance)|\mvp,? (of )?(marketing|growth)|marketing (director|manager)|director of marketing|growth lead|fractional cmo)' then 'marketing'
+             when camp ilike '%fractional cmo%' then 'marketing'
+             else 'owner' end,
+           'v', case
+             when camp ilike '%competitor engager%' then 'engaged'
+             when camp ilike '%cold%' then 'search'
+             when camp ilike '%inbound request%' then 'asked'
+             when camp ilike '%profile view%' then 'viewed'
+             when camp ilike '%client orbit%' then 'orbit'
+             when camp ilike '%company expansion%' then 'expansion'
+             when camp ilike '%fractional cmo%' then 'fcmo'
+             when camp ilike '%network activation%' then 'network'
+             else 'other' end,
+           'cat', coalesce(
+             case when enrichment_data->'store_bucket'->>'bucket' is not null
+                   and coalesce(enrichment_data->'store_bucket'->>'judge', '') <> 'regex-fallback'
+                  then enrichment_data->'store_bucket'->>'bucket' end,
+             (select v from unnest(array[enrichment_data->'store_recon_v2'->>'category', enrichment_data->'revenue_signal'->>'category',
+                                         enrichment_data->'icp_category'->>'category', enrichment_data->>'vertical']) v
+               where nullif(lower(btrim(v)), '') is not null and lower(btrim(v)) not in ('other', 'unclassified', 'unknown') limit 1)),
+           'li', last_intent) as j
     from rise_people
   union all
   select jsonb_build_object('n', name, 'c', company, 'out', first_out, 'conn', connected_at,
            'w', coalesce(to_jsonb(ai.ins), '[]'::jsonb), 'y', coalesce(to_jsonb(ay.yeses), '[]'::jsonb),
-           'bk', call_booked_at)
+           'bk', call_booked_at,
+           -- company group and how we found them, raw keys the page maps to plain words (ARCH DATA-MAP)
+           'gv', (select v from unnest(array[ed->>'copy_vertical', ed->>'company_vertical', ed->'gate'->>'vertical', ed->>'vertical']) v
+                   where nullif(lower(btrim(v)), '') is not null and lower(btrim(v)) not in ('unknown', 'none') limit 1),
+           'sk', ed->>'source_kind', 'ln', ed->>'lane', 'src', ed->>'source',
+           'li', ap.last_intent)
     from arch_people ap
     left join arch_ins ai on ai.url_key = ap.url_key
     left join arch_yes ay on ay.url_key = ap.url_key
@@ -417,4 +450,7 @@ grant execute on function public.client_board_report(text, text) to anon, authen
 grant execute on function public.client_board_report_v2(text, text) to anon, authenticated;
 
 select public.refresh_client_board_report_cache();
-select cron.schedule('client-board-report-cache', '*/5 * * * *', 'select public.refresh_client_board_report_cache()');
+-- Every 30 minutes at :17 and :47, away from the :00/:55 pile-up of other jobs. At */5 the
+-- ~10s build shared a 2 GB instance with everything else; the database restarted at 10:02 on
+-- 28 Sep with this job in flight, so it runs rarely and off-peak.
+select cron.schedule('client-board-report-cache', '17,47 * * * *', 'select public.refresh_client_board_report_cache()');
