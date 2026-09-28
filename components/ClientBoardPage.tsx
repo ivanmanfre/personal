@@ -32,6 +32,7 @@ import { expectationFor } from './client-board/expectation';
 import { AudienceSection } from './client-board/AudienceSection';
 import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
 import { reportConfigFor, reportPeriods, dayKey, type ReportPayload } from './client-board/report/reportModel';
+import { pipelineStripText } from './client-board/report/PipelineBlocks';
 import { reportStripText, type ReportCtx } from './client-board/report/ReportBlocks';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
@@ -9256,7 +9257,7 @@ export default function ClientBoardPage() {
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     outreach: skin === 'desk'
-      ? <DeskOutreachSurface live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      ? <DeskOutreachSurface live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={reportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
       : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: skin === 'desk'
@@ -9304,8 +9305,8 @@ export default function ClientBoardPage() {
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable)
     // A board with a report period opens on Home and reads its numbers under Results.
-    .map((t) => (reportCtx && skin === 'desk' && (t.id === 'week' || t.id === 'performance')
-      ? { ...t, label: t.id === 'week' ? 'Home' : 'Results' } as unknown as (typeof TABS)[number]
+    .map((t) => (reportCtx && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
+      ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Pipeline' : 'Results' } as unknown as (typeof TABS)[number]
       : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
@@ -9657,6 +9658,9 @@ export default function ClientBoardPage() {
             const nIss = viewBoard.newsletter?.issues?.length || 0;
             text = nIss ? <>{nIss} issue{nIss === 1 ? '' : 's'} of {viewBoard.newsletter?.name} out.</> : <>{viewBoard.newsletter?.name || 'The newsletter'} is drafted; opt-ins come from the lead magnets.</>;
             cta = { label: 'See the lead magnets →', go: () => goTab('lm') };
+          } else if (activeTab === 'outreach' && reportCtx) {
+            text = <>{pipelineStripText(reportCtx)}</>;
+            cta = { label: 'See who →', go: () => { const el = document.getElementById('cb-pipe-interested'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
           } else if (activeTab === 'outreach') {
             const st = outreachStatus;
             // 2026-08-31 (Ivan): the old fallback said "weekdays", which stopped being true on

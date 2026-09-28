@@ -20,6 +20,14 @@ export type ReportPerson = {
   /** Interested-reply timestamps (same shape rule as `w`). */
   y?: string[] | null;
   bk?: string | null;
+  /** Pipeline (stage 2). RISE: line (owner | marketing), how we found them, store type. */
+  l?: string | null; v?: string | null; cat?: string | null;
+  /** Latest classified reply. */
+  li?: string | null;
+  /** Latest reply time. */
+  lr?: string | null;
+  /** ARCH: company vertical, source kind, lane, source (raw keys, mapped on the page). */
+  gv?: string | null; sk?: string | null; ln?: string | null; src?: string | null;
 };
 export type CameVia = 'asked' | 'viewed' | 'engaged' | 'hand' | 'messaged';
 export type ReportCame = { name?: string | null; company?: string | null; title?: string | null; via: CameVia; at: string };

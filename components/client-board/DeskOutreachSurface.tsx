@@ -33,6 +33,8 @@ import OutreachTopOfPanel, {
   liveLanes, positiveReplierLog, hasReplyIntents,
 } from './OutreachTopOfPanel';
 import type { FunnelSignals } from './OutreachTopOfPanel';
+import { ReportPipeline } from './report/PipelineBlocks';
+import type { ReportCtx } from './report/ReportBlocks';
 import { inkOn, caText } from '../ClientBoardPage';
 import type { Board, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus } from '../ClientBoardPage';
 
@@ -185,7 +187,7 @@ function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?
 }
 
 export default function DeskOutreachSurface({
-  board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null, live = false,
+  board, accent, usage = null, log = null, status = null, foldLeads = null, signals, report = null, live = false,
 }: {
   board: Board;
   accent: string;
@@ -199,6 +201,10 @@ export default function DeskOutreachSurface({
   /** Live funnel-instrument reads (client_board_funnel_signals). Progressive
    *  enhancement: absent simply means the "who is looking" tile does not render. */
   signals?: FunnelSignals | null;
+  /** Report boards (RISE, ARCH): the Pipeline tab is the stage-2 report block, and the
+   *  machine-side panels below (send windows, send days, allowance, the bar, lanes, the
+   *  send queue) never render. The live review page stays, as the Queue sub-tab. */
+  report?: ReportCtx | null;
 }) {
   const o = board.outreach;
   // Ivan 2026-09-02: the embedded review page can go full-screen on the same tab.
@@ -479,33 +485,8 @@ export default function DeskOutreachSurface({
   const intentFiltered = hasReplyIntents(ot);
   const trailEntries = positiveReplierLog(entries, ot);
 
-  return (
-    <div className="pb-16" data-surface="desk-outreach">
-
-      <Eyebrow>Outreach</Eyebrow>
-      {/* The headline names its own window. The sends in it are the calendar week to date;
-          "wrote back" is the same week off the blob's week grid. Two different sources,
-          one stated period, and the stamp under it says when each was read. */}
-      <DeskH2>
-        {hasSends ? (
-          <>Week of {shortDate(thisWeekStart)}, {sendDaysIn} of 5 send days in: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
-        ) : programHasSends ? (
-          <>{contactedCount} people contacted so far. <b>{repliedCount} wrote back{callsBookedCount > 0 ? `, ${callsBookedCount} booked a call` : ''}.</b></>
-        ) : (
-          <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
-        )}
-      </DeskH2>
-      {hasSends && (
-        <Footnote>
-          Sends read from your live send record at {shortDateTime(now)}.
-          {wroteBackFromBlob ? <> Replies counted {countedFull}.</> : null}
-        </Footnote>
-      )}
-
-      {/* The review page, embedded (Ivan 2026-09-02). The leads waiting on the client live on
-          their own shared page; it renders in place so the client reviews without leaving the
-          tab. Same origin, so that page's own Submit button works inside the frame. */}
-      {o.candidates?.list_url && (() => {
+  // The live review page (ARCH): embedded in place, or the Queue sub-tab on a report board.
+  const reviewNode = o.candidates?.list_url && (() => {
         const btn: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink)', background: 'transparent', border: '1px solid var(--cb-line-bold)', borderRadius: 999, padding: '6px 13px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
         const link: React.CSSProperties = { ...btn, textDecoration: 'none', display: 'inline-block' };
         const head = (
@@ -536,7 +517,49 @@ export default function DeskOutreachSurface({
             {frame('calc(100vh - 150px)')}
           </div>
         );
-      })()}
+      })();
+
+  if (report) {
+    return (
+      <div className="pb-16" data-surface="desk-outreach">
+        <ReportPipeline
+          ctx={report}
+          accent={accent}
+          log={log}
+          booked={board.outreach_truth?.booked || []}
+          queue={reviewNode || undefined}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-16" data-surface="desk-outreach">
+
+      <Eyebrow>Outreach</Eyebrow>
+      {/* The headline names its own window. The sends in it are the calendar week to date;
+          "wrote back" is the same week off the blob's week grid. Two different sources,
+          one stated period, and the stamp under it says when each was read. */}
+      <DeskH2>
+        {hasSends ? (
+          <>Week of {shortDate(thisWeekStart)}, {sendDaysIn} of 5 send days in: {thisWeek.invites} invite{plural(thisWeek.invites)}, {thisWeek.dms} DM{plural(thisWeek.dms)}, {thisWeek.inmails} InMail{plural(thisWeek.inmails)}{thisWeek.openprofile > 0 ? <>, {thisWeek.openprofile} open profile message{plural(thisWeek.openprofile)}</> : null}. <b>{thisWeek.wroteBack} wrote back.</b></>
+        ) : programHasSends ? (
+          <>{contactedCount} people contacted so far. <b>{repliedCount} wrote back{callsBookedCount > 0 ? `, ${callsBookedCount} booked a call` : ''}.</b></>
+        ) : (
+          <>Sends have not started yet. <b>Nothing has gone out under your name.</b></>
+        )}
+      </DeskH2>
+      {hasSends && (
+        <Footnote>
+          Sends read from your live send record at {shortDateTime(now)}.
+          {wroteBackFromBlob ? <> Replies counted {countedFull}.</> : null}
+        </Footnote>
+      )}
+
+      {/* The review page, embedded (Ivan 2026-09-02). The leads waiting on the client live on
+          their own shared page; it renders in place so the client reviews without leaving the
+          tab. Same origin, so that page's own Submit button works inside the frame. */}
+      {reviewNode}
 
       {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
           graft). Renders only when board.outreach_truth exists; the blocks below stay as

@@ -56,7 +56,7 @@ export function useFigures(ctx: ReportCtx, p: Period = ctx.period): { f: Figures
 
 /* ─────────────────────────── picker ─────────────────────────── */
 
-const PICKER_CSS = `
+export const PICKER_CSS = `
 .cb-report-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 22px 16px; }
 @media (max-width: 640px) { .cb-report-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; } }
 .cb-report-tbl th { white-space: nowrap; }
