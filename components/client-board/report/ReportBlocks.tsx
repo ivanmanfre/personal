@@ -183,7 +183,8 @@ export function reportFigures(ctx: ReportCtx, f: Figures, fm: Figures | null, fA
   figs.push({
     key: 'calls', strong: true, value: lead.n,
     caption: `${lead.n === 1 ? 'call booked' : 'calls booked'}${scopedLead ? ` ${lead.phrase}` : ''}`,
-    sub: <>{lead.names.length ? nameList(lead.names, 4) : null}{!scopedLead && p.kind !== 'all' && fAll.calls.n > lead.n ? <>{lead.names.length ? <br /> : null}{fAll.calls.n} since {dm(cfg.start)}</> : null}</>,
+    // Names live in the headline right above; the card carries only the since-start count.
+    sub: !scopedLead && p.kind !== 'all' && fAll.calls.n > lead.n ? <>{fAll.calls.n} since {dm(cfg.start)}</> : undefined,
     weekZero: lead.none ? lead.phrase : null,
   });
   if (waiting > 0) figs.push({ key: 'waiting', strong: true, value: waiting, caption: waiting === 1 ? 'post waiting for your approval' : 'posts waiting for your approval', sub: 'as of now' });
