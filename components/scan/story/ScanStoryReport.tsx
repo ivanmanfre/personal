@@ -1,7 +1,7 @@
 import React from 'react';
 import {useMetadata} from '../../../hooks/useMetadata';
 import {useGoogleFonts} from '../../../hooks/useGoogleFonts';
-import {ConnectedJourney} from '../../dev/scan-walkthrough/journey/ConnectedJourney';
+import {StoryPlan} from './StoryPlan';
 import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryEdition} from './types';
 import {StoryContext} from './context';
@@ -11,7 +11,7 @@ import '../../dev/scan-walkthrough/journey/journey.css';
 
 export function StoryBody({fixture,edition}:{fixture:JourneyFixture;edition:StoryEdition}){
  const clean=React.useMemo(()=>fillEdition(edition),[edition]);
- return <StoryContext.Provider value={clean}><ConnectedJourney key={fixture.slug} fixture={fixture} kind={edition.art}/></StoryContext.Provider>;
+ return <StoryContext.Provider value={clean}><StoryPlan key={fixture.slug} fixture={fixture} kind={edition.art}/></StoryContext.Provider>;
 }
 export default function ScanStoryReport({fixture,edition,review=false}:{fixture:JourneyFixture;edition:StoryEdition;review?:boolean}){
  useGoogleFonts([fixture.samples.lm?.brand?.font_heading,edition.resource?.brand?.font]);
