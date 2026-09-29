@@ -42,7 +42,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
     <motion.i className="sp-path-line" aria-hidden="true" initial={reduced ? false : {scaleX: 0}} animate={{scaleX: 1}} transition={{duration: reduced ? 0 : 1.4, delay: .3, ease: [.45, 0, .2, 1]}}/>
    </ol>
    <div className="sp-hero-actions">
-    <a href="#content" className="story-primary">See your plan <ArrowDown size={17} aria-hidden="true"/></a>
+    <a href="#content" className="story-primary">See what we built for you <ArrowDown size={17} aria-hidden="true"/></a>
     <a className="sp-proof-line" href="https://inboundonsteroids.com/case/kyle-hunt/" target="_blank" rel="noreferrer"><img src={asset('/content-system/kyle-portrait.webp')} alt=""/><span><b>$30k → $80k a month</b> for Kyle Hunt in 90 days. <span className="sp-nowrap">See the case <ArrowUpRight size={13} aria-hidden="true"/></span></span></a>
    </div>
   </div>
@@ -123,6 +123,7 @@ function ColdChat({fixture}: {fixture: JourneyFixture}) {
 
 export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
  const plan = useStory();
+ const brand = headlineName(plan.brand) || 'your brand';
  const segments = plan.segments.filter(s => s.label).slice(0, 4);
  return <div className="connected-journey sample-story revenue-story story-plan">
   <PlanHero fixture={fixture}/>
@@ -131,30 +132,30 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
    aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
    options={[
-    {key: 'carousel', title: 'Carousel post', hint: 'Swipeable slides in your brand.', render: () => <ProspectPost fixture={fixture} kind={kind}/>},
-    {key: 'text', title: 'Text post', hint: 'A short read for the feed.', render: () => <TextPost fixture={fixture} kind={kind}/>},
+    {key: 'carousel', title: 'Carousel post', hint: `Built in ${brand}’s colours, ready to post.`, render: () => <ProspectPost fixture={fixture} kind={kind}/>},
+    {key: 'text', title: 'Text post', hint: 'Written in your voice, for your buyers.', render: () => <TextPost fixture={fixture} kind={kind}/>},
    ]}/>
-  <Chapter id="resource" n={2} tone="warm" label="Lead magnets" title="Give them something worth asking for." why={plan.magnetWhy}
+  <Chapter id="resource" n={2} tone="warm" label="Lead magnets" title="Turn readers into a list you own." why={plan.magnetWhy}
    options={[
-    {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `Readers comment “${plan.keyword}” to get it.` : 'Readers comment to get it.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
-    {key: 'resource', title: 'The lead magnet', hint: 'What lands in their inbox.', wide: true, render: () => <LeadMagnetTool kind={kind}/>},
-    {key: 'signup', title: 'The signup', hint: 'Their email joins your list.', render: () => <EmailCapture kind={kind}/>},
+    {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `One comment, “${plan.keyword}”, and they raise their hand.` : 'One comment and they raise their hand.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
+    {key: 'resource', title: 'The lead magnet', hint: `Worth an email address. Built for ${brand}.`, wide: true, render: () => <LeadMagnetTool kind={kind}/>},
+    {key: 'signup', title: 'The signup', hint: 'Every download becomes a name you own.', render: () => <EmailCapture kind={kind}/>},
    ]}/>
-  <Chapter id="conversations" n={3} label="Conversations" title="Interest turns into conversations." why="We reply to the people who engage, keep readers warm by email and reach buyers who have not seen your posts yet."
+  <Chapter id="conversations" n={3} label="Conversations" title="Every raised hand gets a conversation." why="We message the people who engage, keep readers warm by email and reach buyers with a live project, even if they never saw your posts."
    options={[
-    {key: 'warm', title: 'Warm reply', hint: 'Their interest starts the conversation.', render: () => <WarmChat fixture={fixture}/>},
-    {key: 'newsletter', title: 'Newsletter', hint: 'Useful emails until they have a project.', render: () => <NewsletterEmail fixture={fixture}/>},
-    {key: 'cold', title: 'Cold outreach', hint: 'Buyers with a relevant project, found by signal.', render: () => <ColdChat fixture={fixture}/>},
+    {key: 'warm', title: 'Warm reply', hint: 'They asked for it. We open the conversation.', render: () => <WarmChat fixture={fixture}/>},
+    {key: 'newsletter', title: 'Newsletter', hint: 'Stays in their inbox until the project is ready.', render: () => <NewsletterEmail fixture={fixture}/>},
+    {key: 'cold', title: 'Signal-based outreach', hint: 'Buyers with a live project, reached while it is live.', render: () => <ColdChat fixture={fixture}/>},
    ]}/>
   <section className="sp-chapter sp-calls story-scene" id="calls" data-tone="warm">
-   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls</span><h2>Qualified calls land on your calendar.</h2><p>We check the project fits before suggesting a call. Each call arrives with the conversation and the project details.</p></div>
+   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls</span><h2>You only take calls that already fit.</h2><p>We check fit, timing and who decides before anything gets booked. You walk in knowing the project.</p></div>
    <RevenueMap kind={kind} founder={fixture.founder.firstName}/>
-   <div className="sp-ownership"><div><b>We run it.</b><p>We create and publish the content, build your lead magnets and handle outreach through to booking.</p></div><div><b>You take the calls.</b><p>Share your expertise with us and meet prospects with a relevant project.</p></div></div>
+   <div className="sp-ownership"><div><b>We run all of it.</b><p>Posts, lead magnets, outreach and follow-up, every week, through to the booked call.</p></div><div><b>You take the calls.</b><p>Your calendar fills with people who have a real project and a reason to talk to you.</p></div></div>
   </section>
-  <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Results</span><ScanResults/></div>
+  <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Founders we run this for</span><ScanResults/></div>
   <section className="sp-close">
    <img src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/>
-   <div><span className="close-byline">Iván Manfredi</span><h2>{headlineName(plan.brand) ? <>Let’s build this for {headlineName(plan.brand)}.</> : <>Let’s build this for you.</>}</h2><p>A service we run for you: content, lead magnets and outreach, through to the booked call.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes to see how we’d bring you qualified leads.</small></div>
+   <div><span className="close-byline">Iván Manfredi</span><h2>Your first posts are already written.</h2><p>Everything above was made for {headlineName(plan.brand) || 'you'}. One call and it starts going out.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes. We walk you through the whole plan.</small></div>
   </section>
   <footer className="journey-footer"><a href="#top">Back to the start ↑</a></footer>
  </div>;
