@@ -39,7 +39,8 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <h1>Make your LinkedIn into a true revenue line.</h1>
    <p className="sp-hero-sub">We create inbound and outbound opportunities by content, lead magnets and signal based outreach.</p>
    <ol className="sp-path" aria-label="Your plan in four steps">
-    {STEPS.map((s, i) => <li key={s.id} className={i < 2 ? 'is-inbound' : ''}>{i === 0 && <span className="sp-inbound-tag">Inbound</span>}<a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
+    <li className="sp-path-bracket" aria-hidden="true"><span>Inbound</span></li>
+    {STEPS.map((s, i) => <li key={s.id}><a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
     <motion.i className="sp-path-line" aria-hidden="true" initial={reduced ? false : {scaleX: 0}} animate={{scaleX: 1}} transition={{duration: reduced ? 0 : 1.4, delay: .3, ease: [.45, 0, .2, 1]}}/>
    </ol>
    <div className="sp-hero-actions">
@@ -69,7 +70,7 @@ function StepNav() {
  const index = STEPS.findIndex(s => s.id === active);
  return <nav className={`sp-nav ${index >= 0 ? 'is-live' : ''}`} aria-label="Plan sections">
   <div className="sp-nav-inner">
-   <ol>{STEPS.map((s, i) => <li key={s.id} className={i < 2 ? 'is-inbound' : ''}>{i === 0 && <span className="sp-inbound-tag">Inbound</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
+   <ol>{STEPS.map((s, i) => <li key={s.id} className={i === 2 ? 'sp-nav-split' : ''}>{i === 0 && <span className="sp-nav-group" aria-hidden="true">Inbound</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
     {active === s.id && <motion.span layoutId="sp-nav-active" className="sp-nav-active" transition={{type: 'spring', stiffness: 420, damping: 36}}/>}
     <span className="sp-nav-num">{String(i + 1).padStart(2, '0')}</span><span className="sp-nav-label">{s.label}</span></a></li>)}</ol>
    <a className="sp-nav-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call</a>
