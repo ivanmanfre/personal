@@ -10,6 +10,8 @@ export interface JourneyFixture {
   ogImage?: string;
   /** The scan's own read of the prospect: hero table cells and the counted audience audit. */
   pillars?: JourneyPillars;
+  /** Second-person rows for the story page: today, every month, after 90 days. */
+  diagnosis?: Record<string, {today?: string; monthly?: string; result?: string} | unknown>;
   audience?: JourneyAudience;
   thesis?: string;
   founder: { name: string; firstName: string; company: string; headline: string; avatarUrl?: string };

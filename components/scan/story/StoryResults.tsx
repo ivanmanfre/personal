@@ -33,16 +33,30 @@ function MattanCalendar() {
  </div>;
 }
 
+/** Davorin: his first month, with the two clients he closed landing on it. */
+function DavorinMonth() {
+ const reduced = useReducedMotion();
+ const closed = [{week: 1, label: 'Client 1'}, {week: 3, label: 'Client 2'}];
+ return <div className="sr-month" aria-label="2 clients closed in month 1">
+  {[1, 2, 3, 4].map(w => {
+   const c = closed.find(x => x.week === w);
+   return <div key={w} className={c ? 'is-closed' : ''}>
+    <small>Week {w}</small>
+    {c && <motion.span initial={reduced ? false : {opacity: 0, y: -14, scale: .9}} whileInView={{opacity: 1, y: 0, scale: 1}} viewport={{once: true, amount: .6}} transition={{delay: reduced ? 0 : .3 + w * .15, type: 'spring', stiffness: 380, damping: 22}}>Closed</motion.span>}
+   </div>;
+  })}
+ </div>;
+}
+
 export function StoryResults() {
  return <section className="sr" aria-label="Client results">
-  <header className="sr-head"><span>Founders we run this for</span><BlurWords text="What this did for two founders."/></header>
+  <header className="sr-head"><span>Founders we run this for</span><BlurWords text="What the first months looked like."/></header>
   <div className="sr-grid">
    <article className="sr-card">
     <div className="sr-photo"><img src={asset('/content-system/kyle-portrait.webp')} alt="Kyle Hunt" loading="lazy"/><span><b>Kyle Hunt</b><small>Agency ops coach</small></span></div>
     <div className="sr-body">
      <div className="sr-figure"><strong>$30k → $80k</strong><p>a month, across the 90 days we ran his LinkedIn.</p></div>
      <KyleChart/>
-     <blockquote className="sr-quote"><p>Leads come in with a name and the guide they pulled. By the time we talk, they already know the offer.</p><cite>Kyle Hunt, founder of Agency Operators</cite></blockquote>
      <a href="https://inboundonsteroids.com/case/kyle-hunt/" target="_blank" rel="noreferrer">See Kyle’s case study <ArrowUpRight size={15}/></a>
     </div>
    </article>
@@ -54,6 +68,14 @@ export function StoryResults() {
      <a href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer">See his lead magnets <ArrowUpRight size={15}/></a>
     </div>
    </article>
+   <article className="sr-card">
+    <div className="sr-photo"><img src={asset('/content-system/davorin-portrait.webp')} alt="Davorin Smit" loading="lazy"/><span><b>Davorin Smit</b><small>Founder, ARCH. Influencer Agency</small></span></div>
+    <div className="sr-body">
+     <div className="sr-figure"><strong><NumberTicker value={2}/> clients</strong><p>closed in month 1. We run his LinkedIn content and outreach.</p></div>
+     <DavorinMonth/>
+    </div>
+   </article>
   </div>
+  <blockquote className="sr-quote sr-quote-wide"><p>Leads come in with a name and the guide they pulled. By the time we talk, they already know the offer.</p><cite>Kyle Hunt, founder of Agency Operators</cite></blockquote>
  </section>;
 }
