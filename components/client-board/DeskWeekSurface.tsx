@@ -824,10 +824,10 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         // RISE (2026-09-29): the week page opens on the outreach results plate. The report
         // period's figures (picker, came to you, said yes, new connections) fold under it,
         // unchanged, so every figure the page carried is still one tap away.
-        if (!report.cfg.homeResults || !board.outreach_truth) return home;
+        if (!report.cfg.homeResults) return home;
         return (
           <div style={{ marginBottom: 30 }}>
-            <WeekResultsPlate truth={board.outreach_truth} today={today} tz={clientTz()} onSeeAll={onGoOutreach} style={{ marginTop: 0 }} />
+            <WeekResultsPlate ctx={report} onSeeAll={onGoOutreach} style={{ marginTop: 0 }} />
             <Drill
               style={{ marginTop: 16 }}
               label="open"

@@ -1,18 +1,19 @@
 /**
- * WeekResultsPlate: the results block that opens the week page (2026-09-29, approved from
- * the week-view mockup). One dark plate, in the board's own accent:
- *   1  calls booked in the month (the last 30 days during a month's first week), big
- *   2  the window before + the running total, then who booked (initials + first names)
- *   3  last week's pace against the week before, plainly, even when it is down
- *   4  who wrote back in the last 7 days and how many of them were positive
- *   5  replies per week with a dot per call booked; the week in progress is hatched
- *   6  a link to the Outreach tab
- * Every number comes from ./weekResults, which reads only board.outreach_truth. The block
- * asks nothing of the client: no "your turn", no reply prompts.
+ * WeekResultsPlate: the results block that opens the week page (RISE).
+ *
+ * v2 (2026-09-29, Ivan: "don't change the numbers"): every figure is the report period's,
+ * from the same model and with the same words as the panel's report headline and figures
+ * (reportModel / ReportBlocks): calls booked for the period and who, the since-the-start
+ * count, who came to you, people who wrote back for the first time, founders who said yes.
+ * The chart is the report model's own 7-day slices (the "Week by week" table's rows), so
+ * its bars add up to those figures. No calendar month, no "last 7 days", nothing that is
+ * not already on the panel. The period follows the picker in "All numbers" below it.
+ * The block asks nothing of the client: no "your turn", no reply prompts.
  */
 import React from 'react';
 import { Plate, Eyebrow, PlateRule } from './desk-kit';
-import { weekResults, resultsSubline, namesLine, firstNameOf, initialsOf, dayMonth, type WeekResultsTruth } from './weekResults';
+import { useFigures, callsLead, reportFigures, type ReportCtx } from './report/ReportBlocks';
+import { sliceSeries, axisLabel, namesLine, initialsOf } from './weekResults';
 
 const CSS = `
 .cb-wr-hero { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; }
@@ -27,6 +28,7 @@ const CSS = `
 .cb-wr-v { font-size: 11px; font-weight: 700; color: #D6D6D0; font-variant-numeric: tabular-nums; }
 .cb-wr-b { width: 100%; max-width: 44px; background: #6B6B66; border-radius: 4px 4px 0 0; min-height: 2px; }
 .cb-wr-col.now .cb-wr-b { background: repeating-linear-gradient(45deg, #6B6B66 0 3px, #3a3a37 3px 6px); }
+.cb-wr-col.in .cb-wr-b { background: #8f8f88; }
 .cb-wr-dots { display: flex; flex-wrap: wrap-reverse; gap: 2px; justify-content: center; min-height: 7px; max-width: 26px; }
 .cb-wr-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--cb-accent); display: block; }
 .cb-wr-axis { display: grid; gap: 6px; margin-top: 6px; }
@@ -44,27 +46,29 @@ const CSS = `
 }
 `;
 
-export function WeekResultsPlate({ truth, today, tz, onSeeAll, style }: {
-  truth: WeekResultsTruth;
-  /** Today, YYYY-MM-DD, in the board's zone. */
-  today: string;
-  tz: string;
+export function WeekResultsPlate({ ctx, onSeeAll, style }: {
+  ctx: ReportCtx;
   /** Opens the Outreach tab. Absent = no link. */
   onSeeAll?: () => void;
   style?: React.CSSProperties;
 }) {
-  const r = React.useMemo(() => weekResults(truth, today, tz), [truth, today, tz]);
-  if (!r) return null;
-  const shownPeople = r.people.slice(0, 4);
-  const extra = r.people.length - shownPeople.length;
-  const top = Math.max(1, ...r.weeks.map((w) => w.people));
-  const cols = { gridTemplateColumns: `repeat(${r.weeks.length}, minmax(0, 1fr))` };
-  const axisLabel = (mon: string, i: number, current: boolean) => {
-    if (current) return 'now';
-    const prev = i > 0 ? r.weeks[i - 1].monday : null;
-    return !prev || prev.slice(5, 7) !== mon.slice(5, 7) ? dayMonth(mon) : String(parseInt(mon.slice(8, 10), 10));
-  };
-  const nowWeek = r.weeks.find((w) => w.current);
+  const { f, fm, fAll } = useFigures(ctx);
+  const bars = React.useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
+  const lead = callsLead(ctx, f, fm, fAll);
+  const figs = reportFigures(ctx, f, fm, fAll, 'home');
+  const fig = (k: string) => figs.find((x) => x.key === k);
+  const calls = fig('calls');
+  const came = fig('came');
+  const wrote = fig('wrote');
+  const yes = fig('yes');
+  const who = ctx.cfg.who;
+  const shownNames = lead.names.slice(0, 4);
+  const extra = lead.names.length - shownNames.length;
+  const top = Math.max(1, ...bars.map((b) => b.wrote));
+  const cols = { gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` };
+  const p = ctx.period;
+  const inPeriod = (b: { start: string }) => b.start >= p.start && b.start < p.end;
+  const now = bars.find((b) => b.current);
 
   return (
     <Plate style={{ marginTop: 18, borderRadius: '25px 8px 8px 8px', ...style }} pad="clamp(20px, 2.6vw, 30px) clamp(18px, 3vw, 34px)">
@@ -72,60 +76,62 @@ export function WeekResultsPlate({ truth, today, tz, onSeeAll, style }: {
       <div className="cb-wr-grid" data-week-results="">
         <div>
           <Eyebrow on="plate" style={{ color: 'var(--cb-accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span aria-hidden style={{ width: 18, height: 1, background: 'var(--cb-accent)', display: 'inline-block' }} />
-            From your outreach
+            <span aria-hidden style={{ width: 18, height: 1, background: 'var(--cb-accent)', display: 'inline-block', flex: 'none' }} />
+            {p.eyebrow}
           </Eyebrow>
           <div className="cb-wr-hero">
-            <span className="cb-wr-n num" data-metric="">{r.n}</span>
-            <span className="cb-wr-l">{r.n === 1 ? 'call' : 'calls'} booked<br />{r.label}</span>
+            <span className="cb-wr-n num" data-metric="">{lead.n}</span>
+            <span className="cb-wr-l">{lead.n === 1 ? 'call' : 'calls'} booked<br />{lead.phrase}</span>
           </div>
-          <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.45, color: 'var(--cb-plate-mute)' }}>{resultsSubline(r)}</div>
-          {r.people.length > 0 && (
+          {calls?.sub && <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.45, color: 'var(--cb-plate-mute)' }}>{calls.sub}</div>}
+          {lead.none && <div style={{ marginTop: 6, fontSize: 13.5, color: 'var(--cb-plate-mute)' }}>{lead.none}</div>}
+          {lead.names.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
               <div className="cb-wr-av" aria-hidden>
-                {shownPeople.map((p) => <span key={p.name + p.day} title={p.company ? `${p.name}, ${p.company}` : p.name}>{initialsOf(p.name)}</span>)}
+                {shownNames.map((n) => <span key={n} title={n}>{initialsOf(n)}</span>)}
                 {extra > 0 && <span className="more">+{extra}</span>}
               </div>
-              <div style={{ minWidth: 0, fontSize: 13.5, lineHeight: 1.35, color: '#E8E8E3' }}>{namesLine(r.people.map((p) => firstNameOf(p.name)))}</div>
+              <div style={{ minWidth: 0, fontSize: 14, lineHeight: 1.35, color: '#E8E8E3' }}>{namesLine(lead.names)}</div>
             </div>
           )}
-          {r.pace && (
-            <div data-week-results-pace="" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.45, fontWeight: 700, color: 'var(--cb-plate-ink)' }}>{r.pace}</div>
+          {came && (
+            <div style={{ marginTop: 14, fontSize: 14, lineHeight: 1.45, fontWeight: 700, color: 'var(--cb-plate-ink)' }}>
+              {came.value} {came.value === 1 ? who[0] : who[1]} came to you on their own{came.sub ? `: ${came.sub}` : ''}.
+            </div>
           )}
         </div>
 
         <div className="cb-wr-right">
           <PlateRule gap={18} style={{ marginBottom: 16 }} />
-          <div style={{ fontFamily: 'var(--cb-serif)', fontSize: 'clamp(17px, 4.4vw, 19px)', lineHeight: 1.3, color: 'var(--cb-plate-ink)' }}>
-            {r.wrote.n > 0 ? (
-              <><b style={{ color: 'var(--cb-accent)' }}>{r.wrote.n} {r.wrote.n === 1 ? 'person' : 'people'}</b> wrote back in the last 7 days. {r.wrote.positive} of them {r.wrote.positive === 1 ? 'was' : 'were'} positive.</>
-            ) : (
-              <>Nobody wrote back in the last 7 days.</>
-            )}
-          </div>
-          {r.weeks.length >= 3 && (
+          {(wrote || yes) && (
+            <div style={{ fontFamily: 'var(--cb-serif)', fontSize: 'clamp(17px, 4.4vw, 19px)', lineHeight: 1.3, color: 'var(--cb-plate-ink)' }}>
+              {wrote && <><b style={{ color: 'var(--cb-accent)' }}>{wrote.value}</b> {wrote.caption}{wrote.weekZero ? '' : ` ${p.phrase}`}.</>}
+              {yes && <> <b style={{ color: 'var(--cb-accent)' }}>{yes.value}</b> {yes.caption}.</>}
+            </div>
+          )}
+          {bars.length >= 3 && (
             <>
-              <ol className="cb-wr-chart" style={cols} data-viz="" aria-label="People who wrote back each week, with a dot for every call booked that week">
-                {r.weeks.map((w) => (
-                  <li key={w.monday} className={`cb-wr-col${w.current ? ' now' : ''}`}>
-                    <span className="sr-only" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-                      Week of {dayMonth(w.monday)}{w.current ? ', still counting' : ''}: {w.people} wrote back, {w.calls} {w.calls === 1 ? 'call' : 'calls'} booked.
+              <ol className="cb-wr-chart" style={cols} data-viz="" aria-label="People who wrote back for the first time, week by week, with a dot for every call booked">
+                {bars.map((b) => (
+                  <li key={b.key} className={`cb-wr-col${b.current ? ' now' : inPeriod(b) ? ' in' : ''}`} data-slice={b.label}>
+                    <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
+                      {b.label}: {b.wrote} wrote back for the first time, {b.calls} {b.calls === 1 ? 'call' : 'calls'} booked.
                     </span>
                     <span className="cb-wr-dots" aria-hidden>
-                      {w.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent)' }}>{w.calls}</b> : Array.from({ length: w.calls }, (_, i) => <i key={i} />)}
+                      {b.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent)' }}>{b.calls}</b> : Array.from({ length: b.calls }, (_, i) => <i key={i} />)}
                     </span>
-                    <span className="cb-wr-v" aria-hidden>{w.people}</span>
-                    <span className="cb-wr-b" aria-hidden style={{ height: `${Math.max(2, (w.people / top) * 72)}%` }} />
+                    <span className="cb-wr-v" aria-hidden>{b.wrote}</span>
+                    <span className="cb-wr-b" aria-hidden style={{ height: `${Math.max(2, (b.wrote / top) * 72)}%` }} />
                   </li>
                 ))}
               </ol>
               <div className="cb-wr-axis" style={cols} aria-hidden>
-                {r.weeks.map((w, i) => <span key={w.monday}>{axisLabel(w.monday, i, w.current)}</span>)}
+                {bars.map((b, i) => <span key={b.key}>{axisLabel(bars, i)}</span>)}
               </div>
               <div className="cb-wr-legend" aria-hidden>
-                <span><i />Wrote back</span>
+                <span><i />Wrote back for the first time</span>
                 <span><i className="d" />Call booked</span>
-                {nowWeek && <span><i className="h" />This week, still counting</span>}
+                {now && <span><i className="h" />{now.label}</span>}
               </div>
             </>
           )}

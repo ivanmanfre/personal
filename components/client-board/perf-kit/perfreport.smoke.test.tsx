@@ -25,7 +25,6 @@ const board = { queue: [{ id: 'q1', stage: 'published', title: 'Working name', h
 const truth = {
   counted_at: '2026-09-27T22:03:09Z',
   booked: [{ name: 'Tom Hale', company: 'Soda Co', booked_at: '2026-09-17T16:19:15Z', brief_url: 'https://example.test/brief', days_to_book: 1 }],
-  funnel: { contacted: 1586, accepted: 435, replied_people: 154, booked: 19 },
 };
 const cfg = REPORT_CONFIGS['risedtc-com'];
 const periods = reportPeriods(cfg, '2026-09-27');
@@ -35,17 +34,19 @@ describe('PerfReport (ARCH-look Results trial)', () => {
   const html = renderToStaticMarkup(<PerfReport ctx={ctx} truth={truth} />);
   it('leads with calls booked for the period, then who, then who came to you', () => {
     expect(html).toContain('calls booked<br/>since 17 Sept');
-    expect(html).toContain('Kara and Tom');
+    expect(html).toContain('Kara North and Tom Hale');
     expect(html).toContain('1 brand owner came to you on their own and asked to connect.');
   });
-  it('draws the cohort funnel with its exact numbers and step shares', () => {
-    expect(html).toContain('19 calls from 1,586 people contacted since the start.');
-    for (const s of ['27%', '35%', '12%']) expect(html).toContain(s);
+  it('draws the report\u2019s since-the-start figures with the figure cards\u2019 words, and no shares', () => {
+    expect(html).toContain('Since the start · 21 Jul');
+    expect(html).toContain('3 new connections since 21 Jul, 3 calls booked.');
+    expect(html).toContain('People wrote back for the first time');
+    expect(html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ')).not.toMatch(/\d%/);
   });
   it('one card per call, with the brief only when there is one', () => {
-    expect(html).toContain('2 calls since 17 Sept, the latest on 22 Sept.');
+    expect(html).toContain('2 calls booked since 17 Sept, the latest on 22 Sept.');
     expect(html.match(/Pre-call brief/g) || []).toHaveLength(1);
-    expect(html).toContain('Booked a day after the connection request went out.');
+    expect(html).not.toMatch(/days? after/);
   });
   it('keeps every figure, folded under All numbers, and never prints reads or cadence', () => {
     expect(html).toContain('All numbers');

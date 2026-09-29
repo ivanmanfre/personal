@@ -5,16 +5,20 @@
  *
  * Same facts as the stage-1 Results report it replaces on screen, re-laid:
  *   hero      calls booked for the chosen period (callsLead's zero rule), who, came to you
- *   funnel    everyone contacted → accepted → wrote back → calls booked (outreach_truth.funnel,
- *             one cohort since the start, so each step % is a true share of the stage above)
+ *   funnel    the report's since-the-start figures (new connections → people who wrote
+ *             back for the first time → founders who said yes → calls booked), the same
+ *             numbers the "Since the start" period and the month table add up to; exact
+ *             numbers only (v2: no step %, a share the panel never printed)
  *   the calls a spotlight card per call in the period, with the pre-call brief when there is one
  *   came      the people who came to the client on their own
- *   weeks     new connections and wrote back per Mon-Sun week, calls as badges, the peak
- *             week pre-selected; every exact figure, the slice table and the since-the-start
+ *   weeks     the report model's 7-day slices (the "Week by week" table's own rows): new
+ *             connections and people who wrote back for the first time, calls as badges, so
+ *             the bars add up to the period's figures; the peak slice pre-selected; every exact figure, the slice table and the since-the-start
  *             table fold under "All numbers"
  *   posts     the posts ranked by the brand owners they reached
  * One computed takeaway line heads each section. Nothing here invents a number: every
- * figure comes from reportModel / ReportBlocks or board.outreach_truth.
+ * figure comes from reportModel / ReportBlocks or the panel's own "What we track" counts
+ * (v2, 2026-09-29, Ivan: "don't change the numbers").
  */
 import React, { useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
@@ -24,30 +28,18 @@ import { AnimateNumber, FunnelShape } from './twentyfirst';
 import { PK_CSS } from './styles';
 import { useFigures, callsLead, reportFigures, fallbackNote, type ReportCtx } from '../report/ReportBlocks';
 import { computeFigures, slices, dm, dayKey, addDays, type Period, type Figures, type CameVia } from '../report/reportModel';
-import { initialsOf, firstNameOf, namesLine } from '../weekResults';
+import { initialsOf, namesLine, sliceSeries, axisLabel } from '../weekResults';
 
-type Booked = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null; days_to_book?: number | null };
+type Booked = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null };
 type Truth = {
-  counted_at?: string | null;
   booked?: Booked[] | null;
-  funnel?: { contacted?: number | null; accepted?: number | null; replied_people?: number | null; booked?: number | null } | null;
 } | null | undefined;
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const wdm = (k: string) => `${WEEKDAY[new Date(k + 'T12:00:00Z').getUTCDay()]}, ${dm(k)}`;
-const mondayOf = (k: string) => addDays(k, -((new Date(k + 'T12:00:00Z').getUTCDay() + 6) % 7));
 const normName = (s?: string | null) => (s || '').replace(/[^\p{L}\s]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
-
-/** Step conversion between two stages, or null when it cannot be computed. */
-function stepPct(from: number, to: number): string | null {
-  if (from <= 0) return null;
-  const p = (to / from) * 100;
-  if (p === 0) return '0%';
-  if (p < 1) return '<1%';
-  return `${Math.round(p)}%`;
-}
 
 function ticks(top: number): number[] {
   if (top <= 0) return [];
@@ -124,7 +116,7 @@ function Hero({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | 
         <div className="pk-who">
           <AvatarCircles delay={0.35} size={48} more={lead.names.length - shown.length} avatars={shown.map((n) => ({ initials: initialsOf(n), label: n }))} />
           <BlurFade delay={0.45} style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 16, lineHeight: 1.35, fontWeight: 700 }}>{namesLine(lead.names.map(firstNameOf), 3)}</div>
+            <div style={{ fontSize: 16, lineHeight: 1.35, fontWeight: 700 }}>{namesLine(lead.names)}</div>
           </BlurFade>
         </div>
       )}
@@ -142,66 +134,51 @@ function Hero({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | 
 /* ───────────────────────────── funnel ───────────────────────────── */
 
 const FN_STAGE = 54;
-const FN_GAP = 30;
+const FN_GAP = 40;
 
-function Funnel({ truth }: { truth: Truth }) {
-  const reduce = useReducedMotion();
+function Funnel({ ctx, fAll }: { ctx: ReportCtx; fAll: Figures }) {
   const [ref, shown] = useReveal<HTMLDivElement>(0.35);
-  const fu = truth?.funnel;
-  if (!fu || !fu.contacted) return null;
+  // The report's own since-the-start figures, with the figure cards' own words: the same
+  // numbers the picker's "Since the start" and the month table below add up to.
+  const all = ctx.periods.find((p) => p.kind === 'all') as Period;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
   const stages = [
-    { label: 'People contacted', v: fu.contacted || 0 },
-    { label: 'Accepted', v: fu.accepted || 0 },
-    { label: 'Wrote back', v: fu.replied_people || 0 },
-    { label: 'Calls booked', v: fu.booked || 0 },
-  ];
+    fAll.reach != null ? { label: ctx.cfg.reach === 'connections' ? 'New connections' : 'New people reached', v: fAll.reach } : null,
+    fAll.wrote != null ? { label: cap(ctx.cfg.wroteLabel[fAll.wrote === 1 ? 0 : 1]), v: fAll.wrote } : null,
+    fAll.yes != null ? { label: cap(ctx.cfg.yesLabel[fAll.yes === 1 ? 0 : 1]), v: fAll.yes } : null,
+    { label: 'Calls booked', v: fAll.calls.n },
+  ].filter((x): x is { label: string; v: number } => !!x);
+  if (stages.length < 2) return null;
   const max = Math.max(1, ...stages.map((s) => s.v));
-  // Square-root widths: a 1,586-to-19 drop drawn linearly leaves the last stage invisible.
-  // Every stage carries its exact number beside it.
+  // Square-root widths: a 426-to-19 drop drawn linearly leaves the last stage invisible.
+  // Every stage carries its exact number beside it; the shape carries no number of its own.
   const w = stages.map((s) => (s.v > 0 ? Math.max(8, Math.sqrt(s.v / max) * 100) : 1.5));
   const H = stages.length * FN_STAGE + (stages.length - 1) * FN_GAP;
   const centers = stages.map((_, i) => FN_STAGE / 2 + i * (FN_STAGE + FN_GAP));
   const cuts = stages.slice(1).map((_, i) => FN_STAGE + i * (FN_STAGE + FN_GAP) + FN_GAP / 2);
   const POUR = 1.05;
   const at = (y: number) => 0.1 + (y / H) * POUR;
-  const calls = stages[3].v;
-  const line = calls > 0 ? `${fmt(calls)} ${plural(calls, 'call', 'calls')} from ${fmt(stages[0].v)} people contacted since the start.` : `${fmt(stages[0].v)} people contacted since the start.`;
+  const first = stages[0];
+  const last = stages[stages.length - 1];
+  const line = `${fmt(first.v)} ${first.label.toLowerCase()} ${all.phrase}, ${fmt(last.v)} ${last.label.toLowerCase()}.`;
   return (
     <BlurFade as="section" delay={0.1} className="pk-panel pk-fnp">
       <BorderBeam />
-      <div className="pk-cap pk-capline">From first message to call</div>
+      <div className="pk-cap pk-capline">{all.eyebrow}</div>
       <h2 className="pk-disp" style={{ margin: '12px 0 0', fontSize: 'clamp(21px, 5.4vw, 24px)', lineHeight: 1.2, letterSpacing: '-0.025em', textWrap: 'balance' } as CSSProperties}>{line}</h2>
       <div ref={ref} className="pk-fn" style={{ '--fn-stage': `${FN_STAGE}px`, '--fn-gap': `${FN_GAP}px` } as CSSProperties}>
         <div className="pk-fn-col" aria-hidden="true">
           <FunnelShape widths={w} centers={centers} slices={cuts} height={H} shown={shown} duration={POUR} />
-          {stages.slice(0, -1).map((s, i) => {
-            const pct = stages[i + 1].v > 0 ? stepPct(s.v, stages[i + 1].v) : null;
-            return pct && (
-              <m.span
-                key={s.label}
-                className="pk-fn-pct"
-                style={{ top: cuts[i] }}
-                initial={reduce ? false : { opacity: 0, scale: 0.7 }}
-                animate={shown ? { opacity: 1, scale: 1 } : undefined}
-                transition={{ type: 'spring', bounce: 0.4, duration: 0.45, delay: at(cuts[i]) }}
-              >{pct}</m.span>
-            );
-          })}
         </div>
         <ol className="pk-fn-stages">
-          {stages.map((s, i) => {
-            const pct = i > 0 && s.v > 0 ? stepPct(stages[i - 1].v, s.v) : null;
-            return (
-              <li key={s.label} className="pk-fn-row">
-                <span className="pk-fn-num" style={i === 3 ? { color: 'var(--cb-accent)' } : undefined}>
-                  <NumberTicker value={s.v} start={shown} delay={Math.max(0, at(centers[i]) - 0.3)} />
-                </span>
-                <span className="pk-cap pk-mute" style={{ marginTop: 6 }}>
-                  {s.label}{pct && <span className="pk-sr">, {pct} of {stages[i - 1].label.toLowerCase()}</span>}
-                </span>
-              </li>
-            );
-          })}
+          {stages.map((s, i) => (
+            <li key={s.label} className="pk-fn-row">
+              <span className="pk-fn-num" style={i === stages.length - 1 ? { color: 'var(--cb-accent)' } : undefined}>
+                <NumberTicker value={s.v} start={shown} delay={Math.max(0, at(centers[i]) - 0.3)} />
+              </span>
+              <span className="pk-cap pk-mute" style={{ marginTop: 6, letterSpacing: '.1em' }}>{s.label}</span>
+            </li>
+          ))}
         </ol>
       </div>
     </BlurFade>
@@ -210,7 +187,7 @@ function Funnel({ truth }: { truth: Truth }) {
 
 /* ───────────────────────────── the calls ───────────────────────────── */
 
-type CallRow = { name: string; company: string | null; day: string; brief: string | null; days: number | null };
+type CallRow = { name: string; company: string | null; day: string; brief: string | null };
 
 function callsFor(ctx: ReportCtx, truth: Truth, lead: { names: string[]; phrase: string }, scope: Period): CallRow[] {
   const tz = ctx.cfg.tz;
@@ -229,15 +206,13 @@ function callsFor(ctx: ReportCtx, truth: Truth, lead: { names: string[]; phrase:
     if (!day) continue;
     rows.push({
       name: n.replace(/^[^\p{L}]+/u, ''), company: (b?.company || p?.c || '').trim() || null, day,
-      brief: b?.brief_url || null, days: typeof b?.days_to_book === 'number' ? b.days_to_book : null,
+      brief: b?.brief_url || null,
     });
   }
   return rows.sort((a, z) => z.day.localeCompare(a.day));
 }
 
 function CallCard({ c }: { c: CallRow }) {
-  const days = c.days != null ? c.days : null;
-  const gap = days == null ? '' : days < 1 ? 'within a day of' : Math.round(days) === 1 ? 'a day after' : `${Math.round(days)} days after`;
   return (
     <MagicCard>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -251,21 +226,16 @@ function CallCard({ c }: { c: CallRow }) {
           {c.company && <div className="pk-mute" style={{ marginTop: 2, fontSize: 15, lineHeight: 1.25 }}>{c.company}</div>}
         </div>
       </div>
-      {days != null && (
-        <div style={{ marginTop: 20, fontSize: 16, lineHeight: 1.55, color: 'rgba(255,255,255,.82)' }}>
-          Booked {gap} the connection request went out.
-        </div>
-      )}
       {c.brief && <div style={{ marginTop: 'auto', paddingTop: 18 }}><a className="pk-link" href={c.brief} target="_blank" rel="noreferrer">Pre-call brief →</a></div>}
     </MagicCard>
   );
 }
 
-function Calls({ rows, phrase }: { rows: CallRow[]; phrase: string }) {
+function Calls({ rows, n, phrase }: { rows: CallRow[]; n: number; phrase: string }) {
   const [all, setAll] = useState(false);
   if (!rows.length) return null;
   const shown = all ? rows : rows.slice(0, 6);
-  const line = `${rows.length} ${plural(rows.length, 'call', 'calls')} ${phrase}, the latest on ${dm(rows[0].day)}.`;
+  const line = `${n} ${plural(n, 'call', 'calls')} booked ${phrase}, the latest on ${dm(rows[0].day)}.`;
   return (
     <section aria-labelledby="pk-calls" className="pk-sec">
       <SecHead id="pk-calls" label="The calls" line={line} />
@@ -321,24 +291,6 @@ function Came({ ctx, f, fm }: { ctx: ReportCtx; f: Figures; fm: Figures | null }
 }
 
 /* ───────────────────────────── week by week ───────────────────────────── */
-
-type WeekRow = { key: string; label: string; sub: string; conn: number; wrote: number; calls: number };
-
-function weekRows(ctx: ReportCtx, n = 8): WeekRow[] {
-  const out: WeekRow[] = [];
-  let mon = mondayOf(ctx.today);
-  const first = mondayOf(ctx.cfg.start);
-  while (mon >= first && out.length < n) {
-    const end = addDays(mon, 7);
-    const cur = ctx.today < end;
-    const p: Period = { key: `pkw:${mon}`, kind: 'week', start: mon < ctx.cfg.start ? ctx.cfg.start : mon, end: cur ? addDays(ctx.today, 1) : end, label: '', eyebrow: '', phrase: '', current: cur };
-    const f = computeFigures(ctx.cfg, p, ctx.payload, ctx.board, null);
-    const daysIn = Math.round((new Date(ctx.today + 'T12:00:00Z').getTime() - new Date(mon + 'T12:00:00Z').getTime()) / 86400000) + 1;
-    out.unshift({ key: mon, label: dm(mon), sub: cur ? (daysIn <= 1 ? 'one day' : `${daysIn} days`) : '', conn: f.reach ?? 0, wrote: f.wrote ?? 0, calls: f.calls.n });
-    mon = addDays(mon, -7);
-  }
-  return out;
-}
 
 function Bar({ v, top, kind, shown, delay }: { v: number; top: number; kind: 'msg' | 'rep'; shown: boolean; delay: number }) {
   const reduce = useReducedMotion();
@@ -407,7 +359,7 @@ function AllNumbers({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figu
 function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | null; fAll: Figures }) {
   const reduce = useReducedMotion();
   const [ref, shown] = useReveal<HTMLDivElement>(0.3);
-  const weeks = useMemo(() => weekRows(ctx), [ctx]);
+  const weeks = useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
   const peakI = useMemo(() => {
     let best = -1;
     weeks.forEach((w, i) => { if (w.wrote > 0 && (best < 0 || w.wrote > weeks[best].wrote)) best = i; });
@@ -417,12 +369,12 @@ function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures |
   const [hover, setHover] = useState<number | null>(null);
   if (weeks.length < 2) return <section className="pk-sec"><AllNumbers ctx={ctx} f={f} fm={fm} fAll={fAll} /></section>;
   const active = hover ?? sel;
-  const peak = Math.max(1, ...weeks.map((w) => Math.max(w.conn, w.wrote)));
+  const peak = Math.max(1, ...weeks.map((w) => Math.max(w.reach, w.wrote)));
   const top = peak * 1.16;
   const grid = ticks(peak);
   const cur = active !== null ? weeks[active] : null;
   const onEnter = (i: number) => (e: PointerEvent) => { if (e.pointerType === 'mouse') setHover(i); };
-  const line = peakI !== null ? `First replies peaked the week of ${weeks[peakI].label}.` : 'Week by week.';
+  const line = peakI !== null ? `Most people wrote back for the first time ${weeks[peakI].label}.` : 'Week by week.';
   const connLabel = ctx.cfg.reach === 'connections' ? 'New connections' : 'Reached';
   return (
     <section aria-labelledby="pk-weeks" className="pk-sec">
@@ -443,9 +395,9 @@ function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures |
               <button
                 key={w.key}
                 type="button"
-                className={`pk-col${active === i ? ' on' : ''}${w.sub ? ' partial' : ''}`}
+                className={`pk-col${active === i ? ' on' : ''}${w.current ? ' partial' : ''}`}
                 aria-pressed={sel === i}
-                aria-label={`Week of ${w.label}${w.sub ? ` (${w.sub} so far)` : ''}: ${fmt(w.conn)} ${connLabel.toLowerCase()}, ${fmt(w.wrote)} wrote back for the first time${w.calls ? `, ${w.calls} ${plural(w.calls, 'call', 'calls')} booked` : ''}.`}
+                aria-label={`${w.label}: ${fmt(w.reach)} ${connLabel.toLowerCase()}, ${fmt(w.wrote)} wrote back for the first time${w.calls ? `, ${w.calls} ${plural(w.calls, 'call', 'calls')} booked` : ''}.`}
                 onClick={() => setSel(i)}
                 onPointerEnter={onEnter(i)}
               >
@@ -457,12 +409,12 @@ function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures |
                   )}
                 </span>
                 <span className="pk-bars" aria-hidden="true">
-                  <Bar v={w.conn} top={top} kind="msg" shown={shown} delay={0.08 + i * 0.06} />
+                  <Bar v={w.reach} top={top} kind="msg" shown={shown} delay={0.08 + i * 0.06} />
                   <Bar v={w.wrote} top={top} kind="rep" shown={shown} delay={0.16 + i * 0.06} />
                 </span>
                 <span className="pk-wl" aria-hidden="true">
-                  <span className="pk-wl-t">{w.label.replace(/ Sept$| Aug$| Jul$| Oct$/, (mth) => (i === 0 || weeks[i - 1].label.split(' ')[1] !== mth.trim() ? mth : ''))}</span>
-                  {w.sub && <small>{w.sub}</small>}
+                  <span className="pk-wl-t">{axisLabel(weeks, i)}</span>
+                  {w.current && <small>to today</small>}
                 </span>
               </button>
             ))}
@@ -472,12 +424,12 @@ function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures |
           {cur ? (
             <>
               <div className="pk-rd-week">
-                <span className="pk-cap pk-mute">Week of {cur.label}{cur.sub ? ` (${cur.sub} so far)` : ''}</span>
+                <span className="pk-cap pk-mute">{cur.label}</span>
                 <span className="pk-rd-hint" aria-hidden="true">Tap a week</span>
               </div>
               <dl className="pk-rd-stats">
-                <div><dt>{connLabel}</dt><dd><AnimateNumber value={cur.conn} /></dd></div>
-                <div className="hi"><dt>First replies</dt><dd><AnimateNumber value={cur.wrote} /></dd></div>
+                <div><dt>{connLabel}</dt><dd><AnimateNumber value={cur.reach} /></dd></div>
+                <div className="hi"><dt>Wrote back for the first time</dt><dd><AnimateNumber value={cur.wrote} /></dd></div>
                 <div className={cur.calls > 0 ? 'hi' : 'none'}><dt>{plural(cur.calls, 'Call booked', 'Calls booked')}</dt><dd><AnimateNumber value={cur.calls} /></dd></div>
               </dl>
             </>
@@ -545,10 +497,6 @@ export default function PerfReport({ ctx, truth }: { ctx: ReportCtx; truth: Trut
   const scope: Period = lead.phrase === ctx.period.phrase ? ctx.period
     : (ctx.period.month && lead.phrase === ctx.period.month.phrase ? ctx.period.month : ctx.periods.find((p) => p.kind === 'all') as Period);
   const calls = useMemo(() => callsFor(ctx, truth, lead, scope), [ctx, truth, lead.names.join('|'), scope.key]); // eslint-disable-line react-hooks/exhaustive-deps
-  const counted = truth?.counted_at ? new Date(truth.counted_at) : null;
-  const countedTxt = counted && !Number.isNaN(counted.getTime())
-    ? `${counted.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][counted.getUTCMonth()]}, ${String(counted.getUTCHours()).padStart(2, '0')}:${String(counted.getUTCMinutes()).padStart(2, '0')} UTC`
-    : null;
   return (
     <MotionRoot>
       <style>{PK_CSS}</style>
@@ -561,15 +509,14 @@ export default function PerfReport({ ctx, truth }: { ctx: ReportCtx; truth: Trut
         </header>
         <div className="pk-top">
           <Hero ctx={ctx} f={f} fm={fm} fAll={fAll} />
-          <Funnel truth={truth} />
+          <Funnel ctx={ctx} fAll={fAll} />
         </div>
-        <Calls rows={calls} phrase={lead.phrase} />
+        <Calls rows={calls} n={lead.n} phrase={lead.phrase} />
         <Came ctx={ctx} f={f} fm={fm} />
         <Weeks ctx={ctx} f={f} fm={fm} fAll={fAll} />
         <Posts ctx={ctx} f={f} />
         <div className="pk-foot">
-          {ctx.period.eyebrow}. Calls booked, replies and connections come from your LinkedIn outreach
-          {countedTxt ? `, counted ${countedTxt}` : ''}; the funnel counts everyone contacted since the start. Posts are ranked by the {ctx.cfg.fit[1]} who engaged with them.
+          {ctx.period.eyebrow}. Calls booked, replies and connections come from your LinkedIn outreach; the funnel counts everyone since the start. Posts are ranked by the {ctx.cfg.fit[1]} who engaged with them.
         </div>
       </div>
     </MotionRoot>

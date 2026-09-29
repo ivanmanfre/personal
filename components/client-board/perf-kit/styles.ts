@@ -50,7 +50,7 @@ export const PK_CSS = `
 /* funnel */
 .pk-fnp { padding: 22px 20px; }
 @media (min-width: 768px) { .pk-fnp { padding: 28px; } }
-.pk-fn { display: grid; grid-template-columns: 112px minmax(0,1fr); column-gap: 14px; margin-top: 24px; }
+.pk-fn { display: grid; grid-template-columns: 146px minmax(0,1fr); column-gap: 14px; margin-top: 24px; }
 .pk-fn-stages { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: var(--fn-gap); list-style: none; margin: 0; padding: 0; }
 .pk-fn-row { height: var(--fn-stage); display: flex; flex-direction: column; justify-content: center; }
 .pk-fn-col { grid-column: 2; grid-row: 1; position: relative; }

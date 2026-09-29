@@ -1,72 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { weekResults, resultsSubline, namesLine, initialsOf } from './weekResults';
+import { sliceSeries, axisLabel, namesLine, initialsOf } from './weekResults';
+import { computeFigures, reportPeriods, REPORT_CONFIGS, type ReportPayload } from './report/reportModel';
 
-const TZ = 'America/Los_Angeles';
-const truth = {
-  counted_at: '2026-09-28T22:00:00Z',
-  booked: [
-    { name: 'Ann Able', company: 'A Co', booked_at: '2026-09-22T15:00:00Z' },
-    { name: 'Ben Bold', company: 'B Co', booked_at: '2026-09-15T16:00:00Z' },
-    { name: 'Cy Cole', company: 'C Co', booked_at: '2026-09-16T16:00:00Z' },
-    { name: 'Cy Cole', company: 'C Co', booked_at: '2026-09-16T17:00:00Z' }, // duplicate row
-    { name: 'Dee Dunn', company: null, booked_at: '2026-09-02T03:00:00Z' }, // 1 Sept in LA
-    { name: 'Eve Eng', company: 'E Co', booked_at: '2026-08-20T16:00:00Z' },
+/** Test-only fabrication shaped like the client_board_report payload. */
+const payload: ReportPayload = {
+  client: 'risedtc', start_date: '2026-07-21',
+  people: [
+    { n: 'Ann Able', bk: '2026-09-22T15:00:00Z', w: ['2026-09-20T10:00:00Z'], conn: '2026-09-18T10:00:00Z' },
+    { n: 'Ben Bold', bk: '2026-09-17T16:00:00Z', w: ['2026-09-25T10:00:00Z'], conn: '2026-09-26T10:00:00Z' },
+    { n: 'Cy Cole', bk: '2026-08-20T10:00:00Z', w: ['2026-08-19T10:00:00Z'], conn: '2026-08-12T10:00:00Z' },
+    { n: 'Dee Dunn', w: ['2026-07-25T10:00:00Z'], conn: '2026-07-22T10:00:00Z' },
+    { n: 'Eve Eng', w: ['2026-09-15T10:00:00Z'], conn: '2026-09-01T10:00:00Z' },
   ],
-  replied_7d: [{ name: 'x', reply_intent: 'positive' }, { name: 'y', reply_intent: 'negative' }, { name: 'z', reply_intent: null }],
-  replied_weekly: [
-    { week_monday: '2026-09-07', people: 10 },
-    { week_monday: '2026-09-14', people: 12 },
-    { week_monday: '2026-09-21', people: 9 },
-    { week_monday: '2026-09-28', people: 1 },
-  ],
-  funnel: { contacted: 1200 },
+  came: [], engaged: [], posts: [], assists: [],
 };
+const cfg = REPORT_CONFIGS['risedtc-com'];
+const today = '2026-09-29';
+const periods = reportPeriods(cfg, today);
+const ctx = { cfg, periods, payload, board: { queue: [] }, today };
 
-describe('weekResults', () => {
-  it('counts the calendar month in the board zone, one row per person', () => {
-    const r = weekResults(truth, '2026-09-28', TZ)!;
-    expect(r.window).toBe('month');
-    expect(r.label).toBe('in September');
-    expect(r.n).toBe(4);
-    expect(r.people.map((p) => p.name)).toEqual(['Ann Able', 'Cy Cole', 'Ben Bold', 'Dee Dunn']);
-    expect(r.prev).toEqual({ n: 1, label: 'in August' });
-    expect(r.total).toBe(5);
-    expect(resultsSubline(r)).toBe('1 in August. 5 since the first one on 20 Aug, from 1,200 people contacted.');
+describe('sliceSeries: one model with the panel', () => {
+  const bars = sliceSeries(ctx);
+  it('is the report months cut into the Week by week table rows', () => {
+    expect(bars[0].label).toBe('21 Jul to 27 Jul');
+    expect(bars.find((b) => b.start === '2026-09-17')?.label).toBe('17 Sept to 23 Sept');
+    expect(bars[bars.length - 1].label).toBe('24 Sept to today');
+    expect(bars[bars.length - 1].current).toBe(true);
   });
-
-  it('uses the last 30 days during the first 7 days of a month, and says so', () => {
-    const r = weekResults(truth, '2026-10-03', TZ)!;
-    expect(r.window).toBe('30d');
-    expect(r.label).toBe('in the last 30 days');
-    expect(r.n).toBe(3); // 4 Sept to 3 Oct: the 1 Sept booking falls out
-    expect(r.prev.n).toBe(2);
-    expect(r.prev.label).toBe('in the 30 days before');
+  it('adds up exactly to every period figure the panel prints', () => {
+    for (const p of periods) {
+      const f = computeFigures(cfg, p, payload, { queue: [] }, null);
+      const inP = bars.filter((b) => b.start >= p.start && b.start < p.end);
+      expect(inP.reduce((t, b) => t + b.calls, 0)).toBe(f.calls.n);
+      expect(inP.reduce((t, b) => t + b.wrote, 0)).toBe(f.wrote);
+      expect(inP.reduce((t, b) => t + b.reach, 0)).toBe(f.reach);
+    }
   });
-
-  it('states a slowdown plainly', () => {
-    const r = weekResults(truth, '2026-09-28', TZ)!;
-    expect(r.pace).toBe('1 call booked last week, down from 2 the week before.');
-    const flat = weekResults({ ...truth, booked: truth.booked.slice(4) }, '2026-09-28', TZ)!;
-    expect(flat.pace).toBe('No calls booked in the last two weeks.');
+  it('labels the axis by first day, the month only when it changes', () => {
+    const i = bars.findIndex((b) => b.start === '2026-09-17');
+    expect(axisLabel(bars, 0)).toBe('21 Jul');
+    expect(axisLabel(bars, i)).toBe('17');
   });
+});
 
-  it('counts who wrote back in 7 days and the positive ones', () => {
-    expect(weekResults(truth, '2026-09-28', TZ)!.wrote).toEqual({ n: 3, positive: 1 });
-  });
-
-  it('drops calls onto their week and marks the running week', () => {
-    const w = weekResults(truth, '2026-09-28', TZ)!.weeks;
-    expect(w.map((x) => x.calls)).toEqual([0, 2, 1, 0]);
-    expect(w.map((x) => x.current)).toEqual([false, false, false, true]);
-  });
-
-  it('returns null without a counted blob', () => {
-    expect(weekResults(null, '2026-09-28', TZ)).toBeNull();
-    expect(weekResults({ booked: [] }, '2026-09-28', TZ)).toBeNull();
-  });
-
-  it('names and initials', () => {
-    expect(namesLine(['A', 'B', 'C', 'D', 'E', 'F'])).toBe('A, B, C, D and 2 more');
+describe('names', () => {
+  it('matches the report headline list', () => {
+    expect(namesLine(['A', 'B', 'C', 'D', 'E'])).toBe('A, B, C and 2 more');
     expect(namesLine(['A', 'B'])).toBe('A and B');
     expect(initialsOf('\u{1FAD3} Alexander Harik')).toBe('AH');
   });
