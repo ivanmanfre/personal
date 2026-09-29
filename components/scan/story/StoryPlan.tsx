@@ -22,7 +22,7 @@ import './story-plan.css';
 const BOOK = 'https://calendly.com/im-ivanmanfredi/30min';
 const STEPS = [
  {id: 'content', label: 'Posts'},
- {id: 'resource', label: 'Free resource'},
+ {id: 'resource', label: 'Lead magnets'},
  {id: 'conversations', label: 'Conversations'},
  {id: 'calls', label: 'Booked calls'},
 ] as const;
@@ -31,13 +31,12 @@ const STEPS = [
 const headlineName = (name: string) => { const short = name.split(/\s+[-–|:]\s+/)[0].trim(); return short.length <= 24 ? short : ''; };
 
 function PlanHero({fixture}: {fixture: JourneyFixture}) {
- const plan = useStory(), result = assessAudience(fixture), reduced = useReducedMotion();
- const company = headlineName(plan.brand || fixture.founder.company);
+ const result = assessAudience(fixture), reduced = useReducedMotion();
  return <section className="sp-hero audit-opening" data-assessment={result.state}>
   <div className="sp-hero-copy">
    <span className="made-for"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/>Made for {fixture.founder.name}{fixture.founder.company ? ` · ${fixture.founder.company}` : ''}</span>
-   <h1>{company ? <>Qualified calls for {company}, from LinkedIn.</> : <>Qualified calls from LinkedIn, {fixture.founder.firstName}.</>}</h1>
-   <p className="sp-hero-sub">We write your posts, build a resource your buyers ask for and turn their interest into booked calls. Below is each piece, made for you.</p>
+   <h1>Make your LinkedIn into a true revenue line.</h1>
+   <p className="sp-hero-sub">We create inbound and outbound opportunities by content, lead magnets and signal based outreach.</p>
    <ol className="sp-path" aria-label="Your plan in four steps">
     {STEPS.map((s, i) => <li key={s.id}><a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
     <motion.i className="sp-path-line" aria-hidden="true" initial={reduced ? false : {scaleX: 0}} animate={{scaleX: 1}} transition={{duration: reduced ? 0 : 1.4, delay: .3, ease: [.45, 0, .2, 1]}}/>
@@ -132,13 +131,13 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
    aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
    options={[
-    {key: 'carousel', title: 'Carousel post', hint: 'Swipeable slides in your brand.', render: () => <ProspectPost fixture={fixture} kind={kind} clampBody/>},
-    {key: 'text', title: 'Text post', hint: 'A short read for the feed.', render: () => <TextPost fixture={fixture} kind={kind} clampBody/>},
+    {key: 'carousel', title: 'Carousel post', hint: 'Swipeable slides in your brand.', render: () => <ProspectPost fixture={fixture} kind={kind}/>},
+    {key: 'text', title: 'Text post', hint: 'A short read for the feed.', render: () => <TextPost fixture={fixture} kind={kind}/>},
    ]}/>
-  <Chapter id="resource" n={2} tone="warm" label="Free resource" title="Give them something worth asking for." why={plan.magnetWhy}
+  <Chapter id="resource" n={2} tone="warm" label="Lead magnets" title="Give them something worth asking for." why={plan.magnetWhy}
    options={[
-    {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `Readers comment “${plan.keyword}” to get it.` : 'Readers comment to get it.', render: () => <TextPost fixture={fixture} kind={kind} promotion clampBody/>},
-    {key: 'resource', title: 'The resource', hint: 'What lands in their inbox.', wide: true, render: () => <LeadMagnetTool kind={kind}/>},
+    {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `Readers comment “${plan.keyword}” to get it.` : 'Readers comment to get it.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
+    {key: 'resource', title: 'The lead magnet', hint: 'What lands in their inbox.', wide: true, render: () => <LeadMagnetTool kind={kind}/>},
     {key: 'signup', title: 'The signup', hint: 'Their email joins your list.', render: () => <EmailCapture kind={kind}/>},
    ]}/>
   <Chapter id="conversations" n={3} label="Conversations" title="Interest turns into conversations." why="We reply to the people who engage, keep readers warm by email and reach buyers who have not seen your posts yet."
@@ -155,7 +154,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Results</span><ScanResults/></div>
   <section className="sp-close">
    <img src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/>
-   <div><span className="close-byline">Iván Manfredi</span><h2>{headlineName(plan.brand) ? <>Make LinkedIn a revenue line for {headlineName(plan.brand)}.</> : <>Make LinkedIn a revenue line.</>}</h2><p>A service we run for you, built to bring in qualified calls.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes to see how we’d bring you qualified leads.</small></div>
+   <div><span className="close-byline">Iván Manfredi</span><h2>{headlineName(plan.brand) ? <>Let’s build this for {headlineName(plan.brand)}.</> : <>Let’s build this for you.</>}</h2><p>A service we run for you: content, lead magnets and outreach, through to the booked call.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes to see how we’d bring you qualified leads.</small></div>
   </section>
   <footer className="journey-footer"><a href="#top">Back to the start ↑</a></footer>
  </div>;
