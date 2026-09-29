@@ -360,6 +360,18 @@ export function computeFigures(
       calls: report ? (assistsByPost.get(s.key) || 0) : (aud?.assisted_outcomes || 0),
     });
   });
+  // A queue post that went out before its metrics row synced is still out: list it with no
+  // engagement read yet, so the list names the same posts `postsOut` counts.
+  pub.forEach((q) => {
+    const at = q.published_at || q.publish_date;
+    if (usedQueue.has(q) || !inP(at) || !afterStart(at)) return;
+    usedQueue.add(q);
+    posts.push({
+      key: q.id || q.social_id || `q:${at}`, at: at as string, day: dayKey(at, cfg.tz) as string,
+      title: clean(openingLine(q)) || 'Post', own: false,
+      fit: null, engaged: null, fitNew: null, collected: false, calls: 0,
+    });
+  });
   posts.sort((a, z) => (z.fit ?? -1) - (a.fit ?? -1) || z.at.localeCompare(a.at));
 
   let fitEngaged: Figures['fitEngaged'] = null;

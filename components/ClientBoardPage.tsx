@@ -9819,18 +9819,27 @@ export default function ClientBoardPage() {
         })()}
         <main className="px-4 pb-[calc(env(safe-area-inset-bottom)+88px)] pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-9">
           {/* Night: no exit wait on a tab switch (the old fade-out + fade-in cost ~0.4s per tap). */}
-          <AnimatePresence mode={night ? 'popLayout' : 'wait'} initial={false}>
+          {night ? (
+            /* Night: a tab switch swaps the section in place. AnimatePresence kept the old section
+               mounted while the new one entered, which flashed the previous tab for a beat
+               (Ivan 2026-09-29). */
+            <div key={activeTab}>
+              <div className={`w-full ${navCollapsed ? 'max-w-[1200px]' : 'max-w-[1040px]'}`}>{surfaces[activeTab]}</div>
+            </div>
+          ) : (
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={activeTab}
-              initial={night ? false : { opacity: 0, y: 4 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={night ? undefined : { opacity: 0, y: 4 }}
+              exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
               <div className={`w-full ${skin === 'desk' ? (navCollapsed ? 'max-w-[1200px]' : 'max-w-[1040px]') : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
             </motion.div>
           </AnimatePresence>
+          )}
         </main>
       </div>
 
