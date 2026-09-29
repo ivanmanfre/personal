@@ -108,3 +108,34 @@
 /* Centred section headings: the sub-line is narrower than the heading, so centre its box too. */
 .revenue-story .scene-heading > p { margin-left:auto; margin-right:auto; }
 .brand-wordmark { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%; font-size:17px; }
+
+/* ---------- Slide graphics: ghost numeral, orbit, numbered tiles / timeline, keyword close ---------- */
+.brand-slide { position:relative; overflow:hidden; isolation:isolate; }
+.brand-slide > header,.brand-slide-copy,.brand-slide > footer { position:relative; z-index:1; }
+.brand-slide-ghost { position:absolute; z-index:0; right:-.06em; bottom:-.2em; font-size:clamp(150px,17vw,230px); line-height:1; font-weight:900; letter-spacing:-.06em; color:transparent; -webkit-text-stroke:2px var(--slide-mark); opacity:.28; pointer-events:none; }
+.brand-slide-orbit { position:absolute; z-index:0; right:0; bottom:0; width:72%; height:auto; pointer-events:none; }
+.brand-slide-hook .brand-slide-copy { justify-content:flex-start; padding-top:34px; }
+.brand-slide-steps { display:flex; gap:5px; margin-right:auto; }
+.brand-slide-steps i { width:18px; height:4px; border-radius:2px; background:currentColor; opacity:.25; }
+.brand-slide-steps i:first-child { opacity:1; background:var(--slide-mark); width:30px; }
+.brand-slide-hook > footer { justify-content:space-between; }
+.brand-slide.no-points .brand-slide-body { font-size:19px; line-height:1.4; padding-left:16px; border-left:4px solid var(--slide-mark); max-width:30ch; }
+.brand-slide-hook.no-points .brand-slide-body { border-left:0; padding-left:0; }
+ol.brand-slide-points { list-style:none; counter-reset:none; }
+ol.brand-slide-points > li { padding:0; background:none; display:flex; gap:12px; align-items:flex-start; }
+ol.brand-slide-points > li::before { display:none; }
+ol.brand-slide-points > li > b { flex-shrink:0; font-size:13px; font-weight:800; line-height:1; color:var(--slide-pill-ink); background:var(--slide-mark); border-radius:7px; padding:6px 7px; font-variant-numeric:tabular-nums; }
+ol.brand-slide-points > li > span { padding-top:2px; }
+ol.brand-slide-points.is-tiles { grid-template-columns:1fr 1fr; gap:10px; }
+ol.brand-slide-points.is-tiles > li { flex-direction:column; gap:10px; padding:14px; border-radius:12px; background:color-mix(in srgb,currentColor 8%,transparent); border:1px solid color-mix(in srgb,var(--slide-mark) 35%,transparent); }
+ol.brand-slide-points.is-tiles > li > b { background:none; color:var(--slide-mark); font-size:26px; padding:0; letter-spacing:-.04em; }
+ol.brand-slide-points.is-timeline { gap:0; position:relative; }
+ol.brand-slide-points.is-timeline::before { content:''; position:absolute; left:14px; top:12px; bottom:12px; width:2px; background:color-mix(in srgb,var(--slide-mark) 45%,transparent); }
+ol.brand-slide-points.is-timeline > li { position:relative; padding:6px 0; }
+ol.brand-slide-points.is-timeline > li > b { width:30px; text-align:center; border-radius:50%; padding:8px 0; font-size:11.5px; box-shadow:0 0 0 4px color-mix(in srgb,currentColor 0%,transparent); }
+.brand-slide-close .brand-slide-copy { justify-content:center; }
+.brand-slide-keyword { margin-top:22px; display:flex; flex-direction:column; }
+.brand-slide-keyword small { font-size:13px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; opacity:.75; }
+.brand-slide-keyword b { font-size:clamp(46px,5.4vw,74px); line-height:.95; font-weight:900; letter-spacing:-.04em; }
+.brand-slide-close ol.brand-slide-points > li > b { background:currentColor; }
+.brand-slide-close ol.brand-slide-points > li > b { color:inherit; background:color-mix(in srgb,currentColor 16%,transparent); }

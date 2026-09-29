@@ -25,14 +25,6 @@ export function BlurWords({text, as: Tag = 'h2', className}: {text: string; as?:
  </Tag>;
 }
 
-/** An endless strip; pauses on hover, stands still for reduced motion. */
-export function Marquee({children, seconds = 40}: {children: React.ReactNode; seconds?: number}) {
- return <div className="sm-marquee" style={{'--sm-duration': `${seconds}s`} as React.CSSProperties}>
-  <div className="sm-marquee-track">{children}</div>
-  <div className="sm-marquee-track" aria-hidden="true">{children}</div>
- </div>;
-}
-
 type Beam = {from: string; to: string; active?: boolean; vertical?: boolean};
 /** Curved wires between named boxes inside a container, with a light pulse running along the active ones. */
 export function Beams({root, beams, deps}: {root: React.RefObject<HTMLElement | null>; beams: Beam[]; deps: unknown[]}) {

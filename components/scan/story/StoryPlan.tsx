@@ -6,12 +6,11 @@ import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel'
 import {Avatar, Paragraphs} from '../../dev/scan-walkthrough/journey/ReadingChapter';
 import {ProspectPost, TextPost} from '../../dev/scan-walkthrough/journey/ProspectSamples';
 import {EmailCapture} from '../../dev/scan-walkthrough/journey/EmailCapture';
-import {SampleArtwork} from '../../dev/scan-walkthrough/journey/ProspectSamples';
-import {ScanResults} from '../../dev/scan-walkthrough/journey/ScanResults';
+import {StoryResults} from './StoryResults';
 import {ProfileAuditSection} from '../../dev/scan-walkthrough/journey/ProfileAudit';
 import {useStory} from './context';
 import {assessAudience} from './assessment';
-import {BlurWords, Marquee, NumberTicker} from './motion';
+import {BlurWords, NumberTicker} from './motion';
 import {StoryFlow, readerName, fillName} from './StoryFlow';
 import {LeadMagnetPage} from './LeadMagnetPage';
 import '../../dev/scan-walkthrough/journey/connected.css';
@@ -152,7 +151,6 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
   <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
    aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
-   after={plan.slides.length > 1 && <div className="sp-filmstrip"><span className="sp-filmstrip-label">All {plan.slides.length} slides, in {brand}’s brand</span><Marquee seconds={plan.slides.length * 7}>{plan.slides.map((_, i) => <div className="sp-film-slide" key={i}><div className="journey-deck sp-film-inner"><SampleArtwork kind={kind} index={i}/></div></div>)}</Marquee></div>}
    samples={[
     {key: 'carousel', title: 'Carousel post', hint: `Built in ${brand}’s colours, ready to post.`, render: () => <ProspectPost fixture={fixture} kind={kind}/>},
     {key: 'text', title: 'Text post', hint: 'Written in your voice, for your buyers.', render: () => <TextPost fixture={fixture} kind={kind}/>},
@@ -174,7 +172,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
    <StoryFlow founder={fixture.founder.firstName}/>
    <div className="sp-ownership"><div><b>We run all of it.</b><p>Posts, lead magnets, outreach and follow-up, every week, through to the booked call.</p></div><div><b>You take the calls.</b><p>Your calendar fills with people who have a real project and a reason to talk to you.</p></div></div>
   </section>
-  <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Founders we run this for</span><ScanResults/></div>
+  <StoryResults/>
   <section className="sp-close">
    <img src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/>
    <div><span className="close-byline">Iván Manfredi</span><h2>Your next clients are already on LinkedIn.</h2><p>We find them, start the conversation and put them on your calendar. We ran Kyle Hunt’s LinkedIn for 90 days and his business went from $30k to $80k a month. {headlineName(plan.brand) || 'You'}{headlineName(plan.brand) ? ' is' : ' are'} next.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes with me. You leave with the plan either way.</small></div>

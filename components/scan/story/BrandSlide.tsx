@@ -38,14 +38,20 @@ export function BrandSlide({ index }: { index: number }) {
   const mark = last ? p.accentInk : ground === p.dark ? p.accentOnDark : p.accentOnLight;
   const role = first ? 'hook' : last ? 'close' : 'point';
   const dense = slide.body.length + (slide.points || []).join('').length > 300;
-  return <div className={`brand-slide brand-slide-${role}${dense ? ' is-dense' : ''}`} style={{ background: ground, color: ink, fontFamily: brandFont(plan.resource.brand.font), '--slide-mark': mark, '--slide-pill-ink': contrastInk(mark) } as React.CSSProperties}>
-    <header><BrandMark ground={ground}/><span>{String(index + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</span></header>
+  const points = slide.points || [];
+  const layout = points.length >= 4 || index % 2 ? 'timeline' : 'tiles';
+  const num = String(index + 1).padStart(2, '0');
+  return <div className={`brand-slide brand-slide-${role}${dense ? ' is-dense' : ''}${points.length ? ` has-${layout}` : ' no-points'}`} style={{ background: ground, color: ink, fontFamily: brandFont(plan.resource.brand.font), '--slide-mark': mark, '--slide-pill-ink': contrastInk(mark) } as React.CSSProperties}>
+    {!first && !last && <span className="brand-slide-ghost" aria-hidden="true">{num}</span>}
+    {first && <svg className="brand-slide-orbit" viewBox="0 0 200 200" aria-hidden="true">{[96, 72, 48].map((r, i) => <circle key={r} cx="200" cy="200" r={r * 1.9} fill="none" stroke="var(--slide-mark)" strokeWidth={i === 2 ? 14 : 2} opacity={i === 2 ? .9 : .35}/>)}</svg>}
+    <header><BrandMark ground={ground}/><span>{num} / {String(n).padStart(2, '0')}</span></header>
     <div className="brand-slide-copy">
-      {!first && <span className="brand-slide-rule" aria-hidden="true"/>}
+      {!first && !last && <span className="brand-slide-rule" aria-hidden="true"/>}
       <h3>{slide.title}</h3>
       <RichText text={slide.body} className="brand-slide-body"/>
-      {slide.points?.length ? <ul className="brand-slide-points">{slide.points.map(x => <li key={x}>{x}</li>)}</ul> : null}
+      {points.length ? <ol className={`brand-slide-points is-${layout}`}>{points.map((x, i) => <li key={x}><b>{String(i + 1).padStart(2, '0')}</b><span>{x}</span></li>)}</ol> : null}
+      {last && plan.keyword && <div className="brand-slide-keyword"><small>Comment</small><b>{plan.keyword}</b></div>}
     </div>
-    <footer>{first ? <span className="brand-slide-pill">Swipe <i aria-hidden="true">→</i></span> : last ? <span className="brand-slide-pill">Comment {plan.keyword}</span> : <span aria-hidden="true">→</span>}</footer>
+    <footer>{first ? <><span className="brand-slide-steps" aria-hidden="true">{plan.slides.map((_, i) => <i key={i}/>)}</span><span className="brand-slide-pill">Swipe <i aria-hidden="true">→</i></span></> : last ? <span className="brand-slide-pill">Comment {plan.keyword} <i aria-hidden="true">↓</i></span> : <span aria-hidden="true">→</span>}</footer>
   </div>;
 }

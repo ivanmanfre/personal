@@ -25,17 +25,20 @@ export function SampleArtwork({ kind, index = 0 }: { kind: StoryKind; index?: nu
 
 export function ProspectPost({ fixture, kind }: { fixture: JourneyFixture; kind: StoryKind }) {
   const [slide, setSlide] = useState(0);
-  const touch = useRef<{ x: number; y: number } | null>(null);
   const reduced = useReducedMotion();
   const plan = useStory();
-  const move = (amount: number) => setSlide(v => Math.max(0, Math.min(plan.slides.length - 1, v + amount)));
+  const dir = useRef(1);
+  const move = (amount: number) => { dir.current = amount; setSlide(v => Math.max(0, Math.min(plan.slides.length - 1, v + amount))); };
   return <article className="journey-post journey-carousel-post prospect-post" data-mockup="linkedin" aria-label="Proposed LinkedIn post">
     <header className="post-author"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/><div><b>{fixture.founder.name}</b><span>{fixture.founder.company}</span><small><i className="li-globe" aria-hidden="true"/></small></div></header>
     <Paragraphs text={plan.post}/>
-    <div className="journey-deck" tabIndex={0} aria-label="Carousel slides" onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(e.key === 'ArrowRight' ? 1 : -1); } }} onTouchStart={e => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }} onTouchEnd={e => { if (!touch.current) return; const dx = e.changedTouches[0].clientX - touch.current.x, dy = e.changedTouches[0].clientY - touch.current.y; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) move(dx < 0 ? 1 : -1); touch.current = null; }}>
-      <motion.div key={slide} initial={reduced ? false : { opacity: .6, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: reduced ? 0 : .2 }}><SampleArtwork kind={kind} index={slide}/></motion.div>
+    <div className="journey-deck has-handles" tabIndex={0} aria-label="Carousel slides" onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); move(e.key === 'ArrowRight' ? 1 : -1); } }}>
+      <motion.div key={slide} drag={reduced ? false : 'x'} dragConstraints={{ left: 0, right: 0 }} dragElastic={.35} dragSnapToOrigin onDragEnd={(_, info) => { if (Math.abs(info.offset.x) > 60 || Math.abs(info.velocity.x) > 400) move(info.offset.x < 0 ? 1 : -1); }}
+        initial={reduced ? false : { opacity: .5, x: dir.current * 40 }} animate={{ opacity: 1, x: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 32 }} style={{ touchAction: 'pan-y', cursor: reduced ? undefined : 'grab' }}><SampleArtwork kind={kind} index={slide}/></motion.div>
+      <button className="deck-handle is-prev" aria-label="Previous slide" disabled={slide === 0} onClick={() => move(-1)}>‹</button>
+      <button className="deck-handle is-next" aria-label="Next slide" disabled={slide === plan.slides.length - 1} onClick={() => move(1)}>›</button>
     </div>
-    <div className="deck-controls"><button aria-label="Previous slide" disabled={slide === 0} onClick={() => move(-1)}>←</button><span className="slide-status" aria-live="polite">Slide {slide + 1} of {plan.slides.length}</span><button aria-label="Next slide" disabled={slide === plan.slides.length - 1} onClick={() => move(1)}>→</button></div>
+    <div className="deck-dots" role="tablist" aria-label="Choose a slide">{plan.slides.map((_, i) => <button key={i} role="tab" aria-selected={i === slide} aria-label={`Slide ${i + 1} of ${plan.slides.length}`} onClick={() => { dir.current = i > slide ? 1 : -1; setSlide(i); }}/>)}<span className="slide-status" aria-live="polite">{slide + 1} / {plan.slides.length}</span></div>
     <LinkedInActions/>
   </article>;
 }
