@@ -27,6 +27,7 @@ import path from 'node:path';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DeskPerformanceSurface } from './DeskPerformanceSurface';
+import { AudienceSection } from './AudienceSection';
 import { PerformanceSurface } from '../ClientBoardPage';
 import { AUDIENCE_COPY } from './audienceCopy';
 import type { Board } from '../ClientBoardPage';
@@ -485,7 +486,8 @@ describe('AudienceSection: six states, both skins', () => {
   for (const skin of SKINS) {
     for (const state of STATES) {
       it(`${skin}: renders the ${state} state and says so`, () => {
-        const html = renderSkin(skin, FIXTURES[state]);
+        // incomplete_history's line is operator jargon ("per-metric floor"): preview board only.
+        const html = renderSkin(skin, FIXTURES[state], state !== 'incomplete_history');
         // the section rendered, tagged with the state it is in
         expect(html).toContain(`data-audn-section="${state}"`);
         // the state's own sentence is on screen
@@ -597,6 +599,8 @@ describe('AudienceSection: what the normal state actually shows', () => {
   });
 
   it('answers the five recommendation questions and records the decision with its reason', () => {
+    // Recommendation cards are operator-only since 2026-09-29: read them on the preview board.
+    const html = renderSkin('desk', FIXTURES.normal, false);
     expect(html).toContain(AUDIENCE_COPY.recs.whatChanged);
     expect(html).toContain(AUDIENCE_COPY.recs.whyItMatters);
     expect(html).toContain(AUDIENCE_COPY.recs.couldPublish);
@@ -624,7 +628,7 @@ describe('AudienceSection: decision controls', () => {
   });
 
   it('require a reason: the field and its prompt are always present', () => {
-    const html = renderSkin('desk', FIXTURES.normal, true);
+    const html = renderSkin('desk', FIXTURES.normal, false);
     expect(html).toContain(AUDIENCE_COPY.decision.reasonLabel);
     expect(html).toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
     expect(html).toContain(AUDIENCE_COPY.decision.accept);
@@ -632,12 +636,14 @@ describe('AudienceSection: decision controls', () => {
     expect(html).toContain(AUDIENCE_COPY.decision.defer);
   });
 
-  it('are live buttons, not dead spans, when a live board hands over a decide fn', () => {
+  // CLIENT-SAFE (2026-09-29): recommendation cards carry our working notes, so the live
+  // link a client opens shows none of them, and no decision controls with them.
+  it('are not on a live board: the client sees no recommendation cards', () => {
     const html = renderSkin('desk', FIXTURES.normal, true);
-    expect(html).not.toContain(AUDIENCE_COPY.decision.previewNote);
-    expect(html).not.toContain('disabled=""');
-    // the kit renders a real <button> only when an onClick was given
-    expect(html).toMatch(/<button type="button" class="pill[^"]*"[^>]*>Use it<\/button>/);
+    expect(html).not.toContain(AUDIENCE_COPY.recs.whatChanged);
+    expect(html).not.toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
+    expect(html).not.toContain('the objection is the one we hear most');
+    expect(html).not.toContain(AUDIENCE_COPY.state.incomplete_history);
   });
 
   // (a live board with no decide fn is not a state the page can produce:
@@ -991,5 +997,44 @@ describe('run 04 §2.2: the block renders migration 07\'s own people[] shape', (
     const html = renderSkin('desk', withPeople(PAYLOAD_07_PEOPLE));
     expect(html).not.toContain('first_observed_at');
     expect(html).not.toContain('outreach_prospects.current');
+  });
+});
+
+describe('AudienceSection: night v3 (?night) shows numbers, never our working notes', () => {
+  const render = (payload: any) => {
+    window.history.replaceState({}, '', '/?night');
+    try {
+      return renderToStaticMarkup(<AudienceSection audience={payload} live={false} />);
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  };
+  const textOf = (html: string) => html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ');
+  it('drops the recommendations, the decision form and every source or method caveat', () => {
+    const payload = { ...FIXTURES.incomplete_history, recommendations: FIXTURES.normal.recommendations };
+    const t = textOf(render(payload));
+    expect(t).not.toContain(AUDIENCE_COPY.recs.heading);
+    expect(t).not.toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
+    expect(t).not.toContain(AUDIENCE_COPY.state.incomplete_history);
+    expect(t).not.toContain(AUDIENCE_COPY.limits.classifier);
+    expect(t).not.toContain(AUDIENCE_COPY.limits.coverage);
+    expect(t).not.toContain(AUDIENCE_COPY.posts.notSummed);
+    expect(t).not.toContain(AUDIENCE_COPY.relationship.footnote);
+    for (const r of FIXTURES.normal.recommendations) {
+      if (r.what_changed) expect(t).not.toContain(r.what_changed);
+      if (r.could_publish) expect(t).not.toContain(r.could_publish);
+    }
+  });
+  it('keeps the per-post numbers, without funnel codes in the row label', () => {
+    const html = render(FIXTURES.normal);
+    const t = textOf(html);
+    expect(t).toContain(AUDIENCE_COPY.posts.heading);
+    expect(t).toContain('Text post');
+    expect(t).not.toMatch(/·\s*reach\s*·/);
+  });
+  it('leaves the light board exactly as it was', () => {
+    const t = textOf(renderToStaticMarkup(<AudienceSection audience={FIXTURES.normal} live={false} />));
+    expect(t).toContain(AUDIENCE_COPY.recs.heading);
+    expect(t).toContain(AUDIENCE_COPY.limits.classifier);
   });
 });

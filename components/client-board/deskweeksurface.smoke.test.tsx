@@ -627,3 +627,30 @@ function zagrebWall(dateIso: string, hhmm: string): string {
   const [hh, mm] = hhmm.split(':').map((n) => parseInt(n, 10));
   return new Date(new Date(`${dateIso}T00:00:00Z`).getTime() + (hh * 60 + mm + offMin) * 60000).toISOString();
 }
+
+/* NIGHT v4 (local mockup, 2026-09-29): v2's look with v3's words. One heading counts the
+   week ("This week: N posts"), the preview sits on v2's lit plate (hm-plate) with no
+   "Ships today" eyebrow, status chip or title repeat, rows carry no "scheduled" chip, and
+   nothing narrates the UI. */
+describe('DeskWeekSurface at night', () => {
+  let prev = '';
+  beforeAll(() => { prev = window.location.href; window.history.replaceState({}, '', '/client/risedtc-com?night'); });
+  afterAll(() => { window.history.replaceState({}, '', prev); });
+  const strip = (h: string) => h.replace(/<style>[\s\S]*?<\/style>/g, '');
+
+  it('counts the week in one heading and drops the repeats', () => {
+    const h = strip(render(board));
+    expect(h).toMatch(/<h2 class="hm-h2">This week: \d+ posts?<\/h2>/);
+    expect(h).not.toContain('The week at a glance');
+    expect(h).not.toContain('Day by day');
+    expect(h).not.toContain('Pick a day to see it as it lands on LinkedIn');
+    expect(h).not.toContain('The tinted day');
+    expect(h).not.toContain('Past this week');
+    expect(h).not.toContain('cb-week-plate');
+    expect(h).not.toMatch(/>scheduled</);
+    expect(h).toContain('data-plate-preview');
+    expect(h).toContain('class="hm-plate"');
+    expect(h).not.toMatch(/>Ships today</i);
+    expect(h).toContain('Edit copy');
+  });
+});

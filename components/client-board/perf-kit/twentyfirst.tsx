@@ -12,8 +12,9 @@
 //   to solid, ink slice lines between stages. As in the ARCH report: one SVG, square-root
 //   widths from the caller (the numbers carry the truth), a top-down pour on reveal, and the
 //   finished shape under reduced motion. The stops read the board accent (RISE yellow).
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import React, { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
+import { useQuiet } from './night';
 
 const ZWSP = '​';
 
@@ -89,8 +90,47 @@ export function FunnelShape({ widths, centers, slices, height, shown, duration =
   widths: number[]; centers: number[]; slices: number[]; height: number; shown: boolean; duration?: number; delay?: number;
 }) {
   const reduce = useReducedMotion();
+  const quiet = useQuiet();
   const uid = useId().replace(/:/g, '');
   const f = (y: number) => `${((y / height) * 100).toFixed(2)}%`;
+  if (quiet) {
+    // QUIET (2026-09-29): the same shape, matte. One outline (no halo rings), each stage a
+    // flat grey step getting a shade deeper on the way down, the last stage (booked a call)
+    // solid yellow, and a thin paper-white cut between steps. No sheen, no fade, no shadow.
+    const n = widths.length;
+    const GREYS = ['#ECECE9', '#E1E1DD', '#D5D5D0', '#C9C9C4', '#BDBDB8'];
+    const band = (i: number) => (i === n - 1 ? 'var(--cb-accent)' : GREYS[Math.min(i, GREYS.length - 1)]);
+    const edges = [0, ...slices, height];
+    return (
+      <m.div
+        aria-hidden="true"
+        className="pk-fn-reveal"
+        initial={reduce ? false : { clipPath: 'inset(0% 0% 100% 0%)' }}
+        animate={shown ? { clipPath: 'inset(0% 0% 0% 0%)' } : undefined}
+        transition={{ duration, ease: 'easeInOut', delay }}
+      >
+        <svg className="pk-fn-svg pk-fn-matte" viewBox={`0 0 100 ${height}`} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id={`${uid}-q`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={height}>
+              {Array.from({ length: n }, (_, i) => (
+                <React.Fragment key={i}>
+                  <stop offset={f(edges[i] ?? 0)} style={{ stopColor: band(i) }} />
+                  <stop offset={f(edges[i + 1] ?? height)} style={{ stopColor: band(i) }} />
+                </React.Fragment>
+              ))}
+            </linearGradient>
+            <clipPath id={`${uid}-qc`}>
+              <path d={path(widths, centers, height, 0.87)} />
+            </clipPath>
+          </defs>
+          <path d={path(widths, centers, height, 0.87)} fill={`url(#${uid}-q)`} />
+          <g clipPath={`url(#${uid}-qc)`}>
+            {slices.map((y) => <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#FFFFFF" strokeWidth={2} vectorEffect="non-scaling-stroke" />)}
+          </g>
+        </svg>
+      </m.div>
+    );
+  }
   return (
     <m.div
       aria-hidden="true"

@@ -53,6 +53,10 @@ import { FeedPreview, FunnelChip, fmtDay, clientTz, boardZone } from '../ClientB
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
 import { ReportHome, type ReportCtx } from './report/ReportBlocks';
 import { WeekResultsPlate } from './WeekResultsPlate';
+import { useNight } from './perf-kit/night';
+import { MotionRoot } from './perf-kit/motion';
+import { PK_CSS } from './perf-kit/styles';
+import { HOME_NIGHT_CSS, GlanceShell } from './perf-kit/home-night';
 
 /* ────────────────────────── local pure helpers ────────────────────────── */
 
@@ -221,16 +225,18 @@ const hideBroken = (e: React.SyntheticEvent<HTMLImageElement>) => {
 };
 
 /* Plate-internal literals. Relative to the dark plate, not to the brand. */
-const PLATE_BORDER = 'rgba(255,255,255,0.35)';
+const PLATE_BORDER = 'rgb(var(--nt-fg, 255 255 255) / 0.35)';
 /** The queue rail's tile borders: solid for a dated tile, dashed for an undated buffer ghost. */
-const PLATE_TILE_LINE = 'rgba(255,255,255,0.55)';
-const PLATE_TILE_GHOST = 'rgba(255,255,255,0.40)';
-const PLATE_TILE_SUNK = 'rgba(255,255,255,0.07)';
-const PLATE_RULE_SOFT = 'rgba(255,255,255,0.32)';
+const PLATE_TILE_LINE = 'rgb(var(--nt-fg, 255 255 255) / 0.55)';
+const PLATE_TILE_GHOST = 'rgb(var(--nt-fg, 255 255 255) / 0.40)';
+const PLATE_TILE_SUNK = 'rgb(var(--nt-fg, 255 255 255) / 0.07)';
+const PLATE_RULE_SOFT = 'rgb(var(--nt-fg, 255 255 255) / 0.32)';
 const PLATE_INK = 'var(--cb-plate-ink)';
 const PLATE_MUTE = 'var(--cb-plate-mute)';
 /** The kit's own plate soft-text literal (desk-kit PLATE_SOFT_TEXT), kept in sync. */
 const PLATE_SOFT = '#C9C9C2';
+/** Night only: the accent chip keeps dark ink on the yellow (the desk ink turns white at night). */
+const NIGHT_ACCENT_CHIP: React.CSSProperties = { color: 'var(--cb-accent-ink, #111)' };
 
 /**
  * The four rules this surface cannot inline.
@@ -252,10 +258,10 @@ const PLATE_SOFT = '#C9C9C2';
 const WEEK_CSS = `
 .cb-week-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
 .cb-week-col-left { display: flex; flex-direction: column; min-width: 0; }
-.cb-week-col-right { min-width: 0; border-top: 1px solid rgba(255,255,255,0.16); padding-top: 20px; }
+.cb-week-col-right { min-width: 0; border-top: 1px solid rgb(var(--nt-fg, 255 255 255) / 0.16); padding-top: 20px; }
 @media (min-width: 900px) {
   .cb-week-grid { grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr); gap: clamp(22px, 2.6vw, 34px); }
-  .cb-week-col-right { border-top: 0; padding-top: 0; border-left: 1px solid rgba(255,255,255,0.16); padding-left: 26px; }
+  .cb-week-col-right { border-top: 0; padding-top: 0; border-left: 1px solid rgb(var(--nt-fg, 255 255 255) / 0.16); padding-left: 26px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   [data-skin="desk"] .cb-week-plate:hover { transform: none !important; box-shadow: none !important; }
@@ -325,6 +331,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   flashId: string | null;
   modalOpen: boolean;
 }) {
+  /** NIGHT MOCKUP (local only): the ARCH report look behind `?night`. Light desk unchanged. */
+  const night = useNight();
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const today = todayIsoLA();
   const cal = board.calendar;
@@ -525,6 +533,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   /** Days in THIS window that carry a lead magnet. Drives the glance rail's mint legend
    *  token, which stays off entirely when the window has none. */
   const lmDays = days.filter((d) => postsOnDay(d).some(isLeadMagnet));
+  /** Posts dated inside the drawn window (night heading: "This week: 5 posts"). */
+  const weekPostCount = days.reduce((n, d) => n + postsOnDay(d).length, 0);
   const beyondWindow = laterItems.filter((q) => (q.publish_date || '') > windowEnd);
   const lastDated = laterItems.length ? laterItems[laterItems.length - 1].publish_date : (todayItems.length ? today : undefined);
 
@@ -548,9 +558,18 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
    *  funnel, pillar, provenance, the swap mark, the read count) moved into that row's drill:
    *  the glance rail above already carries the artwork, and a four-chip row per day was the
    *  redundancy this rebuild set out to kill. */
-  const statusChip = (q: QueueItem) => (
-    <Chip tone={q.publish_date === today && stageOf(q) !== 'published' ? 'accent' : 'default'}>{statusOf(q)}</Chip>
-  );
+  const statusChip = (q: QueueItem) => {
+    // Night v3: the usual state needs no chip. Today's row is already the highlighted one
+    // (the banner says it ships today), a scheduled row is the default, and "out" is plain
+    // grey text. A chip stays only for the exceptions (removed, approved, in buffer...).
+    if (night) {
+      const s = statusOf(q);
+      if (s === 'ships today' || s === 'scheduled') return null;
+      if (s === 'out') return <span className="hm-state">Out</span>;
+      return <Chip>{s}</Chip>;
+    }
+    return <Chip tone={q.publish_date === today && stageOf(q) !== 'published' ? 'accent' : 'default'}>{statusOf(q)}</Chip>;
+  };
 
   /** The swap list: this slot's bench angles plus the ready-draft pool. */
   const swapList = (q: QueueItem) => {
@@ -589,30 +608,34 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     const prov = (!live || reviewMode) ? provenanceOf(q) : null;
     const isOut = stageOf(q) === 'published';
     const swapped = !!angleSwaps[q.id];
+    // Night v3: plain sentence-case labels, and no "Hook" block (the row's title IS the hook).
+    const Lbl = ({ children }: { children: React.ReactNode }) => night ? <div className="hm-lbl">{children}</div> : <Eyebrow>{children}</Eyebrow>;
     return (
       <>
+        {!night && <>
         <Eyebrow>Hook</Eyebrow>
         <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--cb-ink)', lineHeight: 1.4, marginTop: 5 }}>
           {noDash(stripBrand(q.hook || q.title)) || 'No hook written yet.'}
         </div>
+        </>}
 
         {slides.length >= 2 ? (
-          <div style={{ marginTop: 12 }}>
-            <Eyebrow>The slides</Eyebrow>
+          <div style={{ marginTop: night ? 0 : 12 }}>
+            <Lbl>The slides</Lbl>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <Num size="row" inline>{slides.length}</Num>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>in the deck</span>
+              <span style={{ fontSize: night ? 14 : 12.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>in the deck</span>
             </div>
             <SlideStrip srcs={slides} height={124} style={{ marginTop: 7 }} />
           </div>
         ) : q.generating ? (
           <Blank style={{ marginTop: 12, height: 96 }}>the image is still rendering</Blank>
         ) : cover ? (
-          <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ marginTop: 12, width: 180, maxWidth: '100%', borderRadius: 12, border: '1px solid var(--cb-line)', display: 'block' }} />
+          <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ marginTop: night ? 0 : 12, width: 180, maxWidth: '100%', borderRadius: 12, border: '1px solid var(--cb-line)', display: 'block' }} />
         ) : null}
 
         <div style={{ marginTop: 13 }}>
-          <Eyebrow>The copy</Eyebrow>
+          <Lbl>The copy</Lbl>
           {q.body ? (
             <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-soft)', marginTop: 5, whiteSpace: 'pre-line' }}>{q.body}</div>
           ) : (
@@ -622,8 +645,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 13 }}>
           <Chip>{kickerOf(q)}</Chip>
-          <FunnelChip stage={q.funnel_stage} accent={accent} source={q.funnel_source} />
-          {q.pillar && <Chip>{noDash(q.pillar)}</Chip>}
+          {!night && <FunnelChip stage={q.funnel_stage} accent={accent} source={q.funnel_source} />}
+          {!night && q.pillar && <Chip>{noDash(q.pillar)}</Chip>}
           {prov && <Chip>{noDash(prov.label)}</Chip>}
           {swapped && <Chip>fresh idea, same slot</Chip>}
           {typeof perf?.impressions === 'number' && (
@@ -639,7 +662,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <div style={{ marginTop: 13, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {isOut ? (
             perf?.url
-              ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
+              ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
               : <Footnote style={{ marginTop: 0 }}>The live post link is <span style={{ color: 'var(--cb-ink-mute)' }}>—</span> not tracked yet.</Footnote>
           ) : skips[q.id] ? (
             <Pill onClick={() => onUnskip(q.id)}>Put this post back</Pill>
@@ -694,14 +717,21 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       <div
         key={q.id}
         data-day-row=""
+        className={night ? `hm-row${isToday ? ' today' : ''}` : undefined}
         style={{
-          display: 'flex', gap: 14, padding: '11px 0',
-          borderBottom: opts.last ? undefined : '1px solid var(--cb-line)',
+          display: 'flex', gap: 14, padding: night ? '12px 10px 12px 0' : '11px 0',
+          borderBottom: opts.last || night ? undefined : '1px solid var(--cb-line)',
           opacity: opts.dim ? 0.78 : 1,
           background: flashId === q.id ? 'color-mix(in srgb, var(--cb-accent) 7%, var(--cb-paper))' : undefined,
         }}
       >
         {dayCell(day, isToday ? 'today' : 'dated')}
+        {night ? (
+          <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
+            <span className={`hm-rail-line${day < today ? ' lit' : isToday ? ' fade' : ''}`} />
+            <span className={`hm-dot${isToday ? ' today' : day < today || isOut ? ' past' : ''}`} />
+          </div>
+        ) : (
         <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
           <span style={{ position: 'absolute', left: 9, top: 0, bottom: -11, width: 1, background: 'var(--cb-line)' }} />
           <span style={{
@@ -711,13 +741,14 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             border: isToday ? '3px solid var(--cb-ink)' : isOut ? `1px solid ${mint}` : '1px solid var(--cb-ink-mute)',
           }} />
         </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: night ? 'nowrap' : 'wrap' }}>
             <button
               type="button"
               onClick={() => onOpen(q)}
               style={{
-                flex: '1 1 200px', minWidth: 0, textAlign: 'left', background: 'none', border: 'none',
+                flex: night ? '1 1 0' : '1 1 200px', minWidth: 0, textAlign: 'left', background: 'none', border: 'none',
                 padding: 0, cursor: 'pointer', fontFamily: 'var(--cb-serif)', fontWeight: 600,
                 fontSize: 15.5, lineHeight: 1.35, color: 'var(--cb-ink)',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -730,7 +761,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               {FUNNEL_WHY[q.funnel_stage]}
             </div>
           )}
-          <Drill label="Open post" ruled={false} summaryStyle={{ padding: '5px 0 0' }}>{rowDrillBody(q)}</Drill>
+          <Drill label={night ? 'Details' : 'Open post'} ruled={false} summaryStyle={{ padding: '5px 0 0' }}>{rowDrillBody(q)}</Drill>
         </div>
       </div>
     );
@@ -752,12 +783,19 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
      *  qualifies. Capped to the six nearest so the drill stays a list, not a queue dump. */
     const movable = laterItems.filter((q) => q.publish_date !== day).slice(0, 6);
     return (
-      <div key={day} data-day-row="" style={{ display: 'flex', gap: 14, padding: '11px 0', borderBottom: last ? undefined : '1px solid var(--cb-line)' }}>
+      <div key={day} data-day-row="" className={night ? 'hm-row' : undefined} style={{ display: 'flex', gap: 14, padding: night ? '12px 10px 12px 0' : '11px 0', borderBottom: last || night ? undefined : '1px solid var(--cb-line)' }}>
         {dayCell(day, 'empty')}
+        {night ? (
+          <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
+            <span className={`hm-rail-line${day < today ? ' lit' : ''}`} />
+            <span className="hm-dot empty" />
+          </div>
+        ) : (
         <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
           <span style={{ position: 'absolute', left: 9, top: 0, bottom: -11, width: 1, background: 'var(--cb-line)' }} />
           <span style={{ position: 'absolute', left: 3.5, top: 5, width: 12, height: 12, borderRadius: '50%', border: '2px dashed var(--cb-ink-mute)', background: 'var(--cb-paper)' }} />
         </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           {weekend ? (
             <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>Weekend, not a posting day</div>
@@ -816,11 +854,133 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
   /* ────────── render ────────── */
 
-  return (
+  /* Night v4: the selected day's post on v2's lit plate (glow, lit edge, glass mat around
+     the white LinkedIn card). v3's words stay: no "ships today" chip or eyebrow (the banner
+     says it once), no title (the post's first line is on the card), no funnel code. The
+     plate's caps label names the day and the format, the pills act on the post shown, and
+     the plate closes on the posts-out count. An empty or weekend day says so plainly. */
+  const nightDeck = selectedItem ? slidesOf(selectedItem) : [];
+  const nightPerf = selectedItem && stageOf(selectedItem) === 'published' ? perfFor(selectedItem) : undefined;
+  const nightStage = (
+    <div className="hm-plate" data-week-plate="">
+      {selectedItem ? (
+        <>
+          <div className="hm-plate-head">
+            <div className="pk-cap">{weekdayLong(selectedDay)} {dayNumOf(selectedDay)} · {kickerOf(selectedItem)}</div>
+            <div className="hm-actions" data-upnext-actions="">
+              {stageOf(selectedItem) === 'published' ? (
+                nightPerf?.url ? <a className="hm-li" href={nightPerf.url} target="_blank" rel="noreferrer">View on LinkedIn</a> : null
+              ) : (
+                <>
+                  {actionPill(selectedItem, 'Edit copy', { editing: true })}
+                  {actionPill(selectedItem, 'Edit time', { scheduling: true })}
+                  {!live && actionPill(selectedItem, 'Swap slot', { changing: true })}
+                </>
+              )}
+            </div>
+          </div>
+          {selectedItem.generating && <p className="hm-note">Being written. The cover is still rendering.</p>}
+          <div className="hm-frame" data-plate-preview="" onClick={() => onOpen(selectedItem)}>
+            <FeedPreview
+              item={selectedItem}
+              board={board}
+              accent={accent}
+              fontStack={fontStack}
+              size="lg"
+              cover={selectedItem.generating ? 'render' : 'plate'}
+              live={live}
+              foldSwitch={false}
+              mediaMax={380}
+            />
+          </div>
+          {nightDeck.length >= 2 && (
+            <div className="hm-deck">
+              <p className="hm-note">{nightDeck.length} slides{nightDeck.length > 6 ? ', the first 6 shown' : ''}</p>
+              <SlideStrip srcs={nightDeck.slice(0, 6)} style={{ marginTop: 8 }} />
+            </div>
+          )}
+        </>
+      ) : (
+        <Blank style={{ height: 120 }}>{isWeekendDay(selectedDay) ? 'Weekend, not a posting day' : 'Nothing scheduled this day'}</Blank>
+      )}
+      <div className="hm-out">
+        {publishedItems.length > 0
+          ? <><span className="hm-out-n">{publishedItems.length}</span> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
+          : 'Nothing has published from this board yet.'}
+      </div>
+    </div>
+  );
+
+  /* 4 — day by day, as a value: the night layout sets it beside the preview. */
+  const daysBlock = (
+    <>
+      {/* 4 — day by day, one compressed line each, every one still openable. */}
+      <div style={{ marginTop: night ? 0 : 28 }}>
+        {/* Night v3: the week heading at the top already counts these ("This week: 5 posts"). */}
+        {!night && <SectionRule
+          label="Day by day"
+          count={days.reduce((n, d) => n + postsOnDay(d).length, 0) || undefined}
+          blurb={days.some((d) => postsOnDay(d).length) ? 'dated on the days below' : 'no post carries a date in this window'}
+        />}
+        <div className={night ? 'timeline hm-tl' : 'timeline'}>
+          {/* Weekends carry no row here: the glance rail above already draws them dashed and
+              its footnote says so. A "Weekend, not a posting day" line per weekend repeated
+              that fact twice a week. */}
+          {days.filter((d) => postsOnDay(d).length > 0 || (!report && !isWeekendDay(d))).map((d, di, rowDays) => {
+            const posts = postsOnDay(d);
+            const last = di === rowDays.length - 1 && beyondWindow.length === 0;
+            // Calm pass: the day rows render at once, no per-row reveal.
+            if (!posts.length) return emptyRow(d, last);
+            return posts.map((q, qi) => postRow(q, d, { last: last && qi === posts.length - 1 }));
+          })}
+
+          {beyondWindow.length > 0 && (night ? (
+            /* Night v3: one plain line, "31 more scheduled after this week", that opens the list. */
+            <Drill className="hm-beyond" label="Show" summaryLeft={<>{beyondWindow.length} more scheduled after this week</>} ruled={false}>
+              {beyondWindow.map((q, i) => (
+                <div key={q.id || i} className="hm-beyond-row">
+                  <span className="hm-beyond-d">{fmtDay(q.publish_date)}</span>
+                  <button type="button" onClick={() => onOpen(q)}>{noDash(stripBrand(q.hook || q.title)) || 'Untitled'}</button>
+                </div>
+              ))}
+            </Drill>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 14, padding: '6px 0 2px' }}>
+                <div style={{ flex: 'none', width: night ? 74 : 68 }} />
+                <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
+                  <span className={night ? 'hm-rail-line' : undefined} style={night ? { top: -12, bottom: 0 } : { position: 'absolute', left: 9, top: 0, bottom: 0, width: 1, background: 'var(--cb-line)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Past this week</div>
+              </div>
+              {/* All of them fold: three open rows of NEXT week's posts on the This-week tab
+                  was weight without information — the count and the drill carry it. */}
+              <Drill label="open them" summaryLeft={<><b>{beyondWindow.length}</b> {beyondWindow.length === 1 ? 'post is' : 'posts are'} dated past this window</>} style={{ marginLeft: 102 }}>
+                {beyondWindow.map((q, i) => (
+                  <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: i ? '1px solid var(--cb-line)' : 'none' }}>
+                    <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
+                    <button onClick={() => onOpen(q)} style={{ flex: '1 1 200px', minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{noDash(stripBrand(q.hook || q.title)) || 'Untitled'}</button>
+                  </div>
+                ))}
+              </Drill>
+            </>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Pill onClick={onGoContent}>{report ? 'See all your posts' : 'See everything in the pipeline'}</Pill>
+        </div>
+      </div>
+
+    </>
+  );
+
+  const tree = (
     <section className="tab" data-surface="week">
+      {night && <style>{PK_CSS + HOME_NIGHT_CSS}</style>}
 
       {report && (() => {
-        const home = <ReportHome ctx={report} waiting={reviewMode ? board.queue.filter((q) => stageOf(q) === 'review' && !approvedIds.has(q.id)).length : 0} />;
+        const home = <ReportHome ctx={report} bare={night && !!report.cfg.homeResults} waiting={reviewMode ? board.queue.filter((q) => stageOf(q) === 'review' && !approvedIds.has(q.id)).length : 0} />;
         // RISE (2026-09-29): the week page opens on the outreach results plate. The report
         // period's figures (picker, came to you, said yes, new connections) fold under it,
         // unchanged, so every figure the page carried is still one tap away.
@@ -830,7 +990,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             <WeekResultsPlate ctx={report} onSeeAll={onGoOutreach} style={{ marginTop: 0 }} />
             <Drill
               style={{ marginTop: 16 }}
-              label="open"
+              label={night ? 'Open' : 'open'}
               summaryLeft={<><b>All numbers</b> <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 600 }}>{report.period.eyebrow.replace(/^This month · /, 'report month, ')}</span></>}
             >
               <div style={{ paddingTop: 6 }}>{home}</div>
@@ -840,8 +1000,21 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       })()}
 
       {/* 1 — the real week range, then a headline computed off the live queue. */}
-      <Eyebrow>{report ? 'Your posts this week' : 'This week'} · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
-      <DeskH2>{headline}</DeskH2>
+      {/* Night v3: one plain heading carries the week ("This week: 5 posts") with its dates
+          in grey. The top banner already says what ships today and the preview carries the
+          time, so the headline sentence prints only when no post is dated in the window. */}
+      {night ? (
+        <div className="hm-week-head">
+          <div className="pk-cap pk-capline hm-cap">{fmtDay(days[0])} to {fmtDay(windowEnd)}</div>
+          <h2 className="hm-h2">{weekPostCount > 0 ? `This week: ${weekPostCount} ${weekPostCount === 1 ? 'post' : 'posts'}` : 'This week'}</h2>
+          {weekPostCount === 0 && <p className="hm-lede">{headline}</p>}
+        </div>
+      ) : (
+        <>
+          <Eyebrow>{report ? 'Your posts this week' : 'This week'} · {fmtDay(days[0])} to {fmtDay(windowEnd)}</Eyebrow>
+          <DeskH2>{headline}</DeskH2>
+        </>
+      )}
 
       {/* 1b — the week's mix in one plain sentence (2026-09-29). It replaces the
           "REACH · TOP 1/2 · TRUST · MID 2/2" row: same counts off the same live window, said
@@ -869,9 +1042,9 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             ground   — WHETHER the day carries anything: a cover, or (text post, no artwork)
                        an accent-washed tile carrying the post's own opening line. Before
                        this, a text-post day drew identically to an empty one. */}
-      <div style={{ marginTop: 22 }}>
-        <Eyebrow>The week at a glance</Eyebrow>
-        <div data-viz style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+      <div style={{ marginTop: night ? 0 : 22 }}>
+        {night ? null : <Eyebrow>The week at a glance</Eyebrow>}
+        <div data-viz className={night ? 'hm-rail' : undefined} style={night ? undefined : { display: 'flex', gap: 8, marginTop: 10 }}>
           {days.map((d) => {
             const dayPosts = postsOnDay(d);
             const post = dayPosts[0];
@@ -896,7 +1069,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               on ? 'inset 0 0 0 2px var(--cb-accent)' : '',
               isToday && lm ? `inset 0 0 0 ${on ? 4 : 2}px var(--cb-ink)` : '',
             ].filter(Boolean).join(', ');
-            return (
+            const tile = (
               <button
                 key={d}
                 type="button"
@@ -912,15 +1085,20 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   flex: '1 1 0', minWidth: 0, padding: 0, cursor: 'pointer',
                   height: 'clamp(78px, 17vw, 128px)', position: 'relative', overflow: 'hidden',
                   borderRadius: 7, display: 'block',
-                  background: textOnly ? 'color-mix(in srgb, var(--cb-accent) 9%, var(--cb-paper))' : 'var(--cb-paper-sunk)',
-                  border: lm ? '2px solid var(--cb-mint)'
+                  background: night
+                    ? (textOnly ? 'linear-gradient(160deg, color-mix(in srgb, var(--cb-accent) 16%, #161616), #121212)' : weekend ? 'repeating-linear-gradient(45deg, rgb(var(--nt-fg, 255 255 255) / 0.035) 0 4px, transparent 4px 9px)' : '#151515')
+                    : textOnly ? 'color-mix(in srgb, var(--cb-accent) 9%, var(--cb-paper))' : 'var(--cb-paper-sunk)',
+                  border: night
+                    ? (lm ? '1.5px solid var(--cb-mint)' : weekend ? '1px dashed rgb(var(--nt-fg, 255 255 255) / 0.12)' : '0')
+                    : lm ? '2px solid var(--cb-mint)'
                     : isToday ? '2px solid var(--cb-ink)'
                     : weekend ? '1px dashed var(--cb-line-bold)'
                     : '1px solid var(--cb-line-bold)',
-                  boxShadow: rings || undefined,
+                  // Night: the selection and today rings live on GlanceShell's pseudo-elements.
+                  boxShadow: night ? undefined : rings || undefined,
                   // A weekend tile stays dimmed, but never so dim that a selected one
                   // cannot show its ring.
-                  opacity: weekend ? (on ? 0.75 : 0.55) : 1,
+                  opacity: night ? 1 : weekend ? (on ? 0.75 : 0.55) : 1,
                 }}
               >
                 {cover && <img src={cover} alt="" loading="lazy" onError={hideBroken} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
@@ -942,7 +1120,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   /* The post's own opening line, clamped. Sits UNDER whatever tags are
                      drawn (funnel, then pillar) and ABOVE the weekday band, so the three
                      signals stack instead of overlapping on a narrow tile. */
-                  <span data-glance-line="" className="cb-glance-linebox" style={{
+                  <span data-glance-line="" className={night ? 'cb-glance-linebox hm-gline' : 'cb-glance-linebox'} style={{
                     position: 'absolute', left: 5, right: 5,
                     top: report ? 6 : post!.funnel_stage && post!.pillar ? 39 : (post!.funnel_stage || post!.pillar) ? 23 : 6,
                     bottom: lm ? 24 : 20,
@@ -959,15 +1137,22 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 )}
                 {out && <span aria-hidden style={{ position: 'absolute', right: 4, top: 4, width: 8, height: 8, borderRadius: '50%', background: mint }} />}
                 {lm && <span aria-hidden style={{ position: 'absolute', left: 4, right: 4, bottom: 3, height: 3, borderRadius: 2, background: 'var(--cb-mint)' }} />}
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: cover ? '#1c1c1c' : 'none', padding: cover ? `4px 0 ${lm ? 7 : 4}px` : `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className={night ? 'hm-gt-day' : undefined} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: cover ? PLATE_INK : 'var(--cb-ink-mute)', background: night ? (cover ? 'linear-gradient(to top, rgba(10,10,10,0.92), rgba(10,10,10,0.7))' : 'none') : cover ? '#1c1c1c' : 'none', backdropFilter: night && cover ? 'blur(6px)' : undefined, padding: cover ? `4px 0 ${lm ? 7 : 4}px` : `10px 0 ${lm ? 7 : 3}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {weekdayShort(d)}
                 </span>
               </button>
             );
+            return night ? <GlanceShell key={d} today={isToday} weekend={weekend} on={on}>{tile}</GlanceShell> : tile;
           })}
         </div>
-        <div style={{ height: 7, borderLeft: '1px solid var(--cb-line-bold)', borderRight: '1px solid var(--cb-line-bold)', borderBottom: '1px solid var(--cb-line-bold)', marginTop: 8 }} aria-hidden />
-        <Footnote>
+        {/* Night v3: no helper line under the rail. A lead-magnet day carries its own
+            "Lead magnet" label, in a row that mirrors the tiles so it sits under its day. */}
+        {night ? (lmDays.length > 0 ? (
+          <div className="hm-lmrow">
+            {days.map((d) => <span key={d}>{lmDays.includes(d) ? 'Lead magnet' : null}</span>)}
+          </div>
+        ) : <div className="hm-railbase" aria-hidden />) : <div style={{ height: 7, borderLeft: '1px solid var(--cb-line-bold)', borderRight: '1px solid var(--cb-line-bold)', borderBottom: '1px solid var(--cb-line-bold)', marginTop: 8 }} aria-hidden />}
+        {!night && <Footnote>
           {report
             ? <>Pick a day to see it as it lands on LinkedIn.</>
             : <>{daysWithPost >= workingDays ? 'A post lands every weekday this week.' : daysWithPost === 0 ? 'No weekday has a post yet this week.' : `Posts land on ${daysWithPost} of this week's ${workingDays} weekdays.`} Pick a day to see it as it lands on LinkedIn.</>}
@@ -980,7 +1165,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               {lmDays.length === 1 ? 'The tinted day carries a lead magnet.' : 'The tinted days carry a lead magnet.'}
             </>
           )}
-        </Footnote>
+        </Footnote>}
       </div>
 
 
@@ -992,11 +1177,18 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           Left column = the ops read (counts, what ships next, the deck, the edit pills, the
           queue rail, the footer line). Right column = day pills + the framed preview. */}
       <style>{WEEK_CSS}</style>
-      <Plate className="cb-week-plate" style={{ marginTop: 18 }} pad="clamp(20px, 2.8vw, 28px)">
+      {night ? (
+        <div className="hm-week">
+          <div className="hm-stage">{nightStage}</div>
+          <div className="hm-days">{daysBlock}</div>
+        </div>
+      ) : (
+        <>
+      <Plate className={night ? 'cb-week-plate hm-plate' : 'cb-week-plate'} style={{ marginTop: night ? 26 : 18 }} pad="clamp(20px, 2.8vw, 28px)">
       <div className="cb-week-grid">
       <div className="cb-week-col-left">
         <div>
-          <div style={{ flex: '1 1 240px', minWidth: 0, borderLeft: '3px solid var(--cb-accent)', paddingLeft: 16 }}>
+          <div className={night && stageItem ? 'hm-meta' : undefined} style={{ flex: '1 1 240px', minWidth: 0, borderLeft: '3px solid var(--cb-accent)', paddingLeft: 16 }}>
             {/* Round 4: this block shows the SELECTED day's post (fallback: up next), and
                 the pills act on the post shown, so every day's post is editable from here. */}
             <Eyebrow on="plate">
@@ -1011,14 +1203,14 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   {noDash(stageItem.title || stageItem.hook) || 'Untitled post'}
                 </div>
                 <div style={{ marginTop: 11, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Chip tone="accent">{statusOf(stageItem)}{isScheduled(stageItem) ? `, ${fmtSchedLA(stageItem.scheduled_at, stageItem.publish_date)}` : ''}</Chip>
+                  <Chip tone="accent" style={night ? NIGHT_ACCENT_CHIP : undefined}>{statusOf(stageItem)}{isScheduled(stageItem) ? `, ${fmtSchedLA(stageItem.scheduled_at, stageItem.publish_date)}` : ''}</Chip>
                   <Chip tone="plate">{kickerOf(stageItem)}</Chip>
                   {stageItem.funnel_stage && <Chip tone="plate">{({ reach: 'Reach · Top', trust: 'Trust · Mid', buyers: 'Buyers · Bottom' } as Record<string, string>)[stageItem.funnel_stage] || stageItem.funnel_stage}</Chip>}
                 </div>
                 <div data-upnext-actions="" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {stagePublished ? (
                     (() => { const perf = perfFor(stageItem); return perf?.url
-                      ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
+                      ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
                       : null; })()
                   ) : (
                     <>
@@ -1123,6 +1315,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           one composition, and the column seam terminates on it. Pinning it to the bottom of
           the shorter column instead left a dead band of plate under the queue rail. */}
       <PlateRule gap={20} />
+      {night ? (
+        <div className="hm-out" style={{ marginTop: 14 }}>
+          {publishedItems.length > 0
+            ? <><span className="hm-out-n">{publishedItems.length}</span> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
+            : 'Nothing has published from this board yet.'}
+        </div>
+      ) : (
       <Footnote on="plate">
         {publishedItems.length > 0
           /* The rail above already carries "the rest keeps publishing on its slots" as
@@ -1130,53 +1329,11 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           ? <><Num size="row" inline tone="plate-mute">{publishedItems.length}</Num> {publishedItems.length === 1 ? 'post is' : 'posts are'} out so far.</>
           : 'Nothing has published from this board yet.'}
       </Footnote>
+      )}
       </Plate>
-
-      {/* 4 — day by day, one compressed line each, every one still openable. */}
-      <div style={{ marginTop: 28 }}>
-        <SectionRule
-          label="Day by day"
-          count={days.reduce((n, d) => n + postsOnDay(d).length, 0) || undefined}
-          blurb={days.some((d) => postsOnDay(d).length) ? 'dated on the days below' : 'no post carries a date in this window'}
-        />
-        <div className="timeline">
-          {/* Weekends carry no row here: the glance rail above already draws them dashed and
-              its footnote says so. A "Weekend, not a posting day" line per weekend repeated
-              that fact twice a week. */}
-          {days.filter((d) => postsOnDay(d).length > 0 || (!report && !isWeekendDay(d))).map((d, di, rowDays) => {
-            const posts = postsOnDay(d);
-            const last = di === rowDays.length - 1 && beyondWindow.length === 0;
-            if (!posts.length) return emptyRow(d, last);
-            return posts.map((q, qi) => postRow(q, d, { last: last && qi === posts.length - 1 }));
-          })}
-
-          {beyondWindow.length > 0 && (
-            <>
-              <div style={{ display: 'flex', gap: 14, padding: '6px 0 2px' }}>
-                <div style={{ flex: 'none', width: 68 }} />
-                <div style={{ flex: 'none', width: 20, position: 'relative' }} aria-hidden>
-                  <span style={{ position: 'absolute', left: 9, top: 0, bottom: 0, width: 1, background: 'var(--cb-line)' }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>Past this week</div>
-              </div>
-              {/* All of them fold: three open rows of NEXT week's posts on the This-week tab
-                  was weight without information — the count and the drill carry it. */}
-              <Drill label="open them" summaryLeft={<><b>{beyondWindow.length}</b> {beyondWindow.length === 1 ? 'post is' : 'posts are'} dated past this window</>} style={{ marginLeft: 102 }}>
-                {beyondWindow.map((q, i) => (
-                  <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: i ? '1px solid var(--cb-line)' : 'none' }}>
-                    <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
-                    <button onClick={() => onOpen(q)} style={{ flex: '1 1 200px', minWidth: 0, textAlign: 'left', fontSize: 13.5, fontWeight: 600, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{noDash(stripBrand(q.hook || q.title)) || 'Untitled'}</button>
-                  </div>
-                ))}
-              </Drill>
-            </>
-          )}
-        </div>
-
-        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Pill onClick={onGoContent}>{report ? 'See all your posts' : 'See everything in the pipeline'}</Pill>
-        </div>
-      </div>
+      {daysBlock}
+        </>
+      )}
 
       {/* 5 — the stat footer. Nothing here is typed in; a stat that cannot be computed is
              either an honest blank or is not rendered at all. */}
@@ -1201,6 +1358,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
       {onSetSchedule === undefined && null}
     </section>
   );
+  return night ? <MotionRoot>{tree}</MotionRoot> : tree;
 }
 
 export default DeskWeekSurface;

@@ -35,9 +35,9 @@ export function MotionRoot({ children }: { children: ReactNode }) {
 }
 
 /** true once the element has been in view (or a safety fired, or motion is reduced). */
-export function useReveal<T extends Element>(amount = 0.15): [RefObject<T | null>, boolean] {
+export function useReveal<T extends Element>(amount = 0.15, margin?: string): [RefObject<T | null>, boolean] {
   const ref = useRef<T>(null);
-  const inView = useInView(ref as RefObject<Element>, { once: true, amount });
+  const inView = useInView(ref as RefObject<Element>, { once: true, amount, margin: margin as any });
   const forced = useContext(ForceReveal);
   const reduce = useReducedMotion();
   const [late, setLate] = useState(false);

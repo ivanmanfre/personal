@@ -23,12 +23,15 @@
 import React, { useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { MotionRoot, useReveal, EASE } from './motion';
-import { BlurFade, NumberTicker, AvatarCircles, MagicCard, BorderBeam, DotPattern } from './magicui';
+import { BlurFade, NumberTicker, AvatarCircles, MagicCard, DotPattern } from './magicui';
 import { AnimateNumber, FunnelShape } from './twentyfirst';
 import { PK_CSS } from './styles';
+import { useNight } from './night';
 import { useFigures, callsLead, reportFigures, fallbackNote, type ReportCtx } from '../report/ReportBlocks';
 import { computeFigures, slices, dm, dayKey, addDays, type Period, type Figures, type CameVia } from '../report/reportModel';
 import { initialsOf, namesLine, sliceSeries, axisLabel } from '../weekResults';
+import { funnelStages, type FunnelStage } from '../report/PipelineBlocks';
+import { NIGHT_CSS, NightFunnel, NightWeeks } from './pipeline-night';
 
 type Booked = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null };
 type Truth = {
@@ -156,14 +159,12 @@ function Funnel({ ctx, fAll }: { ctx: ReportCtx; fAll: Figures }) {
   const H = stages.length * FN_STAGE + (stages.length - 1) * FN_GAP;
   const centers = stages.map((_, i) => FN_STAGE / 2 + i * (FN_STAGE + FN_GAP));
   const cuts = stages.slice(1).map((_, i) => FN_STAGE + i * (FN_STAGE + FN_GAP) + FN_GAP / 2);
-  const POUR = 1.05;
-  const at = (y: number) => 0.1 + (y / H) * POUR;
+  const POUR = 0.35;
   const first = stages[0];
   const last = stages[stages.length - 1];
   const line = `${fmt(first.v)} ${first.label.toLowerCase()} ${all.phrase}, ${fmt(last.v)} ${last.label.toLowerCase()}.`;
   return (
     <BlurFade as="section" delay={0.1} className="pk-panel pk-fnp">
-      <BorderBeam />
       <div className="pk-cap pk-capline">{all.eyebrow}</div>
       <h2 className="pk-disp" style={{ margin: '12px 0 0', fontSize: 'clamp(21px, 5.4vw, 24px)', lineHeight: 1.2, letterSpacing: '-0.025em', textWrap: 'balance' } as CSSProperties}>{line}</h2>
       <div ref={ref} className="pk-fn" style={{ '--fn-stage': `${FN_STAGE}px`, '--fn-gap': `${FN_GAP}px` } as CSSProperties}>
@@ -173,9 +174,7 @@ function Funnel({ ctx, fAll }: { ctx: ReportCtx; fAll: Figures }) {
         <ol className="pk-fn-stages">
           {stages.map((s, i) => (
             <li key={s.label} className="pk-fn-row">
-              <span className="pk-fn-num" style={i === stages.length - 1 ? { color: 'var(--cb-accent)' } : undefined}>
-                <NumberTicker value={s.v} start={shown} delay={Math.max(0, at(centers[i]) - 0.3)} />
-              </span>
+              <span className="pk-fn-num" style={i === stages.length - 1 ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(s.v)}</span>
               <span className="pk-cap pk-mute" style={{ marginTop: 6, letterSpacing: '.1em' }}>{s.label}</span>
             </li>
           ))}
@@ -241,7 +240,7 @@ function Calls({ rows, n, phrase }: { rows: CallRow[]; n: number; phrase: string
       <SecHead id="pk-calls" label="The calls" line={line} />
       <ul className="pk-cards">
         {shown.map((c, i) => (
-          <BlurFade as="li" key={`${c.name}-${c.day}`} delay={Math.min(i, 5) * 0.08}><CallCard c={c} /></BlurFade>
+          <BlurFade as="li" key={`${c.name}-${c.day}`} delay={(i % 3) * 0.05}><CallCard c={c} /></BlurFade>
         ))}
       </ul>
       {rows.length > 6 && (
@@ -280,7 +279,7 @@ function Came({ ctx, f, fm }: { ctx: ReportCtx; f: Figures; fm: Figures | null }
               <div className="t">
                 <div style={{ fontSize: 16, fontWeight: 800 }}>{c.name || 'Name not shown'}</div>
                 {(role || c.company) && <div className="pk-mute" style={{ marginTop: 2, fontSize: 13.5, lineHeight: 1.4 }}>{role && c.company && !role.toLowerCase().includes(c.company.toLowerCase()) ? `${role}, ${c.company}` : (role || c.company)}</div>}
-                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)' }}>{VIA_ROW[c.via]}{k ? ` · ${dm(k)}` : ''}</div>
+                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{VIA_ROW[c.via]}{k ? ` · ${dm(k)}` : ''}</div>
               </div>
             </li>
           );
@@ -296,8 +295,8 @@ function Bar({ v, top, kind, shown, delay }: { v: number; top: number; kind: 'ms
   const reduce = useReducedMotion();
   return (
     <span className={`pk-bar pk-bar-${kind}`} style={{ height: `${(v / top) * 100}%` }}>
-      <m.span className="pk-fill" initial={reduce ? false : { scaleY: 0 }} animate={shown ? { scaleY: 1 } : undefined} transition={{ duration: 0.6, ease: EASE, delay }} />
-      <m.span className="pk-val" initial={reduce ? false : { opacity: 0, y: 4 }} animate={shown ? { opacity: 1, y: 0 } : undefined} transition={{ duration: 0.3, ease: EASE, delay: delay + 0.35 }}>{fmt(v)}</m.span>
+      <m.span className="pk-fill" initial={reduce ? false : { scaleY: 0 }} animate={shown ? { scaleY: 1 } : undefined} transition={{ duration: 0.3, ease: EASE, delay }} />
+      <m.span className="pk-val" initial={reduce ? false : { opacity: 0, y: 4 }} animate={shown ? { opacity: 1, y: 0 } : undefined} transition={{ duration: 0.2, ease: EASE, delay: delay + 0.15 }}>{fmt(v)}</m.span>
     </span>
   );
 }
@@ -330,7 +329,7 @@ function AllNumbers({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figu
     </>
   );
   return (
-    <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 4 }}>
+    <div style={{ marginTop: 20, borderTop: '1px solid rgb(var(--nt-fg, 255 255 255) / .08)', paddingTop: 4 }}>
       <button type="button" className="pk-disc" aria-expanded={open} aria-controls="pk-all" onClick={() => setOpen((o) => !o)}>
         <span>All numbers</span>
         <m.svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}>
@@ -342,7 +341,7 @@ function AllNumbers({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figu
         <ul className="pk-figs">
           {figs.map((x) => (
             <li key={x.key} data-report-figure={x.key}>
-              <b style={x.strong ? { color: 'var(--cb-accent)' } : undefined}>{fmt(x.value)}</b>
+              <b style={x.strong ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(x.value)}</b>
               <span>{x.caption}{x.sub ? <small>{x.sub}</small> : null}</span>
             </li>
           ))}
@@ -403,14 +402,14 @@ function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures |
               >
                 <span className="pk-slot">
                   {w.calls > 0 && (
-                    <m.span className="pk-badge" initial={reduce ? false : { opacity: 0, scale: 0.5, y: 6 }} animate={shown ? { opacity: 1, scale: 1, y: 0 } : undefined} transition={{ type: 'spring', bounce: 0.45, duration: 0.5, delay: 0.55 + i * 0.08 }}>
+                    <m.span className="pk-badge" initial={reduce ? false : { opacity: 0, scale: 0.5, y: 6 }} animate={shown ? { opacity: 1, scale: 1, y: 0 } : undefined} transition={{ duration: 0.25, ease: EASE, delay: 0.2 + i * 0.02 }}>
                       {w.calls}
                     </m.span>
                   )}
                 </span>
                 <span className="pk-bars" aria-hidden="true">
-                  <Bar v={w.reach} top={top} kind="msg" shown={shown} delay={0.08 + i * 0.06} />
-                  <Bar v={w.wrote} top={top} kind="rep" shown={shown} delay={0.16 + i * 0.06} />
+                  <Bar v={w.reach} top={top} kind="msg" shown={shown} delay={Math.min(0.15, i * 0.015)} />
+                  <Bar v={w.wrote} top={top} kind="rep" shown={shown} delay={Math.min(0.15, i * 0.015)} />
                 </span>
                 <span className="pk-wl" aria-hidden="true">
                   <span className="pk-wl-t">{axisLabel(weeks, i)}</span>
@@ -475,7 +474,7 @@ function Posts({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
               </div>
               {!r.collected && <div className="pk-mute" style={{ marginTop: 4, fontSize: 12.5 }}>engagement not collected for this post</div>}
             </div>
-            <span className="n" style={r.collected && r.fit ? { color: 'var(--cb-accent)' } : { color: 'rgba(255,255,255,.35)' }}>{r.collected && r.fit ? r.fit : '–'}</span>
+            <span className="n" style={r.collected && r.fit ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : { color: 'rgb(var(--nt-fg, 255 255 255) / .35)' }}>{r.collected && r.fit ? r.fit : '–'}</span>
             {anyCall && <span className="n">{r.calls > 0 ? r.calls : ''}</span>}
           </li>
         ))}
@@ -489,22 +488,320 @@ function Posts({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
   );
 }
 
-/* ───────────────────────────── page ───────────────────────────── */
 
-export default function PerfReport({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
+/* ═════════════════════════ NIGHT v4 (local mockup) ═════════════════════════
+ * Ivan 2026-09-29 on v3: "looks way less cool and u even changed the font type". v2's LOOK
+ * is back (the thin gradient hero with its avatar circles, the liquid funnel panel, the
+ * glowing call cards, the week chart panel, caps eyebrows with the yellow rule) and v3's
+ * WORDS stay: the one glossary (reached, connected, replied, said yes, booked a call) through
+ * funnelStages(), the best-week line, the posts line, "Show N more", plain empty states and
+ * no helper lines. Each fact once per screen: the hero says the period's calls, so the calls
+ * section carries the cards only; the came-to-you people get their own section, not a hero
+ * note too; the since-the-start calls live in the funnel, not under the hero as well.
+ * The light board never reaches any of this. */
+
+const PR4_CSS = `
+.pr4-hero .pk-quiet { color: rgb(var(--nt-fg, 255 255 255) / .64); font-size: 14px; }
+.pr4 .pk-subcap { color: rgb(var(--nt-fg, 255 255 255) / .62); }
+.pr4 .pk-nums thead th { font-size: 11px; color: rgb(var(--nt-fg, 255 255 255) / .62); }
+.pr4 .pk-figs small { font-size: 13px; color: rgb(var(--nt-fg, 255 255 255) / .62); }
+.pr4 .pk-quiet { color: rgb(var(--nt-fg, 255 255 255) / .64); }
+.pr4 .pk-rows .pr4-hd { padding: 10px 0; }
+.pr4 .pk-rows .pr4-hd .pk-cap { font-size: 11px; }
+.pr4 .pk-rows .n.zero { color: rgb(var(--nt-fg, 255 255 255) / .4); }
+.pr4 .pk-disc.pr4-more { width: auto; gap: 8px; }
+.pr4 .pr4-via, .pr4 .pk-rows .n.hit { color: var(--cb-accent-fg, var(--cb-accent)); }
+
+/* QUIET (2026-09-29): the report on the light ground. No frame line around the page, white
+   cards and panels, ink numbers; the booked-call number keeps its marker, the booked mark
+   stays a small yellow dot, everything else that was yellow text reads in ink. */
+[data-quiet] .pk.pk-flat.pr4 { border: 0; background: transparent; }
+[data-quiet] .pr4 .pk-pick select { background: #FFFFFF; border-color: rgba(17,17,17,.14); color: #111; }
+[data-quiet] .pr4 .pk-pick svg { color: rgba(17,17,17,.62); }
+[data-quiet] .pr4 .pk-mcard, [data-quiet] .pk-flat.pr4 .pk-mcard { background: #FFFFFF !important; border: 1px solid rgba(17,17,17,.09) !important; }
+[data-quiet] .pr4 .pk-who .pk-av { border-color: #F5F5F3; }
+[data-quiet] .pr4 .pk-who .pk-av-more { background: #E9E9E6; color: #111; }
+[data-quiet] .pr4 .pk-mcard .pk-av { border-color: #FFFFFF; }
+[data-quiet] .pr4 .pk-pill { background: #FFFFFF; border-color: rgba(17,17,17,.14); color: #111; }
+[data-quiet] .pr4 .pr4-via { color: rgba(17,17,17,.66); }
+[data-quiet] .pr4 .pk-rows .n.hit { color: #111; }
+[data-quiet] .pr4 .pk-rows .n.zero { color: rgba(17,17,17,.36); }
+[data-quiet] .pr4 .pk-figs li[data-report-figure="calls"] b { color: #111 !important; }
+@media (max-width: 480px) { [data-quiet] .pr4 .pk-nums { table-layout: auto; } [data-quiet] .pr4 .pk-nums th:first-child { width: auto; } }
+[data-quiet] .pr4 .pk-nums td.hit { color: #111; }
+[data-quiet] .pr4 .pk-rows { border-top-color: rgba(17,17,17,.14); }
+`;
+
+/** The funnel's five glossary stages; a board without per-person rows falls back to the
+ *  report's own since-the-start figures under the same words. */
+function stagesNight(ctx: ReportCtx, fAll: Figures): FunnelStage[] {
+  const s = funnelStages(ctx);
+  if (s.length) return s;
+  return [
+    fAll.reach != null ? { key: ctx.cfg.reach === 'connections' ? 'connected' : 'reached', label: ctx.cfg.reach === 'connections' ? 'Connected' : 'Reached', v: fAll.reach } : null,
+    fAll.wrote != null ? { key: 'replied', label: 'Replied', v: fAll.wrote } : null,
+    fAll.yes != null ? { key: 'yes', label: 'Said yes', v: fAll.yes } : null,
+    { key: 'booked', label: 'Booked a call', v: fAll.calls.n },
+  ].filter(Boolean) as FunnelStage[];
+}
+
+function HeroNight({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | null; fAll: Figures }) {
+  const lead = callsLead(ctx, f, fm, fAll);
+  const scoped = lead.phrase !== ctx.period.phrase;
+  // The avatars and the sentence beside them name the same people: namesLine names three,
+  // so three circles and the rest as "+N" ("... and N more").
+  const shown = lead.names.slice(0, 3);
+  return (
+    <section aria-labelledby="pk-hero" className="pr4-hero" style={{ position: 'relative' }}>
+      <div className="pk-cap pk-capline">{ctx.period.eyebrow}</div>
+      {lead.n > 0 ? (
+        <h1 id="pk-hero" className="pk-hero-h" style={{ margin: '12px 0 0' }}>
+          <span className="pk-hero-n pk-grad"><NumberTicker value={lead.n} start delay={0.15} /></span>
+          <span className="pk-hero-l pk-disp" style={{ display: 'block' }}>{plural(lead.n, 'call', 'calls')} booked<br />{lead.phrase}</span>
+        </h1>
+      ) : (
+        <h1 id="pk-hero" className="pk-h2" style={{ fontSize: 'clamp(36px, 9vw, 56px)' }}>No calls booked {ctx.period.phrase} yet.</h1>
+      )}
+      {lead.none && scoped && <div className="pk-quiet">{lead.none}</div>}
+      {shown.length > 0 && (
+        <div className="pk-who">
+          <AvatarCircles size={48} more={lead.names.length - shown.length} avatars={shown.map((n) => ({ initials: initialsOf(n), label: n }))} />
+          <div style={{ minWidth: 0, fontSize: 16, lineHeight: 1.35, fontWeight: 700 }}>{namesLine(lead.names)}</div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CallsNight({ rows }: { rows: CallRow[] }) {
+  const [all, setAll] = useState(false);
+  if (!rows.length) return null;
+  const shown = all ? rows : rows.slice(0, 6);
+  return (
+    <section aria-labelledby="pk-calls" className="pk-sec">
+      <div id="pk-calls" className="pk-cap pk-capline">Calls booked</div>
+      <ul className="pk-cards">
+        {shown.map((c) => <li key={`${c.name}-${c.day}`}><CallCard c={c} /></li>)}
+      </ul>
+      {rows.length > 6 && (
+        <button type="button" className="pk-disc pr4-more" onClick={() => setAll((x) => !x)} aria-expanded={all}>
+          {all ? 'Show fewer' : `Show ${rows.length - 6} more`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function CameNight({ ctx, f, fm }: { ctx: ReportCtx; f: Figures; fm: Figures | null }) {
+  const useMonth = !f.came?.n && ctx.period.kind === 'week' && !!fm?.came?.n;
+  const src = useMonth ? fm : f;
+  const people = src?.came?.people || [];
+  if (!people.length) return null;
+  const scope = (useMonth ? ctx.period.month?.phrase : ctx.period.phrase) || '';
+  const who = ctx.cfg.who;
+  return (
+    <section aria-labelledby="pk-came" className="pk-sec">
+      <div className="pk-cap pk-capline">Came to you</div>
+      <h2 id="pk-came" className="pk-h2">{people.length} {plural(people.length, who[0], who[1])} came to you on their own {scope}.</h2>
+      <ul className="pk-rows">
+        {people.map((c, i) => {
+          const role = (c.title || '').split('|')[0].trim();
+          const k = dayKey(c.at, ctx.cfg.tz);
+          return (
+            <li key={`${c.name}-${i}`}>
+              <div className="t">
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{c.name || 'Name not shown'}</div>
+                {(role || c.company) && <div className="pk-mute" style={{ marginTop: 2, fontSize: 14, lineHeight: 1.4 }}>{role && c.company && !role.toLowerCase().includes(c.company.toLowerCase()) ? `${role}, ${c.company}` : (role || c.company)}</div>}
+                <div className="pr4-via" style={{ marginTop: 6, fontSize: 13, fontWeight: 700 }}>{VIA_ROW[c.via]}{k ? ` · ${dm(k)}` : ''}</div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** The period's figures and tables under "All numbers", in the funnel's words. */
+function AllNumbersNight({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | null; fAll: Figures }) {
+  const reduce = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const conn = ctx.cfg.reach === 'connections';
+  const WORD: Record<string, string> = { calls: 'booked a call', yes: 'said yes', wrote: 'replied', reach: conn ? 'connected' : 'reached' };
+  const figs = reportFigures(ctx, f, fm, fAll, 'results').map((x) => (WORD[x.key] ? { ...x, caption: `${WORD[x.key]}${x.weekZero ? ` ${x.weekZero}` : ''}` } : x));
+  const note = fallbackNote(ctx, figs);
+  const tables = useMemo(() => {
+    const allP = ctx.periods.find((x) => x.kind === 'all') as Period;
+    const mk = (p: Period) => slices(ctx.cfg, p, ctx.periods, ctx.today).map((s) => ({ p: s, f: computeFigures(ctx.cfg, s, ctx.payload, ctx.board, ctx.audience) }));
+    return { cur: ctx.period.kind === 'all' ? [] : mk(ctx.period), all: mk(allP) };
+  }, [ctx]);
+  const table = (rows: typeof tables.cur, first: string, caption: string) => rows.length < 2 ? null : (
+    <>
+      <div className="pk-cap pk-subcap">{caption}</div>
+      <table className="pk-nums">
+        <thead><tr><th scope="col">{first}</th><th scope="col">Booked a call</th><th scope="col">Came to you</th><th scope="col">Replied</th><th scope="col">{conn ? 'Connected' : 'Reached'}</th></tr></thead>
+        <tbody>
+          {rows.map(({ p, f: rf }) => (
+            <tr key={p.key}>
+              <th scope="row">{p.label}</th>
+              {[rf.calls.n, rf.came?.n ?? 0, rf.wrote ?? 0, rf.reach ?? 0].map((v, i) => <td key={i} className={i === 0 && v > 0 ? 'hit' : v ? undefined : 'zero'}>{fmt(v)}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+  return (
+    <div style={{ marginTop: 20, borderTop: '1px solid rgb(var(--nt-fg, 255 255 255) / .08)', paddingTop: 4 }}>
+      <button type="button" className="pk-disc" aria-expanded={open} aria-controls="pk-all" onClick={() => setOpen((o) => !o)}>
+        <span>All numbers</span>
+        <m.svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}>
+          <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </m.svg>
+      </button>
+      {open && (
+        <div id="pk-all">
+          <div className="pk-cap pk-subcap" style={{ marginTop: 6 }}>{ctx.period.label}</div>
+          <ul className="pk-figs">
+            {figs.map((x) => (
+              <li key={x.key} data-report-figure={x.key}>
+                <b style={x.key === 'calls' ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(x.value)}</b>
+                <span>{x.caption}{x.sub ? <small>{x.sub}</small> : null}</span>
+              </li>
+            ))}
+          </ul>
+          {note && <div className="pk-quiet">{note}</div>}
+          {table(tables.cur, 'Week', 'Week by week')}
+          {table(tables.all, 'Month', `Month by month, since ${dm(ctx.cfg.start)}`)}
+          <div style={{ height: 12 }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PostsNight({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
+  const [all, setAll] = useState(false);
+  const rows = f.posts;
+  if (!rows.length) return null;
+  const fit = ctx.cfg.fit;
+  const hits = rows.filter((r) => r.collected && (r.fit || 0) > 0);
+  const best = hits[0];
+  const count = `${rows.length} ${plural(rows.length, 'post', 'posts')} ${ctx.period.phrase}.`;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const who = (n: number) => `${n < 10 ? words[n] : fmt(n)} ${plural(n, fit[0], fit[1])}`;
+  const line = !best ? count
+    : hits.length === 1
+      ? `${count} ${who(best.fit || 0)} engaged, on the ${dm(best.day)} post.`
+      : `${count} ${cap(fit[1])} engaged with ${hits.length} of them, most on the ${dm(best.day)} post (${best.fit}).`;
+  const anyCall = rows.some((r) => r.calls > 0);
+  const shown = all ? rows : rows.slice(0, 8);
+  return (
+    <section aria-labelledby="pk-posts" id="cb-report-posts" className="pk-sec">
+      <div className="pk-cap pk-capline">Your posts</div>
+      <h2 id="pk-posts" className="pk-h2">{line}</h2>
+      <ul className="pk-rows">
+        <li aria-hidden="true" className="pr4-hd">
+          <span className="t pk-cap pk-mute">Post, {ctx.cfg.postsRank}</span>
+          <span className="pk-cap pk-mute">{ctx.cfg.fitColumn}</span>
+          {anyCall && <span className="pk-cap pk-mute">Led to a call</span>}
+        </li>
+        {shown.map((r) => (
+          <li key={r.key}>
+            <div className="t">
+              <div className="pk-cap pk-mute">{dm(r.day)}</div>
+              <div style={{ marginTop: 4, fontSize: 15.5, fontWeight: 600, lineHeight: 1.35 }}>
+                {r.title.length > 90 ? `${r.title.slice(0, r.title.lastIndexOf(' ', 90))}…` : r.title}
+                {r.own && <span className="pk-chip">your own post</span>}
+              </div>
+              {!r.collected && <div className="pk-mute" style={{ marginTop: 4, fontSize: 13 }}>Engagement not collected for this post.</div>}
+            </div>
+            <span className={`n${r.collected && r.fit ? ' hit' : ' zero'}`}>{r.collected ? fmt(r.fit || 0) : ''}</span>
+            {anyCall && <span className="n">{r.calls > 0 ? r.calls : ''}</span>}
+          </li>
+        ))}
+      </ul>
+      {rows.length > 8 && (
+        <button type="button" className="pk-disc pr4-more" onClick={() => setAll((x) => !x)} aria-expanded={all}>
+          {all ? 'Show fewer' : `Show ${rows.length - 8} more`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function PerfReportNight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
   const { f, fm, fAll } = useFigures(ctx);
   const lead = callsLead(ctx, f, fm, fAll);
   const scope: Period = lead.phrase === ctx.period.phrase ? ctx.period
     : (ctx.period.month && lead.phrase === ctx.period.month.phrase ? ctx.period.month : ctx.periods.find((p) => p.kind === 'all') as Period);
   const calls = useMemo(() => callsFor(ctx, truth, lead, scope), [ctx, truth, lead.names.join('|'), scope.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stages = useMemo(() => stagesNight(ctx, fAll), [ctx, fAll]);
+  const weeks = useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
+  const conn = ctx.cfg.reach === 'connections';
   return (
     <MotionRoot>
-      <style>{PK_CSS}</style>
-      <div className="pk" data-perf-report="">
+      <style>{PK_CSS + NIGHT_CSS + PR_CSS + PR4_CSS}</style>
+      <div className="pk pk-flat pr4" data-perf-report="" data-perf-night="">
         <div aria-hidden className="pk-glow" />
         <DotPattern />
-        <header className="pk-head">
-          <span className="pk-cap" style={{ color: 'rgba(255,255,255,.6)' }}>Results</span>
+        <header className="pk-head pr-head"><DarkPicker ctx={ctx} /></header>
+        <div className="pk-top">
+          <HeroNight ctx={ctx} f={f} fm={fm} fAll={fAll} />
+          <NightFunnel stages={stages} eyebrow={`Since ${dm(ctx.cfg.start)}`} />
+        </div>
+        <CallsNight rows={calls} />
+        <CameNight ctx={ctx} f={f} fm={fm} />
+        {weeks.length >= 2
+          ? <NightWeeks weeks={weeks} third={{ label: conn ? 'Connected' : 'Reached', of: (w) => w.reach }}><AllNumbersNight ctx={ctx} f={f} fm={fm} fAll={fAll} /></NightWeeks>
+          : <section className="pk-sec"><AllNumbersNight ctx={ctx} f={f} fm={fm} fAll={fAll} /></section>}
+        <PostsNight ctx={ctx} f={f} />
+        <div className="pk-foot">Calls, replies and connections come from your LinkedIn outreach.</div>
+      </div>
+    </MotionRoot>
+  );
+}
+
+/* ───────────────────────────── page ───────────────────────────── */
+
+/** Calm pass (2026-09-29): on desktop the report sits straight on the board ground (no second
+ *  rounded frame inside the page), the call cards keep a plain edge where there is no cursor,
+ *  and the only count-up left is the hero number. */
+export const PR_CSS = `
+@media (min-width: 640px) {
+  .pk.pk-flat { background: transparent; border-radius: 0; padding: 0 0 36px; overflow: visible; }
+  .pk.pk-flat > .pk-glow, .pk.pk-flat > .pk-dots { display: none; }
+}
+.pk-head.pr-head { justify-content: flex-end; border-bottom: 0; padding: 12px 0 0; }
+@media (min-width: 640px) { .pk-head.pr-head { padding-top: 0; } .pk-flat .pk-top { padding-top: 8px; } }
+@media (hover: none) { .pk-flat .pk-mcard { background: linear-gradient(#171717 0 0) padding-box, linear-gradient(rgb(var(--nt-fg, 255 255 255) / .09), rgb(var(--nt-fg, 255 255 255) / .09)) border-box !important; } .pk-flat .pk-mcard-glow { display: none; } }
+`;
+
+export default function PerfReport({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
+  // The night flag is fixed for a page's life, so this early return never changes hook order.
+  if (useNight()) return <PerfReportNight ctx={ctx} truth={truth} />;
+  return <PerfReportLight ctx={ctx} truth={truth} />;
+}
+
+function PerfReportLight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
+  const { f, fm, fAll } = useFigures(ctx);
+  const lead = callsLead(ctx, f, fm, fAll);
+  const scope: Period = lead.phrase === ctx.period.phrase ? ctx.period
+    : (ctx.period.month && lead.phrase === ctx.period.month.phrase ? ctx.period.month : ctx.periods.find((p) => p.kind === 'all') as Period);
+  const calls = useMemo(() => callsFor(ctx, truth, lead, scope), [ctx, truth, lead.names.join('|'), scope.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  // NIGHT MOCKUP: the board ground is dark, so the report drops its own frame and label there;
+  // the light desk keeps the dark island with its header exactly as before.
+  const night = useNight();
+  return (
+    <MotionRoot>
+      <style>{PK_CSS + (night ? PR_CSS : '')}</style>
+      <div className={night ? 'pk pk-flat' : 'pk'} data-perf-report="">
+        <div aria-hidden className="pk-glow" />
+        <DotPattern />
+        {/* Night: the top bar already names the tab, so the header carries the period picker only. */}
+        <header className={night ? 'pk-head pr-head' : 'pk-head'} style={night ? undefined : { flexWrap: 'nowrap' }}>
+          {!night && <span className="pk-cap" style={{ color: 'rgb(var(--nt-fg, 255 255 255) / .6)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Performance</span>}
           <DarkPicker ctx={ctx} />
         </header>
         <div className="pk-top">

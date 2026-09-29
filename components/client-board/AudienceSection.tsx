@@ -42,6 +42,7 @@ import {
   Drill, Blank,
 } from './desk-kit';
 import { AUDIENCE_COPY as C } from './audienceCopy';
+import { useNight } from './perf-kit/night';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * The payload, exactly as run-03 CONTRACTS §2.1 freezes it. The board never
@@ -196,8 +197,11 @@ function fmtNum(n?: number | null): string {
 }
 /** A post id is not a title. The board shows the publication day and the topic;
  *  the raw platform id is only ever a link target. */
-function postLabel(p: AudiencePost): string {
+function postLabel(p: AudiencePost, night = false): string {
   const day = fmtDay(p.published_at);
+  // Night: the date already heads the row, and the topic is a funnel code (reach / trust /
+  // buyers) the client never uses, so the link reads "Image post".
+  if (night) return p.format ? C.posts.formatPost(p.format) : C.posts.colPost;
   const bits = [p.topic, p.format].filter(Boolean).join(' · ');
   return bits ? `${day} · ${bits}` : day;
 }
@@ -278,7 +282,7 @@ export function relationshipChipText(rel?: AudiencePerson['relationship']): stri
  *  beyond the cap are counted in words, never dropped in silence. */
 const REL_CHIP_CAP = 24;
 
-function RelationshipBlock({ people }: { people: AudiencePerson[] }) {
+function RelationshipBlock({ people, night = false }: { people: AudiencePerson[]; night?: boolean }) {
   const known = people.filter((p) => (p.relationship?.state ?? 'unknown').startsWith(STAGE_PREFIX));
   const unknownN = people.length - known.length;
   const shown = known.slice(0, REL_CHIP_CAP);
@@ -288,24 +292,24 @@ function RelationshipBlock({ people }: { people: AudiencePerson[] }) {
       <SectionRule
         label={C.relationship.heading}
         count={known.length}
-        blurb={C.relationship.blurb}
+        blurb={night ? undefined : C.relationship.blurb}
       />
       {people.length === 0 && <Meta style={{ marginTop: 12 }}>{C.relationship.none}</Meta>}
-      {shown.length > 0 && (
+      {!night && shown.length > 0 && (
         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {shown.map((p, i) => (
             <Chip key={p.person_key ?? p.person_ref ?? i}>{relationshipChipText(p.relationship)}</Chip>
           ))}
         </div>
       )}
-      {hiddenKnown > 0 && <Meta style={{ marginTop: 9 }}>{C.relationship.more(hiddenKnown)}</Meta>}
+      {!night && hiddenKnown > 0 && <Meta style={{ marginTop: 9 }}>{C.relationship.more(hiddenKnown)}</Meta>}
       {unknownN > 0 && (
         <div style={{ marginTop: 12, display: 'flex', gap: 9, alignItems: 'baseline', flexWrap: 'wrap' }}>
-          <Chip>{C.relationship.unknown}</Chip>
+          {!night && <Chip>{C.relationship.unknown}</Chip>}
           <Meta>{C.relationship.unknownMany(unknownN)}</Meta>
         </div>
       )}
-      <Footnote>{C.relationship.footnote}</Footnote>
+      {!night && <Footnote>{C.relationship.footnote}</Footnote>}
     </div>
   );
 }
@@ -508,8 +512,9 @@ function RecommendationCard({ rec, live, onDecide }: {
 
 /* ══════════════════════════ per-post ledger ══════════════════════════ */
 
-function PeopleLine({ e }: { e: AudiencePost['engagers'] }) {
+function PeopleLine({ e, night = false }: { e: AudiencePost['engagers']; night?: boolean }) {
   if (e.people === null || e.people === undefined) {
+    if (night) return <Meta style={{ marginTop: 8 }}>{C.posts.people.none}</Meta>;
     return (
       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <Blank style={{ maxWidth: 60, height: 26, minHeight: 26 }} />
@@ -536,7 +541,7 @@ function PeopleLine({ e }: { e: AudiencePost['engagers'] }) {
   );
 }
 
-function PostRows({ posts }: { posts: AudiencePost[] }) {
+function PostRows({ posts, night = false }: { posts: AudiencePost[]; night?: boolean }) {
   const best = posts.reduce(
     (m, p) => Math.max(m, p.raw.reactions ?? 0), 0);
   return (
@@ -566,18 +571,18 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
                 {url ? (
                   <a href={url} target="_blank" rel="noopener noreferrer"
                      style={{ fontSize: 14.5, fontWeight: 700, color: INK, textDecoration: 'underline' }}>
-                    {postLabel(p)}
+                    {postLabel(p, night)}
                   </a>
                 ) : (
-                  <span style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>{postLabel(p)}</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>{postLabel(p, night)}</span>
                 )}
-                <Chip>{rankLine}</Chip>
+                {!night && <Chip>{rankLine}</Chip>}
               </div>
               {r !== null && <LedgerBar pct={pct} tone="muted" />}
-              <PeopleLine e={p.engagers} />
+              <PeopleLine e={p.engagers} night={night} />
               <div style={{ marginTop: 8, display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'baseline' }}>
-                <Meta>{C.posts.coverage[p.raw.coverage] || C.posts.coverage.unknown}</Meta>
-                {p.raw.captured_at && <Meta>{C.posts.capturedAt(fmtDay(p.raw.captured_at))}</Meta>}
+                {!night && <Meta>{C.posts.coverage[p.raw.coverage] || C.posts.coverage.unknown}</Meta>}
+                {!night && p.raw.captured_at && <Meta>{C.posts.capturedAt(fmtDay(p.raw.captured_at))}</Meta>}
                 {p.raw.impressions !== null && <Meta>{C.posts.impressions(p.raw.impressions)}</Meta>}
                 {p.raw.comments !== null && <Meta>{C.posts.comments(p.raw.comments)}</Meta>}
                 {p.raw.shares !== null && <Meta>{C.posts.shares(p.raw.shares)}</Meta>}
@@ -586,7 +591,7 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
             </LedgerCell>
             <LedgerCell num align="right" width="1%" className="audn-reacts">
               {r === null
-                ? <Blank style={{ maxWidth: 62, height: 30, minHeight: 30, marginLeft: 'auto' }} />
+                ? (night ? null : <Blank style={{ maxWidth: 62, height: 30, minHeight: 30, marginLeft: 'auto' }} />)
                 : fmtNum(r)}
             </LedgerCell>
           </LedgerRow>
@@ -598,7 +603,7 @@ function PostRows({ posts }: { posts: AudiencePost[] }) {
 
 /* ══════════════════════════ monthly trend ══════════════════════════ */
 
-function Trend({ rows }: { rows: AudiencePayload['monthly_median'] }) {
+function Trend({ rows, night = false }: { rows: AudiencePayload['monthly_median']; night?: boolean }) {
   if (!rows.length) {
     return (
       <div style={{ marginTop: 10 }}>
@@ -609,7 +614,7 @@ function Trend({ rows }: { rows: AudiencePayload['monthly_median'] }) {
   }
   const top = Math.max(...rows.map((r) => Number(r.median_reactions) || 0)) || 1;
   return (
-    <div data-viz="" style={{ marginTop: 10 }}>
+    <div data-viz="" className="audn-trend" style={{ marginTop: 10 }}>
       {rows.map((r, i) => {
         const v = Number(r.median_reactions) || 0;
         return (
@@ -630,9 +635,11 @@ function Trend({ rows }: { rows: AudiencePayload['monthly_median'] }) {
           </Meta>
         ))}
       </div>
-      <Meta style={{ marginTop: 8 }}>
-        {rows.every((r) => r.basis === 'matched_age') ? C.trend.basisMatched : C.trend.basisOther}
-      </Meta>
+      {!night && (
+        <Meta style={{ marginTop: 8 }}>
+          {rows.every((r) => r.basis === 'matched_age') ? C.trend.basisMatched : C.trend.basisOther}
+        </Meta>
+      )}
     </div>
   );
 }
@@ -679,6 +686,12 @@ export function AudienceSection({ audience, live = false, onDecide }: {
 }) {
   // The sixth state is ABSENCE. The feature is off for this client, or the
   // client has no manifest: render nothing at all, never a placeholder.
+  // NIGHT MOCKUP v3 (local only, 2026-09-29): the client sees the numbers, not our working
+  // notes. Night drops the recommendations (their fields are operator notes, not client
+  // sentences), the decision form, the source and method caveats, the state line, the
+  // per-row standing chips and the raw measurement table. The light board is unchanged.
+  const night = useNight();
+  const [allPosts, setAllPosts] = React.useState(false);
   if (!audience) return null;
 
   const { state, posts, recommendations, monthly_median: median, assets, freshness, measurement } = audience;
@@ -704,6 +717,11 @@ export function AudienceSection({ audience, live = false, onDecide }: {
     (c, i, a): c is string => !!c && a.indexOf(c) === i,
   );
   const people = audience.people ?? null;
+  // CLIENT-SAFE (2026-09-29): the recommendation cards (their fields are our working notes:
+  // anchor-client rules, "unjudged"), the per-metric-floor state line and the raw measurement
+  // table show on the operator's preview board only. The live link a client opens gets the
+  // numbers and the plain-language lines.
+  const notes = !live;
 
   return (
     <section
@@ -714,9 +732,9 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       <style>{AUDN_CSS}</style>
       <SectionRule
         label={C.eyebrow}
-        count={posts.length}
-        blurb={C.postsBlurb(posts.length)}
-        right={chips.length > 0
+        count={night ? undefined : posts.length}
+        blurb={night ? undefined : C.postsBlurb(posts.length)}
+        right={!night && chips.length > 0
           ? (
             <span style={{ display: 'inline-flex', gap: 7, flexWrap: 'wrap' }}>
               {chips.map((c) => <Chip key={c}>{c}</Chip>)}
@@ -730,27 +748,27 @@ export function AudienceSection({ audience, live = false, onDecide }: {
         {[
           audience.reviewed_at ? C.reviewedOn(fmtDay(audience.reviewed_at)) : C.reviewedNever,
           C.cadence(audience.review_cadence),
-          ...freshnessLines(freshness),
+          ...(night ? [] : freshnessLines(freshness)),
           // The window is worth stating whenever something is out of date or
           // missing, not only in the `stale` state: `partial` is exactly the
           // case the old derivation hid.
-          ...(state === 'stale' || (freshness.overall && freshness.overall !== 'fresh')
+          ...(!night && (state === 'stale' || (freshness.overall && freshness.overall !== 'fresh'))
             ? [C.freshness.staleAfter(freshness.stale_after_days)]
             : []),
         ].join('  ·  ')}
       </Meta>
 
-      {stateLine && state !== 'normal' && (
+      {!night && stateLine && state !== 'normal' && (notes || state !== 'incomplete_history') && (
         <div
           data-audn-state-line=""
           style={{ marginTop: 14, padding: '13px 16px', borderRadius: 12, background: SUNK,
                    fontSize: 14, fontWeight: 600, lineHeight: 1.5, color: INK }}
         >{stateLine}</div>
       )}
-      {state === 'normal' && <Meta style={{ marginTop: 12 }}>{stateLine}</Meta>}
+      {!night && state === 'normal' && <Meta style={{ marginTop: 12 }}>{stateLine}</Meta>}
 
       {/* ---- recommendations ------------------------------------------- */}
-      {state !== 'empty' && (
+      {!night && notes && state !== 'empty' && (
         <div style={{ marginTop: 26 }}>
           <SectionRule label={C.recs.heading} count={recommendations.length} blurb={C.recs.blurb} />
           {recommendations.length === 0 && <Meta style={{ marginTop: 12 }}>{C.recs.none}</Meta>}
@@ -767,14 +785,19 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       {/* ---- per-post ledger ------------------------------------------- */}
       {posts.length > 0 && (
         <div style={{ marginTop: 30 }}>
-          <SectionRule label={C.posts.heading} count={posts.length} blurb={C.posts.blurb} />
-          <PostRows posts={posts} />
+          <SectionRule label={C.posts.heading} count={night ? undefined : posts.length} blurb={night ? undefined : C.posts.blurb} />
+          <PostRows posts={night && !allPosts ? posts.slice(0, 10) : posts} night={night} />
+          {night && posts.length > 10 && (
+            <Pill onClick={() => setAllPosts((x) => !x)} style={{ marginTop: 12 }}>{allPosts ? C.posts.showFewer : C.posts.showMore(posts.length - 10)}</Pill>
+          )}
+          {!night && <>
           <Footnote>{C.posts.notSummed}</Footnote>
           {/* The two limits that sit beside every relevance count (§2.4): what
               the judge is worth, and what the sample covers. */}
           <Footnote style={{ marginTop: 4 }}>{C.limits.classifier}</Footnote>
           <Footnote style={{ marginTop: 4 }}>{C.limits.coverage}</Footnote>
           <Footnote style={{ marginTop: 4 }}>{C.posts.assistedNote}</Footnote>
+          </>}
         </div>
       )}
       {posts.length === 0 && state !== 'empty' && (
@@ -785,15 +808,15 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       )}
 
       {/* ---- relationship ----------------------------------------------- */}
-      {state !== 'empty' && people && <RelationshipBlock people={people} />}
+      {state !== 'empty' && people && <RelationshipBlock people={people} night={night} />}
 
-      {state !== 'empty' && <MeasurementBlock measurement={measurement} />}
+      {!night && notes && state !== 'empty' && <MeasurementBlock measurement={measurement} />}
 
       {/* ---- monthly trend --------------------------------------------- */}
       {state !== 'empty' && (
         <div style={{ marginTop: 30 }}>
-          <SectionRule label={C.trend.heading} count={median.length} blurb={C.trend.blurb} />
-          <Trend rows={median} />
+          <SectionRule label={C.trend.heading} count={night ? undefined : median.length} blurb={night ? undefined : C.trend.blurb} />
+          <Trend rows={median} night={night} />
         </div>
       )}
 

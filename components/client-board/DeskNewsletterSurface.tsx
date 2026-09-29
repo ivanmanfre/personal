@@ -4,6 +4,8 @@ import {
   SectionRule, Stat, StatStrip, StatBlank, Blank,
 } from './desk-kit';
 import type { Board } from '../ClientBoardPage';
+import { useNight } from './perf-kit/night';
+import NewsletterNight, { type NewsletterNightProps } from "./perf-kit/newsletter-night";
 
 /** Cuts a step detail at the last clause boundary (sentence end or comma) at or before
  *  ~`max` characters — never mid-word, never a dangling half-clause. Falls back to the
@@ -37,10 +39,27 @@ export default function DeskNewsletterSurface({ board, accent: _accent, fontStac
   onOpenIssue?: (issue: unknown) => void;
   live?: boolean;
 }) {
+  const night = useNight();
   const nl = board.newsletter;
   if (!nl) return null;
   const issues = nl.issues || [];
   const steps = nl.nurture || [];
+
+  // NIGHT MOCKUP (local only): same facts, ARCH-report look. Light desk untouched below.
+  if (night) {
+    return (
+      <div data-surface="newsletter">
+        <NewsletterNight
+          name={nl.name}
+          fromDomain={nl.from_domain}
+          cadence={nl.cadence}
+          steps={steps}
+          issues={issues as NewsletterNightProps["issues"]}
+          onOpenIssue={onOpenIssue}
+        />
+      </div>
+    );
+  }
 
   return (
     <div data-surface="newsletter">

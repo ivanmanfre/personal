@@ -14,17 +14,26 @@
 import { useCallback, useEffect, useId, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { m, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, type Variants } from 'framer-motion';
 import { useReveal } from './motion';
+import { useNight } from './night';
+
+// NIGHT v4 (2026-09-29): v2's look is back (Ivan: v3 'way less cool'); only the costs stay off.
+// Content renders in place (the scroll reveals were the slow load) and nothing loops (no beam).
+// The night flag is fixed for a page's life, so the early returns never change hook order.
 
 const cx = (...p: Array<string | false | null | undefined>) => p.filter(Boolean).join(' ');
 
 /* ─────────────────────────── Blur Fade ─────────────────────────── */
 
 type Tag = 'div' | 'section' | 'li' | 'span' | 'h2' | 'ul' | 'ol';
-export function BlurFade({ children, as = 'div', className, style, delay = 0, duration = 0.45, offset = 8, blur = '6px', id }: {
+export function BlurFade({ children, as = 'div', className, style, delay = 0, duration = 0.3, offset = 6, blur = '0px', id }: {
   children: ReactNode; as?: Tag; className?: string; style?: CSSProperties; delay?: number; duration?: number; offset?: number; blur?: string; id?: string;
 }) {
-  const [ref, shown] = useReveal<HTMLElement>();
+  if (useNight()) { const Tag = as as any; return <Tag id={id} className={className} style={style}>{children}</Tag>; }
+  // Calm pass (2026-09-29): reveal fires ~30% of a screen BEFORE the element arrives, so a fast
+  // scroll on a phone never lands on a blank card; stagger delays are capped for the same reason.
+  const [ref, shown] = useReveal<HTMLElement>(0, '0px 0px 30% 0px');
   const reduce = useReducedMotion();
+  delay = Math.min(delay, 0.2);
   const variants: Variants = {
     hidden: { y: offset, opacity: 0, filter: `blur(${blur})` },
     visible: { y: 0, opacity: 1, filter: 'blur(0px)' },
@@ -60,7 +69,7 @@ export function NumberTicker({ value, delay = 0, start, className, style }: { va
   const spring = useSpring(mv, { stiffness: 140, damping: 24, restDelta: 0.001 });
   const go = start ?? seen;
   const final = fmt(value);
-  const still = !!reduce || value === 0;
+  const still = !!reduce || value < 10;
 
   useEffect(() => {
     const el = ref.current;
@@ -91,7 +100,7 @@ export function AvatarCircles({ avatars, more = 0, size = 44, delay = 0, start =
   const pop = (i: number) => ({
     initial: reduce ? false : ({ scale: 0.4, opacity: 0 } as const),
     animate: start ? { scale: 1, opacity: 1 } : undefined,
-    transition: { type: 'spring' as const, bounce: 0.45, duration: 0.5, delay: delay + i * 0.07 },
+    transition: { type: 'spring' as const, bounce: 0.25, duration: 0.3, delay: Math.min(delay, 0.2) + i * 0.04 },
   });
   const box: CSSProperties = { width: size, height: size, fontSize: Math.round(size * 0.3) };
   return (
@@ -120,8 +129,8 @@ export function MagicCard({ children, className, size = 240 }: { children?: Reac
     window.addEventListener('blur', reset);
     return () => { window.removeEventListener('pointerout', out); window.removeEventListener('blur', reset); };
   }, [reset]);
-  const border = useMotionTemplate`linear-gradient(#171717 0 0) padding-box, radial-gradient(${size}px circle at ${mx}px ${my}px, var(--cb-accent), rgba(255,199,29,0.12), rgba(255,255,255,0.09) 100%) border-box`;
-  const glow = useMotionTemplate`radial-gradient(${size}px circle at ${mx}px ${my}px, rgba(255,199,29,0.08), transparent 100%)`;
+  const border = useMotionTemplate`linear-gradient(#171717 0 0) padding-box, radial-gradient(${size}px circle at ${mx}px ${my}px, var(--cb-accent), color-mix(in srgb, var(--pk-acc, #FFC71D) 12%, transparent), rgba(255,255,255,0.09) 100%) border-box`;
+  const glow = useMotionTemplate`radial-gradient(${size}px circle at ${mx}px ${my}px, color-mix(in srgb, var(--pk-acc, #FFC71D) 8%, transparent), transparent 100%)`;
   return (
     <m.div className={cx('pk-mcard', className)} onPointerMove={move} onPointerDown={move} onPointerLeave={reset} style={{ background: border }}>
       <m.div aria-hidden className="pk-mcard-glow" style={{ background: glow }} />
@@ -136,7 +145,7 @@ export function MagicCard({ children, className, size = 240 }: { children?: Reac
  *  reduced motion. */
 export function BorderBeam({ size = 110, duration = 10 }: { size?: number; duration?: number }) {
   const reduce = useReducedMotion();
-  if (reduce) return null;
+  if (reduce || useNight()) return null;
   return (
     <div aria-hidden="true" className="pk-beam">
       <m.div

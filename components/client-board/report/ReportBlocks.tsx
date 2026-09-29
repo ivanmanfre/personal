@@ -18,6 +18,7 @@ import {
   type ReportConfig, type ReportPayload, type ReportBoardSlice, type ReportAudienceSlice,
   type Period, type Figures, type CameVia, type SeriesKey, type Shown,
 } from './reportModel';
+import { useNight, useQuiet } from '../perf-kit/night';
 
 /** Everything a surface needs to draw the report. Built once by the page. */
 export type ReportCtx = {
@@ -162,6 +163,22 @@ const VIA_ROW: Record<CameVia, string> = {
 type Fig = { key: string; strong?: boolean; value: number; caption: React.ReactNode; sub?: React.ReactNode; weekZero?: string | null };
 
 function FigBlock({ fig }: { fig: Fig }) {
+  // NIGHT MOCKUP (local only): the same figure in the ARCH report's type. Calm pass: it just
+  // renders; the page's one count-up is the hero number. Colours read --nt-fg, so the quiet
+  // (light) board prints the same figure in ink.
+  const night = useNight();
+  const quiet = useQuiet();
+  if (night) {
+    return (
+      <div data-report-figure={fig.key} style={{ borderLeft: `2px solid ${fig.strong ? 'var(--cb-accent)' : 'rgb(var(--nt-fg, 255 255 255) / 0.16)'}`, paddingLeft: 14 }}>
+        <span className={fig.strong ? 'pk-grad' : undefined} style={{ display: 'inline-block', fontFamily: 'var(--cb-serif, Sora), sans-serif', fontWeight: 400, fontSize: 40, lineHeight: 1, letterSpacing: '-0.04em', color: fig.strong ? undefined : 'rgb(var(--nt-fg, 255 255 255))', animation: 'none' }}>
+          {fig.value.toLocaleString('en-GB')}
+        </span>
+        <Footnote style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.4, color: 'rgb(var(--nt-fg, 255 255 255) / 0.72)' }}>{fig.caption}</Footnote>
+        {fig.sub && <Footnote style={{ marginTop: 4, fontSize: 13, color: `rgb(var(--nt-fg, 255 255 255) / ${quiet ? 0.62 : 0.45})` }}>{fig.sub}</Footnote>}
+      </div>
+    );
+  }
   return (
     <div data-report-figure={fig.key} style={{ borderLeft: `3px solid ${fig.strong ? 'var(--cb-accent)' : 'var(--cb-line)'}`, paddingLeft: 14 }}>
       <Num size="big">{fig.value.toLocaleString('en-GB')}</Num>
@@ -254,11 +271,14 @@ export function ReportFigures({ figs, note }: { figs: Fig[]; note?: string | nul
 
 /* ─────────────────────────── Home ─────────────────────────── */
 
-export function ReportHome({ ctx, waiting = 0 }: { ctx: ReportCtx; waiting?: number }) {
+export function ReportHome({ ctx, waiting = 0, bare = false }: { ctx: ReportCtx; waiting?: number; bare?: boolean }) {
   const { f, fm, fAll } = useFigures(ctx);
   return (
-    <div data-report="home" style={{ marginBottom: 34, paddingBottom: 30, borderBottom: '1px solid var(--cb-line)' }}>
-      <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} />
+    <div data-report="home" style={bare ? { paddingBottom: 18 } : { marginBottom: 34, paddingBottom: 30, borderBottom: '1px solid var(--cb-line)' }}>
+      {/* `bare` (night, inside Home's "All numbers" fold): the fold's own line names the
+          period and the hero right above says the calls and names, so only the picker and
+          the figures print. */}
+      {bare ? <PeriodPicker ctx={ctx} /> : <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} />}
       {(() => { const figs = reportFigures(ctx, f, fm, fAll, 'home', waiting); return <ReportFigures figs={figs} note={fallbackNote(ctx, figs)} />; })()}
     </div>
   );
@@ -433,7 +453,7 @@ export function ReportResults({ ctx, more }: { ctx: ReportCtx; more: React.React
   const { f, fm, fAll } = useFigures(ctx);
   return (
     <div data-report="results">
-      <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} eyebrow="Results" />
+      <ReportHead ctx={ctx} f={f} fm={fm} fAll={fAll} eyebrow="Performance" />
       <CallsChart ctx={ctx} />
       {(() => { const figs = reportFigures(ctx, f, fm, fAll, 'results'); return <ReportFigures figs={figs} note={fallbackNote(ctx, figs)} />; })()}
       <SliceLedger ctx={ctx} />

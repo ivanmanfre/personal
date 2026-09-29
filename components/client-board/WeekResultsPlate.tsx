@@ -14,15 +14,27 @@ import React from 'react';
 import { Plate, Eyebrow, PlateRule } from './desk-kit';
 import { useFigures, callsLead, reportFigures, type ReportCtx } from './report/ReportBlocks';
 import { sliceSeries, axisLabel, namesLine, initialsOf } from './weekResults';
+import { useNight } from './perf-kit/night';
+import { HomeResultsNight } from './perf-kit/home-results';
+import { dayKey, dm, type CameVia } from './report/reportModel';
+
+/** Night only: how a person came to the client, as the verb of one plain sentence. */
+const VIA_SAID: Record<CameVia, string> = {
+  asked: 'asked to connect with you',
+  messaged: 'messaged you first',
+  viewed: 'viewed your profile',
+  engaged: 'engaged with your posts before any message',
+  hand: 'raised a hand on a post',
+};
 
 const CSS = `
 .cb-wr-hero { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; }
-.cb-wr-n { font-family: var(--cb-serif); font-weight: 700; font-size: clamp(76px, 22vw, 104px); line-height: .8; color: var(--cb-accent); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.cb-wr-n { font-family: var(--cb-serif); font-weight: 700; font-size: clamp(76px, 22vw, 104px); line-height: .8; color: var(--cb-accent-fg, var(--cb-accent)); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .cb-wr-l { font-family: var(--cb-serif); font-weight: 400; font-size: clamp(21px, 5.6vw, 26px); line-height: 1.12; padding-bottom: 2px; color: var(--cb-plate-ink); }
 .cb-wr-av { display: flex; flex: none; }
-.cb-wr-av span { width: 38px; height: 38px; border-radius: 50%; background: var(--cb-accent); color: #111; font: 800 11px/1 var(--cb-body); letter-spacing: .02em; display: grid; place-items: center; border: 2px solid var(--cb-plate); margin-left: -6px; }
+.cb-wr-av span { width: 38px; height: 38px; border-radius: 50%; background: var(--cb-accent); color: var(--cb-accent-ink, #111); font: 800 11px/1 var(--cb-body); letter-spacing: .02em; display: grid; place-items: center; border: 2px solid var(--cb-plate); margin-left: -6px; }
 .cb-wr-av span:first-child { margin-left: 0; }
-.cb-wr-av span.more { background: #4a4a47; color: #fff; }
+.cb-wr-av span.more { background: #4a4a47; color: rgb(var(--nt-fg, 255 255 255)); }
 .cb-wr-chart { display: grid; gap: 6px; align-items: end; height: 132px; margin-top: 16px; list-style: none; padding: 0; }
 .cb-wr-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; min-width: 0; }
 .cb-wr-v { font-size: 11px; font-weight: 700; color: #D6D6D0; font-variant-numeric: tabular-nums; }
@@ -41,7 +53,7 @@ const CSS = `
 .cb-wr-link:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: 3px; }
 @media (min-width: 900px) {
   .cb-wr-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 36px; align-items: start; }
-  .cb-wr-grid > .cb-wr-right { border-left: 1px solid rgba(255,255,255,0.14); padding-left: 32px; }
+  .cb-wr-grid > .cb-wr-right { border-left: 1px solid rgb(var(--nt-fg, 255 255 255) / 0.14); padding-left: 32px; }
   .cb-wr-grid > .cb-wr-right > .cb-plate-rule { display: none; }
 }
 `;
@@ -52,6 +64,7 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
   onSeeAll?: () => void;
   style?: React.CSSProperties;
 }) {
+  const night = useNight();
   const { f, fm, fAll } = useFigures(ctx);
   const bars = React.useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
   const lead = callsLead(ctx, f, fm, fAll);
@@ -70,12 +83,42 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
   const inPeriod = (b: { start: string }) => b.start >= p.start && b.start < p.end;
   const now = bars.find((b) => b.current);
 
+  // NIGHT MOCKUP (local only): the same figures in the night look. Night v3: the people who
+  // came to the client are named with the day they did it, straight from the report payload
+  // ("Danil Kontsevoy asked to connect with you on 27 Sept."); more than two fall back to one
+  // plain count sentence. The glossary word for "wrote back" is "replied".
+  if (night) {
+    const people = ((came?.weekZero ? fm : f)?.came?.people || []);
+    const named = people.length > 0 && people.length <= 2 && people.every((c) => (c.name || '').trim() && dayKey(c.at, ctx.cfg.tz));
+    const cameLine = !came ? null
+      : named ? people.map((c) => `${(c.name || '').trim()} ${VIA_SAID[c.via]} on ${dm(dayKey(c.at, ctx.cfg.tz) as string)}`).join(', and ') + '.'
+      : `${came.value} ${came.value === 1 ? who[0] : who[1]} came to you on their own.`;
+    const replied = (s: React.ReactNode) => (typeof s === 'string' ? s.replace(/wrote back/, 'replied') : s);
+    return (
+      <HomeResultsNight
+        eyebrow={p.eyebrow}
+        n={lead.n}
+        phrase={lead.phrase}
+        callsSub={calls?.sub}
+        none={lead.none}
+        names={lead.names}
+        cameLine={cameLine}
+        wrote={wrote ? { value: wrote.value, text: <>{replied(wrote.caption)}{wrote.weekZero ? '' : ` ${p.phrase}`}.</> } : null}
+        yes={yes ? { value: yes.value, text: <>{yes.caption}.</> } : null}
+        bars={bars}
+        connLabel={ctx.cfg.reach === 'connections' ? 'Connected' : 'Reached'}
+        onSeeAll={onSeeAll}
+        pending={!ctx.payload}
+      />
+    );
+  }
+
   return (
     <Plate style={{ marginTop: 18, borderRadius: '25px 8px 8px 8px', ...style }} pad="clamp(20px, 2.6vw, 30px) clamp(18px, 3vw, 34px)">
       <style>{CSS}</style>
       <div className="cb-wr-grid" data-week-results="">
         <div>
-          <Eyebrow on="plate" style={{ color: 'var(--cb-accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Eyebrow on="plate" style={{ color: 'var(--cb-accent-fg, var(--cb-accent))', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span aria-hidden style={{ width: 18, height: 1, background: 'var(--cb-accent)', display: 'inline-block', flex: 'none' }} />
             {p.eyebrow}
           </Eyebrow>
@@ -105,8 +148,8 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
           <PlateRule gap={18} style={{ marginBottom: 16 }} />
           {(wrote || yes) && (
             <div style={{ fontFamily: 'var(--cb-serif)', fontSize: 'clamp(17px, 4.4vw, 19px)', lineHeight: 1.3, color: 'var(--cb-plate-ink)' }}>
-              {wrote && <><b style={{ color: 'var(--cb-accent)' }}>{wrote.value}</b> {wrote.caption}{wrote.weekZero ? '' : ` ${p.phrase}`}.</>}
-              {yes && <> <b style={{ color: 'var(--cb-accent)' }}>{yes.value}</b> {yes.caption}.</>}
+              {wrote && <><b style={{ color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{wrote.value}</b> {wrote.caption}{wrote.weekZero ? '' : ` ${p.phrase}`}.</>}
+              {yes && <> <b style={{ color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{yes.value}</b> {yes.caption}.</>}
             </div>
           )}
           {bars.length >= 3 && (
@@ -118,7 +161,7 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
                       {b.label}: {b.wrote} wrote back for the first time, {b.calls} {b.calls === 1 ? 'call' : 'calls'} booked.
                     </span>
                     <span className="cb-wr-dots" aria-hidden>
-                      {b.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent)' }}>{b.calls}</b> : Array.from({ length: b.calls }, (_, i) => <i key={i} />)}
+                      {b.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{b.calls}</b> : Array.from({ length: b.calls }, (_, i) => <i key={i} />)}
                     </span>
                     <span className="cb-wr-v" aria-hidden>{b.wrote}</span>
                     <span className="cb-wr-b" aria-hidden style={{ height: `${Math.max(2, (b.wrote / top) * 72)}%` }} />
