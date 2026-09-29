@@ -592,11 +592,11 @@ export default function DeskReviewSurface({
   // Report boards open what the client acts on: the dated list, and on a review board the
   // posts waiting for approval (Davorin's job on this tab).
   const sectionOpen = (key: string) => openSections[key] ?? (compact && (key === 'upnext' || (reviewMode && key === 'buffer')));
-  // A review board with no remembered view opens the 2-up Review grid, the old-size cards
-  // with the feedback bar under each post (Ivan 27 Sep).
+  // Review boards open on the post cards and feedback controls. A shared List preference
+  // from another board must not hide the client's review workspace.
   React.useEffect(() => {
     if (!compact || !live || !reviewMode) return;
-    try { if (!localStorage.getItem('client-board-view')) setView('feed'); } catch { /* private mode */ }
+    setView('feed');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !sectionOpen(key) }));
@@ -1184,10 +1184,11 @@ export default function DeskReviewSurface({
       {/* Block 3: view toggle. */}
       {night ? (
         <div className="prs-tools">
-          <SlideGroup segmented group="view" label="View" value={view === 'calendar' ? 'calendar' : view === 'list' ? 'list' : null} onPick={(v) => setView(v as 'list' | 'calendar')} items={[{ id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
+          <SlideGroup segmented group="view" label="View" value={view} onPick={(v) => setView(v as 'list' | 'feed' | 'calendar')} items={[...(reviewMode ? [{ id: 'feed', label: 'Review' }] : []), { id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
         </div>
       ) : (
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {reviewMode && <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>}
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
       </div>
@@ -1285,8 +1286,6 @@ export default function DeskReviewSurface({
               ) : rowsFor(fBuffer, 'buffer'), 'buffer', reviewMode ? (
                 <>
                   {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
-                  <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
-                  <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>
                 </>
               ) : undefined)}
               {section('Drafting', fDrafted.length, reviewMode ? 'Being written now. They move to your review when ready.' : 'Being written now. They land in the buffer when ready.', fDrafted.map(renderDraftedRow), 'drafted')}

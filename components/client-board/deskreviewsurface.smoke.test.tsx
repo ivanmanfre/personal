@@ -633,3 +633,26 @@ describe('DeskReviewSurface at night', () => {
     } finally { day(); }
   });
 });
+
+
+describe('review entry with scheduled posts only', () => {
+  it('opens the review cards despite a saved List preference and exposes Review beside List', () => {
+    localStorage.setItem('client-board-view', 'list');
+    const board = { ...makeBoard(), queue: [{ ...queueFixture()[0], id: 'scheduled-review', stage: 'scheduled', scheduled_at: '2026-10-05T09:00:00Z', publish_date: '2026-10-05', body: 'The complete scheduled post.' }] } as Board;
+    function ReviewEntry() {
+      const [view, setView] = React.useState<'list' | 'feed'>('list');
+      return <DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf}
+        onOpen={noop} onOpenIdea={noop} onApprove={noopAsync} flashId={null} view={view} setView={setView as any}
+        skips={{}} live reviewMode compact onFeedback={noopAsync} onEditBody={noopAsync} />;
+    }
+    const r = render(<ReviewEntry />);
+    expect(r.container.querySelector('[data-review-card="scheduled-review"]')).not.toBeNull();
+    expect(r.getByLabelText('Feedback on this post')).toBeTruthy();
+    expect(r.container.querySelector('[contenteditable="true"]')).not.toBeNull();
+    fireEvent.click(r.getByRole('button', { name: 'List', exact: true }));
+    expect(r.container.querySelector('[data-review-card]')).toBeNull();
+    fireEvent.click(r.getByRole('button', { name: 'Review', exact: true }));
+    expect(r.container.querySelector('[data-review-card="scheduled-review"]')).not.toBeNull();
+    cleanup(); localStorage.removeItem('client-board-view');
+  });
+});
