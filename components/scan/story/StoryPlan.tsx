@@ -57,8 +57,8 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <b className="sp-audit-heading">{result.heading}</b>
    <p>{result.receipt}</p>
    {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">~{reach.readers} readers per post at ~15 per engager, 4 posts a week, 0.5% leave their email.</span></>}
-   {result.state === 'buyers' && <div className="audience-dots" aria-hidden="true">{Array.from({length: Math.min(result.people!, 100)}, (_, i) => <i key={i} className={i < result.buyers! ? 'is-buyer' : ''}/>)}</div>}
-   <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}<a href={fixture.source.url} target="_blank" rel="noreferrer">Saved scan <ArrowUpRight size={13} aria-hidden="true"/></a></footer>
+   {result.state === 'buyers' && (() => { const per = Math.max(1, Math.ceil(result.people! / 60)), dots = Math.ceil(result.people! / per), lit = Math.max(1, Math.round(result.buyers! / per)); return <><div className="audience-dots" aria-hidden="true">{Array.from({length: dots}, (_, i) => <i key={i} className={i < lit ? 'is-buyer' : ''}/>)}</div>{per > 1 && <small className="sp-dots-key">Each dot is about {per} people.</small>}</>; })()}
+   <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}</footer>
   </aside>
  </section>;
 }
@@ -140,7 +140,7 @@ function NewsletterEmail({fixture}: {fixture: JourneyFixture}) {
 function ColdChat() {
  const plan = useStory(), name = readerName(plan);
  return <article className="sp-dm" data-mockup="linkedin" aria-label="Example signal-based outreach">
-  <div className="sp-signal"><span className="sp-signal-badge"><i/>Signal spotted</span><b>{plan.coldTrigger}</b><small>We reach out while the project is live.</small></div>
+  <div className="sp-signal"><span className="sp-signal-badge"><i/>The signal we watch for</span><b>{plan.coldTrigger}</b><small>We reach out while the project is live.</small></div>
   <DmHead name={name} role={plan.buyerRole}/>
   <Thread>{bubbles(fillName(plan.coldMessage, name)).map((t, i) => <Bubble key={i} mine>{t}</Bubble>)}</Thread>
  </article>;

@@ -8,6 +8,8 @@ import {BrandMark, brandFont, brandPalette} from './BrandSlide';
 import {NumberTicker} from './motion';
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 32);
+/** One clean line from a section body: list markers out, first sentence, cut at a word. */
+const summary = (body: string) => { const flat = body.replace(/(^|\s)[-•]\s+/g, ' ').replace(/\s+/g, ' ').trim(); const first = flat.split(/(?<=[.?!])\s/)[0]; return first.length <= 110 ? first : first.slice(0, 106).replace(/\s+\S*$/, '') + '…'; };
 const UNIT = {document: 'worked examples', planner: 'project types', question: 'research events'} as const;
 
 /** The lead magnet as the reader meets it: its own landing page on the lead's site, in their brand. */
@@ -40,7 +42,7 @@ export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string
    </section>
    {sections.length > 0 && <section className="lmp-index" style={{background: p.light, color: p.dark}}>
     <span className="lmp-eyebrow" style={{color: p.accentOnLight}}><i style={{background: p.accentOnLight}}/>What’s inside</span>
-    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.accentOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b><small>{s.body.split(/(?<=\.)\s/)[0]}</small></li>)}</ol>
+    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.accentOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b><small>{summary(s.body)}</small></li>)}</ol>
    </section>}
    <section className="lmp-doc"><LeadMagnetTool kind={kind}/></section>
   </div>

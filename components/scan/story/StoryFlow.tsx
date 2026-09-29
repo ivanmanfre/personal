@@ -25,13 +25,13 @@ const STEP_MS = 2600, LAST = 4;
 export function StoryFlow({founder}: {founder: string}) {
  const plan = useStory(), reader = readerName(plan), reduced = useReducedMotion();
  const root = useRef<HTMLDivElement>(null), seen = useInView(root, {amount: .25});
- const [source, setSource] = useState(0), [step, setStep] = useState(reduced ? LAST : 0), [paused, setPaused] = useState(false);
+ const [source, setSource] = useState(0), [step, setStep] = useState(reduced ? LAST : 1), [paused, setPaused] = useState(false);
  const running = seen && !paused && !reduced;
  useEffect(() => {
   if (!running) return;
   const t = window.setTimeout(() => {
    if (step < LAST) setStep(step + 1);
-   else { setStep(0); setSource(s => (s + 1) % SOURCES.length); }
+   else { setStep(1); setSource(s => (s + 1) % SOURCES.length); }
   }, step === LAST ? STEP_MS * 1.8 : STEP_MS);
   return () => clearTimeout(t);
  }, [running, step]);
@@ -46,7 +46,7 @@ export function StoryFlow({founder}: {founder: string}) {
   <div className="sf-board">
    <Beams root={root} beams={beams} deps={[source, step]}/>
    <ol className="sf-sources" aria-label="Where the conversation starts">
-    {SOURCES.map(({id, title, hint, Icon}, i) => <li key={id}><button data-beam={id} className={i === source ? 'is-on' : ''} aria-pressed={i === source} onClick={() => { setSource(i); setStep(0); }}>
+    {SOURCES.map(({id, title, hint, Icon}, i) => <li key={id}><button data-beam={id} className={i === source ? 'is-on' : ''} aria-pressed={i === source} onClick={() => { setSource(i); setStep(1); }}>
      <span className="sf-icon"><Icon size={18}/></span><span><b>{title}</b><small>{hint}</small></span></button></li>)}
    </ol>
    <div className="sf-chat" data-beam="chat">
