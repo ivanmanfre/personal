@@ -99,22 +99,22 @@ const CAL_NIGHT_CSS = `
 .cb-calstrip-cell.cb-cal-n { background: rgb(var(--nt-fg, 255 255 255) / 0.018) !important; border: 1px solid rgb(var(--nt-fg, 255 255 255) / 0.06) !important; }
 .cb-calstrip-cell.cb-cal-n.has { background: linear-gradient(180deg, rgb(var(--nt-fg, 255 255 255) / 0.055), rgb(var(--nt-fg, 255 255 255) / 0.018)) !important; border-color: rgb(var(--nt-fg, 255 255 255) / 0.1) !important; }
 .cb-calstrip-cell.cb-cal-n.wknd:not(.has) { background: repeating-linear-gradient(45deg, rgb(var(--nt-fg, 255 255 255) / 0.03) 0 4px, transparent 4px 9px) !important; border-style: dashed !important; }
-.cb-calstrip-cell.cb-cal-n.today { border: 1.5px solid var(--cb-accent) !important; background: linear-gradient(180deg, rgba(255,199,29,0.12), rgba(255,199,29,0.02)) !important; }
-.cb-calstrip-cell.cb-cal-n.today::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; box-shadow: 0 0 20px rgba(255,199,29,0.4), 0 0 44px rgba(255,199,29,0.14); }
-.cb-calstrip-cell.cb-cal-n.today .cb-cal-daynum { color: var(--cb-accent) !important; }
+.cb-calstrip-cell.cb-cal-n.today { border: 1.5px solid var(--cb-accent) !important; background: linear-gradient(180deg, color-mix(in srgb, var(--pk-acc, #FFC71D) 12%, transparent), color-mix(in srgb, var(--pk-acc, #FFC71D) 2%, transparent)) !important; }
+.cb-calstrip-cell.cb-cal-n.today::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; box-shadow: 0 0 20px color-mix(in srgb, var(--pk-acc, #FFC71D) 40%, transparent), 0 0 44px color-mix(in srgb, var(--pk-acc, #FFC71D) 14%, transparent); }
+.cb-calstrip-cell.cb-cal-n.today .cb-cal-daynum { color: var(--cb-accent-fg, var(--cb-accent)) !important; }
 .cb-cal-n .cb-calstrip-title { color: rgb(var(--nt-fg, 255 255 255) / 0.82); }
 .cb-cal-n .cb-calstrip-more { color: rgb(var(--nt-fg, 255 255 255) / 0.66); }
 /* the strip's head: caps label + count pill, over a lit rule (v2's section look) */
 .cb-cal-head { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 0 12px; font-family: var(--cb-body, Manrope), sans-serif; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--nt-fg, 255 255 255)); }
 .cb-cal-head::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, var(--cb-accent), rgb(var(--nt-fg, 255 255 255) / .14) 34%, rgb(var(--nt-fg, 255 255 255) / .04)); }
-.cb-cal-head span { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--cb-accent) 14%, transparent); font-size: 12.5px; letter-spacing: 0; color: var(--cb-accent); font-variant-numeric: tabular-nums; }
+.cb-cal-head span { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--cb-accent) 14%, transparent); font-size: 12.5px; letter-spacing: 0; color: var(--cb-accent-fg, var(--cb-accent)); font-variant-numeric: tabular-nums; }
 .cb-cal-n .cb-calstrip-thumb { border-color: rgb(var(--nt-fg, 255 255 255) / 0.12); background: none; }
 .cb-cal-n .cb-calstrip-thumb:not([data-ok]) { visibility: hidden; }
 /* no cover loaded: the title takes the cover's place instead of sitting indented beside a hole */
 .cb-cal-n .cb-calstrip-thumb:not([data-ok]) + .cb-calstrip-title.has-thumb { left: 7px; }
 @media (prefers-reduced-motion: no-preference) and (hover: hover) {
   .cb-calstrip-cell.cb-cal-n { transition: border-color .2s ease, transform .2s cubic-bezier(.25,1,.5,1); }
-  button.cb-calstrip-cell.cb-cal-n:hover, div[role=button].cb-calstrip-cell.cb-cal-n:hover { border-color: rgba(255,199,29,0.45) !important; transform: translateY(-2px); }
+  button.cb-calstrip-cell.cb-cal-n:hover, div[role=button].cb-calstrip-cell.cb-cal-n:hover { border-color: color-mix(in srgb, var(--pk-acc, #FFC71D) 45%, transparent) !important; transform: translateY(-2px); }
 }
 `;
 
@@ -498,7 +498,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
             {legendKey('color-mix(in srgb, var(--cb-accent) 55%, #151515)', '1px solid var(--cb-accent)', 'Scheduled')}
             {approvedShown && legendKey('var(--cb-accent)', undefined, 'Approved')}
             {lmShown && legendKey('var(--cb-mint)', undefined, 'Lead magnets')}
-            {legendKey('rgba(255,199,29,0.1)', '1.5px solid var(--cb-accent)', 'Today')}
+            {legendKey('color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent)', '1.5px solid var(--cb-accent)', 'Today')}
           </div>
         ) : (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>

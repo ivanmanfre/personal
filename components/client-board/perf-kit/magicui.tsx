@@ -129,8 +129,8 @@ export function MagicCard({ children, className, size = 240 }: { children?: Reac
     window.addEventListener('blur', reset);
     return () => { window.removeEventListener('pointerout', out); window.removeEventListener('blur', reset); };
   }, [reset]);
-  const border = useMotionTemplate`linear-gradient(#171717 0 0) padding-box, radial-gradient(${size}px circle at ${mx}px ${my}px, var(--cb-accent), rgba(255,199,29,0.12), rgba(255,255,255,0.09) 100%) border-box`;
-  const glow = useMotionTemplate`radial-gradient(${size}px circle at ${mx}px ${my}px, rgba(255,199,29,0.08), transparent 100%)`;
+  const border = useMotionTemplate`linear-gradient(#171717 0 0) padding-box, radial-gradient(${size}px circle at ${mx}px ${my}px, var(--cb-accent), color-mix(in srgb, var(--pk-acc, #FFC71D) 12%, transparent), rgba(255,255,255,0.09) 100%) border-box`;
+  const glow = useMotionTemplate`radial-gradient(${size}px circle at ${mx}px ${my}px, color-mix(in srgb, var(--pk-acc, #FFC71D) 8%, transparent), transparent 100%)`;
   return (
     <m.div className={cx('pk-mcard', className)} onPointerMove={move} onPointerDown={move} onPointerLeave={reset} style={{ background: border }}>
       <m.div aria-hidden className="pk-mcard-glow" style={{ background: glow }} />

@@ -236,7 +236,7 @@ const PLATE_MUTE = 'var(--cb-plate-mute)';
 /** The kit's own plate soft-text literal (desk-kit PLATE_SOFT_TEXT), kept in sync. */
 const PLATE_SOFT = '#C9C9C2';
 /** Night only: the accent chip keeps dark ink on the yellow (the desk ink turns white at night). */
-const NIGHT_ACCENT_CHIP: React.CSSProperties = { color: '#111' };
+const NIGHT_ACCENT_CHIP: React.CSSProperties = { color: 'var(--cb-accent-ink, #111)' };
 
 /**
  * The four rules this surface cannot inline.
@@ -662,7 +662,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <div style={{ marginTop: 13, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {isOut ? (
             perf?.url
-              ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
+              ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
               : <Footnote style={{ marginTop: 0 }}>The live post link is <span style={{ color: 'var(--cb-ink-mute)' }}>—</span> not tracked yet.</Footnote>
           ) : skips[q.id] ? (
             <Pill onClick={() => onUnskip(q.id)}>Put this post back</Pill>
@@ -1210,7 +1210,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 <div data-upnext-actions="" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {stagePublished ? (
                     (() => { const perf = perfFor(stageItem); return perf?.url
-                      ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
+                      ? <a href={perf.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))', textDecoration: 'underline', textUnderlineOffset: 3 }}>View on LinkedIn →</a>
                       : null; })()
                   ) : (
                     <>

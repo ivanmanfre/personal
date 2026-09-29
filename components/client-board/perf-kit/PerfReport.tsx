@@ -174,7 +174,7 @@ function Funnel({ ctx, fAll }: { ctx: ReportCtx; fAll: Figures }) {
         <ol className="pk-fn-stages">
           {stages.map((s, i) => (
             <li key={s.label} className="pk-fn-row">
-              <span className="pk-fn-num" style={i === stages.length - 1 ? { color: 'var(--cb-accent)' } : undefined}>{fmt(s.v)}</span>
+              <span className="pk-fn-num" style={i === stages.length - 1 ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(s.v)}</span>
               <span className="pk-cap pk-mute" style={{ marginTop: 6, letterSpacing: '.1em' }}>{s.label}</span>
             </li>
           ))}
@@ -279,7 +279,7 @@ function Came({ ctx, f, fm }: { ctx: ReportCtx; f: Figures; fm: Figures | null }
               <div className="t">
                 <div style={{ fontSize: 16, fontWeight: 800 }}>{c.name || 'Name not shown'}</div>
                 {(role || c.company) && <div className="pk-mute" style={{ marginTop: 2, fontSize: 13.5, lineHeight: 1.4 }}>{role && c.company && !role.toLowerCase().includes(c.company.toLowerCase()) ? `${role}, ${c.company}` : (role || c.company)}</div>}
-                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: 'var(--cb-accent)' }}>{VIA_ROW[c.via]}{k ? ` · ${dm(k)}` : ''}</div>
+                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{VIA_ROW[c.via]}{k ? ` · ${dm(k)}` : ''}</div>
               </div>
             </li>
           );
@@ -341,7 +341,7 @@ function AllNumbers({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figu
         <ul className="pk-figs">
           {figs.map((x) => (
             <li key={x.key} data-report-figure={x.key}>
-              <b style={x.strong ? { color: 'var(--cb-accent)' } : undefined}>{fmt(x.value)}</b>
+              <b style={x.strong ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(x.value)}</b>
               <span>{x.caption}{x.sub ? <small>{x.sub}</small> : null}</span>
             </li>
           ))}
@@ -474,7 +474,7 @@ function Posts({ ctx, f }: { ctx: ReportCtx; f: Figures }) {
               </div>
               {!r.collected && <div className="pk-mute" style={{ marginTop: 4, fontSize: 12.5 }}>engagement not collected for this post</div>}
             </div>
-            <span className="n" style={r.collected && r.fit ? { color: 'var(--cb-accent)' } : { color: 'rgb(var(--nt-fg, 255 255 255) / .35)' }}>{r.collected && r.fit ? r.fit : '–'}</span>
+            <span className="n" style={r.collected && r.fit ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : { color: 'rgb(var(--nt-fg, 255 255 255) / .35)' }}>{r.collected && r.fit ? r.fit : '–'}</span>
             {anyCall && <span className="n">{r.calls > 0 ? r.calls : ''}</span>}
           </li>
         ))}
@@ -510,7 +510,7 @@ const PR4_CSS = `
 .pr4 .pk-rows .pr4-hd .pk-cap { font-size: 11px; }
 .pr4 .pk-rows .n.zero { color: rgb(var(--nt-fg, 255 255 255) / .4); }
 .pr4 .pk-disc.pr4-more { width: auto; gap: 8px; }
-.pr4 .pr4-via, .pr4 .pk-rows .n.hit { color: var(--cb-accent); }
+.pr4 .pr4-via, .pr4 .pk-rows .n.hit { color: var(--cb-accent-fg, var(--cb-accent)); }
 
 /* QUIET (2026-09-29): the report on the light ground. No frame line around the page, white
    cards and panels, ink numbers; the booked-call number keeps its marker, the booked mark
@@ -665,7 +665,7 @@ function AllNumbersNight({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm:
           <ul className="pk-figs">
             {figs.map((x) => (
               <li key={x.key} data-report-figure={x.key}>
-                <b style={x.key === 'calls' ? { color: 'var(--cb-accent)' } : undefined}>{fmt(x.value)}</b>
+                <b style={x.key === 'calls' ? { color: 'var(--cb-accent-fg, var(--cb-accent))' } : undefined}>{fmt(x.value)}</b>
                 <span>{x.caption}{x.sub ? <small>{x.sub}</small> : null}</span>
               </li>
             ))}

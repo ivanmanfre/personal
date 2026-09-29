@@ -1,4 +1,4 @@
-import { isNightUrl } from './client-board/perf-kit/night';
+import { isNightUrl, setBoardNight } from './client-board/perf-kit/night';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -580,7 +580,9 @@ const UISANS = '"Instrument Sans", system-ui, sans-serif';               // Link
 
 /** The accent is a variable; every use is a derivation. These are the ONLY legal forms. */
 /** Small accent text (<19px) — AA-safe against paper. */
-const caText = (a: string) => `color-mix(in oklab, ${a} 75%, #1A1A1A)`;
+/* Night sets --cb-accent-fg (the accent lifted to read on the dark ground); light boards and the
+   white LinkedIn islands leave it unset, so this stays the darkened accent there. */
+const caText = (a: string) => `var(--cb-accent-fg, color-mix(in oklab, ${a} 75%, #1A1A1A))`;
 /** Running / highlight frames. */
 const caBorder = (a: string, pct = 40) => `color-mix(in oklab, ${a} ${pct}%, transparent)`;
 /** Review-row washes, running-step fills (5–9%). */
@@ -1271,7 +1273,7 @@ function FunnelChip({ stage, accent, source }: { stage?: string; accent: string;
 /** Italic accent "drama" phrase for a display headline — one per headline, full accent
  *  (headlines are >19px so no AA mix needed). */
 function Accent({ children }: { children: React.ReactNode }) {
-  return <span className="cb-accent-phrase" style={{ fontStyle: 'italic', color: 'var(--cb-accent)' }}>{children}</span>;
+  return <span className="cb-accent-phrase" style={{ fontStyle: 'italic', color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{children}</span>;
 }
 
 /** Editorial masthead on every tab: mono eyebrow → DM Serif Display headline (with one
@@ -4323,9 +4325,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.15, ease: EASE }}
                 className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 uppercase transition-colors duration-150"
-                style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', background: INK, color: PAPER }}
+                style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', background: `var(--cb-primary, ${INK})`, color: `var(--cb-primary-ink, ${PAPER})` }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = INK; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `var(--cb-primary, ${INK})`; }}
               >
                 {approving ? 'Approving…' : 'Approve ✓'}
               </motion.button>
@@ -4339,7 +4341,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </button>
               {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent.</span>}
             </div>
-            {approvalError && <div role="alert" style={{ fontSize: 14, marginTop: 8, color: '#a12622' }}>Approval did not save. Try Approve again.</div>}
+            {approvalError && <div role="alert" style={{ fontSize: 14, marginTop: 8, color: 'var(--cb-danger, #a12622)' }}>Approval did not save. Try Approve again.</div>}
             {changing && !sent && (
               <div className="mt-3">
                 <textarea
@@ -8916,13 +8918,23 @@ export default function ClientBoardPage() {
   // previews stay white (re-lit in the night CSS block), everything else reads on dark.
   const quiet = skin === 'desk' && params.has('quiet');
   const night = skin === 'desk' && (isNightUrl() || quiet);
+  setBoardNight(night);
+  // Text on an accent fill reads for ANY board accent: dark ink on a light accent (RISE
+  // yellow), white on a deep one (ARCH blue).
+  const accentInk = inkOn(accent) === '#ffffff' ? '#FFFFFF' : '#111111';
   if (night) Object.assign(SKIN_VARS, {
     '--cb-ink': '#F5F4F0', '--cb-paper': '#0D0D0D', '--cb-paper-raise': '#161616',
     '--cb-paper-sunk': '#141414', '--cb-desk': '#0D0D0D',
     '--cb-ink-soft': 'rgba(255,255,255,0.78)', '--cb-ink-mute': 'rgba(255,255,255,0.55)',
     '--cb-line': 'rgba(255,255,255,0.10)', '--cb-line-bold': 'rgba(255,255,255,0.24)', '--cb-divide': 'rgba(255,255,255,0.07)',
     '--cb-plate': '#171717', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': 'rgba(255,255,255,0.55)',
-    '--cb-plate-line': 'rgba(255,255,255,0.10)', '--cb-accent-ink': '#111111',
+    '--cb-plate-line': 'rgba(255,255,255,0.10)', '--cb-accent-ink': accentInk,
+    // Night-only tokens (light boards never set them, so their fallbacks keep light as is):
+    // the one primary action is an accent fill; perf-kit tints follow the board accent.
+    '--cb-primary': 'var(--cb-accent)', '--cb-primary-ink': 'var(--cb-accent-ink)',
+    '--cb-disabled-op': '0.72', '--cb-danger': '#FF8A80', '--cb-toast': '#262626', '--pk-acc': 'var(--cb-accent)',
+    '--cb-accent-fg': accentInk === '#FFFFFF' ? 'color-mix(in srgb, var(--cb-accent) 70%, #FFFFFF)' : 'var(--cb-accent)',
+    '--pk-acc-hi': 'color-mix(in srgb, var(--cb-accent) 43%, #FFFFFF)',
   });
   // QUIET: the night layout on a light, neutral ground (warm paper stays retired). --nt-fg is the
   // one ink every night stylesheet tints from; dark here, white on night.
@@ -8933,7 +8945,8 @@ export default function ClientBoardPage() {
     '--cb-ink-soft': 'rgba(17,17,17,0.78)', '--cb-ink-mute': 'rgba(17,17,17,0.64)',
     '--cb-line': 'rgba(17,17,17,0.10)', '--cb-line-bold': 'rgba(17,17,17,0.22)', '--cb-divide': 'rgba(17,17,17,0.07)',
     '--cb-plate': '#FFFFFF', '--cb-plate-ink': '#111111', '--cb-plate-mute': 'rgba(17,17,17,0.64)',
-    '--cb-plate-line': 'rgba(17,17,17,0.10)', '--cb-accent-ink': '#111111',
+    '--cb-plate-line': 'rgba(17,17,17,0.10)', '--cb-accent-ink': accentInk,
+    '--cb-disabled-op': '0.5', '--cb-danger': '#a12622', '--cb-accent-fg': 'initial', '--cb-toast': 'initial',
   });
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
   // regardless of its stored stage, and never counts toward the review badge. An item
@@ -9425,7 +9438,7 @@ export default function ClientBoardPage() {
 [data-night]:not([data-quiet]) .cb-stickybar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.07) 50%, transparent 70%); transform: translateX(-100%); pointer-events: none; }
 @keyframes cb-sheen { to { transform: translateX(100%); } }
 [data-night]:not([data-quiet]) .cb-stickybar-text { color: #FFFFFF !important; }
-[data-night]:not([data-quiet]) .cb-stickybar button { background: var(--cb-accent) !important; color: #111 !important; box-shadow: 0 6px 22px color-mix(in srgb, var(--cb-accent) 30%, transparent); }
+[data-night]:not([data-quiet]) .cb-stickybar button { background: var(--cb-accent) !important; color: var(--cb-accent-ink, #111) !important; box-shadow: 0 6px 22px color-mix(in srgb, var(--cb-accent) 30%, transparent); }
 /* Leftover hard white surfaces (drawers, calendar cells, sticky footers) go dark, except
    anything inside the LinkedIn simulation. */
 [data-night]:not([data-quiet]) .bg-white:not(.cb-linkedin-preview):not(.cb-linkedin-preview *):not(.cb-light):not(.cb-light *) { background-color: #151515 !important; }
@@ -9467,6 +9480,7 @@ export default function ClientBoardPage() {
 [data-night] .cb-linkedin-preview, [data-night] .cb-light {
   --cb-ink: #111111; --cb-ink-soft: #333333; --cb-ink-mute: #5F5F59; --cb-paper: #FFFFFF; --cb-paper-raise: #FFFFFF;
   --cb-paper-sunk: #F5F5F5; --cb-line: #E0E0E0; --cb-line-bold: rgba(17,17,17,0.26); --cb-divide: rgba(17,17,17,0.08);
+  --cb-accent-fg: initial; --cb-accent-ink: initial; --cb-primary: initial; --cb-primary-ink: initial; --cb-danger: initial;
   color-scheme: light; background: #FFFFFF !important; color: #111111;
   box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) !important;
 }
@@ -9856,7 +9870,7 @@ export default function ClientBoardPage() {
             transition={{ duration: 0.2, ease: EASE }}
             className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-30 flex justify-center px-4 lg:bottom-6"
           >
-            <div className="pointer-events-auto flex items-center gap-2 rounded-lg py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-white" style={{ background: INK, boxShadow: '0 8px 24px rgba(2,32,32,0.28)' }}>
+            <div className="pointer-events-auto flex items-center gap-2 rounded-lg py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-white" style={{ background: `var(--cb-toast, ${INK})`, boxShadow: '0 8px 24px rgba(2,32,32,0.28)' }}>
               {undo.kind === 'approve' ? 'Post approved' : undo.kind === 'angle' ? 'New angle locked' : isLive ? 'Post removed' : 'Day skipped'}
               <button
                 onClick={undoApprove}

@@ -51,11 +51,11 @@ const LMN_CSS = `
 .lmn > .pk-glow { left: -120px; width: min(560px, 100vw); }
 .lmn-hero { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 28px; padding: 4px 0 2px; }
 .lmn-lede { margin: 0; max-width: 34ch; font-size: clamp(21px, 5.4vw, 28px); line-height: 1.22; letter-spacing: -0.025em; text-wrap: balance; color: rgb(var(--nt-fg, 255 255 255)); }
-.lmn-lede b { font-weight: 500; color: var(--cb-accent); }
+.lmn-lede b { font-weight: 500; color: var(--cb-accent-fg, var(--cb-accent)); }
 .lmn-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; }
 .lmn-sub-t { font-size: 14px; font-weight: 600; color: rgb(var(--nt-fg, 255 255 255) / .68); }
 .lmn-sub-t b { font-family: var(--cb-serif, Sora), sans-serif; font-weight: 400; font-size: 17px; letter-spacing: -0.02em; color: rgb(var(--nt-fg, 255 255 255)); margin-right: 5px; }
-.lmn-dot { position: relative; display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 999px; background: var(--cb-accent); box-shadow: 0 0 10px rgba(255,199,29,.6); }
+.lmn-dot { position: relative; display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 999px; background: var(--cb-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--pk-acc, #FFC71D) 60%, transparent); }
 
 .lmn-grid { display: grid; gap: 14px; margin: 26px 0 0; padding: 0; list-style: none; }
 @media (min-width: 768px) { .lmn-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; } }
@@ -77,7 +77,7 @@ const LMN_CSS = `
 .lmn-cover-none { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgb(var(--nt-fg, 255 255 255) / .04) 0 4px, transparent 4px 9px); }
 .lmn-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .lmn-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .18); background: rgb(var(--nt-fg, 255 255 255) / .04); font-size: 11.5px; font-weight: 700; line-height: 1.35; color: rgb(var(--nt-fg, 255 255 255) / .78); white-space: nowrap; }
-.lmn-live { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255,199,29,.35); background: rgba(255,199,29,.1); font-size: 11.5px; font-weight: 800; line-height: 1.35; color: var(--cb-accent); white-space: nowrap; }
+.lmn-live { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--pk-acc, #FFC71D) 35%, transparent); background: color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent); font-size: 11.5px; font-weight: 800; line-height: 1.35; color: var(--cb-accent-fg, var(--cb-accent)); white-space: nowrap; }
 .lmn-live .lmn-dot { width: 6px; height: 6px; }
 .lmn-title { margin: 12px 0 0; font-family: var(--cb-serif, Sora), sans-serif; font-weight: 500 !important; font-size: 19px; line-height: 1.25; letter-spacing: -0.02em; text-wrap: balance; }
 .lmn-mark { margin-top: 6px; font-size: 13px; font-weight: 600; line-height: 1.4; color: rgb(var(--nt-fg, 255 255 255) / .66); }
@@ -88,7 +88,7 @@ const LMN_CSS = `
 .lmn-blank { display: inline-flex; align-items: center; gap: 8px; padding: 5px 11px; border-radius: 999px; border: 1px dashed rgb(var(--nt-fg, 255 255 255) / .2); font-size: 12.5px; font-weight: 700; color: rgb(var(--nt-fg, 255 255 255) / .64); }
 .lmn-url { display: inline-flex; align-items: flex-start; gap: 5px; margin-top: 12px; max-width: 100%; font-size: 13px; font-weight: 600; line-height: 1.4; color: rgb(var(--nt-fg, 255 255 255) / .68); text-decoration: none; overflow-wrap: anywhere; }
 .lmn-url:hover { color: rgb(var(--nt-fg, 255 255 255)); }
-.lmn-url svg { flex: none; margin-top: 3px; color: var(--cb-accent); }
+.lmn-url svg { flex: none; margin-top: 3px; color: var(--cb-accent-fg, var(--cb-accent)); }
 .lmn-det { margin-top: auto; }
 .lmn-det-wrap { margin-top: auto; padding-top: 12px; }
 .lmn-det summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 0 9px; border-top: 1px solid rgb(var(--nt-fg, 255 255 255) / .08); cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--nt-fg, 255 255 255) / .64); }
@@ -109,7 +109,7 @@ const LMN_CSS = `
 .lmn-ghost .lmn-tags { margin-top: auto; padding-top: 14px; }
 
 .lmn-nl { display: flex; align-items: flex-start; gap: 14px; margin-top: 18px; padding: 18px; border-radius: 22px 8px 8px 8px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .09); background: rgb(var(--nt-fg, 255 255 255) / .025); }
-.lmn-nl-ic { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px; background: rgba(255,199,29,.1); border: 1px solid rgba(255,199,29,.3); color: var(--cb-accent); }
+.lmn-nl-ic { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px; background: color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent); border: 1px solid color-mix(in srgb, var(--pk-acc, #FFC71D) 30%, transparent); color: var(--cb-accent-fg, var(--cb-accent)); }
 .lmn-nl-t { margin-top: 8px; font-size: 14.5px; line-height: 1.5; color: rgb(var(--nt-fg, 255 255 255) / .8); }
 .lmn-nl .lmn-chip { margin-top: 10px; white-space: normal; }
 

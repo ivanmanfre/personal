@@ -34,8 +34,9 @@ function makeBoard(overrides: Partial<Board> = {}): Board {
 describe('DeskNewsletterSurface', () => {
   it('renders the hero step count in accent tone (not dim-on-dark)', () => {
     const html = renderToStaticMarkup(<DeskNewsletterSurface board={makeBoard()} accent="#FFC71D" fontStack="Inter, sans-serif" />);
-    // The hero <Num tone="accent"> resolves to var(--cb-accent) inline, not the plate ink.
-    const heroMatch = html.match(/font-size:\s*clamp\(34px, 9\.4vw, 54px\)[^"]*color:\s*var\(--cb-accent\)/);
+    // The hero <Num tone="accent"> resolves to the accent inline (through --cb-accent-fg, which
+    // only the dark theme sets), not the plate ink.
+    const heroMatch = html.match(/font-size:\s*clamp\(34px, 9\.4vw, 54px\)[^"]*color:\s*var\(--cb-accent-fg, var\(--cb-accent\)\)/);
     expect(heroMatch).toBeTruthy();
   });
 

@@ -708,7 +708,7 @@ export function DeskPerformanceSurface({
                             on every row would read as the content failing rather than as
                             growth simply arriving through another door. */}
                         {((p.profile_views || 0) >= 1 || (p.followers_gained || 0) >= 1) && (
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink)' }}>
                             {[
                               (p.profile_views || 0) >= 1 ? `${p.profile_views} profile ${p.profile_views === 1 ? 'view' : 'views'}` : null,
                               (p.followers_gained || 0) >= 1 ? `${p.followers_gained} new ${p.followers_gained === 1 ? 'follower' : 'followers'}` : null,
@@ -721,7 +721,7 @@ export function DeskPerformanceSurface({
                             (Ivan 2026-09-04) — zeros on every row read as failure, and reach
                             does its work quietly. Client Ops carries the zeros. */}
                         {((p.inbound_dms || 0) >= 1 || (p.owners || 0) >= 1) && (
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink)' }}>
                             {[
                               (p.inbound_dms || 0) >= 1 ? `${p.inbound_dms} inbound ${p.inbound_dms === 1 ? 'DM' : 'DMs'}` : null,
                               (p.owners || 0) >= 1 ? `${p.owners} brand ${p.owners === 1 ? 'owner' : 'owners'} engaged` : null,
@@ -798,7 +798,7 @@ export function DeskPerformanceSurface({
                         the fold — that is the one number worth carrying out of an archived
                         week. Same >= 1 rule as the live rows above. */}
                     {(it.inbound_dms || 0) >= 1 && (
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-accent-ink, var(--cb-ink))' }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink)' }}>
                         {it.inbound_dms} inbound {it.inbound_dms === 1 ? 'DM' : 'DMs'}
                       </span>
                     )}

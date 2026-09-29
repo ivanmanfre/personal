@@ -29,7 +29,7 @@ export type NewsletterNightProps = {
 const NLN_CSS = `
 .nln { position: relative; isolation: isolate; color: rgb(var(--nt-fg, 255 255 255)); font-family: var(--cb-body, Manrope), 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 1.55; letter-spacing: -0.004em; -webkit-font-smoothing: antialiased; padding: 2px 0 8px; }
 .nln-h1 { margin: 4px 0 0; max-width: 34ch; font-family: var(--cb-serif, Sora), sans-serif; font-weight: 400; font-size: clamp(21px, 5.4vw, 28px); line-height: 1.22; letter-spacing: -0.025em; text-wrap: balance; }
-.nln-h1 b { font-weight: 500; color: var(--cb-accent); }
+.nln-h1 b { font-weight: 500; color: var(--cb-accent-fg, var(--cb-accent)); }
 
 .nln-seq { margin-top: 22px; padding: 20px 18px 20px; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr); grid-template-areas: 'head' 'steps' 'from'; }
 .nln-seq .pk-dots { mask-image: radial-gradient(360px 260px at 100% 0%, #000 0%, transparent 72%); -webkit-mask-image: radial-gradient(360px 260px at 100% 0%, #000 0%, transparent 72%); }
@@ -42,10 +42,10 @@ const NLN_CSS = `
 /* phone: vertical stepper, rail on the left */
 .nln-steps { position: relative; list-style: none; margin: 22px 0 0; padding: 0 0 0 54px; }
 .nln-seg { position: absolute; left: -36px; top: 46px; bottom: -4px; width: 2px; border-radius: 2px; background: rgb(var(--nt-fg, 255 255 255) / .08); }
-.nln-fill { position: absolute; inset: 0; border-radius: inherit; transform-origin: top; background: linear-gradient(to bottom, var(--cb-accent), rgba(255,199,29,.6)); box-shadow: 0 0 12px rgba(255,199,29,.45); }
+.nln-fill { position: absolute; inset: 0; border-radius: inherit; transform-origin: top; background: linear-gradient(to bottom, var(--cb-accent), color-mix(in srgb, var(--pk-acc, #FFC71D) 60%, transparent)); box-shadow: 0 0 12px color-mix(in srgb, var(--pk-acc, #FFC71D) 45%, transparent); }
 .nln-step { position: relative; padding-bottom: 14px; }
 .nln-step:last-child { padding-bottom: 0; }
-.nln-node { position: absolute; left: -54px; top: 6px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; background: #151515; border: 1px solid var(--cb-accent); box-shadow: 0 0 0 5px rgba(255,199,29,.1); font-family: var(--cb-serif, Sora), sans-serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--cb-accent); }
+.nln-node { position: absolute; left: -54px; top: 6px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; background: #151515; border: 1px solid var(--cb-accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent); font-family: var(--cb-serif, Sora), sans-serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--cb-accent-fg, var(--cb-accent)); }
 .nln-card { border-radius: 18px 6px 6px 6px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .08); background: linear-gradient(160deg, rgb(var(--nt-fg, 255 255 255) / .05), rgb(var(--nt-fg, 255 255 255) / .015)); padding: 14px 16px 15px; }
 .nln-card h3 { margin: 0; font-size: 16.5px; font-weight: 700 !important; line-height: 1.3; letter-spacing: -0.01em; }
 .nln-card p { margin: 5px 0 0; font-size: 14.5px; line-height: 1.5; color: rgb(var(--nt-fg, 255 255 255) / .62); text-wrap: pretty; }
@@ -58,15 +58,15 @@ const NLN_CSS = `
   .nln-step { display: flex; flex-direction: column; padding-bottom: 0; }
   .nln-node { position: relative; left: auto; top: auto; margin: 0 0 14px 4px; }
   .nln-seg { left: 56px; right: -12px; top: 19px; bottom: auto; width: auto; height: 2px; }
-  .nln-fill { transform-origin: left; background: linear-gradient(to right, var(--cb-accent), rgba(255,199,29,.6)); }
+  .nln-fill { transform-origin: left; background: linear-gradient(to right, var(--cb-accent), color-mix(in srgb, var(--pk-acc, #FFC71D) 60%, transparent)); }
   .nln-card { flex: 1 1 auto; }
   .nln-seq .nln-from { margin-top: 0; padding-top: 0; border-top: 0; justify-content: flex-end; }
 }
 /* one-shot fill on first view; with reduced motion the rail is simply full */
 @media (prefers-reduced-motion: no-preference) {
-  .nln-steps.arm .nln-node { border-color: rgb(var(--nt-fg, 255 255 255) / .16); color: rgb(var(--nt-fg, 255 255 255) / .55); box-shadow: 0 0 0 0 rgba(255,199,29,0); transition: border-color .2s ease, color .2s ease, box-shadow .2s ease; }
+  .nln-steps.arm .nln-node { border-color: rgb(var(--nt-fg, 255 255 255) / .16); color: rgb(var(--nt-fg, 255 255 255) / .55); box-shadow: 0 0 0 0 color-mix(in srgb, var(--pk-acc, #FFC71D) 0%, transparent); transition: border-color .2s ease, color .2s ease, box-shadow .2s ease; }
   .nln-steps.arm .nln-fill { transform: scaleY(0); transition: transform .15s linear; }
-  .nln-steps.on .nln-node { border-color: var(--cb-accent); color: var(--cb-accent); box-shadow: 0 0 0 5px rgba(255,199,29,.1); }
+  .nln-steps.on .nln-node { border-color: var(--cb-accent); color: var(--cb-accent-fg, var(--cb-accent)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent); }
   .nln-steps.on .nln-fill { transform: scaleY(1); }
 }
 @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {

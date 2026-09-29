@@ -29,10 +29,10 @@ const VIA_SAID: Record<CameVia, string> = {
 
 const CSS = `
 .cb-wr-hero { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; }
-.cb-wr-n { font-family: var(--cb-serif); font-weight: 700; font-size: clamp(76px, 22vw, 104px); line-height: .8; color: var(--cb-accent); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.cb-wr-n { font-family: var(--cb-serif); font-weight: 700; font-size: clamp(76px, 22vw, 104px); line-height: .8; color: var(--cb-accent-fg, var(--cb-accent)); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .cb-wr-l { font-family: var(--cb-serif); font-weight: 400; font-size: clamp(21px, 5.6vw, 26px); line-height: 1.12; padding-bottom: 2px; color: var(--cb-plate-ink); }
 .cb-wr-av { display: flex; flex: none; }
-.cb-wr-av span { width: 38px; height: 38px; border-radius: 50%; background: var(--cb-accent); color: #111; font: 800 11px/1 var(--cb-body); letter-spacing: .02em; display: grid; place-items: center; border: 2px solid var(--cb-plate); margin-left: -6px; }
+.cb-wr-av span { width: 38px; height: 38px; border-radius: 50%; background: var(--cb-accent); color: var(--cb-accent-ink, #111); font: 800 11px/1 var(--cb-body); letter-spacing: .02em; display: grid; place-items: center; border: 2px solid var(--cb-plate); margin-left: -6px; }
 .cb-wr-av span:first-child { margin-left: 0; }
 .cb-wr-av span.more { background: #4a4a47; color: rgb(var(--nt-fg, 255 255 255)); }
 .cb-wr-chart { display: grid; gap: 6px; align-items: end; height: 132px; margin-top: 16px; list-style: none; padding: 0; }
@@ -118,7 +118,7 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
       <style>{CSS}</style>
       <div className="cb-wr-grid" data-week-results="">
         <div>
-          <Eyebrow on="plate" style={{ color: 'var(--cb-accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Eyebrow on="plate" style={{ color: 'var(--cb-accent-fg, var(--cb-accent))', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span aria-hidden style={{ width: 18, height: 1, background: 'var(--cb-accent)', display: 'inline-block', flex: 'none' }} />
             {p.eyebrow}
           </Eyebrow>
@@ -148,8 +148,8 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
           <PlateRule gap={18} style={{ marginBottom: 16 }} />
           {(wrote || yes) && (
             <div style={{ fontFamily: 'var(--cb-serif)', fontSize: 'clamp(17px, 4.4vw, 19px)', lineHeight: 1.3, color: 'var(--cb-plate-ink)' }}>
-              {wrote && <><b style={{ color: 'var(--cb-accent)' }}>{wrote.value}</b> {wrote.caption}{wrote.weekZero ? '' : ` ${p.phrase}`}.</>}
-              {yes && <> <b style={{ color: 'var(--cb-accent)' }}>{yes.value}</b> {yes.caption}.</>}
+              {wrote && <><b style={{ color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{wrote.value}</b> {wrote.caption}{wrote.weekZero ? '' : ` ${p.phrase}`}.</>}
+              {yes && <> <b style={{ color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{yes.value}</b> {yes.caption}.</>}
             </div>
           )}
           {bars.length >= 3 && (
@@ -161,7 +161,7 @@ export function WeekResultsPlate({ ctx, onSeeAll, style }: {
                       {b.label}: {b.wrote} wrote back for the first time, {b.calls} {b.calls === 1 ? 'call' : 'calls'} booked.
                     </span>
                     <span className="cb-wr-dots" aria-hidden>
-                      {b.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent)' }}>{b.calls}</b> : Array.from({ length: b.calls }, (_, i) => <i key={i} />)}
+                      {b.calls > 5 ? <b style={{ fontSize: 10.5, color: 'var(--cb-accent-fg, var(--cb-accent))' }}>{b.calls}</b> : Array.from({ length: b.calls }, (_, i) => <i key={i} />)}
                     </span>
                     <span className="cb-wr-v" aria-hidden>{b.wrote}</span>
                     <span className="cb-wr-b" aria-hidden style={{ height: `${Math.max(2, (b.wrote / top) * 72)}%` }} />

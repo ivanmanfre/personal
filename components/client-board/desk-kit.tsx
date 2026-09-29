@@ -53,6 +53,8 @@ const SUNK = 'var(--cb-paper-sunk)';
 const LINE = 'var(--cb-line)';
 const LINE_BOLD = 'var(--cb-line-bold)';
 const ACCENT = 'var(--cb-accent)';
+/** Accent as TEXT: night lifts a deep accent so it reads on the dark ground (unset in light). */
+const ACCENT_FG = 'var(--cb-accent-fg, var(--cb-accent))';
 const SERIF = 'var(--cb-serif)';
 const BODY = 'var(--cb-body)';
 const OK = 'var(--cb-ok, #2F7D4F)';
@@ -269,7 +271,7 @@ export const Num: React.FC<Base & {
       display: inline ? 'inline' : 'block',
       fontFamily: SERIF, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
       fontSize: NUM_PX[size], lineHeight: 1,
-      color: tone === 'accent' ? ACCENT
+      color: tone === 'accent' ? ACCENT_FG
         : tone === 'mute' ? MUTE
         : tone === 'soft' ? INK_SOFT
         : tone === 'plate' ? PLATE_INK
@@ -510,7 +512,7 @@ export const Spark: React.FC<Base & {
                   textDecoration: 'none', display: 'block', textAlign: 'center', marginBottom: 7,
                   fontFamily: SERIF, fontWeight: 700, fontSize: 20, lineHeight: 1,
                   fontVariantNumeric: 'tabular-nums',
-                  color: on_ ? (plate ? ACCENT : INK) : plate ? PLATE_SOFT_TEXT : MUTE,
+                  color: on_ ? (plate ? ACCENT_FG : INK) : plate ? PLATE_SOFT_TEXT : MUTE,
                 }}
               >{topLabels[i]}</u>
             )}
@@ -528,7 +530,7 @@ export const Spark: React.FC<Base & {
                   fontSize: 11.5, fontWeight: on_ ? 800 : 600, fontVariantNumeric: 'tabular-nums',
                   paddingTop: 6,
                   borderTop: `1px solid ${on_ ? ACCENT : plate ? 'rgba(255,255,255,0.28)' : LINE}`,
-                  color: on_ ? (plate ? ACCENT : INK) : plate ? PLATE_SOFT_TEXT : MUTE,
+                  color: on_ ? (plate ? ACCENT_FG : INK) : plate ? PLATE_SOFT_TEXT : MUTE,
                 }}
               >{labels[i]}</em>
             )}

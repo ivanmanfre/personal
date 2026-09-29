@@ -42,7 +42,7 @@ export const POSTS_NIGHT_CSS = `
 .prs-tg { position: relative; isolation: isolate; flex: none; border: 0; background: none; cursor: pointer; border-radius: 999px; padding: 8px 16px; min-height: 36px; font: 700 13px/1.2 var(--cb-body, Manrope), sans-serif; color: rgb(var(--nt-fg, 255 255 255) / .62); white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 .prs-seg-ctl .prs-tg { padding: 8px 18px; }
 .prs-tg:hover { color: rgb(var(--nt-fg, 255 255 255)); }
-.prs-tg[aria-pressed="true"] { color: var(--cb-accent); }
+.prs-tg[aria-pressed="true"] { color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-tg-on { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--prs-acc-14); border: 1px solid var(--prs-acc-45); box-shadow: 0 0 18px -4px var(--prs-acc-45); }
 .prs-tg:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: 2px; }
 .prs-filters { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgb(var(--nt-fg, 255 255 255) / .07); display: grid; grid-template-columns: 58px minmax(0,1fr); row-gap: 8px; column-gap: 10px; align-items: center; }
@@ -63,10 +63,14 @@ export const POSTS_NIGHT_CSS = `
 .prs-sec-h .pk-cap { color: rgb(var(--nt-fg, 255 255 255)); font-size: 12px; }
 .prs-chev { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .14); color: rgb(var(--nt-fg, 255 255 255) / .7); flex: none; }
 .prs-chev svg { transition: transform .2s ease; }
-.prs-sec-h[aria-expanded="true"] .prs-chev { border-color: var(--prs-acc-45); color: var(--cb-accent); }
+.prs-sec-h[aria-expanded="true"] .prs-chev { border-color: var(--prs-acc-45); color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-sec-h[aria-expanded="true"] .prs-chev svg { transform: rotate(90deg); }
 .prs-count { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 2px 9px; border-radius: 999px; background: rgb(var(--nt-fg, 255 255 255) / .07); font: 800 12.5px/1.3 var(--cb-body, Manrope), sans-serif; font-variant-numeric: tabular-nums; color: rgb(var(--nt-fg, 255 255 255)); }
-.prs-sec-h[aria-expanded="true"] .prs-count { background: var(--prs-acc-14); color: var(--cb-accent); }
+.prs-sec-h[aria-expanded="true"] .prs-count { background: var(--prs-acc-14); color: var(--cb-accent-fg, var(--cb-accent)); }
+.prs-glyph { display: inline-flex; vertical-align: middle; margin: -3px 10px 0 0; font-size: 11px; line-height: 1; letter-spacing: 0; }
+.prs-blurb { font-size: 12.5px; font-weight: 600; color: rgb(var(--nt-fg, 255 255 255) / .62); }
+.prs-aimrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.prs-aimrow > .prs-frow { flex-wrap: wrap; margin-right: 0; padding-right: 0; -webkit-mask-image: none; mask-image: none; overflow: visible; }
 .prs-sub { margin-top: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 4px; }
 .prs-sub .pk-cap { color: rgb(var(--nt-fg, 255 255 255) / .66); }
 
@@ -87,9 +91,9 @@ export const POSTS_NIGHT_CSS = `
 .prs-row.is-nodate .prs-dot { background: transparent; border: 1px dashed rgb(var(--nt-fg, 255 255 255) / .35); }
 .prs-row.is-out .prs-d { color: rgb(var(--nt-fg, 255 255 255) / .72); }
 .prs-row.is-next .prs-dot { background: #111; border: 2px solid var(--cb-accent); box-shadow: 0 0 12px var(--prs-acc-45); }
-.prs-row.is-next .prs-d { color: var(--cb-accent); }
+.prs-row.is-next .prs-d { color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-row.is-today .prs-dot { background: var(--cb-accent); border: 0; box-shadow: 0 0 0 4px var(--prs-acc-14), 0 0 18px var(--cb-accent); }
-.prs-row.is-today .prs-d, .prs-row.is-today .prs-wd, .prs-row.is-today .prs-mo { color: var(--cb-accent); }
+.prs-row.is-today .prs-d, .prs-row.is-today .prs-wd, .prs-row.is-today .prs-mo { color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-row.is-today .prs-d { text-shadow: 0 0 22px var(--prs-acc-45); }
 
 .prs-card { position: relative; min-width: 0; border-radius: 18px 6px 6px 6px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .08); background: linear-gradient(180deg, rgb(var(--nt-fg, 255 255 255) / .045), rgb(var(--nt-fg, 255 255 255) / .015)); padding: 12px; transition: border-color .15s ease; }
@@ -113,8 +117,8 @@ export const POSTS_NIGHT_CSS = `
 .prs-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .12); background: rgb(var(--nt-fg, 255 255 255) / .035); font-size: 11.5px; font-weight: 700; line-height: 1.35; color: rgb(var(--nt-fg, 255 255 255) / .72); white-space: nowrap; }
 .prs-status { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 11.5px; font-weight: 800; letter-spacing: .02em; color: rgb(var(--nt-fg, 255 255 255) / .5); }
 .prs-status i { position: relative; width: 6px; height: 6px; border-radius: 999px; background: rgb(var(--nt-fg, 255 255 255) / .35); display: block; flex: none; }
-.prs-status.is-today { padding: 4px 11px; border-radius: 999px; background: var(--cb-accent); color: #111; box-shadow: 0 0 20px var(--prs-acc-45); }
-.prs-status.is-today i { background: #111; }
+.prs-status.is-today { padding: 4px 11px; border-radius: 999px; background: var(--cb-accent); color: var(--cb-accent-ink, #111); box-shadow: 0 0 20px var(--prs-acc-45); }
+.prs-status.is-today i { background: var(--cb-accent-ink, #111); }
 .prs-status.is-out { color: rgb(var(--nt-fg, 255 255 255) / .55); }
 .prs-reads { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .prs-reads b { font-family: var(--cb-serif, Sora), sans-serif; font-weight: 400; font-size: 20px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: rgb(var(--nt-fg, 255 255 255)); }
@@ -126,7 +130,7 @@ export const POSTS_NIGHT_CSS = `
 
 /* the row's Open control (the full drawer) and the inline LinkedIn preview */
 .prs-open { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 4px 12px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .16); background: rgb(var(--nt-fg, 255 255 255) / .04); cursor: pointer; font: 700 12px/1.2 var(--cb-body, Manrope), sans-serif; color: rgb(var(--nt-fg, 255 255 255)); white-space: nowrap; }
-.prs-open:hover { border-color: var(--prs-acc-45); color: var(--cb-accent); }
+.prs-open:hover { border-color: var(--prs-acc-45); color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-open:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: 2px; }
 .prs-status + .prs-open, .prs-reads + .prs-open { margin-left: 0; }
 @media (max-width: 639px) { .prs-open { min-height: 28px; padding: 3px 11px; } }
@@ -166,9 +170,9 @@ export const POSTS_NIGHT_CSS = `
 
 /* lower folds (edit history, photo library) */
 [data-night-posts] .prs-fold-h { align-items: center !important; padding: 4px 0 12px !important; border-bottom: 1px solid rgb(var(--nt-fg, 255 255 255) / .08) !important; }
-[data-night-posts] .prs-fold-h > div:first-child { display: flex; align-items: center; gap: 10px; font-size: 11.5px !important; color: rgb(var(--nt-fg, 255 255 255) / .7) !important; }
-[data-night-posts] .prs-fold-h > div:first-child > span[aria-hidden] { display: inline-flex !important; align-items: center; justify-content: center; flex: none; width: 22px !important; height: 22px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .12); font-size: 8px !important; color: rgb(var(--nt-fg, 255 255 255) / .66); }
-[data-night-posts] .prs-fold-h[aria-expanded="true"] > div:first-child > span[aria-hidden] { border-color: var(--prs-acc-45); color: var(--cb-accent); }
+[data-night-posts] .prs-fold-h > div:first-child { display: block; line-height: 22px; font-size: 11.5px !important; color: rgb(var(--nt-fg, 255 255 255) / .7) !important; }
+[data-night-posts] .prs-fold-h > div:first-child > span[aria-hidden] { display: inline-flex !important; vertical-align: middle; margin: -2px 10px 0 0; align-items: center; justify-content: center; flex: none; width: 22px !important; height: 22px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .12); font-size: 8px !important; color: rgb(var(--nt-fg, 255 255 255) / .66); }
+[data-night-posts] .prs-fold-h[aria-expanded="true"] > div:first-child > span[aria-hidden] { border-color: var(--prs-acc-45); color: var(--cb-accent-fg, var(--cb-accent)); }
 [data-night-posts] .prs-fold-h + * { margin-top: 12px; }
 [data-night-posts] .prs-earlier > summary > span:first-child { font-size: 13.5px !important; font-weight: 700 !important; color: rgb(var(--nt-fg, 255 255 255) / .85) !important; }
 
@@ -264,8 +268,10 @@ export function SlideGroup({ group, items, value, onPick, segmented = false, lab
 
 /* ───────────────────────────── section folds ───────────────────────────── */
 
-export function NightSection({ label, count, open, onToggle, aside, children }: {
-  label: string; count: number; open: boolean; onToggle: () => void; aside?: ReactNode; children?: ReactNode;
+/** `blurb` and `glyph` serve review boards, which keep the light board's words in the dark:
+ *  the blurb after the count, and the fold's own ▾/▸ inside the label instead of the chevron. */
+export function NightSection({ label, count, open, onToggle, aside, children, blurb, glyph = false }: {
+  label: string; count: number; open: boolean; onToggle: () => void; aside?: ReactNode; children?: ReactNode; blurb?: string; glyph?: boolean;
 }) {
   return (
     <div className="prs-sec">
@@ -274,11 +280,16 @@ export function NightSection({ label, count, open, onToggle, aside, children }: 
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
       >
-        <span className="prs-chev" aria-hidden>
-          <svg width="8" height="10" viewBox="0 0 8 10"><path d="M2 1.5 5.5 5 2 8.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </span>
-        <span className="pk-cap">{label}</span>
+        {glyph ? (
+          <span className="pk-cap"><span className="prs-chev prs-glyph" aria-hidden>{open ? '▾' : '▸'}</span>{label}</span>
+        ) : <>
+          <span className="prs-chev" aria-hidden>
+            <svg width="8" height="10" viewBox="0 0 8 10"><path d="M2 1.5 5.5 5 2 8.5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+          <span className="pk-cap">{label}</span>
+        </>}
         <span className="prs-count">{count}</span>
+        {blurb ? <span className="prs-blurb">{blurb}</span> : null}
         {aside ? (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, alignItems: 'center' }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">{aside}</span>
         ) : null}

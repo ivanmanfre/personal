@@ -43,9 +43,9 @@ const HM_CSS = `
 .pk.hm-hero { margin: 0 0 0; padding: 6px clamp(20px, 3.4vw, 40px) 26px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .08); }
 /* The desk skin zeroes every box-shadow with !important; the glows carry its prefix. */
 [data-skin="desk"] .pk.hm-hero { box-shadow: 0 30px 80px rgba(0,0,0,.35) !important; }
-[data-skin="desk"] .hm-chart .pk-col.on .pk-fill { box-shadow: 0 0 22px rgba(255,199,29,.45) !important; }
-[data-skin="desk"] .hm-dots i { box-shadow: 0 0 8px rgba(255,199,29,.7) !important; }
-[data-skin="desk"] .hm-hero .pk-sw-call { box-shadow: 0 0 0 3px rgba(255,199,29,.22) !important; }
+[data-skin="desk"] .hm-chart .pk-col.on .pk-fill { box-shadow: 0 0 22px color-mix(in srgb, var(--pk-acc, #FFC71D) 45%, transparent) !important; }
+[data-skin="desk"] .hm-dots i { box-shadow: 0 0 8px color-mix(in srgb, var(--pk-acc, #FFC71D) 70%, transparent) !important; }
+[data-skin="desk"] .hm-hero .pk-sw-call { box-shadow: 0 0 0 3px color-mix(in srgb, var(--pk-acc, #FFC71D) 22%, transparent) !important; }
 @media (max-width: 639px) { .pk.hm-hero { margin: 0 -16px; border-radius: 0; border-left: 0; border-right: 0; padding: 4px 20px 26px; } }
 .hm-grid { display: grid; gap: 30px; padding-top: 22px; }
 @media (min-width: 900px) { .hm-grid { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 44px; align-items: center; padding-top: 30px; } }
@@ -55,18 +55,18 @@ const HM_CSS = `
 /* two lines reserved: the report payload lands a beat after first paint, and the sentence
    must not push the chart down when it does */
 .hm-say { margin: 0; min-height: 2.6em; font-size: clamp(18px, 4.8vw, 21px); line-height: 1.3; letter-spacing: -0.02em; text-wrap: pretty; }
-.hm-say b { font-weight: 400; color: var(--cb-accent); }
+.hm-say b { font-weight: 400; color: var(--cb-accent-fg, var(--cb-accent)); }
 .hm-chart { --plot: 128px; --slot: 26px; --lab: 30px; margin-top: 14px; }
 @media (min-width: 768px) { .hm-chart { --plot: 150px; --slot: 30px; } }
 .hm-chart .pk-bar { width: clamp(16px, 5.4vw, 34px); }
 .hm-chart .pk-col.on .pk-fill { background: var(--cb-accent); }
-.hm-chart .pk-col.on .pk-val { color: var(--cb-accent); }
+.hm-chart .pk-col.on .pk-val { color: var(--cb-accent-fg, var(--cb-accent)); }
 .hm-chart .pk-bar-rep .pk-fill { background: rgb(var(--nt-fg, 255 255 255) / .2); }
 .hm-chart .pk-bar-rep .pk-val { font-size: 12px; color: rgb(var(--nt-fg, 255 255 255) / .66); }
 .hm-chart .pk-col.partial .pk-fill { background-image: repeating-linear-gradient(135deg, rgba(17,17,17,.5) 0 2px, transparent 2px 6px); }
 .hm-dots { display: flex; flex-wrap: wrap-reverse; justify-content: center; gap: 3px; max-width: 30px; margin: 0 auto; }
 .hm-dots i { display: block; width: 6px; height: 6px; border-radius: 999px; background: var(--cb-accent); }
-.hm-dots b { font-size: 12px; color: var(--cb-accent); }
+.hm-dots b { font-size: 12px; color: var(--cb-accent-fg, var(--cb-accent)); }
 .hm-rd { margin-top: 6px; min-height: 96px; border-top: 1px solid rgb(var(--nt-fg, 255 255 255) / .08); padding-top: 12px; }
 .hm-rd .pk-cap { color: rgb(var(--nt-fg, 255 255 255) / .66); }
 .hm-rd .pk-rd-stats dt { color: rgb(var(--nt-fg, 255 255 255) / .66); }

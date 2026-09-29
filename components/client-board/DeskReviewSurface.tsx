@@ -111,7 +111,7 @@ function InlineBody({ text, onSave, style, wrapStyle, statusStyle }: {
         <div style={{ fontSize: 12, marginTop: 6, ...statusStyle }}>
           {state === 'saving' && <span role="status">Saving…</span>}
           {state === 'saved' && <span role="status">Saved</span>}
-          {state === 'error' && <span role="alert" style={{ color: '#a12622' }}>{error}</span>}
+          {state === 'error' && <span role="alert" style={{ color: 'var(--cb-danger, #a12622)' }}>{error}</span>}
         </div>
       )}
     </div>
@@ -157,23 +157,23 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
           style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 52, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5, border: '1px solid #d6d3cd', borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', color: 'var(--cb-ink)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
           <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
-            style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? .5 : 1 }}>
+            style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? 'var(--cb-disabled-op, .5)' as unknown as number : 1 }}>
             {feedbackState === 'saving' ? 'Saving feedback…' : 'Send feedback'}
           </button>
           {feedbackState === 'saved' && <span role="status" style={{ fontSize: 13 }}>Feedback saved</span>}
-          {feedbackState === 'error' && <span role="alert" style={{ fontSize: 13, color: '#a12622' }}>Feedback did not save. Your text is kept. Try again.</span>}
+          {feedbackState === 'error' && <span role="alert" style={{ fontSize: 13, color: 'var(--cb-danger, #a12622)' }}>Feedback did not save. Your text is kept. Try again.</span>}
         </div>
       </form>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {approved
           ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
-          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: 'rgb(var(--nt-fg, 255 255 255))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-primary, var(--cb-ink))', color: 'var(--cb-primary-ink, rgb(var(--nt-fg, 255 255 255)))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
         {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
         {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
         <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cb-ink-mute)', marginTop: 2 }}>{approved ? (scheduled ? 'Approved. Scheduled time stays as set.' : 'Approved. Still in the buffer until scheduled.') : 'Approval saves your sign-off. Scheduling is separate.'}</div>
-      {error && <div role="alert" style={{ fontSize: 14, marginTop: 6, color: '#a12622' }}>Approval did not save. Try Approve post again.</div>}
+      {error && <div role="alert" style={{ fontSize: 14, marginTop: 6, color: 'var(--cb-danger, #a12622)' }}>Approval did not save. Try Approve post again.</div>}
     </div>
   );
 }
@@ -469,6 +469,11 @@ export default function DeskReviewSurface({
   const total = sched + buffer;
   // Approval vocabulary only where approval exists: preview boards and review-mode boards.
   const approvals = !live || reviewMode;
+  /* A review board (ARCH: the client signs off every post) keeps its light review section
+     word for word in the dark theme: the same sections, blurbs, filters and fold names. Only
+     the header sentence and the colours follow the night look (2026-09-29, Ivan: "make sure
+     u dont fuck up arch review section layout"). Buffer boards (RISE) keep the v3 words. */
+  const keepWords = night && approvals;
   const parts = (approvals
     ? [pendingN ? `${pendingN} pending approval` : null, approvedN ? `${approvedN} approved` : null, sched ? `${sched} scheduled` : null]
     : [buffer ? `${buffer} with no date yet` : null, sched ? `${sched} scheduled` : null]).filter(Boolean) as string[];
@@ -1004,7 +1009,7 @@ export default function DeskReviewSurface({
   /** Night v3: plain words a founder uses, no blurb under the heading. */
   const NIGHT_LABEL: Record<string, string> = { 'In buffer': 'Written, no date yet', Drafting: 'Being written' };
   const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string, aside?: React.ReactNode) => count > 0 ? (night ? (
-    <NightSection key={key} label={NIGHT_LABEL[label] || label} count={count} open={sectionOpen(key)} onToggle={() => toggleSection(key)} aside={aside}>{rows}</NightSection>
+    <NightSection key={key} label={keepWords ? label : (NIGHT_LABEL[label] || label)} blurb={keepWords ? blurb : undefined} glyph={keepWords} count={count} open={sectionOpen(key)} onToggle={() => toggleSection(key)} aside={aside}>{rows}</NightSection>
   ) : (
     <div key={key} style={{ marginTop: 20 }}>
       <div
@@ -1040,7 +1045,7 @@ export default function DeskReviewSurface({
    *  Always names its state, even when it is the only group with rows. */
   const subSection = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (night ? (
     <div key={key} data-buffer-group={key}>
-      <div className="prs-sub"><span className="pk-cap">{NIGHT_LABEL[label] || label}</span><span className="prs-count">{count}</span></div>
+      <div className="prs-sub"><span className="pk-cap">{keepWords ? label : (NIGHT_LABEL[label] || label)}</span><span className="prs-count">{count}</span>{keepWords && <span className="prs-blurb">{blurb}</span>}</div>
       {rows}
     </div>
   ) : (
@@ -1076,7 +1081,6 @@ export default function DeskReviewSurface({
      Nov. 49 are already out." Approval boards keep their pending / approved / scheduled
      split, said plainly. */
   const nightLine: React.ReactNode = (() => {
-    if (approvals) return parts.length ? `${parts.join(', ')}.`.replace(/^./, (c) => c.toUpperCase()) : 'Nothing is waiting or scheduled right now.';
     const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
       .map((x) => x.publish_date as string).sort().pop();
     // Night v4: the same words; v2's weight on the lead count.
@@ -1084,7 +1088,11 @@ export default function DeskReviewSurface({
       : sched === 1 ? <><b>1 post is scheduled</b>{lastDated ? `, on ${fmtDay(lastDated)}` : ''}.</>
       : <><b>{sched} posts are scheduled</b>{lastDated ? `, the last one on ${fmtDay(lastDated)}` : ''}.</>;
     const outPart = out === 0 ? '' : out === 1 ? ' 1 is already out.' : ` ${out} are already out.`;
-    return <>{schedPart}{outPart}</>;
+    /* Approval boards add their sign-off counts, only while something is waiting for it. */
+    const approvalPart = approvals && pendingN > 0
+      ? ` ${pendingN} ${pendingN === 1 ? 'is' : 'are'} pending approval${approvedN > 0 ? `, ${approvedN} approved` : ''}.`
+      : '';
+    return <>{schedPart}{outPart}{approvalPart}</>;
   })();
   const plateSegs = approvals ? [
     { v: pendingN, label: 'pending approval', bg: 'rgb(var(--nt-fg, 255 255 255) / 0.26)', tone: 'plate-mute' as const },
@@ -1176,7 +1184,7 @@ export default function DeskReviewSurface({
       {/* Block 3: view toggle. */}
       {night ? (
         <div className="prs-tools">
-          <SlideGroup segmented group="view" label="View" value={view === 'calendar' ? 'calendar' : 'list'} onPick={(v) => setView(v as 'list' | 'calendar')} items={[{ id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
+          <SlideGroup segmented group="view" label="View" value={view === 'calendar' ? 'calendar' : view === 'list' ? 'list' : null} onPick={(v) => setView(v as 'list' | 'calendar')} items={[{ id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
         </div>
       ) : (
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1205,8 +1213,18 @@ export default function DeskReviewSurface({
                   items={topics.map((t) => ({ id: t, label: topicLabel(t) }))} />
               </>
             )}
-            {/* Night v3: no Aim row. Reach / Trust / Buyers are internal funnel codes. */}
-            {anyFilter && <><span /><div><button type="button" className="prs-clear" onClick={clearAll}>Clear</button></div></>}
+            {/* Night v3: no Aim row on buffer boards (Reach / Trust / Buyers are internal
+                funnel codes). A review board keeps the light board's Aim row, Clear inside it. */}
+            {keepWords && AIMS.some((a) => aimCount(a) > 0) ? (
+              <>
+                <span className="pk-cap">Aim</span>
+                <div className="prs-aimrow">
+                  <SlideGroup group="aim" label="Aim" value={aimSel === 'all' ? null : aimSel} onPick={(a) => setAim(aimSel === a ? 'all' : (a as typeof aimSel))}
+                    items={AIMS.filter((a) => aimCount(a) > 0).map((a) => ({ id: a, label: a[0].toUpperCase() + a.slice(1) }))} />
+                  {anyFilter && <button type="button" className="prs-clear" onClick={clearAll}>Clear</button>}
+                </div>
+              </>
+            ) : anyFilter && <><span /><div><button type="button" className="prs-clear" onClick={clearAll}>Clear</button></div></>}
           </div>
         );
         return (
@@ -1275,7 +1293,7 @@ export default function DeskReviewSurface({
               {section('Published', fPublished.length, 'published, newest first', [
                 <React.Fragment key="recent-out">{rowsFor(fPublished.slice(-6).reverse(), 'published')}</React.Fragment>,
                 fPublished.length > 6 ? (
-                  <Drill key="earlier-out" className={night ? 'prs-earlier' : undefined} label={night ? 'Show' : 'open it'} summaryLeft={night ? <>{fPublished.length - 6} earlier posts</> : <>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
+                  <Drill key="earlier-out" className={night ? 'prs-earlier' : undefined} label={night && !keepWords ? 'Show' : 'open it'} summaryLeft={night && !keepWords ? <>{fPublished.length - 6} earlier posts</> : <>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
                     {fPublished.slice(0, -6).reverse().map((q, i) => (
                       <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: '1px solid var(--cb-line)' }}>
                         <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
@@ -1317,7 +1335,7 @@ export default function DeskReviewSurface({
             className={night ? 'prs-fold-h' : undefined}
             style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{logOpen ? '▾' : '▸'}</span>{night ? 'Edit history' : 'Changes log'}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{logOpen ? '▾' : '▸'}</span>{night && !keepWords ? 'Edit history' : 'Changes log'}</div>
             {entries !== null && entries.length > 0 && <Num size="row" inline style={{ fontSize: 13 }}>{entries.length}</Num>}
             {entries !== null && entries.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>changes on this board</span>}
             {entries !== null && entries.length > 0 && (
@@ -1403,7 +1421,7 @@ export default function DeskReviewSurface({
             className={night ? 'prs-fold-h' : undefined}
             style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>{night ? 'Photo library' : 'The photo library'}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>{night && !keepWords ? 'Photo library' : 'The photo library'}</div>
           </div>
           {photosOpen && <div style={{ marginTop: 12 }}>{foldPhotos}</div>}
         </div>
