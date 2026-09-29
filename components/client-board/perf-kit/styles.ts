@@ -187,11 +187,14 @@ export const PK_CSS = `
 [data-quiet] [class*="glow"], [data-quiet] [class*="-lit"] { box-shadow: none !important; }
 [data-quiet] .pk-fn-svg { filter: none !important; }
 
-/* NIGHT v5 (2026-09-29, Ivan + second opinion: "glow is what reads AI-template"): dark v4 kept,
+/* NIGHT v5 (2026-09-29, Ivan + second opinion: "the glow layer looks AI-template"): dark v4 kept,
    decoration flat. No haze, dots, glow halos, lit borders or gradient text; yellow stays solid
    and only where it means something (numbers that matter, today, the main button, booked marks). */
 [data-skin][data-night]:not([data-quiet]) { background: #0D0D0D !important; }
-[data-night]:not([data-quiet]) .pk-glow, [data-night]:not([data-quiet]) .pk-dots, [data-night]:not([data-quiet]) .pk-mcard-glow { display: none !important; }
+[data-night]:not([data-quiet]) .pk-dots, [data-night]:not([data-quiet]) .pk-mcard-glow, [data-night]:not([data-quiet]) .lmn > .pk-glow { display: none !important; }
+/* The one glow Ivan kept (2026-09-29, "it was cool"): a soft warm light behind the hero number
+   on Home, Outreach and Performance. One light is a signature; five stacked were the template look. */
+[data-night]:not([data-quiet]) .pk-glow { left: -140px; top: -80px; width: 460px; height: 420px; background: radial-gradient(closest-side, color-mix(in srgb, var(--cb-accent) 11%, transparent), transparent); }
 [data-night]:not([data-quiet]) .pk-grad { background: none !important; -webkit-background-clip: border-box !important; background-clip: border-box !important; color: var(--cb-accent) !important; -webkit-text-fill-color: var(--cb-accent); }
 [data-night]:not([data-quiet]) .pk.hm-hero, [data-night]:not([data-quiet]) .hm-frame, [data-night]:not([data-quiet]) .hm-rail-line.lit, [data-night]:not([data-quiet]) .pk-fill, [data-night]:not([data-quiet]) .prs-tg-on, [data-night]:not([data-quiet]) .prs-dot, [data-night]:not([data-quiet]) .prs-card,
 [data-night]:not([data-quiet]) .prs-status.is-today, [data-night]:not([data-quiet]) .pk-mcard, [data-night]:not([data-quiet]) .nln-fill, [data-night]:not([data-quiet]) .pk-badge, [data-night]:not([data-quiet]) .pn-card, [data-night]:not([data-quiet]) .pk-av, [data-night]:not([data-quiet]) .hm-hero .pk-sw-call,

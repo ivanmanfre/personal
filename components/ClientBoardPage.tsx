@@ -1,3 +1,4 @@
+import { isNightUrl } from './client-board/perf-kit/night';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -8914,7 +8915,7 @@ export default function ClientBoardPage() {
   // NIGHT MOCKUP (local only, 2026-09-29): ?night turns the desk skin dark. The LinkedIn
   // previews stay white (re-lit in the night CSS block), everything else reads on dark.
   const quiet = skin === 'desk' && params.has('quiet');
-  const night = skin === 'desk' && (params.has('night') || quiet);
+  const night = skin === 'desk' && (isNightUrl() || quiet);
   if (night) Object.assign(SKIN_VARS, {
     '--cb-ink': '#F5F4F0', '--cb-paper': '#0D0D0D', '--cb-paper-raise': '#161616',
     '--cb-paper-sunk': '#141414', '--cb-desk': '#0D0D0D',
