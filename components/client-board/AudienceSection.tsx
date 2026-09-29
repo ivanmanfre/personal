@@ -704,6 +704,11 @@ export function AudienceSection({ audience, live = false, onDecide }: {
     (c, i, a): c is string => !!c && a.indexOf(c) === i,
   );
   const people = audience.people ?? null;
+  // CLIENT-SAFE (2026-09-29): the recommendation cards (their fields are our working notes:
+  // anchor-client rules, "unjudged"), the per-metric-floor state line and the raw measurement
+  // table show on the operator's preview board only. The live link a client opens gets the
+  // numbers and the plain-language lines.
+  const notes = !live;
 
   return (
     <section
@@ -740,7 +745,7 @@ export function AudienceSection({ audience, live = false, onDecide }: {
         ].join('  ·  ')}
       </Meta>
 
-      {stateLine && state !== 'normal' && (
+      {stateLine && state !== 'normal' && (notes || state !== 'incomplete_history') && (
         <div
           data-audn-state-line=""
           style={{ marginTop: 14, padding: '13px 16px', borderRadius: 12, background: SUNK,
@@ -750,7 +755,7 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       {state === 'normal' && <Meta style={{ marginTop: 12 }}>{stateLine}</Meta>}
 
       {/* ---- recommendations ------------------------------------------- */}
-      {state !== 'empty' && (
+      {notes && state !== 'empty' && (
         <div style={{ marginTop: 26 }}>
           <SectionRule label={C.recs.heading} count={recommendations.length} blurb={C.recs.blurb} />
           {recommendations.length === 0 && <Meta style={{ marginTop: 12 }}>{C.recs.none}</Meta>}
@@ -787,7 +792,7 @@ export function AudienceSection({ audience, live = false, onDecide }: {
       {/* ---- relationship ----------------------------------------------- */}
       {state !== 'empty' && people && <RelationshipBlock people={people} />}
 
-      {state !== 'empty' && <MeasurementBlock measurement={measurement} />}
+      {notes && state !== 'empty' && <MeasurementBlock measurement={measurement} />}
 
       {/* ---- monthly trend --------------------------------------------- */}
       {state !== 'empty' && (

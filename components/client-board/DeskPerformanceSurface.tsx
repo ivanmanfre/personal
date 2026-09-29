@@ -788,7 +788,7 @@ export function DeskPerformanceSurface({
       {(indicators.length > 0 || (live && outreachInds.length > 0)) && (
         <div style={{ marginTop: 40 }}>
           <Eyebrow>What we track</Eyebrow>
-          <Footnote>{perf?.note || 'Real series appear the day each one goes live.'}</Footnote>
+          <Footnote>{(!live && perf?.note) || 'Real series appear the day each one goes live.'}</Footnote>
           <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
             {(() => {
               const cards: { ind: PerfIndicator; expectation?: string }[] = [
@@ -814,7 +814,8 @@ export function DeskPerformanceSurface({
       {/* board.engine_updates preserved, folded into a collapsed drill rather than
           dropped by the redesign. The mechanism-brag lead-in sentence is cut (see the
           module doc above) — the drill itself, and the update log inside it, stay. */}
-      {updates.length > 0 && (
+      {/* Delivery updates are operator notes (some go stale): preview board only (2026-09-29). */}
+      {!live && updates.length > 0 && (
         <Drill
           style={{ marginTop: 22 }}
           label="delivery updates"

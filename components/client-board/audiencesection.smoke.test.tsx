@@ -485,7 +485,8 @@ describe('AudienceSection: six states, both skins', () => {
   for (const skin of SKINS) {
     for (const state of STATES) {
       it(`${skin}: renders the ${state} state and says so`, () => {
-        const html = renderSkin(skin, FIXTURES[state]);
+        // incomplete_history's line is operator jargon ("per-metric floor"): preview board only.
+        const html = renderSkin(skin, FIXTURES[state], state !== 'incomplete_history');
         // the section rendered, tagged with the state it is in
         expect(html).toContain(`data-audn-section="${state}"`);
         // the state's own sentence is on screen
@@ -597,6 +598,8 @@ describe('AudienceSection: what the normal state actually shows', () => {
   });
 
   it('answers the five recommendation questions and records the decision with its reason', () => {
+    // Recommendation cards are operator-only since 2026-09-29: read them on the preview board.
+    const html = renderSkin('desk', FIXTURES.normal, false);
     expect(html).toContain(AUDIENCE_COPY.recs.whatChanged);
     expect(html).toContain(AUDIENCE_COPY.recs.whyItMatters);
     expect(html).toContain(AUDIENCE_COPY.recs.couldPublish);
@@ -624,7 +627,7 @@ describe('AudienceSection: decision controls', () => {
   });
 
   it('require a reason: the field and its prompt are always present', () => {
-    const html = renderSkin('desk', FIXTURES.normal, true);
+    const html = renderSkin('desk', FIXTURES.normal, false);
     expect(html).toContain(AUDIENCE_COPY.decision.reasonLabel);
     expect(html).toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
     expect(html).toContain(AUDIENCE_COPY.decision.accept);
@@ -632,12 +635,14 @@ describe('AudienceSection: decision controls', () => {
     expect(html).toContain(AUDIENCE_COPY.decision.defer);
   });
 
-  it('are live buttons, not dead spans, when a live board hands over a decide fn', () => {
+  // CLIENT-SAFE (2026-09-29): recommendation cards carry our working notes, so the live
+  // link a client opens shows none of them, and no decision controls with them.
+  it('are not on a live board: the client sees no recommendation cards', () => {
     const html = renderSkin('desk', FIXTURES.normal, true);
-    expect(html).not.toContain(AUDIENCE_COPY.decision.previewNote);
-    expect(html).not.toContain('disabled=""');
-    // the kit renders a real <button> only when an onClick was given
-    expect(html).toMatch(/<button type="button" class="pill[^"]*"[^>]*>Use it<\/button>/);
+    expect(html).not.toContain(AUDIENCE_COPY.recs.whatChanged);
+    expect(html).not.toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
+    expect(html).not.toContain('the objection is the one we hear most');
+    expect(html).not.toContain(AUDIENCE_COPY.state.incomplete_history);
   });
 
   // (a live board with no decide fn is not a state the page can produce:
