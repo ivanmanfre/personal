@@ -158,3 +158,9 @@ ol.brand-slide-points.is-timeline > li > b { width:30px; text-align:center; bord
 .skill-kit-file .brand-resource-body { padding:16px 18px 18px; font-size:14.5px; }
 .skill-kit .brand-resource-doc > small { margin-top:16px; }
 @media (max-width:760px) { .skill-kit .brand-resource-grid { grid-template-columns:1fr; } .skill-kit .brand-resource-side { border-right:0; border-bottom:1px solid #ece8e1; } }
+.skill-kit-md { padding:6px 18px 16px; }
+.skill-kit-md .skill-kit-block + .skill-kit-block { border-top:1px solid #eeeae3; }
+.skill-kit-md .skill-kit-block { padding:12px 0; }
+.scan-journey .skill-kit-md h5 { margin:0 0 8px; font:700 12px Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark); }
+.skill-kit-file .skill-kit-md .brand-resource-body { padding:0; }
+@media (max-width:760px) { .skill-kit-try p { font-size:13.5px; } .scan-journey .skill-kit-title { font-size:22px; } }
