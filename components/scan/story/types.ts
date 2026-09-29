@@ -9,6 +9,8 @@ export interface ResourceOption {
  quote?: string; changes?: string; rights?: string;
  question?: string; people?: string; record?: string; recruitment?: string;
  sections?: {heading:string;body:string}[];
+ /** Claude skill kit: each becomes a SKILL.md folder. */
+ skills?: {name:string;title:string;when:string;body:string;tryIt:string}[];
 }
 /** Reviewed editorial content, bound to one scan. Counts always come from the audit. */
 export interface StoryEdition {
@@ -29,7 +31,7 @@ export interface StoryEdition {
  buyerRole:string;
  coldTrigger:string; coldMessage:string;
  newsletterNote:string; nurtureNote:string;
- resource:{title:string;mode:'planner'|'question'|'document';brand:{surface:string;ink:string;accent:string;logo?:string;logoTone?:'light'|'dark';font?:string};options:ResourceOption[]};
+ resource:{title:string;mode:'planner'|'question'|'document'|'skills';brand:{surface:string;ink:string;accent:string;logo?:string;logoTone?:'light'|'dark';font?:string};options:ResourceOption[]};
  cover:{lines:[string,string];left:string;right:string;details:[string,string]};
  /** Gemini cover in the lead's brand, set by the server. */
  coverImage?:string;

@@ -10,15 +10,16 @@ import {NumberTicker} from './motion';
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 32);
 /** One clean line from a section body: list markers out, first sentence, cut at a word. */
 const summary = (body: string) => { const flat = body.replace(/(^|\s)[-•]\s+/g, ' ').replace(/\s+/g, ' ').trim(); const first = flat.split(/(?<=[.?!])\s/)[0]; return first.length <= 110 ? first : first.slice(0, 106).replace(/\s+\S*$/, '') + '…'; };
-const UNIT = {document: 'worked examples', planner: 'project types', question: 'research events'} as const;
+const UNIT = {document: 'worked examples', planner: 'project types', question: 'research events', skills: 'Claude skill kit'} as const;
 
 /** The lead magnet as the reader meets it: its own landing page on the lead's site, in their brand. */
 export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string}) {
  const plan = useStory(), r = plan.resource, p = brandPalette(r.brand), reduced = useReducedMotion();
  const [coverFailed, setCoverFailed] = useState(false);
  const host = (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '') || `${slugify(plan.brand)}.com`;
- const sections = r.options[0]?.sections ?? [];
- const stats = [{n: r.options.length, label: UNIT[r.mode]}, sections.length ? {n: sections.length, label: 'sections in each'} : null, r.options[0]?.deliverables?.length ? {n: r.options[0].deliverables.length, label: 'deliverables mapped'} : null].filter(Boolean) as {n: number; label: string}[];
+ const skills = r.options[0]?.skills ?? [];
+ const sections = r.mode === 'skills' ? skills.map(k => ({heading: k.title, body: k.when})) : r.options[0]?.sections ?? [];
+ const stats = [r.mode === 'skills' ? {n: skills.length, label: 'Claude skills'} : {n: r.options.length, label: UNIT[r.mode]}, sections.length && r.mode !== 'skills' ? {n: sections.length, label: 'sections in each'} : null, r.options[0]?.deliverables?.length ? {n: r.options[0].deliverables.length, label: 'deliverables mapped'} : null].filter(Boolean) as {n: number; label: string}[];
  return <div className="lmp-browser" style={{fontFamily: brandFont(r.brand.font)}}>
   <div className="lmp-chrome" aria-hidden="true">
    <span className="lmp-dots"><i/><i/><i/></span>

@@ -4,6 +4,7 @@ import { useStory } from './context';
 import { RichText, cleanCopy } from './RichText';
 import { BrandMark, brandFont, brandPalette } from './BrandSlide';
 import type { ResourceOption } from './types';
+import { SkillKit } from './SkillKit';
 
 /** Every resource mode read as one document: headed sections in order. */
 function sectionsOf(o: ResourceOption) {
@@ -21,6 +22,11 @@ function sectionsOf(o: ResourceOption) {
 }
 
 export function BrandResource() {
+  const plan = useStory();
+  return plan.resource.mode === 'skills' ? <SkillKit/> : <DocumentResource/>;
+}
+
+function DocumentResource() {
   const plan = useStory(), r = plan.resource, p = brandPalette(r.brand);
   const [index, setIndex] = useState(0), [copied, setCopied] = useState(false), [error, setError] = useState(false);
   const o = r.options[Math.min(index, r.options.length - 1)];
