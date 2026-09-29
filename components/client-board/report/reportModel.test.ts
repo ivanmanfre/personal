@@ -55,6 +55,19 @@ describe('figures', () => {
     expect(f.fitEngaged).toEqual({ n: 1, of: 2 });
     expect(f.posts[0]).toMatchObject({ title: 'A post', fit: 1, engaged: 2, own: true });
   });
+  it('lists a published queue post whose metrics row has not synced yet, so the list matches posts out', () => {
+    const [cur] = reportPeriods(RISE, '2026-09-29');
+    const board = { ...emptyBoard, queue: [
+      { id: 'q1', stage: 'published', hook: 'A post', published_at: '2026-09-23T15:00:00Z', social_id: 'urn:li:activity:1111111111111111111' },
+      { id: 'q2', stage: 'published', hook: 'Carousel that just went out', publish_date: '2026-09-28' },
+      { id: 'q3', stage: 'scheduled', hook: 'Not out yet', publish_date: '2026-09-30' },
+    ] };
+    const f = computeFigures(RISE, cur, payload, board, null);
+    expect(f.postsOut).toBe(2);
+    expect(f.posts).toHaveLength(2);
+    expect(f.posts.find((r) => r.key === 'q2')).toMatchObject({ title: 'Carousel that just went out', collected: false, own: false, fit: null });
+    expect(f.posts.find((r) => r.title === 'A post')).toMatchObject({ own: false, fit: 1 });
+  });
   it('falls back to outreach_truth.booked without the report read, de-duplicating a person', () => {
     const [cur] = reportPeriods(RISE, '2026-09-27');
     const board = { ...emptyBoard, outreach_truth: { booked: [
