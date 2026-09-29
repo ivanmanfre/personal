@@ -13,6 +13,7 @@ import {assessAudience} from './assessment';
 import {BlurWords, NumberTicker} from './motion';
 import {StoryFlow, readerName, fillName} from './StoryFlow';
 import {LeadMagnetPage} from './LeadMagnetPage';
+import {ImagePost} from './ImagePost';
 import '../../dev/scan-walkthrough/journey/connected.css';
 import '../../dev/scan-walkthrough/journey/bold.css';
 import '../../dev/scan-walkthrough/journey/studio.css';
@@ -40,6 +41,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <p className="sp-hero-sub">We create inbound and outbound opportunities by content, lead magnets and signal based outreach.</p>
    <ol className="sp-path" aria-label="Your plan in four steps">
     <li className="sp-path-bracket" aria-hidden="true"><span>Inbound</span></li>
+    <li className="sp-path-bracket is-out" aria-hidden="true"><span>Outbound</span></li>
     {STEPS.map((s, i) => <li key={s.id}><a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
     <motion.i className="sp-path-line" aria-hidden="true" initial={reduced ? false : {scaleX: 0}} animate={{scaleX: 1}} transition={{duration: reduced ? 0 : 1.4, delay: .3, ease: [.45, 0, .2, 1]}}/>
    </ol>
@@ -70,7 +72,7 @@ function StepNav() {
  const index = STEPS.findIndex(s => s.id === active);
  return <nav className={`sp-nav ${index >= 0 ? 'is-live' : ''}`} aria-label="Plan sections">
   <div className="sp-nav-inner">
-   <ol>{STEPS.map((s, i) => <li key={s.id} className={i === 2 ? 'sp-nav-split' : ''}>{i === 0 && <span className="sp-nav-group" aria-hidden="true">Inbound</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
+   <ol>{STEPS.map((s, i) => <li key={s.id} className={i === 2 ? 'sp-nav-split' : ''}>{(i === 0 || i === 2) && <span className="sp-nav-group" aria-hidden="true">{i === 0 ? 'Inbound' : 'Outbound'}</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
     {active === s.id && <motion.span layoutId="sp-nav-active" className="sp-nav-active" transition={{type: 'spring', stiffness: 420, damping: 36}}/>}
     <span className="sp-nav-num">{String(i + 1).padStart(2, '0')}</span><span className="sp-nav-label">{s.label}</span></a></li>)}</ol>
    <a className="sp-nav-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call</a>
@@ -78,19 +80,19 @@ function StepNav() {
  </nav>;
 }
 
-type Sample = {key: string; title: string; hint: string; render: () => React.ReactNode; full?: boolean};
+type Sample = {key: string; title?: string; hint?: string; render: () => React.ReactNode; full?: boolean};
 
 /** Every sample on show at once, side by side, each with the one line on what it does for them. */
 function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; after?: React.ReactNode}) {
  const reduced = useReducedMotion();
  return <section className="sp-chapter story-scene" id={id} data-tone={tone}>
   <header className="sp-chapter-head">
-   <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}{n <= 2 && <em className="sp-eyebrow-group">Inbound</em>}</span><BlurWords text={title}/></div>
+   <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}<em className="sp-eyebrow-group">{n <= 2 ? 'Inbound' : 'Outbound'}</em></span><BlurWords text={title}/></div>
    <div><p>{why}</p>{aside}</div>
   </header>
   <div className={`sp-stage sp-grid sp-grid-${cols}`}>
    {samples.map((x, i) => <motion.figure key={x.key} className={`sp-exhibit sp-exhibit-${x.key} ${x.full ? 'is-full' : ''}`} initial={reduced ? false : {opacity: 0, y: 24}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, amount: .1}} transition={{duration: reduced ? 0 : .5, delay: reduced ? 0 : i * .08, ease: [.22, .84, .36, 1]}}>
-    <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>
+    {x.title && <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>}
     {x.render()}
    </motion.figure>)}
   </div>
@@ -150,11 +152,12 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   <PlanHero fixture={fixture}/>
   <StepNav/>
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
-  <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
-   aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
-   samples={[
-    {key: 'carousel', title: 'Carousel post', hint: `Built in ${brand}’s colours, ready to post.`, render: () => <ProspectPost fixture={fixture} kind={kind}/>},
-    {key: 'text', title: 'Text post', hint: 'Written in your voice, for your buyers.', render: () => <TextPost fixture={fixture} kind={kind}/>},
+  <Chapter id="content" n={1} label="Content" title={plan.contentHeading} why={plan.contentWhy}
+   aside={<><p className="sp-sourced">Built from your expertise, your client calls and what the top performers in your industry already post.</p>{segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}</>}
+   cols={3} samples={[
+    {key: 'carousel', render: () => <ProspectPost fixture={fixture} kind={kind}/>},
+    {key: 'text', render: () => <TextPost fixture={fixture} kind={kind}/>},
+    {key: 'image', render: () => <ImagePost fixture={fixture}/>},
    ]}/>
   <Chapter id="resource" n={2} tone="warm" label="Lead magnets" title="Turn readers into a list you own." why={plan.magnetWhy}
    cols={2} samples={[
@@ -169,7 +172,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
     {key: 'newsletter', title: 'Newsletter', hint: 'Stays in their inbox until the project is ready.', full: true, render: () => <NewsletterEmail fixture={fixture}/>},
    ]}/>
   <section className="sp-chapter sp-calls story-scene" id="calls" data-tone="warm">
-   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls</span><BlurWords text="You only take calls that already fit."/><p>We check fit, timing and who decides before anything gets booked. You walk in knowing the project.</p></div>
+   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls<em className="sp-eyebrow-group">Outbound</em></span><BlurWords text="You only take calls that already fit."/><p>We check fit, timing and who decides before anything gets booked. You walk in knowing the project.</p></div>
    <StoryFlow founder={fixture.founder.firstName}/>
    <div className="sp-ownership"><div><b>We run all of it.</b><p>Posts, lead magnets, outreach and follow-up, every week, through to the booked call.</p></div><div><b>You take the calls.</b><p>Your calendar fills with people who have a real project and a reason to talk to you.</p></div></div>
   </section>
