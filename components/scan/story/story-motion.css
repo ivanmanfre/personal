@@ -304,3 +304,15 @@
 .story-plan .sr-quote-wide p { font-size:clamp(18px,1.6vw,22px); max-width:60ch; }
 .story-plan .sr-quote-wide p::before { display:inline; font-size:30px; margin:0 6px 0 0; vertical-align:-6px; }
 .story-plan .sr-bars { margin-bottom:24px; }
+.story-plan .sr-climb { display:grid; gap:8px; }
+.story-plan .sr-climb-bars { height:170px; display:grid; grid-template-columns:repeat(10,1fr); gap:6px; align-items:end; border-bottom:1px solid #ffffff24; }
+.story-plan .sr-climb-bars > div { height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; gap:6px; }
+.story-plan .sr-climb-bars i { display:block; border-radius:6px 6px 2px 2px; background:#ffffff2e; }
+.story-plan .sr-climb-bars > div:nth-child(n+6) i { background:#bd3a24b3; }
+.story-plan .sr-climb-bars > div.is-last i { background:linear-gradient(180deg,#ff8a66,var(--sp-red)); box-shadow:0 16px 30px -12px #bd3a24; }
+.story-plan .sr-climb-bars span { text-align:center; font-size:15px; font-weight:800; color:#fff; }
+.story-plan .sr-climb-axis { display:flex; justify-content:space-between; }
+.story-plan .sr-climb-axis small { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8e867b; }
+.story-plan .sr-climb-bars { margin-top:24px; }
+.story-plan .sr-climb-bars > div { position:relative; }
+.story-plan .sr-climb-bars span { position:absolute; left:0; right:0; top:-24px; }
