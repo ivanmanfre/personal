@@ -2337,7 +2337,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>your slot · open</div>
                           <p className="mt-1.5" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>Your slot. Post your own, restore this one, or pick a replacement.</p>
                           <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
-                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}>Restore this post</button>
+                            <button onClick={(e) => { e.stopPropagation(); onRestore?.(q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}>Restore this post</button>
                             <button onClick={(e) => { e.stopPropagation(); setPickerRow(showPicker ? null : q.id); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>{showPicker ? 'Close' : 'Pick a replacement'}</button>
                             <button onClick={(e) => { e.stopPropagation(); onLeaveEmpty?.(q.id); }} className="px-2.5 py-2 text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Leave this day empty</button>
                           </div>
@@ -2764,7 +2764,7 @@ function PostAssets({ gate, pdfUrl, accent, slides, title }: { gate?: { title: s
             download
             onClick={(e) => e.stopPropagation()}
             className="inline-flex min-h-[36px] items-center gap-2 rounded-[6px] px-3 text-[12.5px] font-semibold"
-            style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', textDecoration: 'none' }}
+            style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', textDecoration: 'none' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
@@ -2837,8 +2837,8 @@ function ScheduleTimeEditor({ scheduledAt, accent, onSave, onCancel }: {
     <div className="rounded-lg p-2.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }} onClick={(e) => e.stopPropagation()}>
       <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE, marginBottom: 6 }}>Date &amp; time (your time, {boardZone().label})</div>
       <div className="flex flex-wrap items-center gap-2">
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
-        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
         <button onClick={save} disabled={busy || !date} className="inline-flex min-h-[36px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold" style={{ background: accent, color: ink, border: 'none', cursor: 'pointer', opacity: busy || !date ? 0.6 : 1 }}>{busy ? 'Saving…' : 'Save time'}</button>
         <button onClick={onCancel} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
       </div>
@@ -3348,13 +3348,13 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                               <button
                                 onClick={(e) => { e.stopPropagation(); serveAngle(focused.id); }}
                                 className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                                style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}
+                                style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}
                               >Swap</button>
                               {live && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); onOpen(focused, { scheduling: true }); }}
                                   className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', cursor: 'pointer' }}
+                                  style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}
                                 >Edit time</button>
                               )}
                               {isScheduled(focused) && (
@@ -3444,8 +3444,8 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                 </p>
                                 <div className="mt-2.5 flex gap-2">
                                   {live
-                                    ? <button onClick={() => { setAngle(null); onOpen(focused, { editing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Edit the post</button>
-                                    : <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>}
+                                    ? <button onClick={() => { setAngle(null); onOpen(focused, { editing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}>Edit the post</button>
+                                    : <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}>Request a change</button>}
                                   <button onClick={() => setAngle(null)} className="px-3 py-2 text-[12.5px]" style={{ color: INK_MUTE }}>Close</button>
                                 </div>
                               </div>
@@ -4028,7 +4028,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     <button
                       onClick={() => { setEditSaved(false); setEditing(true); }}
                       className="inline-flex min-h-[40px] items-center rounded-[6px] px-4 text-[13px] font-semibold"
-                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}
                     >
                       Edit copy
                     </button>
@@ -4054,7 +4054,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     <button
                       onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
                       className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
-                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}
                     >
                       Change photo
                     </button>
@@ -4062,7 +4062,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       onClick={() => oneShotRef.current?.click()}
                       disabled={uploadBusy || !!mediaBusy}
                       className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
-                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: uploadBusy ? 0.6 : 1 }}
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', opacity: uploadBusy ? 0.6 : 1 }}
                     >
                       {uploadBusy ? 'Uploading…' : 'Upload your own'}
                     </button>
@@ -4079,7 +4079,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <button
                     onClick={() => { if (!poolOpen) { setPoolOpen(true); if (pool.length === 0) void loadPool(); } else setPoolOpen(false); }}
                     className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
-                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
@@ -4092,7 +4092,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     onClick={() => oneShotRef.current?.click()}
                     disabled={uploadBusy || !!mediaBusy}
                     className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] px-3.5 text-[13px] font-semibold"
-                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: uploadBusy ? 0.6 : 1 }}
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', opacity: uploadBusy ? 0.6 : 1 }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <path d="M12 16V4M6 10l6-6 6 6" /><path d="M4 20h16" />
@@ -4171,7 +4171,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                         setSchedErr(''); setSchedOpen(true);
                       }}
                       className="inline-flex min-h-[38px] items-center rounded-[6px] px-3.5 text-[13px] font-semibold"
-                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}
                     >Change date &amp; time</button>
                     {schedLabel && <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>Now {schedLabel}.</span>}
                   </div>
@@ -4179,8 +4179,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   <div>
                     <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>New date &amp; time ({boardZone().label})</div>
                     <div className="mt-2 flex flex-wrap items-center gap-2.5">
-                      <input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
-                      <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+                      <input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
+                      <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="rounded-[6px] px-2.5 py-2 text-[13px]" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
                       <button onClick={applySchedule} disabled={schedBusy || !schedDate} className="inline-flex min-h-[38px] items-center rounded-[6px] px-4 text-[13px] font-semibold" style={{ background: accent, color: ctaInk, opacity: schedBusy || !schedDate ? 0.6 : 1 }}>{schedBusy ? 'Saving…' : 'Save time'}</button>
                       <button onClick={clearSchedule} disabled={schedBusy} className="text-[12.5px] font-medium" style={{ color: INK_MUTE, background: 'none', border: 'none', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>Clear this day</button>
                       <button onClick={() => setSchedOpen(false)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
@@ -4355,7 +4355,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     onClick={sendChange}
                     disabled={busy || !note.trim()}
                     className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: busy || !note.trim() ? 0.55 : 1 }}
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', opacity: busy || !note.trim() ? 0.55 : 1 }}
                   >
                     {busy ? 'Sending…' : 'Send it'}
                   </button>
@@ -4865,7 +4865,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                       </div>
                       {editing === 'dm' ? (
                         <div>
-                          <textarea value={dmDraft} onChange={(e) => setDmDraft(e.target.value)} rows={5} className="w-full rounded-lg p-3 text-[13px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: '#fff' }} />
+                          <textarea value={dmDraft} onChange={(e) => setDmDraft(e.target.value)} rows={5} className="w-full rounded-lg p-3 text-[13px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
                           <div className="mt-2 flex items-center gap-2.5">
                             <button onClick={saveDm} disabled={promoBusy} className="rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer', opacity: promoBusy ? 0.6 : 1 }}>{promoBusy ? 'Saving…' : 'Save DM'}</button>
                             <button onClick={() => setEditing(null)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
@@ -4888,9 +4888,9 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                   {editing === 'email' ? (
                     <div className="p-4">
                       <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Delivery email · subject</div>
-                      <input value={subjDraft} onChange={(e) => setSubjDraft(e.target.value)} className="mt-1 w-full rounded-lg p-2.5 text-[14px] font-semibold outline-none" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }} />
+                      <input value={subjDraft} onChange={(e) => setSubjDraft(e.target.value)} className="mt-1 w-full rounded-lg p-2.5 text-[14px] font-semibold outline-none" style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
                       <div className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Body</div>
-                      <textarea value={bodyDraft} onChange={(e) => setBodyDraft(e.target.value)} rows={8} className="mt-1 w-full rounded-lg p-3 text-[13.5px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: '#fff' }} />
+                      <textarea value={bodyDraft} onChange={(e) => setBodyDraft(e.target.value)} rows={8} className="mt-1 w-full rounded-lg p-3 text-[13.5px] outline-none" style={{ border: `1px solid ${accent}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }} />
                       <div className="mt-2 flex items-center gap-2.5">
                         <button onClick={saveEmail} disabled={promoBusy} className="rounded-[6px] px-3.5 py-2 text-[12.5px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer', opacity: promoBusy ? 0.6 : 1 }}>{promoBusy ? 'Saving…' : 'Save email'}</button>
                         <button onClick={() => setEditing(null)} className="text-[12.5px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
@@ -5528,7 +5528,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
               <button
                 onClick={() => setShiftOpen(true)}
                 className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-                style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)' }}
               >
                 Request a shift
               </button>
@@ -5547,7 +5547,7 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
                     onClick={sendShift}
                     disabled={shiftBusy || !note.trim()}
                     className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: shiftBusy || !note.trim() ? 0.55 : 1 }}
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: 'var(--cb-paper-raise, #fff)', opacity: shiftBusy || !note.trim() ? 0.55 : 1 }}
                   >
                     {shiftBusy ? 'Sending…' : 'Send'}
                   </button>

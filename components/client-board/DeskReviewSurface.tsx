@@ -154,7 +154,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
         <textarea id={feedbackId} value={note} rows={2} disabled={feedbackState === 'saving'}
           onChange={event => { setNote(event.target.value); setFeedbackState('idle'); }}
           placeholder="What would you change?"
-          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 52, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5, border: '1px solid #d6d3cd', borderRadius: 10, background: '#fff', color: 'var(--cb-ink)' }} />
+          style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 52, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5, border: '1px solid #d6d3cd', borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', color: 'var(--cb-ink)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
           <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
             style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? .5 : 1 }}>
