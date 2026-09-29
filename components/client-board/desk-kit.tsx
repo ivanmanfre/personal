@@ -330,7 +330,7 @@ export const Chip: React.FC<Base & { tone?: 'default' | 'accent' | 'plate' }> = 
       display: 'inline-block', borderRadius: 999, padding: '5px 13px',
       fontFamily: BODY, fontSize: 12.5, fontWeight: 700, lineHeight: 1.35,
       background: tone === 'accent' ? ACCENT : tone === 'plate' ? 'rgba(255,255,255,0.12)' : SUNK,
-      color: tone === 'accent' ? INK : tone === 'plate' ? '#E6E6DF' : MUTE,
+      color: tone === 'accent' ? 'var(--cb-accent-ink, var(--cb-ink))' : tone === 'plate' ? '#E6E6DF' : MUTE,
       ...style,
     }}
   >
@@ -356,7 +356,7 @@ export const Pill: React.FC<Base & {
     borderRadius: 999, padding: '8px 17px', fontFamily: BODY, fontSize: 13, fontWeight: 700,
     lineHeight: 1.35, cursor: onClick ? 'pointer' : 'default',
     background: active ? INK : tone === 'accent' ? ACCENT : PAPER,
-    color: active ? PAPER : tone === 'accent' ? INK : MUTE,
+    color: active ? PAPER : tone === 'accent' ? 'var(--cb-accent-ink, var(--cb-ink))' : MUTE,
     ...style,
   };
   if (!onClick) return <span className={cx('pill', active && 'p', className)} style={s} {...rest}>{children}</span>;

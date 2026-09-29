@@ -57,3 +57,42 @@ describe('PerfReport (ARCH-look Results trial)', () => {
     expect(html).not.toMatch(/#D220AC|magenta/i);
   });
 });
+
+describe('PerfReport night v4 (?night): v2 look, v3 words', () => {
+  const night = () => {
+    window.history.replaceState({}, '', '/?night');
+    try { return renderToStaticMarkup(<PerfReport ctx={ctx} truth={truth} />); } finally { window.history.replaceState({}, '', '/'); }
+  };
+  const html = night();
+  const text = html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  it('opens on the picker, v2 hero and the liquid funnel; each fact once', () => {
+    expect(html).toContain('data-perf-night');
+    expect(html).toContain('aria-label="Report period"');
+    expect(html).toContain('data-night-funnel');
+    expect(html).toContain('class="pk-hero-n pk-grad"');
+    expect(html).toContain('calls booked<br/>since 17 Sept');
+    expect(text).toContain('Kara North and Tom Hale');
+    // said once: the came-to-you people have their own section, the calls section carries cards only
+    expect(text).not.toContain('came to you on their own and asked to connect');
+    expect(text).toContain('1 brand owner came to you on their own since 17 Sept.');
+    expect(text).not.toContain('the latest on 22 Sept');
+    expect(html.match(/Pre-call brief/g) || []).toHaveLength(1);
+  });
+  it('the funnel uses the one glossary, in order', () => {
+    const order = ['Reached', 'Connected', 'Replied', 'Said yes', 'Booked a call'].map((w) => text.indexOf(` ${w} `));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+  it('one chart encoding (replied bars, booked-a-call badges), caps eyebrows back, no helper lines', () => {
+    expect(text).toContain('Replied');
+    expect(text).toContain('Booked a call');
+    expect(text).not.toContain('Tap a week');
+    expect(text).not.toContain('Wrote back for the first time');
+    expect(html).toContain('class="pk-cap pk-capline">Week by week');
+  });
+  it('posts: plain summary line, a zero instead of a dash', () => {
+    expect(text).toContain('One brand owner engaged, on the 23 Sept post.');
+    expect(text).toContain('Post, most brand owners first');
+    expect(text).not.toMatch(/ – /);
+  });
+});

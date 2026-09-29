@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Board, CalendarItem, QueueItem } from '../ClientBoardPage';
 import { SectionRule, Footnote } from './desk-kit';
+import { useNight, useQuiet } from './perf-kit/night';
 
 /**
  * DeskCalendarStrip — the compact month strip that replaces `CalendarSurface` inside the
@@ -88,6 +89,58 @@ const CAL_CSS = `
 }
 `;
 
+/**
+ * NIGHT MOCKUP (local only, 2026-09-29): glass cells, today lit with an accent ring, the
+ * published bar dimmed (the desk ink turns white at night), a thumbnail that only shows once
+ * it has really loaded. The desk skin zeroes box-shadow on every element with !important,
+ * so the glow sits on a pseudo-element. Rendered only behind ?night.
+ */
+const CAL_NIGHT_CSS = `
+.cb-calstrip-cell.cb-cal-n { background: rgb(var(--nt-fg, 255 255 255) / 0.018) !important; border: 1px solid rgb(var(--nt-fg, 255 255 255) / 0.06) !important; }
+.cb-calstrip-cell.cb-cal-n.has { background: linear-gradient(180deg, rgb(var(--nt-fg, 255 255 255) / 0.055), rgb(var(--nt-fg, 255 255 255) / 0.018)) !important; border-color: rgb(var(--nt-fg, 255 255 255) / 0.1) !important; }
+.cb-calstrip-cell.cb-cal-n.wknd:not(.has) { background: repeating-linear-gradient(45deg, rgb(var(--nt-fg, 255 255 255) / 0.03) 0 4px, transparent 4px 9px) !important; border-style: dashed !important; }
+.cb-calstrip-cell.cb-cal-n.today { border: 1.5px solid var(--cb-accent) !important; background: linear-gradient(180deg, rgba(255,199,29,0.12), rgba(255,199,29,0.02)) !important; }
+.cb-calstrip-cell.cb-cal-n.today::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; box-shadow: 0 0 20px rgba(255,199,29,0.4), 0 0 44px rgba(255,199,29,0.14); }
+.cb-calstrip-cell.cb-cal-n.today .cb-cal-daynum { color: var(--cb-accent) !important; }
+.cb-cal-n .cb-calstrip-title { color: rgb(var(--nt-fg, 255 255 255) / 0.82); }
+.cb-cal-n .cb-calstrip-more { color: rgb(var(--nt-fg, 255 255 255) / 0.66); }
+/* the strip's head: caps label + count pill, over a lit rule (v2's section look) */
+.cb-cal-head { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 0 12px; font-family: var(--cb-body, Manrope), sans-serif; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--nt-fg, 255 255 255)); }
+.cb-cal-head::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, var(--cb-accent), rgb(var(--nt-fg, 255 255 255) / .14) 34%, rgb(var(--nt-fg, 255 255 255) / .04)); }
+.cb-cal-head span { display: inline-flex; align-items: center; min-width: 26px; justify-content: center; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--cb-accent) 14%, transparent); font-size: 12.5px; letter-spacing: 0; color: var(--cb-accent); font-variant-numeric: tabular-nums; }
+.cb-cal-n .cb-calstrip-thumb { border-color: rgb(var(--nt-fg, 255 255 255) / 0.12); background: none; }
+.cb-cal-n .cb-calstrip-thumb:not([data-ok]) { visibility: hidden; }
+/* no cover loaded: the title takes the cover's place instead of sitting indented beside a hole */
+.cb-cal-n .cb-calstrip-thumb:not([data-ok]) + .cb-calstrip-title.has-thumb { left: 7px; }
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .cb-calstrip-cell.cb-cal-n { transition: border-color .2s ease, transform .2s cubic-bezier(.25,1,.5,1); }
+  button.cb-calstrip-cell.cb-cal-n:hover, div[role=button].cb-calstrip-cell.cb-cal-n:hover { border-color: rgba(255,199,29,0.45) !important; transform: translateY(-2px); }
+}
+`;
+
+/**
+ * QUIET MOCKUP (local only, 2026-09-29, "private-bank quiet, receipts first"): the night
+ * strip on a light ground. White cells for days with a post, pale wells for empty ones, today
+ * a flat 2px yellow edge, ink titles; the head's rule and count go ink. Rendered only
+ * behind ?quiet (on top of CAL_NIGHT_CSS, hence the matching !important).
+ */
+const CAL_QUIET_CSS = `
+[data-quiet] .cb-calstrip-cell.cb-cal-n { background: #EFEFEC !important; border: 1px solid rgba(17,17,17,0.07) !important; }
+[data-quiet] .cb-calstrip-cell.cb-cal-n.has { background: #FFFFFF !important; border-color: rgba(17,17,17,0.09) !important; }
+[data-quiet] .cb-calstrip-cell.cb-cal-n.wknd:not(.has) { background: repeating-linear-gradient(45deg, rgba(17,17,17,0.04) 0 4px, transparent 4px 9px) !important; border: 1px dashed rgba(17,17,17,0.14) !important; }
+[data-quiet] .cb-calstrip-cell.cb-cal-n.today { border: 2px solid var(--cb-accent) !important; background: #FFFFFF !important; }
+[data-quiet] .cb-calstrip-cell.cb-cal-n.today::after { display: none; }
+[data-quiet] .cb-calstrip-cell.cb-cal-n.today .cb-cal-daynum { color: #111 !important; }
+[data-quiet] .cb-cal-n .cb-calstrip-title { color: #111; }
+[data-quiet] .cb-cal-n .cb-calstrip-more { color: rgba(17,17,17,0.62); }
+[data-quiet] .cb-cal-head::after { background: rgba(17,17,17,0.12); }
+[data-quiet] .cb-cal-head span { background: rgba(17,17,17,0.07); color: #111; }
+[data-quiet] .cb-cal-n .cb-calstrip-thumb { border-color: rgba(17,17,17,0.1); }
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  [data-quiet] button.cb-calstrip-cell.cb-cal-n:hover, [data-quiet] div[role=button].cb-calstrip-cell.cb-cal-n:hover { border-color: rgba(17,17,17,0.3) !important; }
+}
+`;
+
 type MarkState = 'out' | 'ahead';
 type Mark = { item: CalendarItem; state: MarkState; approved: boolean; lm: boolean };
 
@@ -135,6 +188,8 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   queueFilter?: (q: QueueItem) => boolean;
 }) {
   const todayIso = isoOf(new Date());
+  const night = useNight();
+  const quiet = useQuiet();
   const [hoverKey, setHoverKey] = React.useState<string | null>(null);
   const [pendingId, setPendingId] = React.useState<string | null>(null);
   const [moveError, setMoveError] = React.useState<string | null>(null);
@@ -228,6 +283,17 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
   const lmShown = marks.some((m) => isLm(m) && m.item.date <= gridEndIso);
 
   const markFill = (m: Mark) => {
+    if (quiet) {
+      // Quiet: published recedes to grey, scheduled is an ink outline, approved solid ink,
+      // a lead magnet is always its own solid colour (squared). No yellow: nothing here is a booked call.
+      if (isLm(m)) return 'var(--cb-mint)';
+      return m.state === 'out' ? 'rgba(17,17,17,0.16)' : m.approved ? '#111111' : '#FFFFFF';
+    }
+    if (night) {
+      // Night: published recedes, scheduled glows in the accent, lead magnets keep mint.
+      if (isLm(m)) return m.state === 'out' || m.approved ? 'var(--cb-mint)' : 'color-mix(in srgb, var(--cb-mint) 40%, #151515)';
+      return m.state === 'out' ? 'rgb(var(--nt-fg, 255 255 255) / 0.24)' : m.approved ? 'var(--cb-accent)' : 'color-mix(in srgb, var(--cb-accent) 55%, #151515)';
+    }
     if (isLm(m)) {
       return m.state === 'out' || m.approved
         ? 'var(--cb-mint)'
@@ -299,12 +365,16 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
 
   return (
     <div data-surface="calendar-strip" style={{ marginTop: 20 }}>
-      <style>{CAL_CSS}</style>
+      <style>{night ? CAL_CSS + CAL_NIGHT_CSS + (quiet ? CAL_QUIET_CSS : '') : CAL_CSS}</style>
+      {night ? (
+        <div className="cb-cal-head">{shortDate(spanStart)} to {shortDate(gridEnd)} <span>{marks.length}</span></div>
+      ) : (
       <SectionRule
         label={`Calendar · ${shortDate(spanStart)} to ${shortDate(gridEnd)}`}
         count={marks.length}
         blurb={marks.length === 1 ? 'post on the calendar' : 'posts on the calendar'}
       />
+      )}
 
       <div className="cb-calstrip-wrap" style={{ marginTop: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, fontSize: 11.5, fontWeight: 800, letterSpacing: '0.08em', color: 'var(--cb-ink-mute)', textAlign: 'center' }}>
@@ -342,13 +412,14 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
             const fullTitle = dayMarks.map((m) => m.item.label).join(' · ');
             const inner = (
               <>
-                <span style={{ position: 'absolute', top: 5, left: 7, fontSize: 12, fontWeight: 800, color: dayMarks.length ? 'var(--cb-ink)' : 'var(--cb-ink-mute)', pointerEvents: 'none' }}>{d.getDate()}</span>
+                <span className={night ? 'cb-cal-daynum' : undefined} style={{ position: 'absolute', top: 5, left: 7, fontSize: 12, fontWeight: 800, color: dayMarks.length ? 'var(--cb-ink)' : 'var(--cb-ink-mute)', pointerEvents: 'none' }}>{d.getDate()}</span>
                 {extra > 0 && (
                   <span className="cb-calstrip-more" style={{ position: 'absolute', top: 5, right: 7, pointerEvents: 'none' }}>{`+${extra}`}</span>
                 )}
-                {cover && <img className="cb-calstrip-thumb" src={cover} alt="" loading="lazy" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                {cover && <img className="cb-calstrip-thumb" src={cover} alt="" loading="lazy" onLoad={night ? (e) => { e.currentTarget.setAttribute('data-ok', ''); } : undefined} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
                 {lead && (
-                  <span className={cover ? 'cb-calstrip-title has-thumb' : 'cb-calstrip-title'} title={lead.item.label}>{lead.item.label}</span>
+                  /* Night v3: a post is called by its own first line (hook), falling back to the title. */
+                  <span className={cover ? 'cb-calstrip-title has-thumb' : 'cb-calstrip-title'} title={lead.item.label}>{night && leadQ?.hook ? leadQ.hook : lead.item.label}</span>
                 )}
                 {dayMarks.length > 0 && (
                   <span style={{ position: 'absolute', left: 6, right: 6, bottom: 6, display: 'flex', gap: 3 }}>
@@ -374,7 +445,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
                             flex: '1 1 0', minWidth: 0, height: dragEnabled ? 9 : 7, borderRadius: isLm(m) ? 2 : 999,
                             background: markFill(m),
                             border: m.state === 'ahead' && !m.approved
-                              ? `1px solid ${isLm(m) ? 'var(--cb-mint)' : 'var(--cb-accent)'}`
+                              ? (quiet ? (isLm(m) ? undefined : '1.5px solid #111111') : `1px solid ${isLm(m) ? 'var(--cb-mint)' : 'var(--cb-accent)'}`)
                               : undefined,
                             cursor: mid && !pending ? 'grab' : undefined,
                             opacity: pending ? 0.45 : undefined,
@@ -387,7 +458,8 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
                 )}
               </>
             );
-            const shared = { className: 'cb-calstrip-cell', title: fullTitle || undefined, style: cell, ...dropHandlers(key, canDrop) };
+            const nightCls = night ? ` cb-cal-n${dayMarks.length ? ' has' : ''}${isToday ? ' today' : ''}${isWeekendDate(d) ? ' wknd' : ''}` : '';
+            const shared = { className: `cb-calstrip-cell${nightCls}`, title: fullTitle || undefined, style: cell, ...dropHandlers(key, canDrop) };
             const open = () => onOpenCal!(dayMarks[0].item);
             if (!clickable) return <div key={key} {...shared}>{inner}</div>;
             // Read-only boards keep the native <button>. Drag-enabled boards do NOT: a
@@ -410,6 +482,25 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
           })}
         </div>
 
+        {quiet ? (
+          /* Quiet: the same keys in the light strip's own fills. */
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'rgba(17,17,17,0.66)' }}>
+            {legendKey('rgba(17,17,17,0.16)', undefined, 'Published')}
+            {legendKey('#FFFFFF', '1.5px solid #111111', 'Scheduled')}
+            {approvedShown && legendKey('#111111', undefined, 'Approved')}
+            {lmShown && legendKey('var(--cb-mint)', undefined, 'Lead magnets')}
+            {legendKey('#FFFFFF', '2px solid var(--cb-accent)', 'Today')}
+          </div>
+        ) : night ? (
+          /* Night: v2's legend look (accent scheduled, lit today), v3's words. */
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--nt-fg, 255 255 255) / 0.66)' }}>
+            {legendKey('rgb(var(--nt-fg, 255 255 255) / 0.24)', undefined, 'Published')}
+            {legendKey('color-mix(in srgb, var(--cb-accent) 55%, #151515)', '1px solid var(--cb-accent)', 'Scheduled')}
+            {approvedShown && legendKey('var(--cb-accent)', undefined, 'Approved')}
+            {lmShown && legendKey('var(--cb-mint)', undefined, 'Lead magnets')}
+            {legendKey('rgba(255,199,29,0.1)', '1.5px solid var(--cb-accent)', 'Today')}
+          </div>
+        ) : (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
           {legendKey('var(--cb-ink)', undefined, 'published')}
           {legendKey('color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))', '1px solid var(--cb-accent)', 'scheduled')}
@@ -417,8 +508,10 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
           {lmShown && legendKey('var(--cb-mint)', undefined, 'lead magnets')}
           {legendKey('var(--cb-paper-sunk)', '2px solid var(--cb-ink)', 'today')}
         </div>
+        )}
 
-        {dragEnabled && <Footnote>Drag a post to another day to move it.</Footnote>}
+        {/* Night: no helper line; the marks still drag. */}
+        {dragEnabled && !night && <Footnote>Drag a post to another day to move it.</Footnote>}
         {moveError && <Footnote style={{ color: 'var(--cb-ink)' }}>{moveError}</Footnote>}
       </div>
     </div>

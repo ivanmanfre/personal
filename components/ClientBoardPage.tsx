@@ -3893,11 +3893,11 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
-      <motion.div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+      <motion.div className="cb-scrim fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
       {/* Right-anchored sheet (Studio grammar): slides in from the right; scrim, Esc and X
           all close it, and the list behind stays mounted. Internal scroll pins the footer. */}
       <motion.div
-        className="fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"
+        className="cb-sheet fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"
         style={{ boxShadow: '-24px 0 80px rgba(2,32,32,.28)' }}
         initial={reduce ? false : { x: '100%' }}
         animate={{ x: 0 }}
@@ -3905,7 +3905,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         transition={{ type: 'tween', duration: 0.3, ease: EASE }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+        <div className="cb-sheet-head flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           <KindChip q={item} accent={accent} />
           <FunnelChip stage={item.funnel_stage} accent={accent} source={item.funnel_source} />
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
@@ -3925,7 +3925,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           <div className="min-w-0">
             {item.kind === 'newsletter' && item.body ? (
               /* Newsletter issues read as email, not as a LinkedIn post. */
-              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+              <div className="cb-light overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>
                     {(board.founder?.name || board.company_name).split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
@@ -7332,7 +7332,7 @@ const DESK_NAV_TABS: TabId[] = ['week', 'review', 'lm', 'newsletter', 'outreach'
  *  renamed tabs (Home, Pipeline, Results) pass through as they are. */
 const NAV_SHORT: Record<string, string> = {
   'This week': 'Week', 'All content': 'Posts', 'Lead magnets': 'Magnets',
-  'Outreach & leads': 'Outreach', Performance: 'Results',
+  'Outreach & leads': 'Outreach', Performance: 'Performance',
 };
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
@@ -8911,6 +8911,29 @@ export default function ClientBoardPage() {
     '--cb-plate': '#333333', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': '#ABABA3',
     '--cb-plate-line': 'rgba(255,255,255,0.14)',
   } : {};
+  // NIGHT MOCKUP (local only, 2026-09-29): ?night turns the desk skin dark. The LinkedIn
+  // previews stay white (re-lit in the night CSS block), everything else reads on dark.
+  const quiet = skin === 'desk' && params.has('quiet');
+  const night = skin === 'desk' && (params.has('night') || quiet);
+  if (night) Object.assign(SKIN_VARS, {
+    '--cb-ink': '#F5F4F0', '--cb-paper': '#0D0D0D', '--cb-paper-raise': '#161616',
+    '--cb-paper-sunk': '#141414', '--cb-desk': '#0D0D0D',
+    '--cb-ink-soft': 'rgba(255,255,255,0.78)', '--cb-ink-mute': 'rgba(255,255,255,0.55)',
+    '--cb-line': 'rgba(255,255,255,0.10)', '--cb-line-bold': 'rgba(255,255,255,0.24)', '--cb-divide': 'rgba(255,255,255,0.07)',
+    '--cb-plate': '#171717', '--cb-plate-ink': '#FFFFFF', '--cb-plate-mute': 'rgba(255,255,255,0.55)',
+    '--cb-plate-line': 'rgba(255,255,255,0.10)', '--cb-accent-ink': '#111111',
+  });
+  // QUIET: the night layout on a light, neutral ground (warm paper stays retired). --nt-fg is the
+  // one ink every night stylesheet tints from; dark here, white on night.
+  if (quiet) Object.assign(SKIN_VARS, {
+    '--nt-fg': '17 17 17',
+    '--cb-ink': '#111111', '--cb-paper': '#F5F5F3', '--cb-paper-raise': '#FFFFFF',
+    '--cb-paper-sunk': '#EFEFEC', '--cb-desk': '#F5F5F3',
+    '--cb-ink-soft': 'rgba(17,17,17,0.78)', '--cb-ink-mute': 'rgba(17,17,17,0.64)',
+    '--cb-line': 'rgba(17,17,17,0.10)', '--cb-line-bold': 'rgba(17,17,17,0.22)', '--cb-divide': 'rgba(17,17,17,0.07)',
+    '--cb-plate': '#FFFFFF', '--cb-plate-ink': '#111111', '--cb-plate-mute': 'rgba(17,17,17,0.64)',
+    '--cb-plate-line': 'rgba(17,17,17,0.10)', '--cb-accent-ink': '#111111',
+  });
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
   // regardless of its stored stage, and never counts toward the review badge. An item
   // whose angle was swapped goes back to Drafted too: picking a different idea queues a
@@ -9278,7 +9301,7 @@ export default function ClientBoardPage() {
 
   const logo = (h: number) => (
     board.logo_url
-      ? <img src={board.logo_url} alt={board.company_name} style={{ height: h, width: 'auto', maxWidth: 150, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+      ? <img className="cb-logo" src={board.logo_url} alt={board.company_name} style={{ height: h, width: 'auto', maxWidth: 150, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
       : <span className="text-[14px] font-semibold" style={{ fontFamily: fontStack, color: INK }}>{board.company_name}</span>
   );
 
@@ -9313,9 +9336,9 @@ export default function ClientBoardPage() {
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable)
-    // A board with a report period opens on Home and reads its numbers under Results.
+    // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
-      ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Pipeline' : 'Results' } as unknown as (typeof TABS)[number]
+      ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
       : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
@@ -9337,7 +9360,8 @@ export default function ClientBoardPage() {
    inline styles cannot be reached by CSS vars, so structure is enforced here rather than by
    editing hundreds of class strings. Rule of the skin: soft rounded paper, hairline rules,
    no shadows, and numbers set in the display face big enough to read across a room. */
-[data-skin="desk"] * { box-shadow: none !important; }
+[data-skin="desk"]:not([data-night]) * { box-shadow: none !important; }
+/* Night keeps its glows (perf-kit beams, lit dots, chart glow); the flat rule stays for the light desk. */
 [data-skin="desk"] .cb-linkedin-preview { box-shadow: 0 1px 2px rgba(17,17,17,0.06) !important; }
 /* Paper corners: generous on cards, pill on chips/buttons. Tailwind's rounded-* utilities
    are normalized so a card never renders half-square next to a drawn one. */
@@ -9377,6 +9401,74 @@ export default function ClientBoardPage() {
   [data-skin="desk"] main [data-surface] { animation: cb-tabin .28s ease-out; }
 }
 @keyframes cb-tabin { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+
+/* ============ NIGHT mockup (desk + ?night) ============ */
+/* Page: near-black with one warm glow top-left and a faint dot field, the ARCH report's
+   ground. Everything var-driven flips through SKIN_VARS; these rules catch the rest. */
+[data-night]:not([data-quiet]) { color-scheme: dark; background: radial-gradient(900px 520px at 8% -6%, color-mix(in srgb, var(--cb-accent) 13%, transparent), transparent 70%), radial-gradient(700px 500px at 110% 30%, rgba(255,255,255,0.035), transparent 70%), #0D0D0D !important; }
+[data-night] ::selection { background: color-mix(in srgb, var(--cb-accent) 35%, transparent); }
+[data-night]:not([data-quiet]) .card { background: rgba(255,255,255,0.025) !important; border-color: rgba(255,255,255,0.09) !important; }
+[data-night]:not([data-quiet]) .cb-blank { background: repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 4px, transparent 4px 9px) !important; }
+[data-night]:not([data-quiet]) .cb-plate { background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)) !important; border: 1px solid rgba(255,255,255,0.09) !important; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-night]:not([data-quiet]) .card:hover { border-color: rgba(255,255,255,0.22) !important; }
+  [data-night] main [data-surface] { animation: cb-tabfast .16s ease-out; }
+}
+@keyframes cb-tabfast { from { opacity: .4 } to { opacity: 1 } }
+@keyframes cb-nightin { from { opacity: 0; transform: translateY(8px); filter: blur(6px) } to { opacity: 1; transform: none; filter: none } }
+/* Chrome: glass header + tab bar, the accent strip becomes a lit glass band. */
+[data-night]:not([data-quiet]) .cb-mhead, [data-night]:not([data-quiet]) .cb-mnav { background: rgba(13,13,13,0.72) !important; backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); border-color: rgba(255,255,255,0.08) !important; }
+[data-night]:not([data-quiet]) .cb-dhead { background: rgba(13,13,13,0.72) !important; }
+[data-night]:not([data-quiet]) .cb-stickybar { position: relative; overflow: hidden; margin: 14px 16px 0; border-radius: 22px 8px 8px 8px; background: linear-gradient(135deg, color-mix(in srgb, var(--cb-accent) 16%, #151515), #141414 62%) !important; border: 1px solid color-mix(in srgb, var(--cb-accent) 30%, transparent); }
+@media (min-width: 640px) { [data-night] .cb-stickybar { margin: 18px clamp(16px, 3vw, 40px) 0; } }
+[data-night]:not([data-quiet]) .cb-stickybar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.07) 50%, transparent 70%); transform: translateX(-100%); pointer-events: none; }
+@keyframes cb-sheen { to { transform: translateX(100%); } }
+[data-night]:not([data-quiet]) .cb-stickybar-text { color: #FFFFFF !important; }
+[data-night]:not([data-quiet]) .cb-stickybar button { background: var(--cb-accent) !important; color: #111 !important; box-shadow: 0 6px 22px color-mix(in srgb, var(--cb-accent) 30%, transparent); }
+/* Leftover hard white surfaces (drawers, calendar cells, sticky footers) go dark, except
+   anything inside the LinkedIn simulation. */
+[data-night]:not([data-quiet]) .bg-white:not(.cb-linkedin-preview):not(.cb-linkedin-preview *):not(.cb-light):not(.cb-light *) { background-color: #151515 !important; }
+[data-night] .cb-logo { background: #F5F4F0; padding: 5px 10px; border-radius: 10px 4px 4px 4px; box-sizing: content-box; }
+/* Post sheet: blurred scrim, a lit left edge, chips as glass pills. */
+[data-night]:not([data-quiet]) .cb-scrim { background: rgba(0,0,0,0.6) !important; }
+[data-night]:not([data-quiet]) .cb-sheet { background: linear-gradient(180deg, #161616, #0F0F0F) !important; box-shadow: -30px 0 90px rgba(0,0,0,0.6), inset 1px 0 0 color-mix(in srgb, var(--cb-accent) 30%, transparent) !important; }
+[data-night]:not([data-quiet]) .cb-sheet-head { flex-wrap: wrap; row-gap: 8px; background: rgba(255,255,255,0.02); }
+[data-night]:not([data-quiet]) .cb-sheet-head > span:not(.ml-auto) { padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); font-size: 12px; line-height: 1.2; }
+[data-night]:not([data-quiet]) .cb-sheet-head > .ml-auto { font-size: 13px; color: rgba(255,255,255,0.7); }
+/* One moving thing per screen: the top bar's LIVE dot pulses, the sidebar's copy sits still. */
+[data-night] aside .cb-pulse { animation: none !important; }
+/* Six phone tabs at 390: "Performance" fits whole at 9.5px instead of truncating. */
+[data-skin="desk"] .cb-mnav nav button > span:last-child { font-size: 10.5px; letter-spacing: -0.02em; overflow: visible; text-overflow: clip; }
+/* QUIET (2026-09-29): light ground, no decoration, yellow only as the marker on money numbers
+   and the one main button. Everything here overrides the night block above. */
+[data-quiet] { color-scheme: light; background: #F5F5F3 !important; }
+[data-quiet] ::selection { background: color-mix(in srgb, var(--cb-accent) 45%, transparent); }
+[data-quiet] .card { background: #FFFFFF !important; border-color: rgba(17,17,17,0.09) !important; }
+[data-quiet] .cb-plate { background: #FFFFFF !important; border: 1px solid rgba(17,17,17,0.09) !important; box-shadow: none !important; }
+[data-quiet] .cb-mhead, [data-quiet] .cb-mnav, [data-quiet] .cb-dhead { background: #FFFFFF !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border-color: rgba(17,17,17,0.09) !important; }
+[data-quiet] aside { background: #FFFFFF !important; border-color: rgba(17,17,17,0.09) !important; }
+[data-quiet] .cb-stickybar { position: relative; overflow: hidden; margin: 14px 16px 0; border-radius: 22px 8px 8px 8px; background: #FFFFFF !important; border: 1px solid rgba(17,17,17,0.10); }
+@media (min-width: 640px) { [data-quiet] .cb-stickybar { margin: 18px clamp(16px, 3vw, 40px) 0; } }
+[data-quiet] .cb-stickybar-text { color: #111111 !important; }
+[data-quiet] .cb-stickybar button { box-shadow: none !important; }
+[data-quiet] * { text-shadow: none !important; }
+[data-quiet][data-skin] .cb-linkedin-preview { box-shadow: none !important; border: 1px solid rgba(17,17,17,.10) !important; }
+[data-quiet] .cb-sheet { box-shadow: none !important; border-left: 1px solid rgba(17,17,17,.09); }
+[data-quiet] .cb-sheet-head { flex-wrap: wrap; row-gap: 8px; }
+[data-quiet] .cb-sheet-head > .ml-auto { font-size: 13px; }
+[data-quiet] .cb-sheet-head > span.uppercase { color: rgba(17,17,17,.62) !important; }
+[data-quiet] details.drill > summary .more::after { color: rgba(17,17,17,.62) !important; }
+[data-quiet] .cb-mnav [data-active], [data-quiet] .cb-mnav [data-active] * { color: #111 !important; }
+[data-quiet] .cb-mnav nav button { isolation: isolate; }
+[data-quiet] .cb-night-tab { background: var(--cb-accent) !important; border: 0 !important; z-index: -1; }
+/* The LinkedIn simulation is the one white island: it re-lights its own tokens so the
+   post reads exactly as it will on LinkedIn. */
+[data-night] .cb-linkedin-preview, [data-night] .cb-light {
+  --cb-ink: #111111; --cb-ink-soft: #333333; --cb-ink-mute: #5F5F59; --cb-paper: #FFFFFF; --cb-paper-raise: #FFFFFF;
+  --cb-paper-sunk: #F5F5F5; --cb-line: #E0E0E0; --cb-line-bold: rgba(17,17,17,0.26); --cb-divide: rgba(17,17,17,0.08);
+  color-scheme: light; background: #FFFFFF !important; color: #111111;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) !important;
+}
 
 /* ============ BLACK BOX skin composition overrides (scoped) ============ */
 /* Tailwind rounded and shadow utilities plus inline radii are compiled, so CSS vars
@@ -9480,7 +9572,7 @@ export default function ClientBoardPage() {
 .cb-lm-card:hover, .cb-lm-card:focus-visible { transform: translateY(-2px); border-color: var(--cb-line-bold, rgba(2,49,47,0.3)) !important; }
 @media (prefers-reduced-motion: reduce) { .cb-lm-card { transition: none } .cb-lm-card:hover { transform: none } }
 `}</style>
-    <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
+    <div className="min-h-screen" data-skin={skin} data-night={night ? '' : undefined} data-quiet={quiet ? '' : undefined} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
       {skin === 'desk' && <DeskKitStyle />}
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
           the client heading font + accent period; "This week" the one serif nav item, the
@@ -9529,7 +9621,10 @@ export default function ClientBoardPage() {
         <nav className="flex flex-col gap-5 px-0 py-5" aria-label="Board sections">
           {NAV_GROUPS.filter((g) => visibleTabs.some((t) => t.group === g)).map((g) => (
             <div key={g}>
-              <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE, opacity: 0.75 }}>{g}</div>
+              {/* A group whose only item carries the group's own name ("Outreach") skips the repeated heading. */}
+              {!(visibleTabs.filter((t) => t.group === g).length === 1 && visibleTabs.find((t) => t.group === g)?.label.toLowerCase() === g.toLowerCase()) && (
+                <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE, opacity: 0.75 }}>{g}</div>
+              )}
               <div className="flex flex-col">
                 {visibleTabs.filter((t) => t.group === g).map((t) => {
                   const active = activeTab === t.id;
@@ -9546,7 +9641,7 @@ export default function ClientBoardPage() {
                           ? { fontFamily: SERIF, fontSize: 17, color: INK }
                           : { fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: active ? INK : INK_MUTE }}
                       >
-                        {t.label}
+                        {night ? (NAV_SHORT[t.label] || t.label) : t.label}
                       </span>
                       {isHero && weekBadge > 0 && (
                         <span className="rounded-full px-2 py-0.5 leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: caText(accent), color: PAPER }}><RollingNumber n={weekBadge} /></span>
@@ -9573,9 +9668,10 @@ export default function ClientBoardPage() {
             <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
           )}
-          <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
+          {/* Night: the rail's status line is dropped ("12 in buffer" is internal; the Posts tab says what's scheduled). */}
+          {!night && <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
             <PulseDot color={accent} size={7} /> {isLive ? (scheduledCount > 0 ? `${scheduledCount} scheduled${bufferCount > 0 ? ` · ${bufferCount} in buffer` : ''}` : bufferCount > 0 ? `${bufferCount} in buffer` : 'live') : 'engine running'}
-          </div>
+          </div>}
           {isPreview && (
             <div className="flex items-center gap-2 text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>
               <StatusDot color={mint} size={5} />
@@ -9605,7 +9701,7 @@ export default function ClientBoardPage() {
       </aside>
 
       {/* Mobile header */}
-      <header className={`sticky top-0 z-20 flex items-center gap-2.5 border-b px-4 py-3 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE }}>
+      <header className={`cb-mhead sticky top-0 z-20 flex items-center gap-2.5 border-b px-4 py-3 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE }}>
         {logo(22)}
         {isPreview && (
           <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium" title="Your first month, built ahead" style={{ border: `1px solid ${LINE}`, color: DIM }}>
@@ -9617,9 +9713,9 @@ export default function ClientBoardPage() {
 
       {/* Main is paper, not a floating white canvas — cards are the only white surfaces.
           A hairline top rule carries the tab name + live-preview mark (mono, quiet). */}
-      <div className={navCollapsed ? 'lg:ml-[56px]' : 'lg:ml-[216px]'} style={{ background: PAPER, transition: reduceMotion ? undefined : 'margin-left .18s cubic-bezier(.25,1,.5,1)' }}>
-        <div className="sticky top-0 z-10 hidden h-12 items-center gap-2.5 px-8 backdrop-blur lg:flex" style={{ borderBottom: `1px solid ${LINE}`, background: 'rgba(247,244,239,0.86)' }}>
-          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{(visibleTabs.find((t) => t.id === activeTab) || TABS.find((t) => t.id === activeTab))?.label}</span>
+      <div className={navCollapsed ? 'lg:ml-[56px]' : 'lg:ml-[216px]'} style={{ background: night ? 'transparent' : PAPER, transition: reduceMotion ? undefined : 'margin-left .18s cubic-bezier(.25,1,.5,1)' }}>
+        <div className="cb-dhead sticky top-0 z-10 hidden h-12 items-center gap-2.5 px-8 backdrop-blur lg:flex" style={{ borderBottom: `1px solid ${LINE}`, background: 'rgba(247,244,239,0.86)' }}>
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{(() => { const l = (visibleTabs.find((t) => t.id === activeTab) || TABS.find((t) => t.id === activeTab))?.label || ''; return night ? (NAV_SHORT[l] || l) : l; })()}</span>
           <span
             className="ml-auto inline-flex items-center gap-2 uppercase"
             title={isPreview ? 'Your first month, built ahead' : undefined}
@@ -9693,8 +9789,10 @@ export default function ClientBoardPage() {
             cta = { label: 'Read the ledger →', go: () => scrollToText('the ledger') };
           }
           if (!text) return null;
+          // Night: the Results and Posts heroes already say this line in big type; the strip would repeat it.
+          if (night && activeTab !== 'week') return null; // night v3: the banner is Home's one action; elsewhere it repeated the page
           return (
-            <div className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 34px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div key={night ? activeTab : undefined} className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 34px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div className="cb-stickybar-text" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', overflowWrap: 'break-word' }}>{text}</div>
               {cta && (
                 <button onClick={cta.go} style={{ background: 'var(--cb-ink)', color: 'var(--cb-paper)', border: 'none', borderRadius: 999, padding: '11px 22px', fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', cursor: 'pointer' }}>
@@ -9705,12 +9803,13 @@ export default function ClientBoardPage() {
           );
         })()}
         <main className="px-4 pb-[calc(env(safe-area-inset-bottom)+88px)] pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-9">
-          <AnimatePresence mode="wait" initial={false}>
+          {/* Night: no exit wait on a tab switch (the old fade-out + fade-in cost ~0.4s per tap). */}
+          <AnimatePresence mode={night ? 'popLayout' : 'wait'} initial={false}>
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 4 }}
+              initial={night ? false : { opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
+              exit={night ? undefined : { opacity: 0, y: 4 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
@@ -9721,7 +9820,7 @@ export default function ClientBoardPage() {
       </div>
 
       {/* Mobile bottom tabs */}
-      <div className={`fixed inset-x-0 bottom-0 z-20 border-t px-1 pt-1 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
+      <div className={`cb-mnav fixed inset-x-0 bottom-0 z-20 border-t px-1 pt-1 lg:hidden ${skin === 'desk' ? 'bg-white' : 'bg-white/85 backdrop-blur-md'}`} style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
         <nav className="grid w-full" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }} aria-label="Board sections">
           {visibleTabs.map((t) => {
             const active = activeTab === t.id;
@@ -9729,9 +9828,10 @@ export default function ClientBoardPage() {
               <button
                 key={t.id}
                 onClick={() => goTab(t.id)}
-                className="flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-lg px-0.5"
-                style={{ color: active ? accent : FAINT }}
+                className="relative flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-lg px-0.5"
+                data-active={active ? '' : undefined} style={{ color: active ? accent : FAINT }}
               >
+                {night && active && <motion.span layoutId="cb-night-tab" className="cb-night-tab absolute inset-x-1 inset-y-0.5 rounded-xl" style={{ background: 'color-mix(in srgb, var(--cb-accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cb-accent) 28%, transparent)' }} transition={{ type: 'spring', stiffness: 420, damping: 34 }} aria-hidden />}
                 <span className="relative">
                   <NavIcon id={t.id} size={18} />
                   {t.id === 'week' && weekBadge > 0 && (

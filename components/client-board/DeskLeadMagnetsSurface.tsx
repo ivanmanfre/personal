@@ -5,6 +5,8 @@ import {
 } from './desk-kit';
 import { LmDetailDrawer } from '../ClientBoardPage';
 import type { Board, LeadMagnetEntry } from '../ClientBoardPage';
+import { useNight } from './perf-kit/night';
+import LmNight from './perf-kit/lm-night';
 
 /** Local copy of ClientBoardPage's format-label map (not exported by the original —
  *  duplicating a 6-line lookup table is cheaper than widening the shared-symbol surface). */
@@ -79,6 +81,17 @@ function announceMark(e: ShelfEntry): string | null {
   return null;
 }
 
+/** NIGHT v3: the same announce state in the words a founder uses. Chips only for the
+ *  exception, so an announced page carries a plain date and an unannounced one a short note. */
+function announceMarkNight(e: ShelfEntry): string | null {
+  if (e.posted_to_linkedin === true && e.posted_date) {
+    const day = fmtAnnouncedDay(e.posted_date);
+    return day ? `Posted about ${day}` : null;
+  }
+  if (e.posted_to_linkedin === false || e.status === 'live_unannounced') return 'Live, not posted about yet.';
+  return null;
+}
+
 /**
  * Desk skin for the lead-magnet library. Frag: frag-lm.html. Original: `LeadMagnetSurface`
  * in ClientBoardPage.tsx (the `live` branch: library only, no embed, no leads table — that
@@ -97,6 +110,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
   // Drawer state kept local, exactly like the original: opening a shelf card sets it,
   // closing clears it. Nothing about the drawer's own wiring changes.
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
+  const night = useNight();
 
   const entries: ShelfEntry[] = board.lead_magnets || [];
   // Shelf = pages that are live on the client's domain, announced or not. A
@@ -136,6 +150,54 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
 
   const openEntry = (entry: LeadMagnetEntry) => setLmDetail(entry);
 
+  const drawer = lmDetail && (
+    <LmDetailDrawer
+      entry={lmDetail}
+      board={board}
+      accent={accent}
+      mint={mint}
+      fontStack={fontStack}
+      live={live}
+      onClose={() => setLmDetail(null)}
+      onEditPromo={live ? onEditPromo : undefined}
+    />
+  );
+
+  // NIGHT MOCKUP (local only): same computed facts, ARCH-report look. The light desk below
+  // is untouched when `?night` is absent.
+  if (night) {
+    const fmtLabel = (f?: string) => (f ? LM_FORMAT_LABEL[f] || f : '');
+    return (
+      <div data-surface="lm">
+        <LmNight
+          liveN={liveN}
+          pipelineN={pipelineN}
+          shelf={liveEntries.map((e) => ({
+            id: e.id,
+            title: e.title,
+            formatLabel: fmtLabel(e.format),
+            coverUrl: e.cover_url,
+            url: e.url,
+            promise: e.promise,
+            gateKeyword: (e as { gate_keyword?: string }).gate_keyword,
+            mark: announceMarkNight(e),
+            visitors: visitorsOf(e),
+            optins: e.gated ? optinsOf(e) : undefined,
+          }))}
+          pipeline={[
+            // The section is headed "Being built", so a plain idea carries no status of its own.
+            ...draftedEntries.map((e) => ({ id: e.id, title: e.title, meta: [...(e.format ? [fmtLabel(e.format)] : []), 'Page drafted'].join(' · ') })),
+            ...ideas.map((i) => ({ id: i.id, title: i.title, meta: i.status && i.status !== 'idea' ? BUILD_STATUS_LABEL[i.status] || null : null })),
+          ]}
+          newsletter={nl ? { name: nl.name } : null}
+          totals={{ visitors: anyVisitors ? totalVisitors : undefined, optins: anyCaptured ? totalCaptured : undefined }}
+          onOpen={(id) => { const e = liveEntries.find((x) => x.id === id); if (e) openEntry(e); }}
+        />
+        {drawer}
+      </div>
+    );
+  }
+
   return (
     <div data-surface="lm">
       <Eyebrow>Lead magnets</Eyebrow>
@@ -156,7 +218,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
               data-viz so the panel always has a drawn element even when the newsletter
               rail (the other data-viz source) is absent. */}
           <div data-viz="" style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
-            <span style={{ flex: 1, borderTop: '1px dashed rgba(255,255,255,.45)' }} />
+            <span style={{ flex: 1, borderTop: '1px dashed rgb(var(--nt-fg, 255 255 255) / .45)' }} />
             <span style={{ width: 0, height: 0, borderTop: '9px solid var(--cb-accent)', borderLeft: '6px solid transparent', borderRight: '6px solid transparent' }} />
           </div>
         </div>
@@ -173,7 +235,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEntry(entry); } }}
                 style={{
                   flex: '1 1 260px', display: 'flex', flexDirection: 'column', cursor: 'pointer',
-                  background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.14)',
+                  background: 'rgb(var(--nt-fg, 255 255 255) / .05)', border: '1px solid rgb(var(--nt-fg, 255 255 255) / .14)',
                   borderRadius: 20, padding: '15px 15px 8px',
                 }}
               >
@@ -241,7 +303,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                     has no flex context to push against and the footer stops tracking the
                     card's bottom edge. */}
                 <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 'auto' }}>
-                  <Drill label="Details" on="plate" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+                  <Drill label="Details" on="plate" style={{ borderTop: '1px solid rgb(var(--nt-fg, 255 255 255) / .16)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '5px 12px', fontSize: 12.5, lineHeight: 1.45 }}>
                       <span style={{ color: 'var(--cb-plate-mute)', fontWeight: 700 }}>Format</span>
                       <span style={{ color: 'var(--cb-plate-ink)' }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</span>
@@ -346,18 +408,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
         {anyCaptured && <Stat value={totalCaptured} caption="opt-ins on gated pages" />}
       </StatStrip>
 
-      {lmDetail && (
-        <LmDetailDrawer
-          entry={lmDetail}
-          board={board}
-          accent={accent}
-          mint={mint}
-          fontStack={fontStack}
-          live={live}
-          onClose={() => setLmDetail(null)}
-          onEditPromo={live ? onEditPromo : undefined}
-        />
-      )}
+      {drawer}
     </div>
   );
 }

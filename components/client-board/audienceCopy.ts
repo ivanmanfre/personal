@@ -183,6 +183,11 @@ export const AUDIENCE_COPY = {
     colReactions: 'Reactions',
     colPeople: 'People',
     none: 'No posts measured yet.',
+    /** Night board only: the ledger opens on the latest ten. */
+    showMore: (n: number) => `Show ${n} more`,
+    showFewer: 'Show fewer',
+    /** Night board only: the row link, "Image post". */
+    formatPost: (format: string) => `${format.charAt(0).toUpperCase()}${format.slice(1).replace(/_/g, ' ')} post`,
     capturedAt: (d: string) => `taken ${d}`,
     notMeasured: 'Not measured yet',
     rank: {

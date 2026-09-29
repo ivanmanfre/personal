@@ -20,7 +20,9 @@ export const SIDENAV_RAIL_WIDTH = 56;
 export function readSideNavCollapsed(): boolean {
   try {
     const stored = localStorage.getItem(SIDENAV_STORAGE_KEY);
-    return stored === null ? true : stored === '1';
+    // Night mockup: with nothing stored, the desktop rail opens with its labels (room to spare at 1280+).
+    if (stored === null) return !new URLSearchParams(window.location.search).has('night');
+    return stored === '1';
   } catch { return true; }
 }
 

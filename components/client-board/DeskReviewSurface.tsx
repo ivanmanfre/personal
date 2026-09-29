@@ -167,7 +167,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {approved
           ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
-          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: '#fff', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-ink)', color: 'rgb(var(--nt-fg, 255 255 255))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
         {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
         {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
         <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
@@ -178,7 +178,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   );
 }
 import {
-  FunnelChip, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, boardZone, clientHistoryAuthor,
+  FunnelChip, FeedPreview, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, boardZone, clientHistoryAuthor,
 } from '../ClientBoardPage';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
@@ -187,6 +187,12 @@ import {
   Eyebrow, DeskH2, Footnote, Plate, PlateMute, PlateRule, Num, Stat, StatStrip,
   Chip, Pill, Delta, Drill, Diff, Thumb, SlideStrip,
 } from './desk-kit';
+import { useNight } from './perf-kit/night';
+import { MotionRoot } from './perf-kit/motion';
+import {
+  PostsNightStyle, PostsSummary, SlideGroup, NightSection, RailRow, RailList, StatusMark,
+  type RailTone,
+} from './perf-kit/posts-night';
 
 /**
  * DeskReviewSurface — the "All content" desk-skin tab.
@@ -443,6 +449,13 @@ export default function DeskReviewSurface({
   void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
   const todayIso = new Date().toISOString().slice(0, 10);
+  // NIGHT MOCKUP (local only): `?night` swaps in the perf-kit look (posts-night.tsx). The
+  // light desk below renders exactly as before when the flag is absent.
+  const night = useNight();
+  // Night: tapping a row's hook opens its LinkedIn preview in place (one at a time); a second
+  // tap closes it. The row's Open control still opens the full drawer.
+  const [inlineId, setInlineId] = useState<string | null>(null);
+  const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
 
   // ---- Block 1/2: pipeline headline + counts (deskPipelineTitle, replicated) ----
@@ -490,6 +503,11 @@ export default function DeskReviewSurface({
     reviewRows = board.queue.filter((q) => stageOf(q) === 'review').slice().sort(byDate);
     scheduledRows = board.queue.filter((q) => stageOf(q) === 'scheduled').slice().sort(byDate);
   }
+  // Night rail: the first dated post after today wears the "next" ring (today's wears the
+  // solid lit dot).
+  const nextId = night
+    ? ([...upNextRows, ...scheduledRows, ...reviewRows].filter((q) => (q.publish_date || '') > todayIso).sort(byDate)[0]?.id ?? null)
+    : null;
 
   // ---- Category filters (2026-08-07, Ivan): two separate axes so they never overlap.
   // FORMAT (?cat=) is what the item looks like on LinkedIn (post/carousel/video/LM);
@@ -622,7 +640,8 @@ export default function DeskReviewSurface({
   (entries || []).forEach((e) => { (entriesByPost[e.postId] = entriesByPost[e.postId] || []).push(e); });
 
   // ---- Row renderer (Blocks 4 + list rows inside Block 5's mini-list share the thumb math) ----
-  const renderRow = (q: QueueItem, bucket: Bucket) => {
+  const renderRow = (q: QueueItem, bucket: Bucket, idx = 0) => {
+    void idx;
     const stage = stageOf(q);
     const img = cardImageUrlLocal(q, board);
     const slides = (q.kind === 'carousel' || q.style === 'carousel') ? (q.image_urls || []).filter(Boolean) : [];
@@ -632,64 +651,8 @@ export default function DeskReviewSurface({
     const perf = bucket === 'published' ? perfFor(board, q) : null;
     const flashed = flashId === q.id;
     const shipsToday = chip?.accent;
-    return (
-      <div
-        key={q.id}
-        style={{
-          padding: compact ? (shipsToday ? '16px 14px 14px' : '13px 14px 12px') : shipsToday ? '26px 14px 20px' : '24px 14px 18px',
-          marginTop: shipsToday ? 10 : 0,
-          background: shipsToday ? 'color-mix(in srgb, var(--cb-accent) 6%, var(--cb-paper))' : (flashed ? 'color-mix(in srgb, var(--cb-accent) 7%, var(--cb-paper))' : undefined),
-          borderLeft: shipsToday ? '3px solid var(--cb-accent)' : undefined,
-          borderRadius: shipsToday ? '0 14px 14px 0' : undefined,
-          borderBottom: shipsToday ? undefined : '1px solid var(--cb-line)',
-          transition: 'background-color 700ms ease',
-        }}
-      >
-        <div
-          role="button" tabIndex={0}
-          onClick={() => onOpen(q)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
-          style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
-        >
-          {compact && (
-            /* The old board's date: weekday in small caps over a big day number. */
-            <div aria-hidden style={{ flex: 'none', width: 46, textAlign: 'center', lineHeight: 1 }}>
-              {q.publish_date && !inBuffer(bucket) ? (
-                <>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
-                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
-                  </div>
-                  <div style={{ marginTop: 3, fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 22, color: 'var(--cb-ink)' }}>
-                    {Number(q.publish_date.slice(8, 10))}
-                  </div>
-                  <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
-                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}
-                  </div>
-                </>
-              ) : <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>no date</div>}
-            </div>
-          )}
-          {img && <Thumb src={img} size={compact ? 'sm' : 'lg'} />}
-          <div style={{ flex: compact ? '1 1 150px' : '1 1 210px', minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: compact ? 15 : 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}>{truncAt(stripBrand(q.title || q.hook), compact ? 96 : 72)}</div>
-            <div style={{ marginTop: compact ? 5 : 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {!compact && <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
-              <Chip>{kickerOfLocal(q)}</Chip>
-              <FunnelChip stage={q.funnel_stage} accent={accent} />
-              {q.post_url && <LivePostLink href={q.post_url} />}
-            </div>
-          </div>
-          {bucket === 'published' ? (
-            perf ? (
-              <span style={{ flex: 'none', marginLeft: 'auto', display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-                <Num size="row" inline>{perf.reads.toLocaleString()}</Num>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>reads{perf.rate ? ` · ${perf.rate}` : ''}</span>
-              </span>
-            ) : <Chip style={{ flex: 'none', marginLeft: 'auto' }}>out</Chip>
-          ) : chip ? (
-            <Chip tone={chip.accent ? 'accent' : 'default'} style={chip.accent ? { flex: 'none', marginLeft: 'auto', color: inkOn(accent) } : { flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>
-          ) : null}
-        </div>
+    const extras = (
+      <>
         {/* Freed slot (the client removed this post from its day): restore, refill from
             the bench/pool, or hold the day - the original review's panel, desk-set. */}
         {skips[q.id] && bucket !== 'published' && (
@@ -797,6 +760,112 @@ export default function DeskReviewSurface({
             </Drill>
           </div>
         )}
+      </>
+    );
+    if (night) {
+      // Night v4: v2's glass card on the lit date rail, v3's words. The title is the post's
+      // own first line; the card carries its format and Open, no aim code and no "scheduled"
+      // mark (the fold already says it). A mark appears only for today or an exception; the
+      // date lives on the rail, once.
+      const inlineOpen = inlineId === q.id;
+      const toggleInline = () => setInlineId(inlineOpen ? null : q.id);
+      const tone: RailTone = bucket === 'published' ? 'out' : inBuffer(bucket) ? 'nodate' : shipsToday ? 'today' : q.id === nextId ? 'next' : 'plain';
+      const odd = chip && !chip.accent && chip.label !== 'scheduled' && chip.label !== 'in buffer' ? chip.label : null;
+      const firstLine = stripBrand(q.hook || q.title) || 'Untitled post';
+      return (
+        <RailRow key={q.id} date={inBuffer(bucket) ? null : (q.publish_date || null)} tone={tone} flash={flashed} open={inlineOpen}>
+          <div
+            role="button" tabIndex={0} className={img ? 'prs-head' : 'prs-head no-img'}
+            aria-expanded={inlineOpen}
+            aria-label={`${inlineOpen ? 'Hide' : 'Show'} the LinkedIn preview: ${firstLine}`}
+            data-inline-toggle={q.id}
+            onClick={toggleInline}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleInline(); } }}
+          >
+            {img && <Thumb src={img} size="lg" className="prs-thumb" style={{ width: 'var(--prs-th)', minWidth: 'var(--prs-th)', maxWidth: 'var(--prs-th)', height: 'var(--prs-th)', borderRadius: 12, border: '1px solid rgb(var(--nt-fg, 255 255 255) / .1)', background: '#1d1d1d' }} />}
+            <div className="prs-title">{truncAt(firstLine, 96)}</div>
+            <div className="prs-meta">
+              {!q.publish_date && !inBuffer(bucket) && <span className="prs-chip">{dateLabel}</span>}
+              <span className="prs-chip">{kickerOfLocal(q)}</span>
+              {q.post_url && <a className="prs-link" href={q.post_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>See it on LinkedIn</a>}
+              {bucket === 'published'
+                ? (perf
+                  ? <span className="prs-reads"><b>{perf.reads.toLocaleString('en-GB')}</b><span>reads</span></span>
+                  : null)
+                : shipsToday ? <StatusMark kind="today">Ships today</StatusMark>
+                : odd ? <StatusMark kind="plain">{odd}</StatusMark> : null}
+              <button type="button" className="prs-open" data-open-post={q.id} onClick={(e) => { e.stopPropagation(); onOpen(q); }} onKeyDown={(e) => e.stopPropagation()}>Open</button>
+            </div>
+          </div>
+          {inlineOpen && (
+            <div className="prs-inline" data-inline-preview={q.id}>
+              <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="lg" cover={q.generating ? 'render' : 'plate'} live={live} foldSwitch={false} mediaMax={380} />
+            
+            </div>
+          )}
+          <div className="prs-extra">{extras}</div>
+        </RailRow>
+      );
+    }
+    return (
+      <div
+        key={q.id}
+        style={{
+          padding: compact ? (shipsToday ? '16px 14px 14px' : '13px 14px 12px') : shipsToday ? '26px 14px 20px' : '24px 14px 18px',
+          marginTop: shipsToday ? 10 : 0,
+          background: shipsToday ? 'color-mix(in srgb, var(--cb-accent) 6%, var(--cb-paper))' : (flashed ? 'color-mix(in srgb, var(--cb-accent) 7%, var(--cb-paper))' : undefined),
+          borderLeft: shipsToday ? '3px solid var(--cb-accent)' : undefined,
+          borderRadius: shipsToday ? '0 14px 14px 0' : undefined,
+          borderBottom: shipsToday ? undefined : '1px solid var(--cb-line)',
+          transition: 'background-color 700ms ease',
+        }}
+      >
+        <div
+          role="button" tabIndex={0}
+          onClick={() => onOpen(q)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
+          style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer' }}
+        >
+          {compact && (
+            /* The old board's date: weekday in small caps over a big day number. */
+            <div aria-hidden style={{ flex: 'none', width: 46, textAlign: 'center', lineHeight: 1 }}>
+              {q.publish_date && !inBuffer(bucket) ? (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>
+                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
+                  </div>
+                  <div style={{ marginTop: 3, fontFamily: 'var(--cb-serif)', fontWeight: 700, fontSize: 22, color: 'var(--cb-ink)' }}>
+                    {Number(q.publish_date.slice(8, 10))}
+                  </div>
+                  <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
+                    {new Date(q.publish_date + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })}
+                  </div>
+                </>
+              ) : <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>no date</div>}
+            </div>
+          )}
+          {img && <Thumb src={img} size={compact ? 'sm' : 'lg'} />}
+          <div style={{ flex: compact ? '1 1 150px' : '1 1 210px', minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: compact ? 15 : 15.5, lineHeight: 1.35, color: 'var(--cb-ink)' }}>{truncAt(stripBrand(q.title || q.hook), compact ? 96 : 72)}</div>
+            <div style={{ marginTop: compact ? 5 : 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {!compact && <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
+              <Chip>{kickerOfLocal(q)}</Chip>
+              <FunnelChip stage={q.funnel_stage} accent={accent} />
+              {q.post_url && <LivePostLink href={q.post_url} />}
+            </div>
+          </div>
+          {bucket === 'published' ? (
+            perf ? (
+              <span style={{ flex: 'none', marginLeft: 'auto', display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+                <Num size="row" inline>{perf.reads.toLocaleString()}</Num>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>reads{perf.rate ? ` · ${perf.rate}` : ''}</span>
+              </span>
+            ) : <Chip style={{ flex: 'none', marginLeft: 'auto' }}>out</Chip>
+          ) : chip ? (
+            <Chip tone={chip.accent ? 'accent' : 'default'} style={chip.accent ? { flex: 'none', marginLeft: 'auto', color: inkOn(accent) } : { flex: 'none', marginLeft: 'auto' }}>{chip.label}</Chip>
+          ) : null}
+        </div>
+        {extras}
       </div>
     );
   };
@@ -842,7 +911,7 @@ export default function DeskReviewSurface({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
           style={{ display: 'flex', gap: 9, padding: '12px 14px 6px', cursor: 'pointer' }}
         >
-          <div aria-hidden data-founder-avatar style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: '#173a5c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}</div>
+          <div aria-hidden data-founder-avatar style={{ flex: '0 0 40px', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: '#173a5c', color: 'rgb(var(--nt-fg, 255 255 255))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{board.founder?.avatar_url ? <img src={board.founder.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}</div>
           <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,.9)' }}>{fName}</span>
             {board.founder?.headline && <span style={{ fontSize: 11, color: 'rgba(0,0,0,.55)' }}>{board.founder.headline}</span>}
@@ -903,6 +972,7 @@ export default function DeskReviewSurface({
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
     topic === 'personal' || (view === 'feed' && (inBuffer(bucket) || bucket === 'upnext') && approvals)
       ? <div className="cb-licard-grid">{(bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))).map((q) => renderLiCard(q, bucket))}</div>
+      : night ? <RailList>{list.map((q, i) => renderRow(q, bucket, i))}</RailList>
       : list.map((q) => renderRow(q, bucket));
 
   const renderDraftedRow = (q: QueueItem) => (
@@ -931,7 +1001,11 @@ export default function DeskReviewSurface({
     </div>
   );
 
-  const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string, aside?: React.ReactNode) => count > 0 ? (
+  /** Night v3: plain words a founder uses, no blurb under the heading. */
+  const NIGHT_LABEL: Record<string, string> = { 'In buffer': 'Written, no date yet', Drafting: 'Being written' };
+  const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string, aside?: React.ReactNode) => count > 0 ? (night ? (
+    <NightSection key={key} label={NIGHT_LABEL[label] || label} count={count} open={sectionOpen(key)} onToggle={() => toggleSection(key)} aside={aside}>{rows}</NightSection>
+  ) : (
     <div key={key} style={{ marginTop: 20 }}>
       <div
         role="button"
@@ -960,11 +1034,16 @@ export default function DeskReviewSurface({
       </div>
       {sectionOpen(key) ? rows : null}
     </div>
-  ) : null;
+  )) : null;
 
   /** Sub-group inside a section: same register as the section header, one step lighter.
    *  Always names its state, even when it is the only group with rows. */
-  const subSection = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (
+  const subSection = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string) => count > 0 ? (night ? (
+    <div key={key} data-buffer-group={key}>
+      <div className="prs-sub"><span className="pk-cap">{NIGHT_LABEL[label] || label}</span><span className="prs-count">{count}</span></div>
+      {rows}
+    </div>
+  ) : (
     <div key={key} data-buffer-group={key} style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', padding: '6px 0 8px', borderBottom: '1px solid var(--cb-line)' }}>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>{label}</span>
@@ -973,15 +1052,52 @@ export default function DeskReviewSurface({
       </div>
       {rows}
     </div>
-  ) : null;
+  )) : null;
 
   // NOTE: the reference's dated mini-list is deliberately NOT rendered here. In the List
   // view it re-listed every row the Scheduled/Out sections print directly above it (critic
   // BLOCKER-4, ~900px of straight duplication). The dated enumeration lives in the Calendar
   // view only — see DeskCalendarStrip.
 
-  return (
-    <div data-surface="review">
+  const headline = (
+    <>
+      {compact && !approvals ? (() => {
+        const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
+          .map((x) => x.publish_date as string).sort().pop();
+        return <>
+          <b>{sched} {sched === 1 ? 'post' : 'posts'} scheduled</b>{lastDated ? <> through {fmtDay(lastDated)}</> : null}. {out} already out.
+          {buffer > 0 ? <> {buffer} more written, waiting for a day.</> : null}
+        </>;
+      })() : <>{total} {total === 1 ? 'post' : 'posts'} in the buffer{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}</>}
+    </>
+  );
+  /* Night v3 (Ivan: the old header was "hard to understand", "12 in buffer not needed"):
+     one plain sentence from the same counts. "35 posts are scheduled, the last one on Tue 17
+     Nov. 49 are already out." Approval boards keep their pending / approved / scheduled
+     split, said plainly. */
+  const nightLine: React.ReactNode = (() => {
+    if (approvals) return parts.length ? `${parts.join(', ')}.`.replace(/^./, (c) => c.toUpperCase()) : 'Nothing is waiting or scheduled right now.';
+    const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
+      .map((x) => x.publish_date as string).sort().pop();
+    // Night v4: the same words; v2's weight on the lead count.
+    const schedPart = sched === 0 ? <b>Nothing is scheduled yet.</b>
+      : sched === 1 ? <><b>1 post is scheduled</b>{lastDated ? `, on ${fmtDay(lastDated)}` : ''}.</>
+      : <><b>{sched} posts are scheduled</b>{lastDated ? `, the last one on ${fmtDay(lastDated)}` : ''}.</>;
+    const outPart = out === 0 ? '' : out === 1 ? ' 1 is already out.' : ` ${out} are already out.`;
+    return <>{schedPart}{outPart}</>;
+  })();
+  const plateSegs = approvals ? [
+    { v: pendingN, label: 'pending approval', bg: 'rgb(var(--nt-fg, 255 255 255) / 0.26)', tone: 'plate-mute' as const },
+    { v: approvedN, label: 'approved', bg: 'var(--cb-accent)', tone: 'plate' as const },
+    { v: sched, label: 'scheduled', bg: 'rgb(var(--nt-fg, 255 255 255) / 0.62)', tone: 'plate' as const },
+  ] : [
+    { v: buffer, label: 'in buffer', bg: 'rgb(var(--nt-fg, 255 255 255) / 0.26)', tone: 'plate-mute' as const },
+    { v: sched, label: 'scheduled', bg: 'rgb(var(--nt-fg, 255 255 255) / 0.62)', tone: 'plate' as const },
+  ];
+
+  const surface = (
+    <div data-surface="review" data-night-posts={night ? '' : undefined}>
+      {night && <PostsNightStyle />}
       <style>{`
         /* The feed grey and the 555px column of LinkedIn itself (values from the 08-19 review
            page). Two columns only when each can hold a 440px card (the desk column is 804px at
@@ -1012,16 +1128,12 @@ export default function DeskReviewSurface({
       `}</style>
 
       {/* Block 1: computed headline. */}
+      {night ? (
+        <PostsSummary line={nightLine} />
+      ) : <>
       <Eyebrow>All content</Eyebrow>
       <DeskH2>
-        {compact && !approvals ? (() => {
-          const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
-            .map((x) => x.publish_date as string).sort().pop();
-          return <>
-            <b>{sched} {sched === 1 ? 'post' : 'posts'} scheduled</b>{lastDated ? <> through {fmtDay(lastDated)}</> : null}. {out} already out.
-            {buffer > 0 ? <> {buffer} more written, waiting for a day.</> : null}
-          </>;
-        })() : <>{total} {total === 1 ? 'post' : 'posts'} in the buffer{parts.length ? <>: <b>{parts.join(', ')}.</b></> : '.'}</>}
+        {headline}
       </DeskH2>
 
       {/* Block 2: dark plate — pipeline counts + aim mix. */}
@@ -1032,14 +1144,7 @@ export default function DeskReviewSurface({
             <Footnote on="plate" style={{ marginTop: 6 }}>waiting to go out</Footnote>
           </div>
           <div data-viz="" style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-            {(approvals ? [
-              { v: pendingN, label: 'pending approval', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
-              { v: approvedN, label: 'approved', bg: 'var(--cb-accent)', tone: 'plate' as const },
-              { v: sched, label: 'scheduled', bg: 'rgba(255,255,255,0.62)', tone: 'plate' as const },
-            ] : [
-              { v: buffer, label: 'in buffer', bg: 'rgba(255,255,255,0.26)', tone: 'plate-mute' as const },
-              { v: sched, label: 'scheduled', bg: 'rgba(255,255,255,0.62)', tone: 'plate' as const },
-            ]).map((seg) => (
+            {plateSegs.map((seg) => (
               /* minWidth keeps a zero segment's label from stacking onto its neighbour
                  (the "0 34 / SCHEDULED IN BUFFER" overlap Ivan screenshotted 2026-09-10). */
               <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: 118 }}>
@@ -1055,8 +1160,8 @@ export default function DeskReviewSurface({
           <div style={{ marginTop: 15 }}>
             <div data-viz="" style={{ display: 'flex', gap: 4, height: 10 }}>
               <div style={{ flex: `${Math.max(aim.reach, 0.4)} 1 0`, minWidth: 0, background: 'var(--cb-accent)', borderRadius: 999 }} />
-              <div style={{ flex: `${Math.max(aim.trust, 0.4)} 1 0`, minWidth: 0, background: 'rgba(255,255,255,0.55)', borderRadius: 999 }} />
-              <div style={{ flex: `${Math.max(aim.buyers, 0.4)} 1 0`, minWidth: 0, background: 'rgba(255,255,255,0.24)', borderRadius: 999 }} />
+              <div style={{ flex: `${Math.max(aim.trust, 0.4)} 1 0`, minWidth: 0, background: 'rgb(var(--nt-fg, 255 255 255) / 0.55)', borderRadius: 999 }} />
+              <div style={{ flex: `${Math.max(aim.buyers, 0.4)} 1 0`, minWidth: 0, background: 'rgb(var(--nt-fg, 255 255 255) / 0.24)', borderRadius: 999 }} />
             </div>
             <Footnote on="plate" style={{ marginTop: 9 }}>
               By aim <span style={{ color: 'var(--cb-plate-ink)' }}>{aim.reach} reach</span> · {aim.trust} trust · {aim.buyers} buyers
@@ -1066,12 +1171,19 @@ export default function DeskReviewSurface({
           <Footnote on="plate" style={{ marginTop: 15 }}>Audience aim not tracked yet.</Footnote>
         )}
       </Plate>
+      </>}
 
       {/* Block 3: view toggle. */}
+      {night ? (
+        <div className="prs-tools">
+          <SlideGroup segmented group="view" label="View" value={view === 'calendar' ? 'calendar' : 'list'} onPick={(v) => setView(v as 'list' | 'calendar')} items={[{ id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
+        </div>
+      ) : (
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
       </div>
+      )}
 
       {/* Block 3b: filters — ONE aligned block, three labelled axes. No "All" pills:
           a pill toggles, clicking the active one clears that axis; a single Clear link
@@ -1081,6 +1193,22 @@ export default function DeskReviewSurface({
         const ROW: React.CSSProperties = { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' };
         const anyFilter = cat !== 'all' || topic !== 'all' || aimSel !== 'all';
         const clearAll = () => { setCatState('all'); setTopicState('all'); setAimState('all'); syncFilterUrl('all', 'all', 'all'); };
+        if (night) return (
+          <div className="prs-filters">
+            <span className="pk-cap">Format</span>
+            <SlideGroup group="cat" label="Format" value={cat === 'all' ? null : cat} onPick={(id) => setCat(cat === id ? 'all' : (id as Cat))}
+              items={CATS.filter((c) => c.id !== 'all' && catCount(c.id) > 0).map((c) => ({ id: c.id, label: c.label }))} />
+            {topics.length > 0 && (
+              <>
+                <span className="pk-cap">Topic</span>
+                <SlideGroup group="topic" label="Topic" value={topic === 'all' ? null : topic} onPick={(t) => setTopic(topic === t ? 'all' : t)}
+                  items={topics.map((t) => ({ id: t, label: topicLabel(t) }))} />
+              </>
+            )}
+            {/* Night v3: no Aim row. Reach / Trust / Buyers are internal funnel codes. */}
+            {anyFilter && <><span /><div><button type="button" className="prs-clear" onClick={clearAll}>Clear</button></div></>}
+          </div>
+        );
         return (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--cb-line)', display: 'grid', gridTemplateColumns: '62px 1fr', rowGap: 7, columnGap: 12, alignItems: 'start' }}>
             <span style={LBL}>Format</span>
@@ -1147,7 +1275,7 @@ export default function DeskReviewSurface({
               {section('Published', fPublished.length, 'published, newest first', [
                 <React.Fragment key="recent-out">{rowsFor(fPublished.slice(-6).reverse(), 'published')}</React.Fragment>,
                 fPublished.length > 6 ? (
-                  <Drill key="earlier-out" label="open it" summaryLeft={<>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
+                  <Drill key="earlier-out" className={night ? 'prs-earlier' : undefined} label={night ? 'Show' : 'open it'} summaryLeft={night ? <>{fPublished.length - 6} earlier posts</> : <>Earlier: <b>{fPublished.length - 6}</b> more published posts</>} style={{ marginTop: 4 }}>
                     {fPublished.slice(0, -6).reverse().map((q, i) => (
                       <div key={q.id || i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', padding: '7px 0', borderTop: '1px solid var(--cb-line)' }}>
                         <span style={{ flex: 'none', width: 64, fontSize: 12, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{fmtDay(q.publish_date)}</span>
@@ -1164,7 +1292,7 @@ export default function DeskReviewSurface({
           ) : (
             <>
               {section('Ideas', ideas.length, "The engine's upcoming idea bank. Each one drafts when it reaches its slot.", ideas.map(renderIdeaRow), 'ideas')}
-              {section('Your review', fReview.length, 'Approve, or say what to change in plain words.', topic === 'personal' ? <div className="cb-licard-grid">{fReview.map((q) => renderLiCard(q, isScheduledLocal(q) ? 'upnext' : 'buffer'))}</div> : fReview.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer')), 'review')}
+              {section('Your review', fReview.length, 'Approve, or say what to change in plain words.', topic === 'personal' ? <div className="cb-licard-grid">{fReview.map((q) => renderLiCard(q, isScheduledLocal(q) ? 'upnext' : 'buffer'))}</div> : (night ? <RailList>{fReview.map((q, i) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer', i))}</RailList> : fReview.map((q) => renderRow(q, isScheduledLocal(q) ? 'upnext' : 'buffer'))), 'review')}
               {section('Drafting', fDrafted.length, 'Being written now. They move to your review when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
               {section('Scheduled', fScheduled.length, 'Approved and queued to publish on their dates.', rowsFor(fScheduled, 'upnext'), 'scheduled')}
               {section('Published', fPublished.length, 'How live posts will report here once posting starts.', rowsFor(fPublished, 'published'), 'published')}
@@ -1186,9 +1314,10 @@ export default function DeskReviewSurface({
             aria-expanded={logOpen}
             onClick={() => setLogOpen((v) => !v)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLogOpen((v) => !v); } }}
+            className={night ? 'prs-fold-h' : undefined}
             style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{logOpen ? '▾' : '▸'}</span>Changes log</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)', flex: '1 1 auto' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{logOpen ? '▾' : '▸'}</span>{night ? 'Edit history' : 'Changes log'}</div>
             {entries !== null && entries.length > 0 && <Num size="row" inline style={{ fontSize: 13 }}>{entries.length}</Num>}
             {entries !== null && entries.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>changes on this board</span>}
             {entries !== null && entries.length > 0 && (
@@ -1271,9 +1400,10 @@ export default function DeskReviewSurface({
             aria-expanded={photosOpen}
             onClick={() => setPhotosOpen((v) => !v)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPhotosOpen((v) => !v); } }}
+            className={night ? 'prs-fold-h' : undefined}
             style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>The photo library</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>{night ? 'Photo library' : 'The photo library'}</div>
           </div>
           {photosOpen && <div style={{ marginTop: 12 }}>{foldPhotos}</div>}
         </div>
@@ -1289,4 +1419,5 @@ export default function DeskReviewSurface({
       )}
     </div>
   );
+  return night ? <MotionRoot>{surface}</MotionRoot> : surface;
 }

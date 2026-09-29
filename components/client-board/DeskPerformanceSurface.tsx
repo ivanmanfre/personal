@@ -47,6 +47,7 @@ import { ReportResults, type ReportCtx } from './report/ReportBlocks';
 const PerfReport = React.lazy(() => import('./perf-kit/PerfReport'));
 const perfClassic = () => { try { return new URLSearchParams(window.location.search).get('perf') === 'classic'; } catch { return false; } };
 import { openingLine } from './report/reportModel';
+import { useNight, useQuiet } from './perf-kit/night';
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Local helpers — small private utilities from the original PerformanceSurface
@@ -147,7 +148,7 @@ function mondayOf(d: Date): Date {
 const PERFH_CSS = `
 .cb-perfh-grid { position: absolute; inset: 0; display: flex; gap: clamp(4px, 1.2vw, 14px); }
 .cb-perfh-hit { flex: 1 1 0; min-width: 0; cursor: pointer; border-radius: 8px; }
-.cb-perfh-hit:hover, .cb-perfh-hit:focus-visible { background: rgba(255,255,255,0.07); }
+.cb-perfh-hit:hover, .cb-perfh-hit:focus-visible { background: rgb(var(--nt-fg, 255 255 255) / 0.07); }
 .cb-perfh-tip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; opacity: 0; visibility: hidden; pointer-events: none; display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; padding: 9px 13px; border-radius: 12px; background: var(--cb-plate); border: 1px solid var(--cb-plate-line); color: var(--cb-plate-ink); }
 .cb-perfh-tip-t { font-size: 12.5px; font-weight: 700; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
 .cb-perfh-tip-m { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
@@ -162,6 +163,20 @@ const PERFH_CSS = `
   .cb-perfh-tip, .cb-perfh-rtip { transition: opacity .16s ease, visibility .16s ease, transform .16s ease; transform: translateY(3px); }
   .cb-perfh-hit:hover > .cb-perfh-tip, .cb-perfh-hit:focus > .cb-perfh-tip, .cb-perfh-hit:focus-visible > .cb-perfh-tip, .cb-perfh-lrow:hover .cb-perfh-rtip, .cb-perfh-lrow:focus-within .cb-perfh-rtip { transform: translateY(0); }
 }
+`;
+
+/** NIGHT only: the report placeholder sits where the report will (its phone margins), so
+ *  nothing below it moves when the report lands. (v4: the drawer keeps the desk kit's caps
+ *  labels again, as v2 had them.) */
+const DPS_NIGHT_CSS = `
+@media (max-width: 639px) { .dps-fb { margin: -24px -16px 0; } }
+/* QUIET: the best bar in ink (grey bars around it), the drawer's "+" marks in ink. */
+[data-quiet] .dps-q-spark > i > span { background: rgba(17,17,17,.14) !important; }
+[data-quiet] .dps-q-spark > i > span[style*="cb-accent"] { background: #111 !important; }
+[data-quiet] .dps-q-spark > i > em[style*="cb-accent"] { color: #111 !important; border-top-color: #111 !important; }
+[data-quiet] [data-surface="performance"] details.drill > summary .more::after { color: #111; }
+[data-quiet] .cb-perfh-tip .num { color: #111 !important; }
+[data-quiet] [data-surface="performance"] .audn-trend .barfill[style*="cb-accent"] { background: #111 !important; }
 `;
 
 type Week = {
@@ -189,7 +204,15 @@ export function DeskPerformanceSurface({
   report?: ReportCtx | null;
 }) {
   const perf = board.performance;
-  const updates = board.engine_updates || [];
+  // NIGHT MOCKUP v3 (local only, 2026-09-29): the client never sees operator notes. On the
+  // night board the "More numbers" drawer drops the delivery-updates log, the ledger note
+  // and the source caveats; the light desk renders exactly as before.
+  const night = useNight();
+  // QUIET MOCKUP (local only, 2026-09-29): the drawer's chart plate is white on the light
+  // board, so the chart draws in its paper colours and the best bar reads in ink.
+  const quiet = useQuiet();
+  const plateOn = quiet ? undefined : 'plate';
+  const updates = night ? [] : (board.engine_updates || []);
   const indicators = perf?.indicators || [];
   const outreachInds = perf?.outreach_indicators || [];
   const allPosts = perf?.posts || [];
@@ -377,9 +400,18 @@ export function DeskPerformanceSurface({
           captured yet must never draw as a zero-height bar. */}
       {measured.length > 0 && (
         <Plate style={{ marginTop: 18 }}>
+          {night && bestInWindow && (
+            <div style={{ marginBottom: 14 }} data-best-caption="">
+              <Num size="big">{(bestInWindow.impressions as number).toLocaleString()}</Num>
+              <Footnote on={plateOn} style={{ marginTop: 6, fontSize: 14 }}>
+                reads, the best post of these two weeks{titleOf(bestInWindow) ? `: “${truncateWords(titleOf(bestInWindow), 60)}”` : ''}{bestInWindow.published_at ? `, ${shortDate(bestInWindow.published_at)}` : ''}.
+              </Footnote>
+            </div>
+          )}
           <div style={{ position: 'relative' }}>
             <Spark
-              on="plate"
+              className={quiet ? 'dps-q-spark' : undefined}
+              on={plateOn}
               values={measured.map((p) => p.impressions as number)}
               labels={measured.map((p) => dayOfMonth(p.published_at))}
               highlight={bestIndex >= 0 ? bestIndex : undefined}
@@ -400,17 +432,17 @@ export function DeskPerformanceSurface({
                     key={w.key}
                     style={{
                       position: 'absolute', left: `${left}%`, width: `${widthPct}%`,
-                      bottom: `calc(32px + ${pct}%)`, borderTop: '1px dashed rgba(255,255,255,0.45)',
+                      bottom: `calc(32px + ${pct}%)`, borderTop: '1px dashed rgb(var(--nt-fg, 255 255 255) / 0.45)',
                     }}
                   >
-                    <div style={{ position: 'absolute', right: 0, bottom: 4, fontSize: 12.5, fontWeight: 800, color: '#EFEFE9', whiteSpace: 'nowrap' }}>
+                    <div style={{ position: 'absolute', right: 0, bottom: 4, fontSize: 12.5, fontWeight: 800, color: quiet ? 'rgba(17,17,17,0.62)' : '#EFEFE9', whiteSpace: 'nowrap' }}>
                       avg {Math.round(w.readsPerPost)}
                     </div>
                   </div>
                 );
               });
             })()}
-            {bestInWindow && (
+            {bestInWindow && !night && (
               // heroBoxPct (computed above) keeps this column clear of the highlighted
               // bar's actual position — never a fixed split that only works when the best
               // post happens to land past the halfway column. The post title is also
@@ -466,7 +498,7 @@ export function DeskPerformanceSurface({
         <>
           <Eyebrow style={{ marginTop: 26, display: 'block' }}>{kpiHeader}</Eyebrow>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginTop: 12 }}>
-            <div style={{ borderLeft: `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
+            <div style={{ borderLeft: quiet ? '2px solid rgba(17,17,17,0.14)' : `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
               <Num size="big">{totalReads.toLocaleString()}</Num>
               <Footnote style={{ marginTop: 6 }}>Reads{kpiScope}</Footnote>
               {wow && wow.readsDelta != null && (
@@ -476,7 +508,7 @@ export function DeskPerformanceSurface({
                 </div>
               )}
             </div>
-            <div style={{ borderLeft: `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
+            <div style={{ borderLeft: quiet ? '2px solid rgba(17,17,17,0.14)' : `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
               <Num size="big">{readsPerPost != null ? Math.round(readsPerPost).toLocaleString() : '—'}</Num>
               <Footnote style={{ marginTop: 6 }}>Reads per post{kpiScope}</Footnote>
               {wow && wow.perPostDelta != null && (
@@ -486,7 +518,7 @@ export function DeskPerformanceSurface({
                 </div>
               )}
             </div>
-            <div style={{ borderLeft: `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
+            <div style={{ borderLeft: quiet ? '2px solid rgba(17,17,17,0.14)' : `3px solid var(--cb-accent)`, paddingLeft: 14, minHeight: 142 }}>
               <Num size="big">{totalEngagements.toLocaleString()}</Num>
               <Footnote style={{ marginTop: 6 }}>Engagements{kpiScope}</Footnote>
               {wow && wow.engDelta != null && (
@@ -561,7 +593,8 @@ export function DeskPerformanceSurface({
       )}
 
       {/* Block 4: aim mix */}
-      {showAim && aim.total > 0 && (
+      {/* Night: dropped. Reach / Trust / Buyers are our funnel codes, not the client's words. */}
+      {!night && showAim && aim.total > 0 && (
         <Card style={{ marginTop: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <Eyebrow>What the posts aim at</Eyebrow>
@@ -590,8 +623,8 @@ export function DeskPerformanceSurface({
 
       {/* Block 5: the ledger */}
       <div style={{ marginTop: 40, display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
-        <Eyebrow tone="ink">The ledger</Eyebrow>
-        <Footnote style={{ marginTop: 0 }}>Bar = share of the best post. Counts under each: reactions · comments.</Footnote>
+        <Eyebrow tone="ink">{night ? 'Every post, by week' : 'The ledger'}</Eyebrow>
+        {!night && <Footnote style={{ marginTop: 0 }}>Bar = share of the best post. Counts under each: reactions · comments.</Footnote>}
       </div>
       {sorted.length === 0 ? (
         <Card style={{ marginTop: 12 }}>
@@ -621,7 +654,7 @@ export function DeskPerformanceSurface({
                   {weeks.length >= 2 && (
                     <span style={{ display: 'block', marginTop: 6 }}>
                       {wi === 0 ? (
-                        <Delta>baseline</Delta>
+                        <Delta>{night ? 'first week' : 'baseline'}</Delta>
                       ) : (() => {
                         const prev = weeks[wi - 1];
                         if (!prev || prev.totalReads <= 0) return null;
@@ -657,15 +690,17 @@ export function DeskPerformanceSurface({
                       <div className="cb-perfh-rowfocus" tabIndex={0} aria-label={rowLabel} title={fullTitle}>
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{shortDate(p.published_at)}</div>
                       <div style={{ marginTop: 3, fontSize: isBest ? 15.5 : 14.5, fontWeight: isBest ? 800 : 600, lineHeight: 1.3 }}>
-                        {(() => { const t = fullTitle; return t.length > 70 ? t.slice(0, t.lastIndexOf(' ', 70)) + '\u2026' : t; })()}{isBest && <Chip tone="accent" style={{ marginLeft: 4 }}>best</Chip>}
+                        {(() => { const t = fullTitle; return t.length > 70 ? t.slice(0, t.lastIndexOf(' ', 70)) + '\u2026' : t; })()}{isBest && <Chip tone={night ? undefined : "accent"} style={{ marginLeft: 4 }}>best</Chip>}
                       </div>
                       <div style={{ marginTop: isBest ? 10 : 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        {q?.funnel_stage && AIM_LABEL[q.funnel_stage] && (
+                        {!night && q?.funnel_stage && AIM_LABEL[q.funnel_stage] && (
                           <Chip tone={q.funnel_stage === 'buyers' ? 'accent' : 'default'}>{AIM_LABEL[q.funnel_stage]}</Chip>
                         )}
-                        {q?.pillar && q.pillar.trim() && <Chip>{String(q.pillar).replace(/_/g, ' ')}</Chip>}
+                        {!night && q?.pillar && q.pillar.trim() && <Chip>{String(q.pillar).replace(/_/g, ' ')}</Chip>}
                         <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
-                          {typeof p.reactions === 'number' ? p.reactions : '—'} · {typeof p.comments === 'number' ? p.comments : '—'}
+                          {night
+                            ? [typeof p.reactions === 'number' ? `${p.reactions} ${p.reactions === 1 ? 'reaction' : 'reactions'}` : null, typeof p.comments === 'number' ? `${p.comments} ${p.comments === 1 ? 'comment' : 'comments'}` : null].filter(Boolean).join(' · ')
+                            : <>{typeof p.reactions === 'number' ? p.reactions : '—'} · {typeof p.comments === 'number' ? p.comments : '—'}</>}
                         </span>
                         {/* What the post pulled off the feed: profile views and new followers
                             LinkedIn attributes to THIS post. Each draws only at >= 1 (Ivan
@@ -733,7 +768,7 @@ export function DeskPerformanceSurface({
                       </div>
                     </LedgerCell>
                     <LedgerCell num align="right" width="1%">
-                      {reads != null ? reads.toLocaleString() : '—'}
+                      {reads != null ? reads.toLocaleString() : (night ? '' : '—')}
                       {rate != null && (
                         <span style={{ display: 'block', marginTop: 5, fontFamily: 'var(--cb-body)', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
                           {rate.toFixed(1)}%
@@ -748,7 +783,7 @@ export function DeskPerformanceSurface({
         </Ledger>
         {weeks.length > 1 && (
           <Drill
-            label="open it"
+            label={night ? 'Open' : 'open it'}
             summaryLeft={<>Earlier weeks: <b>{weeks.slice(0, -1).reduce((t, w) => t + w.items.length, 0)}</b> posts across <b>{weeks.length - 1}</b> weeks</>}
             style={{ marginTop: 4 }}
           >
@@ -785,10 +820,13 @@ export function DeskPerformanceSurface({
           source it moves up on its own, with no edit here. Relative order inside each
           group is preserved, so the outreach sequence still reads
           invites → accepts → replies → booked. */}
-      {(indicators.length > 0 || (live && outreachInds.length > 0)) && (
+      {/* Night: dropped. Its outreach cards count on a different basis than the funnel above
+          (sent/accepted/replies vs reached/connected/replied), so the page printed two sets of
+          numbers for the same thing; the other two are not-tracked-yet blanks. */}
+      {!night && (indicators.length > 0 || (live && outreachInds.length > 0)) && (
         <div style={{ marginTop: 40 }}>
           <Eyebrow>What we track</Eyebrow>
-          <Footnote>{(!live && perf?.note) || 'Real series appear the day each one goes live.'}</Footnote>
+          {!night && <Footnote>{(!live && perf?.note) || 'Real series appear the day each one goes live.'}</Footnote>}
           <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
             {(() => {
               const cards: { ind: PerfIndicator; expectation?: string }[] = [
@@ -842,7 +880,23 @@ export function DeskPerformanceSurface({
     <div data-surface="performance">
       {/* Scoped hover/focus styles for this surface only (cb-perfh-* — see PERFH_CSS). */}
       <style>{PERFH_CSS}</style>
-      {report && !perfClassic() ? (
+      {report && !perfClassic() && night ? (
+        // Night: the drawer loads WITH the report, and the placeholder holds the whole screen
+        // and the report's own phone margins, so nothing below it is ever pushed down
+        // (the light fallback left "More numbers" in view and shoved it off: CLS 0.86).
+        <React.Suspense fallback={<div aria-busy="true" className="dps-fb" style={{ minHeight: '100vh' }} />}>
+          <style>{DPS_NIGHT_CSS}</style>
+          <PerfReport ctx={report} truth={board.outreach_truth} />
+          <Drill
+            className="dps-more"
+            style={{ marginTop: 28 }}
+            label="Open"
+            summaryLeft={<><b>More numbers</b> <span style={{ color: 'var(--cb-ink-mute)', fontWeight: 600 }}>reads, reach and who saw your posts</span></>}
+          >
+            {legacy}
+          </Drill>
+        </React.Suspense>
+      ) : report && !perfClassic() ? (
         <>
           <React.Suspense fallback={<div aria-busy="true" style={{ minHeight: 640, background: '#111', borderRadius: '26px 8px 8px 8px' }} />}>
             <PerfReport ctx={report} truth={board.outreach_truth} />

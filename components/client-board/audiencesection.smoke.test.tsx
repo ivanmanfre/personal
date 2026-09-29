@@ -27,6 +27,7 @@ import path from 'node:path';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DeskPerformanceSurface } from './DeskPerformanceSurface';
+import { AudienceSection } from './AudienceSection';
 import { PerformanceSurface } from '../ClientBoardPage';
 import { AUDIENCE_COPY } from './audienceCopy';
 import type { Board } from '../ClientBoardPage';
@@ -996,5 +997,44 @@ describe('run 04 §2.2: the block renders migration 07\'s own people[] shape', (
     const html = renderSkin('desk', withPeople(PAYLOAD_07_PEOPLE));
     expect(html).not.toContain('first_observed_at');
     expect(html).not.toContain('outreach_prospects.current');
+  });
+});
+
+describe('AudienceSection: night v3 (?night) shows numbers, never our working notes', () => {
+  const render = (payload: any) => {
+    window.history.replaceState({}, '', '/?night');
+    try {
+      return renderToStaticMarkup(<AudienceSection audience={payload} live={false} />);
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  };
+  const textOf = (html: string) => html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ');
+  it('drops the recommendations, the decision form and every source or method caveat', () => {
+    const payload = { ...FIXTURES.incomplete_history, recommendations: FIXTURES.normal.recommendations };
+    const t = textOf(render(payload));
+    expect(t).not.toContain(AUDIENCE_COPY.recs.heading);
+    expect(t).not.toContain(AUDIENCE_COPY.decision.reasonPlaceholder);
+    expect(t).not.toContain(AUDIENCE_COPY.state.incomplete_history);
+    expect(t).not.toContain(AUDIENCE_COPY.limits.classifier);
+    expect(t).not.toContain(AUDIENCE_COPY.limits.coverage);
+    expect(t).not.toContain(AUDIENCE_COPY.posts.notSummed);
+    expect(t).not.toContain(AUDIENCE_COPY.relationship.footnote);
+    for (const r of FIXTURES.normal.recommendations) {
+      if (r.what_changed) expect(t).not.toContain(r.what_changed);
+      if (r.could_publish) expect(t).not.toContain(r.could_publish);
+    }
+  });
+  it('keeps the per-post numbers, without funnel codes in the row label', () => {
+    const html = render(FIXTURES.normal);
+    const t = textOf(html);
+    expect(t).toContain(AUDIENCE_COPY.posts.heading);
+    expect(t).toContain('Text post');
+    expect(t).not.toMatch(/·\s*reach\s*·/);
+  });
+  it('leaves the light board exactly as it was', () => {
+    const t = textOf(renderToStaticMarkup(<AudienceSection audience={FIXTURES.normal} live={false} />));
+    expect(t).toContain(AUDIENCE_COPY.recs.heading);
+    expect(t).toContain(AUDIENCE_COPY.limits.classifier);
   });
 });

@@ -581,3 +581,55 @@ describe('In-place post text', () => {
     cleanup();
   });
 });
+
+/* NIGHT MOCKUP (local only, calm pass 2026-09-29): behind ?night the tab opens on the
+   headline sentence (no giant count), a row's hook toggles its white LinkedIn preview in
+   place, and the row's Open control still opens the full drawer. */
+describe('DeskReviewSurface at night', () => {
+  let prev = '';
+  // jsdom has no IntersectionObserver; the night split bar reveals through framer's useInView.
+  class IO { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } }
+  const night = () => { (globalThis as any).IntersectionObserver ??= IO; prev = window.location.href; window.history.replaceState({}, '', '/client/risedtc-com?night'); };
+  const day = () => { window.history.replaceState({}, '', prev); cleanup(); };
+
+  it('opens on the headline, no hero ticker', () => {
+    night();
+    try {
+      const { container } = render(<Harness />);
+      // Night v3: one plain sentence, no split bar, no "in buffer" count, no Aim filter row.
+      expect(container.querySelector('.prs-lede')).not.toBeNull();
+      expect(container.querySelector('.prs-split')).toBeNull();
+      expect(container.querySelector('.pk-hero-n')).toBeNull();
+      const shown = Array.from(container.querySelectorAll('.prs-lede, .prs-sec-h')).map((el) => el.textContent).join(' ');
+      expect(shown).not.toMatch(/in buffer/i);
+      expect(container.querySelector('[role="group"][aria-label="Aim"]')).toBeNull();
+    } finally { day(); }
+  });
+
+  it('toggles the inline preview on the hook and keeps Open wired to the drawer', () => {
+    night();
+    try {
+      const opened: unknown[][] = [];
+      const board = makeBoard();
+      const { container } = render(
+        <div data-skin="desk" style={SKIN_VARS}>
+          <DeskReviewSurface board={board} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={(...a) => opened.push(a)} onOpenIdea={noop} onApprove={noop} flashId={null} view="list" setView={noop} skips={{}} live />
+        </div>,
+      );
+      openDisclosure(container, 'Scheduled');
+      const toggle = container.querySelector('[data-inline-toggle]') as HTMLElement;
+      expect(toggle).not.toBeNull();
+      const id = toggle.getAttribute('data-inline-toggle');
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(container.querySelector(`[data-inline-preview="${id}"] .cb-linkedin-preview`)).not.toBeNull();
+      expect(opened.length).toBe(0);
+      fireEvent.click(toggle);
+      expect(container.querySelector('[data-inline-preview]')).toBeNull();
+      fireEvent.click(container.querySelector(`[data-open-post="${id}"]`) as HTMLElement);
+      expect(opened.length).toBe(1);
+      expect((opened[0][0] as QueueItem).id).toBe(id);
+      expect(container.querySelector('[data-inline-preview]')).toBeNull();
+    } finally { day(); }
+  });
+});

@@ -86,4 +86,34 @@ describe('DeskNewsletterSurface', () => {
     );
     expect(html).toBe('');
   });
+
+  it('night (?night) v4: v2 stepper look with v3 words: status said once, four plain steps, plain empty state', () => {
+    window.history.replaceState({}, '', '/?night');
+    try {
+      const html = renderToStaticMarkup(<DeskNewsletterSurface board={makeBoard()} accent="#FFC71D" fontStack="Inter, sans-serif" />);
+      const text = html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ');
+      expect(html).toContain('data-surface="newsletter"');
+      expect(html).toContain('data-newsletter-night');
+      expect(text.replace(/\s+/g, ' ')).toContain('RISE Weekly is written . The first issue goes out once we pick a send day.');
+      // the four steps as plain sentences, in order, inside v2's lit stepper (one-shot fill)
+      expect(html).toContain('Someone downloads a lead magnet and we get their email.');
+      expect(html).toContain('The same hour, they get a welcome email with their score and one fix.');
+      expect(html).toContain('Every week they get one practical idea from you.');
+      expect(html).toContain('After three opens in a row or two clicks in one week, they get one line asking them to book a call.');
+      expect(html).toContain('class="nln-node"');
+      expect(html).toContain('class="nln-seg"');
+      expect(html).not.toMatch(/infinite/);
+      expect(html).not.toContain('class="pk-ticker');
+      // the status and the cadence are not repeated
+      expect(text).not.toContain('drafted and ready');
+      expect(text).not.toContain('day and time locked');
+      expect(text).not.toContain('Issue history lands here');
+      expect(html).toContain('Sends from acme.example. Subscribers are not counted here yet.');
+      expect(html).toContain('No issues sent yet.');
+      // v2's caps eyebrow carries v3's heading words
+      expect(html).toContain('class="pk-cap pk-capline">What a new reader gets');
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  });
 });

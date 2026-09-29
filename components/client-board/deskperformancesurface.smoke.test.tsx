@@ -248,3 +248,36 @@ describe('DeskPerformanceSurface', () => {
     expect(html).not.toMatch(/class="cb-perfh-lrow"/);
   });
 });
+
+describe('DeskPerformanceSurface night v3 (?night): the drawer shows numbers, never our working notes', () => {
+  const night = () => {
+    window.history.replaceState({}, '', '/?night');
+    try { return renderToStaticMarkup(<DeskPerformanceSurface board={boardA()} accent="#FFC71D" live={false} showAim />); }
+    finally { window.history.replaceState({}, '', '/'); }
+  };
+  const html = night();
+  it('drops the delivery-updates log, the ledger note and the "What we track" block', () => {
+    expect(html).not.toContain('delivery updates');
+    expect(html).not.toContain('Faster draft turnaround shipped.');
+    expect(html).not.toContain('The leading indicators your retainer is measured on.');
+    expect(html).not.toContain('What we track');
+  });
+  it('drops the funnel-code aim block and the row codes', () => {
+    expect(html).not.toContain('What the posts aim at');
+    expect(html).not.toContain('gets the brand seen');
+    expect(html).not.toContain('The chart counts posts, not reads.');
+    expect(html).not.toMatch(/<span class="chip"[^>]*>(Reach|Trust|Buyers)<\/span>/);
+  });
+  it('puts the best-post caption above the chart, never over the bars, and prints no dashes', () => {
+    expect(html).toContain('data-best-caption');
+    expect(html).not.toContain('reads on the Tearing Down');
+    expect(html).toContain('reads, the best post of these two weeks: “Tearing Down a Top DTC Brand&#x27;s Checkout Funnel”, 27 Jul.');
+    expect(html.replace(/<style>[\s\S]*?<\/style>/g, '')).not.toContain('—');
+  });
+  it('leaves the light board as it was', () => {
+    const light = renderToStaticMarkup(<DeskPerformanceSurface board={boardA()} accent="#FFC71D" live={false} showAim />);
+    expect(light).toContain('delivery updates');
+    expect(light).toContain('What the posts aim at');
+    expect(light).not.toContain('data-best-caption');
+  });
+});

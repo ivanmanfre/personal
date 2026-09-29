@@ -20,13 +20,18 @@ import {
 } from '../desk-kit';
 import { dayKey, dm, type ReportPerson } from './reportModel';
 import { ReportFigures, CallsChart, PICKER_CSS, type ReportCtx } from './ReportBlocks';
+import { useNight, useQuiet } from '../perf-kit/night';
 
-type LogMessage = { direction: 'outbound' | 'inbound'; channel: string | null; type: string | null; sent_at: string | null; text: string | null };
-type LogEntry = { prospect_id: string; name: string | null; company: string | null; last_reply_at: string | null; messages: LogMessage[] };
-type BookedExtra = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null; scan_url?: string | null };
+/** NIGHT MOCKUP (local only, 2026-09-29): the Pipeline tab in the ARCH report's look, lazy so
+ *  none of it ships in the desk's chunk. */
+const PipelineNight = React.lazy(() => import('../perf-kit/pipeline-night'));
+
+export type LogMessage = { direction: 'outbound' | 'inbound'; channel: string | null; type: string | null; sent_at: string | null; text: string | null };
+export type LogEntry = { prospect_id: string; name: string | null; company: string | null; last_reply_at: string | null; messages: LogMessage[] };
+export type BookedExtra = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null; scan_url?: string | null };
 
 const MUTE = 'var(--cb-ink-mute)';
-const fmt = (v: number | null) => (v === null ? '·' : v.toLocaleString('en-US'));
+export const fmt = (v: number | null) => (v === null ? '·' : v.toLocaleString('en-US'));
 /** Desktop: the ledger. Phone: each row stacks, label then its numbers on one line
  *  (a six-column table left the label ~70px wide at 390). */
 const PIPE_CSS = `
@@ -34,7 +39,7 @@ const PIPE_CSS = `
 @media (max-width: 640px) { .cb-pipe-tbl { display: none; } .cb-pipe-stack { display: block; } }
 `;
 const DAY_MS = 86400000;
-const norm = (s?: string | null) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+export const norm = (s?: string | null) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 /* ─────────────────────────── who is who ─────────────────────────── */
 
@@ -43,18 +48,18 @@ const ARCH_YES = new Set(['positive', 'soft_yes', 'info_ask', 'booking', 'price_
  *  ARCH does not sell into). By prospect id prefix, ARCH DATA-MAP "conversation cards". */
 const ARCH_HIDDEN = ['15479bc5', '51c6c091', 'be25f6dc', '4f769ffb', 'dffec463', 'de1cd6ad', 'f30ade2e', 'aab68de8', '46841963', '45bab93a'];
 
-const isArch = (ctx: ReportCtx) => ctx.payload?.client === 'arch';
+export const isArch = (ctx: ReportCtx) => ctx.payload?.client === 'arch';
 /** Interested right now: not booked, the latest classified reply says yes (ARCH: or asks),
  *  and that reply is from the last 14 days. An old yes that went quiet is not "right now"
  *  (30 days read 39 for RISE, most of them long cold; 14 reads 23 on 28 Sep). */
-function interestedNow(ctx: ReportCtx, p: ReportPerson): boolean {
+export function interestedNow(ctx: ReportCtx, p: ReportPerson): boolean {
   if (p.bk) return false;
   const yes = isArch(ctx) ? ARCH_YES.has(p.li || '') : p.li === 'positive';
   return yes && !!p.lr && Date.parse(p.lr) >= Date.now() - 14 * DAY_MS;
 }
-const wrote = (p: ReportPerson) => (p.w || []).length > 0;
+export const wrote = (p: ReportPerson) => (p.w || []).length > 0;
 
-type Line = { key: string; title: string; sub: string };
+export type Line = { key: string; title: string; sub: string };
 type Via = { key: string; label: string };
 
 const RISE_LINES: Line[] = [
@@ -88,7 +93,7 @@ const ARCH_LINES: Line[] = [
 ];
 
 /** ARCH company group + the sub label "conversations came from" uses (archCopyVertical order). */
-function archGroup(p: ReportPerson): { line: string; sub: string } {
+export function archGroup(p: ReportPerson): { line: string; sub: string } {
   const v = norm(p.gv);
   if (v === 'pc') return { line: 'games', sub: 'PC and console games' };
   if (['games', 'mobile_games', 'gaming'].includes(v)) return { line: 'games', sub: 'games' };
@@ -140,12 +145,12 @@ function archVia(p: ReportPerson): string {
   return 'Other people you reached';
 }
 
-function lineOf(ctx: ReportCtx, p: ReportPerson): string {
+export function lineOf(ctx: ReportCtx, p: ReportPerson): string {
   if (isArch(ctx)) return archGroup(p).line;
   // A fractional CMO's headline often says "Founder" (of their own practice): still a marketing lead.
   return p.v === 'fcmo' ? 'marketing' : (p.l || 'owner');
 }
-function viaOf(ctx: ReportCtx, p: ReportPerson): Via {
+export function viaOf(ctx: ReportCtx, p: ReportPerson): Via {
   if (isArch(ctx)) { const l = archVia(p); return { key: l, label: l }; }
   const k = p.v || 'other';
   return { key: k, label: RISE_VIA[k] || RISE_VIA.other };
@@ -153,8 +158,8 @@ function viaOf(ctx: ReportCtx, p: ReportPerson): Via {
 
 /* ─────────────────────────── counting ─────────────────────────── */
 
-type Row = { label: string; reached: number; connected: number | null; wrote: number; interested: number; booked: number };
-function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConnections = false): Row {
+export type Row = { label: string; reached: number; connected: number | null; wrote: number; interested: number; booked: number };
+export function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConnections = false): Row {
   return {
     label,
     reached: ps.length,
@@ -166,9 +171,45 @@ function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConnections 
   };
 }
 
-function LinesLedger({ ctx }: { ctx: ReportCtx }) {
+/** One ledger per line: everyone in the line, then one row per way we found them. */
+export function linesData(ctx: ReportCtx): Array<{ ln: Line; inLine: ReportPerson[]; all: Row; rows: Row[] }> {
   const people = ctx.payload?.people || [];
   const lines = isArch(ctx) ? ARCH_LINES : RISE_LINES;
+  return lines.map((ln) => {
+    const inLine = people.filter((p) => lineOf(ctx, p) === ln.key);
+    const byVia = new Map<string, { label: string; ps: ReportPerson[] }>();
+    for (const p of inLine) {
+      const v = viaOf(ctx, p);
+      if (!byVia.has(v.key)) byVia.set(v.key, { label: v.label, ps: [] });
+      byVia.get(v.key)!.ps.push(p);
+    }
+    const rows = [...byVia.entries()]
+      .map(([k, g]) => tally(ctx, g.ps, g.label, !isArch(ctx) && k === 'asked'))
+      .sort((a, b) => b.reached - a.reached);
+    return { ln, inLine, all: tally(ctx, inLine, `All ${ln.title.toLowerCase()}`), rows };
+  }).filter((x) => x.inLine.length > 0);
+}
+
+/** NIGHT v3 (2026-09-29): the ONE funnel Outreach and Performance both draw, in one set of
+ *  words (reached, connected, replied, said yes, booked a call). It is the "All" rows of the
+ *  ledger above added up, so both tabs print the same five numbers. ARCH's fourth stage is its
+ *  own "interested now" rule, so it keeps that name. Empty when the board has no people. */
+export type FunnelStage = { key: 'reached' | 'connected' | 'replied' | 'yes' | 'booked'; label: string; v: number };
+export function funnelStages(ctx: ReportCtx): FunnelStage[] {
+  const lines = linesData(ctx);
+  if (!lines.length) return [];
+  const sum = (k: 'reached' | 'connected' | 'wrote' | 'interested' | 'booked') => lines.reduce((t, l) => t + (l.all[k] ?? 0), 0);
+  return [
+    { key: 'reached', label: 'Reached', v: sum('reached') },
+    { key: 'connected', label: 'Connected', v: sum('connected') },
+    { key: 'replied', label: 'Replied', v: sum('wrote') },
+    { key: 'yes', label: isArch(ctx) ? 'Interested now' : 'Said yes', v: sum('interested') },
+    { key: 'booked', label: 'Booked a call', v: sum('booked') },
+  ];
+}
+
+function LinesLedger({ ctx }: { ctx: ReportCtx }) {
+  const people = ctx.payload?.people || [];
   const interestedLabel = isArch(ctx) ? 'Interested now' : 'Interested';
   return (
     <div style={{ marginTop: 36 }}>
@@ -178,19 +219,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
           ? <>Grouped by the kind of company, then by how we found each person. Everyone is counted once, since {dm(ctx.cfg.start)}.</>
           : <>Two groups of people, and where we found them, since {dm(ctx.cfg.start)}. Interested means they said yes to a scan or a chat.</>}
       </Footnote>
-      {lines.map((ln) => {
-        const inLine = people.filter((p) => lineOf(ctx, p) === ln.key);
-        if (!inLine.length) return null;
-        const byVia = new Map<string, { label: string; ps: ReportPerson[] }>();
-        for (const p of inLine) {
-          const v = viaOf(ctx, p);
-          if (!byVia.has(v.key)) byVia.set(v.key, { label: v.label, ps: [] });
-          byVia.get(v.key)!.ps.push(p);
-        }
-        const rows = [...byVia.entries()]
-          .map(([k, g]) => tally(ctx, g.ps, g.label, !isArch(ctx) && k === 'asked'))
-          .sort((a, b) => b.reached - a.reached);
-        const all = tally(ctx, inLine, `All ${ln.title.toLowerCase()}`);
+      {linesData(ctx).map(({ ln, inLine, all, rows }) => {
         const cells = (r: Row) => [r.reached, r.connected, r.wrote, r.interested, r.booked];
         const heads = ['reached', 'connected', 'wrote back', interestedLabel.toLowerCase(), 'calls booked'];
         return (
@@ -241,7 +270,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
   );
 }
 
-function ChipRow({ items }: { items: Array<{ key: string; n: number; label: string; booked?: number }> }) {
+function ChipRow({ items }: { items: ChipItem[] }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
       {items.map((c) => (
@@ -254,7 +283,8 @@ function ChipRow({ items }: { items: Array<{ key: string; n: number; label: stri
   );
 }
 
-function StoreKinds({ ps }: { ps: ReportPerson[] }) {
+export type ChipItem = { key: string; n: number; label: string; booked?: number };
+export function storeKindItems(ps: ReportPerson[]): ChipItem[] {
   const m = new Map<string, { n: number; booked: number }>();
   for (const p of ps.filter(wrote)) {
     const label = RISE_CAT[norm(p.cat)] || (p.cat ? 'other stores' : 'not sorted yet');
@@ -262,10 +292,14 @@ function StoreKinds({ ps }: { ps: ReportPerson[] }) {
     e.n += 1; if (p.bk) e.booked += 1;
     m.set(label, e);
   }
-  if (!m.size) return null;
-  const items = [...m.entries()]
+  return [...m.entries()]
     .sort((a, b) => (a[0] === 'not sorted yet' ? 1 : b[0] === 'not sorted yet' ? -1 : b[1].n - a[1].n))
     .map(([label, e]) => ({ key: label, n: e.n, label, booked: e.booked }));
+}
+
+function StoreKinds({ ps }: { ps: ReportPerson[] }) {
+  const items = storeKindItems(ps);
+  if (!items.length) return null;
   return (
     <div style={{ marginTop: 16 }}>
       <Eyebrow>What kinds of stores wrote back</Eyebrow>
@@ -274,13 +308,17 @@ function StoreKinds({ ps }: { ps: ReportPerson[] }) {
   );
 }
 
-function ArchCameFrom({ ps }: { ps: ReportPerson[] }) {
+export function archCameFromItems(ps: ReportPerson[]): ChipItem[] {
   const m = new Map<string, number>();
   for (const p of ps.filter(wrote)) { const s = archGroup(p).sub; m.set(s, (m.get(s) || 0) + 1); }
-  if (!m.size) return null;
-  const items = [...m.entries()]
+  return [...m.entries()]
     .sort((a, b) => (a[0].startsWith('not sorted') ? 1 : b[0].startsWith('not sorted') ? -1 : b[1] - a[1]))
     .map(([label, n]) => ({ key: label, n, label }));
+}
+
+function ArchCameFrom({ ps }: { ps: ReportPerson[] }) {
+  const items = archCameFromItems(ps);
+  if (!items.length) return null;
   return (
     <div style={{ marginTop: 20 }}>
       <Eyebrow>Conversations came from</Eyebrow>
@@ -294,14 +332,14 @@ function ArchCameFrom({ ps }: { ps: ReportPerson[] }) {
 /** Our own bookkeeping notes stored as message text, e.g. "(blank invite - no note by design)". */
 const INTERNAL_NOTE = /^\s*\((blank invite|no note|internal|system)[^)]*\)\s*$/i;
 /** "Alexander reacted 👏" is a reaction, not something they wrote. */
-const REACTION = /^\s*[\p{L}.'’-]+(?: [\p{L}.'’-]+)* reacted\b/iu;
-const shownText = (m: LogMessage) => {
+export const REACTION = /^\s*[\p{L}.'’-]+(?: [\p{L}.'’-]+)* reacted\b/iu;
+export const shownText = (m: LogMessage) => {
   const t = (m.text || '').trim();
   if (!t || INTERNAL_NOTE.test(t)) return '';
   return t;
 };
 
-function intentChip(ctx: ReportCtx, li?: string | null): string | null {
+export function intentChip(ctx: ReportCtx, li?: string | null): string | null {
   const v = norm(li);
   if (!v) return null;
   if (v === 'negative') return 'Not now';
@@ -334,9 +372,9 @@ function Thread({ ctx, entry }: { ctx: ReportCtx; entry: LogEntry }) {
   );
 }
 
-type Card_ = { p: ReportPerson; entry: LogEntry | null; last: string | null; extra?: BookedExtra };
+export type Card_ = { p: ReportPerson; entry: LogEntry | null; last: string | null; extra?: BookedExtra };
 
-function lastInboundText(entry: LogEntry | null): string {
+export function lastInboundText(entry: LogEntry | null): string {
   // The latest thing they WROTE; a bare reaction is skipped when there is real text before it.
   const ins = (entry?.messages || []).filter((m) => m.direction === 'inbound' && shownText(m));
   ins.sort((a, b) => ((a.sent_at || '') < (b.sent_at || '') ? -1 : 1));
@@ -410,16 +448,8 @@ export function pipelineStripText(ctx: ReportCtx): string {
   return `${ps.length} ${who} interested right now. Newest: ${newest.n}${newest.c ? `, ${newest.c}` : ''}.`;
 }
 
-export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCount }: {
-  ctx: ReportCtx;
-  accent: string;
-  log?: LogEntry[] | null;
-  booked?: BookedExtra[];
-  /** ARCH: the live review page (Queue), rendered by the surface. */
-  queue?: React.ReactNode;
-  queueCount?: number | null;
-}) {
-  const [view, setView] = React.useState<'conv' | 'queue'>('conv');
+/** Everything the Pipeline tab counts and lists, shared by the desk and the night view. */
+export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: BookedExtra[] = []) {
   const people = ctx.payload?.people || [];
   const arch = isArch(ctx);
 
@@ -452,8 +482,34 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
   const nBooked = people.filter((p) => !!p.bk).length;
   const nInterested = people.filter((p) => interestedNow(ctx, p)).length;
   const nWrote = people.filter(wrote).length;
-  const who = arch ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
   const bookedNames = bookedRows.slice(0, 3).map((c) => c.p.n).filter(Boolean) as string[];
+  return { people, bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames };
+}
+
+export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCount }: {
+  ctx: ReportCtx;
+  accent: string;
+  log?: LogEntry[] | null;
+  booked?: BookedExtra[];
+  /** ARCH: the live review page (Queue), rendered by the surface. */
+  queue?: React.ReactNode;
+  queueCount?: number | null;
+}) {
+  const [view, setView] = React.useState<'conv' | 'queue'>('conv');
+  const arch = isArch(ctx);
+  const { bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames } = pipelineData(ctx, log, booked);
+  const who = arch ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
+  const night = useNight();
+  const quiet = useQuiet();
+  // NIGHT MOCKUP (local only): the same model, drawn in the ARCH report's look. QUIET holds
+  // the space on the light ground (no dark block flashes in while the chunk loads).
+  if (night) {
+    return (
+      <React.Suspense fallback={<div aria-busy="true" style={{ minHeight: 900, background: quiet ? 'transparent' : '#111', borderRadius: '26px 8px 8px 8px' }} />}>
+        <PipelineNight ctx={ctx} accent={accent} log={log} booked={booked} queue={queue} queueCount={queueCount} />
+      </React.Suspense>
+    );
+  }
 
   const figs = [
     { key: 'calls', strong: true, value: nBooked, caption: `${nBooked === 1 ? 'call' : 'calls'} booked since ${dm(ctx.cfg.start)}` },
@@ -465,7 +521,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
     <div data-report="pipeline">
       <style>{PICKER_CSS + PIPE_CSS}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <Eyebrow>Pipeline</Eyebrow>
+        <Eyebrow>Outreach</Eyebrow>
         {queue && (
           <div role="tablist" style={{ display: 'flex', gap: 6 }}>
             <Pill active={view === 'conv'} onClick={() => setView('conv')}>Conversations</Pill>

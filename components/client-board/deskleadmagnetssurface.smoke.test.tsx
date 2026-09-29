@@ -303,4 +303,48 @@ describe('DeskLeadMagnetsSurface', () => {
     expect(html).not.toContain('Assessment completed');
     expect(html).not.toContain('Welcome email, same hour');
   });
+
+  it('night (?night) v4: v2 look (spotlight cards, ghost cards, caps eyebrow) with v3 words: one headline, no live chip on every card, sign-ups, being built', () => {
+    window.history.replaceState({}, '', '/?night');
+    try {
+      const board = makeBoard({
+        newsletter: { name: 'RISE Weekly', cadence: 'Weekly', nurture: [{ step: 'a' }, { step: 'b' }, { step: 'c' }, { step: 'd' }] },
+      } as unknown as Partial<Board>);
+      const html = renderToStaticMarkup(
+        <DeskLeadMagnetsSurface board={board} accent="#FFC71D" mint="#8FE0AC" fontStack="Inter, sans-serif" live onEditPromo={noop} />
+      );
+      const text = html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ');
+      expect(html).toContain('data-surface="lm"');
+      expect(html).toContain('data-lm-night');
+      expect(text).toMatch(/\d+\s+lead magnets are live\.\s+1 more is being built\./);
+      expect(html).not.toContain('class="pk-hero-n');
+      // status only as the exception: no live chip on every card, no "live right now" pill
+      expect(text).not.toContain('live on your domain');
+      expect(text).not.toContain('live right now');
+      // shelf cards with real numbers, rendered as they are (no count-up)
+      expect(html).toContain('Open True Profit Per Order X-Ray');
+      expect(html).toContain('Calculator');
+      expect(html).toContain('<b>38</b>');
+      expect(html).toContain('<b>142</b>');
+      expect(html).not.toContain('class="pk-ticker');
+      // the untracked page keeps the honest blank, never a zero
+      expect(html).toContain('Visitors not counted yet');
+      // being built: the caps eyebrow (v2 look) with v3's words, ghost cards, prose off
+      expect(html).toContain('class="pk-cap pk-capline">Being built');
+      expect(html).toContain('class="lmn-ghost"');
+      expect(text).not.toContain('Drawn up');
+      expect(html).toContain('The Apparel Growth Benchmark');
+      expect(html).not.toContain('Six numbers, read against apparel peers.');
+      // one plain pointer to the Newsletter tab (v2's box, v3's sentence), no cadence chip
+      expect(html).toContain('Everyone who signs up joins RISE Weekly. The Newsletter tab shows what they get.');
+      expect(text).not.toContain('Weekly  Weekly');
+      expect(text).not.toContain('opt-ins');
+      expect(html).toContain('visits across the pages');
+      expect(text).toContain('sign-ups');
+      // the light desk markup is not rendered alongside
+      expect(html).not.toContain('class="drill"');
+    } finally {
+      window.history.replaceState({}, '', '/');
+    }
+  });
 });
