@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {motion, useReducedMotion} from 'framer-motion';
-import {ArrowDown, ArrowUpRight} from 'lucide-react';
+import {ArrowDown, ArrowRight, ArrowUpRight} from 'lucide-react';
 import {asset, type JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel';
 import {Avatar, Paragraphs} from '../../dev/scan-walkthrough/journey/ReadingChapter';
@@ -14,6 +14,7 @@ import {BlurWords, NumberTicker} from './motion';
 import {StoryFlow, readerName, fillName} from './StoryFlow';
 import {LeadMagnetPage} from './LeadMagnetPage';
 import {ImagePost} from './ImagePost';
+import {FeedDiagnosis, reachFrom} from './FeedDiagnosis';
 import '../../dev/scan-walkthrough/journey/connected.css';
 import '../../dev/scan-walkthrough/journey/bold.css';
 import '../../dev/scan-walkthrough/journey/studio.css';
@@ -33,7 +34,7 @@ const STEPS = [
 const headlineName = (name: string) => { const short = name.split(/\s+[-–|:]\s+/)[0].trim(); return short.length <= 24 ? short : ''; };
 
 function PlanHero({fixture}: {fixture: JourneyFixture}) {
- const result = assessAudience(fixture), reduced = useReducedMotion();
+ const result = assessAudience(fixture), reduced = useReducedMotion(), reach = reachFrom(fixture);
  return <section className="sp-hero audit-opening" data-assessment={result.state}>
   <div className="sp-hero-copy">
    <span className="made-for"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/>Made for {fixture.founder.name}{fixture.founder.company ? ` · ${fixture.founder.company}` : ''}</span>
@@ -55,6 +56,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <div className="audit-number">{result.state === 'buyers' ? <strong><NumberTicker value={result.buyers!}/><span> / <NumberTicker value={result.people!}/></span></strong> : result.state === 'network' ? <strong><NumberTicker value={result.networkCount!}/><span> / {result.networkSample}</span></strong> : result.people !== null ? <strong><NumberTicker value={result.people!}/><span> engagers</span></strong> : null}</div>
    <b className="sp-audit-heading">{result.heading}</b>
    <p>{result.receipt}</p>
+   {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">~{reach.readers} readers per post at ~15 per engager, 4 posts a week, 0.5% leave their email.</span></>}
    {result.state === 'buyers' && <div className="audience-dots" aria-hidden="true">{Array.from({length: Math.min(result.people!, 100)}, (_, i) => <i key={i} className={i < result.buyers! ? 'is-buyer' : ''}/>)}</div>}
    <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}<a href={fixture.source.url} target="_blank" rel="noreferrer">Saved scan <ArrowUpRight size={13} aria-hidden="true"/></a></footer>
   </aside>
@@ -151,6 +153,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
  return <div className="connected-journey sample-story revenue-story story-plan">
   <PlanHero fixture={fixture}/>
   <StepNav/>
+  <FeedDiagnosis fixture={fixture}/>
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
   <Chapter id="content" n={1} label="Content" title={plan.contentHeading} why={plan.contentWhy}
    aside={<><p className="sp-sourced">Built from your expertise, your client calls and what the top performers in your industry already post.</p>{segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}</>}

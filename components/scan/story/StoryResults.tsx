@@ -42,6 +42,7 @@ export function StoryResults() {
     <div className="sr-body">
      <div className="sr-figure"><strong>$30k → $80k</strong><p>a month, across the 90 days we ran his LinkedIn.</p></div>
      <KyleChart/>
+     <blockquote className="sr-quote"><p>Leads come in with a name and the guide they pulled. By the time we talk, they already know the offer.</p><cite>Kyle Hunt, founder of Agency Operators</cite></blockquote>
      <a href="https://inboundonsteroids.com/case/kyle-hunt/" target="_blank" rel="noreferrer">See Kyle’s case study <ArrowUpRight size={15}/></a>
     </div>
    </article>
