@@ -1,27 +1,29 @@
 import React, {useEffect, useState} from 'react';
-import {AnimatePresence, motion, useReducedMotion} from 'framer-motion';
+import {motion, useReducedMotion} from 'framer-motion';
 import {ArrowDown, ArrowUpRight} from 'lucide-react';
 import {asset, type JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel';
 import {Avatar, Paragraphs} from '../../dev/scan-walkthrough/journey/ReadingChapter';
 import {ProspectPost, TextPost} from '../../dev/scan-walkthrough/journey/ProspectSamples';
-import {LeadMagnetTool} from '../../dev/scan-walkthrough/journey/LeadMagnetTool';
 import {EmailCapture} from '../../dev/scan-walkthrough/journey/EmailCapture';
-import {RevenueMap} from '../../dev/scan-walkthrough/journey/RevenueMap';
+import {SampleArtwork} from '../../dev/scan-walkthrough/journey/ProspectSamples';
 import {ScanResults} from '../../dev/scan-walkthrough/journey/ScanResults';
 import {ProfileAuditSection} from '../../dev/scan-walkthrough/journey/ProfileAudit';
 import {useStory} from './context';
 import {assessAudience} from './assessment';
-import {SeeMore} from './SeeMore';
+import {BlurWords, Marquee, NumberTicker} from './motion';
+import {StoryFlow, readerName, fillName} from './StoryFlow';
+import {LeadMagnetPage} from './LeadMagnetPage';
 import '../../dev/scan-walkthrough/journey/connected.css';
 import '../../dev/scan-walkthrough/journey/bold.css';
 import '../../dev/scan-walkthrough/journey/studio.css';
 import './story-brand.css';
 import './story-plan.css';
+import './story-motion.css';
 
 const BOOK = 'https://calendly.com/im-ivanmanfredi/30min';
 const STEPS = [
- {id: 'content', label: 'Posts'},
+ {id: 'content', label: 'Content'},
  {id: 'resource', label: 'Lead magnets'},
  {id: 'conversations', label: 'Conversations'},
  {id: 'calls', label: 'Booked calls'},
@@ -38,7 +40,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <h1>Make your LinkedIn into a true revenue line.</h1>
    <p className="sp-hero-sub">We create inbound and outbound opportunities by content, lead magnets and signal based outreach.</p>
    <ol className="sp-path" aria-label="Your plan in four steps">
-    {STEPS.map((s, i) => <li key={s.id}><a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
+    {STEPS.map((s, i) => <li key={s.id} className={i < 2 ? 'is-inbound' : ''}>{i === 0 && <span className="sp-inbound-tag">Inbound</span>}<a href={`#${s.id}`}><span className="sp-path-num">{String(i + 1).padStart(2, '0')}</span>{s.label}</a></li>)}
     <motion.i className="sp-path-line" aria-hidden="true" initial={reduced ? false : {scaleX: 0}} animate={{scaleX: 1}} transition={{duration: reduced ? 0 : 1.4, delay: .3, ease: [.45, 0, .2, 1]}}/>
    </ol>
    <div className="sp-hero-actions">
@@ -48,7 +50,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
   </div>
   <aside className="sp-audit" aria-label="Findings from the saved scan">
    <header><span>Where you start</span>{result.date && <time>{result.date}</time>}</header>
-   <div className="audit-number">{result.state === 'buyers' ? <strong>{result.buyers}<span> / {result.people}</span></strong> : result.state === 'network' ? <strong>{result.networkCount}<span> / {result.networkSample}</span></strong> : result.people !== null ? <strong>{result.people}<span> engagers</span></strong> : null}</div>
+   <div className="audit-number">{result.state === 'buyers' ? <strong><NumberTicker value={result.buyers!}/><span> / <NumberTicker value={result.people!}/></span></strong> : result.state === 'network' ? <strong><NumberTicker value={result.networkCount!}/><span> / {result.networkSample}</span></strong> : result.people !== null ? <strong><NumberTicker value={result.people!}/><span> engagers</span></strong> : null}</div>
    <b className="sp-audit-heading">{result.heading}</b>
    <p>{result.receipt}</p>
    {result.state === 'buyers' && <div className="audience-dots" aria-hidden="true">{Array.from({length: Math.min(result.people!, 100)}, (_, i) => <i key={i} className={i < result.buyers! ? 'is-buyer' : ''}/>)}</div>}
@@ -68,7 +70,7 @@ function StepNav() {
  const index = STEPS.findIndex(s => s.id === active);
  return <nav className={`sp-nav ${index >= 0 ? 'is-live' : ''}`} aria-label="Plan sections">
   <div className="sp-nav-inner">
-   <ol>{STEPS.map((s, i) => <li key={s.id}><a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
+   <ol>{STEPS.map((s, i) => <li key={s.id} className={i < 2 ? 'is-inbound' : ''}>{i === 0 && <span className="sp-inbound-tag">Inbound</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
     {active === s.id && <motion.span layoutId="sp-nav-active" className="sp-nav-active" transition={{type: 'spring', stiffness: 420, damping: 36}}/>}
     <span className="sp-nav-num">{String(i + 1).padStart(2, '0')}</span><span className="sp-nav-label">{s.label}</span></a></li>)}</ol>
    <a className="sp-nav-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call</a>
@@ -79,11 +81,11 @@ function StepNav() {
 type Sample = {key: string; title: string; hint: string; render: () => React.ReactNode; full?: boolean};
 
 /** Every sample on show at once, side by side, each with the one line on what it does for them. */
-function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode}) {
+function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; after?: React.ReactNode}) {
  const reduced = useReducedMotion();
  return <section className="sp-chapter story-scene" id={id} data-tone={tone}>
   <header className="sp-chapter-head">
-   <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}</span><h2>{title}</h2></div>
+   <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}{n <= 2 && <em className="sp-eyebrow-group">Inbound</em>}</span><BlurWords text={title}/></div>
    <div><p>{why}</p>{aside}</div>
   </header>
   <div className={`sp-stage sp-grid sp-grid-${cols}`}>
@@ -92,27 +94,52 @@ function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', a
     {x.render()}
    </motion.figure>)}
   </div>
+  {after}
  </section>;
 }
 
-function WarmChat({fixture}: {fixture: JourneyFixture}) {
- const plan = useStory(), founder = fixture.founder, reduced = useReducedMotion();
- const [open, setOpen] = useState(false);
- return <article className="sample-chat" data-mockup="linkedin" aria-label="Example LinkedIn conversation"><header><span className="reader-initial">A</span><span><b>Alex</b><small>{plan.buyerRole} · example</small></span><span className="chat-linkedin">in</span></header><div className="chat-context">Requested “{plan.magnet}”</div>
-  <div className="sample-messages"><div className="sample-message"><Avatar src={founder.avatarUrl} name={founder.name}/><div><b>{founder.name}</b><p>{plan.message}</p></div></div><div className="sample-message is-reader"><span className="reader-initial">A</span><div><b>Alex</b><p>{plan.reply}</p></div></div>
-   <AnimatePresence>{open && <motion.div className="sample-message" initial={reduced ? false : {opacity: 0, y: 8}} animate={{opacity: 1, y: 0}} exit={{opacity: 0}} transition={{duration: reduced ? 0 : .2}}><Avatar src={founder.avatarUrl} name={founder.name}/><div><b>{founder.name}</b><p>{plan.next}</p></div></motion.div>}</AnimatePresence></div>
-  <div className="sample-chat-footer"><button onClick={() => setOpen(v => !v)} aria-expanded={open}>{open ? 'Show less' : 'See the next message'} <span aria-hidden="true">{open ? '↑' : '↓'}</span></button></div>
+/** Short bubbles the way people actually message: a long paragraph becomes two or three sends. */
+const bubbles = (text: string) => {
+ const parts = text.split(/(?<=[.?!])\s+(?=[A-Z¿¡])/).filter(Boolean);
+ if (parts.length <= 2) return parts;
+ return [parts[0], parts.slice(1, -1).join(' '), parts[parts.length - 1]];
+};
+
+function Thread({children}: {children: React.ReactNode}) {
+ const reduced = useReducedMotion();
+ return <motion.div className="sp-dm-thread" initial={reduced ? false : 'hide'} whileInView="show" viewport={{once: true, amount: .35}} variants={{show: {transition: {staggerChildren: .35}}}}>{children}</motion.div>;
+}
+const Bubble = ({mine, children}: {mine?: boolean; children: React.ReactNode}) => <motion.p className={mine ? 'is-mine' : ''} variants={{hide: {opacity: 0, y: 14, scale: .97}, show: {opacity: 1, y: 0, scale: 1, transition: {type: 'spring', stiffness: 260, damping: 24}}}}>{children}</motion.p>;
+
+function DmHead({name, role}: {name: string; role: string}) {
+ return <header className="sp-dm-head"><span className="sp-dm-avatar">{name[0]}</span><span><b>{name}</b><small>{role}</small></span><span className="chat-linkedin">in</span></header>;
+}
+
+function WarmChat() {
+ const plan = useStory(), name = readerName(plan);
+ return <article className="sp-dm" data-mockup="linkedin" aria-label="Example LinkedIn conversation">
+  <DmHead name={name} role={plan.buyerRole}/>
+  <div className="sp-dm-context">Commented <b>{plan.keyword}</b> and got “{plan.magnet.split(/[:.]/)[0]}”</div>
+  <Thread>
+   {bubbles(fillName(plan.message, name)).map((t, i) => <Bubble key={'a' + i} mine>{t}</Bubble>)}
+   <Bubble>{fillName(plan.reply, name)}</Bubble>
+   {bubbles(fillName(plan.next, name)).map((t, i) => <Bubble key={'b' + i} mine>{t}</Bubble>)}
+  </Thread>
  </article>;
 }
 
 function NewsletterEmail({fixture}: {fixture: JourneyFixture}) {
- const plan = useStory(), founder = fixture.founder;
- return <article className="sample-email" data-mockup="email" aria-label="Newsletter sample"><div className="sample-email-chrome"><span>←</span><span>Inbox</span><span>✉</span></div><header><h3>{plan.subject}</h3><div><Avatar src={founder.avatarUrl} name={founder.name}/><span><b>{founder.name}</b><small>to Alex</small></span></div></header><div className="sample-email-body"><SeeMore lines={7}><Paragraphs text={plan.email}/></SeeMore></div><footer>You subscribed to {plan.brand}. <span>Unsubscribe</span></footer></article>;
+ const plan = useStory(), founder = fixture.founder, name = readerName(plan);
+ return <article className="sample-email" data-mockup="email" aria-label="Newsletter sample"><div className="sample-email-chrome"><span>←</span><span>Inbox</span><span>✉</span></div><header><h3>{plan.subject}</h3><div><Avatar src={founder.avatarUrl} name={founder.name}/><span><b>{founder.name}</b><small>to {name}</small></span></div></header><div className="sample-email-body"><Paragraphs text={fillName(plan.email, name)}/></div><footer>You subscribed to {plan.brand}. <span>Unsubscribe</span></footer></article>;
 }
 
-function ColdChat({fixture}: {fixture: JourneyFixture}) {
- const plan = useStory(), founder = fixture.founder;
- return <article className="sample-chat" data-mockup="linkedin" aria-label="Example cold outreach"><header><span className="reader-initial">A</span><span><b>Alex</b><small>{plan.buyerRole} · example</small></span><span className="chat-linkedin">in</span></header><div className="cold-trigger"><span>Example trigger</span><b>{plan.coldTrigger}</b></div><div className="sample-messages"><div className="sample-message"><Avatar src={founder.avatarUrl} name={founder.name}/><div><b>{founder.name}</b><p>{plan.coldMessage}</p></div></div></div><footer className="cold-followup">We check who commissioned the work, their role and whether the project fits.</footer></article>;
+function ColdChat() {
+ const plan = useStory(), name = readerName(plan);
+ return <article className="sp-dm" data-mockup="linkedin" aria-label="Example signal-based outreach">
+  <div className="sp-signal"><span className="sp-signal-badge"><i/>Signal spotted</span><b>{plan.coldTrigger}</b><small>We reach out while the project is live.</small></div>
+  <DmHead name={name} role={plan.buyerRole}/>
+  <Thread>{bubbles(fillName(plan.coldMessage, name)).map((t, i) => <Bubble key={i} mine>{t}</Bubble>)}</Thread>
+ </article>;
 }
 
 export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
@@ -125,6 +152,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
   <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
    aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
+   after={plan.slides.length > 1 && <div className="sp-filmstrip"><span className="sp-filmstrip-label">All {plan.slides.length} slides, in {brand}’s brand</span><Marquee seconds={plan.slides.length * 7}>{plan.slides.map((_, i) => <div className="sp-film-slide" key={i}><div className="journey-deck sp-film-inner"><SampleArtwork kind={kind} index={i}/></div></div>)}</Marquee></div>}
    samples={[
     {key: 'carousel', title: 'Carousel post', hint: `Built in ${brand}’s colours, ready to post.`, render: () => <ProspectPost fixture={fixture} kind={kind}/>},
     {key: 'text', title: 'Text post', hint: 'Written in your voice, for your buyers.', render: () => <TextPost fixture={fixture} kind={kind}/>},
@@ -133,17 +161,17 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
    cols={2} samples={[
     {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `One comment, “${plan.keyword}”, and they raise their hand.` : 'One comment and they raise their hand.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
     {key: 'signup', title: 'The signup', hint: 'Every download becomes a name you own.', render: () => <EmailCapture kind={kind}/>},
-    {key: 'resource', title: 'The lead magnet', hint: `Worth an email address. Built for ${brand}.`, full: true, render: () => <LeadMagnetTool kind={kind}/>},
+    {key: 'resource', title: 'The lead magnet', hint: `Worth an email address. Built for ${brand}.`, full: true, render: () => <LeadMagnetPage kind={kind} domain={fixture.domain}/>},
    ]}/>
   <Chapter id="conversations" n={3} label="Conversations" title="Every raised hand gets a conversation." why="We message the people who engage, keep readers warm by email and reach buyers with a live project, even if they never saw your posts."
-   cols={3} samples={[
-    {key: 'warm', title: 'Warm reply', hint: 'They asked for it. We open the conversation.', render: () => <WarmChat fixture={fixture}/>},
-    {key: 'newsletter', title: 'Newsletter', hint: 'Stays in their inbox until the project is ready.', render: () => <NewsletterEmail fixture={fixture}/>},
-    {key: 'cold', title: 'Signal-based outreach', hint: 'Buyers with a live project, reached while it is live.', render: () => <ColdChat fixture={fixture}/>},
+   cols={2} samples={[
+    {key: 'warm', title: 'Warm reply', hint: 'They asked for it. We open the conversation.', render: () => <WarmChat/>},
+    {key: 'cold', title: 'Signal-based outreach', hint: 'Buyers with a live project, reached while it is live.', render: () => <ColdChat/>},
+    {key: 'newsletter', title: 'Newsletter', hint: 'Stays in their inbox until the project is ready.', full: true, render: () => <NewsletterEmail fixture={fixture}/>},
    ]}/>
   <section className="sp-chapter sp-calls story-scene" id="calls" data-tone="warm">
-   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls</span><h2>You only take calls that already fit.</h2><p>We check fit, timing and who decides before anything gets booked. You walk in knowing the project.</p></div>
-   <RevenueMap kind={kind} founder={fixture.founder.firstName}/>
+   <div className="sp-calls-head"><span className="sp-eyebrow"><b>04</b>Booked calls</span><BlurWords text="You only take calls that already fit."/><p>We check fit, timing and who decides before anything gets booked. You walk in knowing the project.</p></div>
+   <StoryFlow founder={fixture.founder.firstName}/>
    <div className="sp-ownership"><div><b>We run all of it.</b><p>Posts, lead magnets, outreach and follow-up, every week, through to the booked call.</p></div><div><b>You take the calls.</b><p>Your calendar fills with people who have a real project and a reason to talk to you.</p></div></div>
   </section>
   <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Founders we run this for</span><ScanResults/></div>
