@@ -32,7 +32,7 @@ function MattanClimb() {
     <motion.i style={{originY: 1, height: `${Math.max(n / 19, .03) * 100}%`}} initial={reduced ? false : {scaleY: 0}} whileInView={{scaleY: 1}} viewport={{once: true, amount: .6}} transition={{duration: reduced ? 0 : .7, delay: reduced ? 0 : i * .08, ease}}/>
    </div>)}
   </div>
-  <div className="sr-climb-axis"><small>Week 1</small><small>Week 10</small></div>
+  <div className="sr-climb-axis"><small>Calls booked, week 1</small><small>Week 10</small></div>
  </div>;
 }
 
@@ -66,7 +66,7 @@ export function StoryResults() {
    <article className="sr-card">
     <div className="sr-photo"><img src="https://resources.risedtc.com/tools/assets/mattan.jpg" alt="Mattan Danino" loading="lazy"/><span><b>Mattan Danino</b><small>Founder, RISE DTC</small></span></div>
     <div className="sr-body">
-     <div className="sr-figure"><strong><NumberTicker value={19}/> calls</strong><p>booked with DTC brand owners in his first 10 weeks. We run his content, lead magnets and outreach.</p></div>
+     <div className="sr-figure"><strong>+$<NumberTicker value={20}/>k/mo</strong><p>in new revenue closed by month 3. We run his content, lead magnets and outreach.</p></div>
      <MattanClimb/>
      <a href="https://resources.risedtc.com/tools/" target="_blank" rel="noreferrer">See his lead magnets <ArrowUpRight size={15}/></a>
     </div>
