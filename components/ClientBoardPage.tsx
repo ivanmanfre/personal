@@ -1760,7 +1760,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
                     onClick={() => send('pass')}
                     disabled={!!busy}
                     className="inline-flex min-h-[42px] items-center rounded-[6px] px-4 text-[13.5px] font-medium"
-                    style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'pass' ? 0.55 : 1 }}
+                    style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'pass' ? 0.55 : 1 }}
                   >
                     {busy === 'pass' ? 'Sending…' : 'Pass on this'}
                   </button>
@@ -2277,7 +2277,7 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                           <button
                             onClick={(e) => { e.stopPropagation(); onClearDay?.(q.id, q.publish_date); }}
                             className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                            style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                            style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}
                           >Clear this day</button>
                         )}
                       </div>
@@ -2349,14 +2349,14 @@ function ReviewSurface({ board, accent, mint, stageOf, onOpen, onOpenIdea, onApp
                                 <>
                                   {bench.length > 0 && <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from this slot&apos;s bench</div>}
                                   {bench.map((alt) => (
-                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }}>
                                       <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{(alt.title || '').replace(/^\[[^\]]*\]\s*/, '')}</span><span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span></span>
                                       <button onClick={() => { setPickerRow(null); onPickReplacementAngle?.(q.id, alt); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
                                     </div>
                                   ))}
                                   {pool.length > 0 && <div className="mt-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from your ready drafts</div>}
                                   {pool.map((it) => (
-                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }}>
                                       <span className="min-w-0"><span className="block text-[13px] font-semibold" style={{ color: INK }}>{(it.title || 'Ready draft').replace(/^\[[^\]]*\]\s*/, '')}</span>{it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}</span>
                                       <button onClick={() => { setPickerRow(null); onPickReplacement?.(q.id, it); }} className="shrink-0 rounded-[6px] px-2.5 py-1.5 text-[12px] font-semibold" style={{ background: accent, color: inkOn(accent), border: 'none', cursor: 'pointer' }}>Use this</button>
                                     </div>
@@ -2874,7 +2874,7 @@ function AddPostPicker({ ready, restoreFirst, accent, onPick, onCancel }: {
       ) : ordered.map((q) => {
         const isRestore = q.id === restoreFirst;
         return (
-          <div key={q.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+          <div key={q.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }}>
             <span className="min-w-0">
               {isRestore && <span className="mb-0.5 block uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: caText(accent) }}>the one you just cleared</span>}
               <span className="block text-[13px] font-semibold" style={{ color: INK }}>{q.hook || q.title}</span>
@@ -3361,7 +3361,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                 <button
                                   onClick={(e) => { e.stopPropagation(); onClearDay?.(focused.id, focused.publish_date); }}
                                   className="inline-flex min-h-[40px] items-center rounded-[7px] px-4 text-[14px] font-medium"
-                                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: 'pointer' }}
+                                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}
                                 >Clear day</button>
                               )}
                             </div>
@@ -3460,7 +3460,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                 </div>
                                 <div className="mt-2.5 flex flex-col gap-2">
                                   {benchFor(focused.id).map((alt) => (
-                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                    <div key={alt.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }}>
                                       <span className="min-w-0">
                                         <span className="block text-[13px] font-semibold" style={{ color: INK }}>{(alt.title || '').replace(/^\[[^\]]*\]\s*/, '')}</span>
                                         <span className="block text-[12px]" style={{ color: DIM }}>{alt.hook}</span>
@@ -3471,7 +3471,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                                   ))}
                                   {pool.length > 0 && <div className="mt-1 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>from your ready drafts</div>}
                                   {pool.map((it) => (
-                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: '#fff' }}>
+                                    <div key={it.id} className="flex items-start justify-between gap-3 rounded-lg p-2.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }}>
                                       <span className="min-w-0">
                                         <span className="block text-[13px] font-semibold" style={{ color: INK }}>{(it.title || 'Ready draft').replace(/^\[[^\]]*\]\s*/, '')}</span>
                                         {it.body && <span className="block truncate text-[12px]" style={{ color: DIM }}>{it.body}</span>}
@@ -3553,7 +3553,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
             )}
             <span className="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
               {s.done === false && !s.t
-                ? <span className="h-3 w-3 rounded-full" style={{ border: `1.5px solid ${LINE}`, background: '#fff' }} aria-hidden />
+                ? <span className="h-3 w-3 rounded-full" style={{ border: `1.5px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)' }} aria-hidden />
                 : s.done === false
                 ? <PulseDot color={accent} />
                 : (
@@ -4198,7 +4198,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                           return (
                             <button key={d} type="button" onClick={() => setSchedDate(d)} aria-label={`${d}${n ? `, ${n} post${n > 1 ? 's' : ''} already on it` : ', open'}`}
                               className="flex flex-col items-center rounded-[7px] px-1.5 py-1"
-                              style={{ minWidth: 42, border: `1.5px solid ${sel ? caText(accent) : LINE}`, background: sel ? caWash(accent) : n ? PAPER_SUNK : '#fff', cursor: 'pointer' }}>
+                              style={{ minWidth: 42, border: `1.5px solid ${sel ? caText(accent) : LINE}`, background: sel ? caWash(accent) : n ? PAPER_SUNK : 'var(--cb-paper-raise, #fff)', cursor: 'pointer' }}>
                               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.08em', color: FAINT }}>{dt.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}</span>
                               <span className="tabular-nums leading-tight" style={{ fontFamily: BODY, fontSize: 13.5, fontWeight: 700, color: INK }}>{dt.getUTCDate()}</span>
                               <span className="leading-none" style={{ fontFamily: MONO, fontSize: 9, color: n ? caText(accent) : 'transparent' }} aria-hidden>{n > 1 ? `●${n}` : '●'}</span>
@@ -4277,7 +4277,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 <button
                   onClick={async () => { if (setSchedule) { await setSchedule(item.id, null); } item.scheduled_at = undefined; item.publish_date = undefined; onClose(); }}
                   className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
                 >
                   Clear day
                 </button>
@@ -4287,7 +4287,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   onClick={async () => { setHideBusy(true); const r = await onHideBuffer(item.id); if (r.ok) { onClose(); } else { setHideBusy(false); setHideErr(r.error || 'Could not remove that. Try again.'); } }}
                   disabled={hideBusy}
                   className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                  style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', opacity: hideBusy ? 0.6 : 1 }}
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', opacity: hideBusy ? 0.6 : 1 }}
                 >
                   {hideBusy ? 'Removing…' : 'Remove'}
                 </button>
@@ -4333,7 +4333,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               <button
                 onClick={() => setChanging(!changing)}
                 className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
-                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+                style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
               >
                 Request changes
               </button>
@@ -4453,7 +4453,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
       case 'carousel': return { background: `color-mix(in srgb, ${accent} 15%, white)`, color: INK, borderLeft: `3px solid ${accent}` };
       case 'lm': return { background: `color-mix(in srgb, ${mint} 15%, white)`, color: INK, borderLeft: `3px solid ${mint}` };
       case 'newsletter': return { background: 'rgba(2,49,47,0.04)', color: DIM, borderLeft: `3px solid ${FAINT}` };
-      case 'newsjack': return { background: '#fff', color: FAINT, border: `1px dashed ${LINE}` };
+      case 'newsjack': return { background: 'var(--cb-paper-raise, #fff)', color: FAINT, border: `1px dashed ${LINE}` };
       default: return { background: 'rgba(2,49,47,0.04)', color: DIM };
     }
   };
@@ -4521,7 +4521,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
       <div className="rounded-xl bg-white p-3 sm:hidden" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
           <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
-          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
             Posting starts {fmtDay(cal.start)}
           </span>
         </div>
@@ -4559,7 +4559,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
         <div className="min-w-[820px]">
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
             <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
-            <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
+            <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
               Posting starts {fmtDay(cal.start)}
             </span>
             {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
@@ -4873,7 +4873,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                           {promoErr && <div className="mt-1.5 text-[12px]" style={{ color: '#c0392b' }}>{promoErr}</div>}
                         </div>
                       ) : entry.promo?.dm ? (
-                        <div className="rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5" style={{ background: '#fff', border: `1px solid ${DIVIDE}`, maxWidth: '34ch' }}>
+                        <div className="rounded-[14px] rounded-bl-[4px] px-3.5 py-2.5" style={{ background: 'var(--cb-paper-raise, #fff)', border: `1px solid ${DIVIDE}`, maxWidth: '34ch' }}>
                           <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK }}>{entry.promo.dm}</p>
                         </div>
                       ) : (
