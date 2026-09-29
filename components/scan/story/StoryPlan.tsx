@@ -76,27 +76,21 @@ function StepNav() {
  </nav>;
 }
 
-type Option = {key: string; title: string; hint: string; render: () => React.ReactNode; wide?: boolean};
+type Sample = {key: string; title: string; hint: string; render: () => React.ReactNode; full?: boolean};
 
-function Chapter({id, n, label, title, why, options, tone = 'paper', aside}: {id: string; n: number; label: string; title: string; why: string; options: Option[]; tone?: 'paper' | 'warm'; aside?: React.ReactNode}) {
- const [active, setActive] = useState(0), reduced = useReducedMotion();
- const o = options[active];
+/** Every sample on show at once, side by side, each with the one line on what it does for them. */
+function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode}) {
+ const reduced = useReducedMotion();
  return <section className="sp-chapter story-scene" id={id} data-tone={tone}>
-  <div className={`sp-chapter-inner ${o.wide ? 'is-wide' : ''}`}>
-   <div className="sp-copy">
-    <span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}</span>
-    <h2>{title}</h2>
-    <p>{why}</p>
-    {options.length > 1 && <div className="sp-options" role="tablist" aria-label={`${label} samples`}>{options.map((x, i) => <button key={x.key} role="tab" id={`${id}-tab-${x.key}`} aria-selected={i === active} aria-controls={`${id}-panel`} onClick={() => setActive(i)}>
-     {i === active && <motion.span layoutId={`${id}-opt`} className="sp-option-active" transition={{type: 'spring', stiffness: 420, damping: 38}}/>}
-     <b>{x.title}</b><small>{x.hint}</small></button>)}</div>}
-    {aside}
-   </div>
-   <div className="sp-stage" role={options.length > 1 ? 'tabpanel' : undefined} id={`${id}-panel`} aria-labelledby={options.length > 1 ? `${id}-tab-${o.key}` : undefined}>
-    <AnimatePresence mode="wait" initial={false}>
-     <motion.div key={o.key} className={`sp-exhibit sp-exhibit-${o.key}`} initial={reduced ? false : {opacity: 0, y: 14}} animate={{opacity: 1, y: 0}} exit={reduced ? undefined : {opacity: 0, y: -8}} transition={{duration: reduced ? 0 : .28, ease: [.22, .84, .36, 1]}}>{o.render()}</motion.div>
-    </AnimatePresence>
-   </div>
+  <header className="sp-chapter-head">
+   <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}</span><h2>{title}</h2></div>
+   <div><p>{why}</p>{aside}</div>
+  </header>
+  <div className={`sp-stage sp-grid sp-grid-${cols}`}>
+   {samples.map((x, i) => <motion.figure key={x.key} className={`sp-exhibit sp-exhibit-${x.key} ${x.full ? 'is-full' : ''}`} initial={reduced ? false : {opacity: 0, y: 24}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, amount: .1}} transition={{duration: reduced ? 0 : .5, delay: reduced ? 0 : i * .08, ease: [.22, .84, .36, 1]}}>
+    <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>
+    {x.render()}
+   </motion.figure>)}
   </div>
  </section>;
 }
@@ -131,18 +125,18 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
   <Chapter id="content" n={1} label="Posts" title={plan.contentHeading} why={plan.contentWhy}
    aside={segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}
-   options={[
+   samples={[
     {key: 'carousel', title: 'Carousel post', hint: `Built in ${brand}’s colours, ready to post.`, render: () => <ProspectPost fixture={fixture} kind={kind}/>},
     {key: 'text', title: 'Text post', hint: 'Written in your voice, for your buyers.', render: () => <TextPost fixture={fixture} kind={kind}/>},
    ]}/>
   <Chapter id="resource" n={2} tone="warm" label="Lead magnets" title="Turn readers into a list you own." why={plan.magnetWhy}
-   options={[
+   cols={2} samples={[
     {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `One comment, “${plan.keyword}”, and they raise their hand.` : 'One comment and they raise their hand.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
-    {key: 'resource', title: 'The lead magnet', hint: `Worth an email address. Built for ${brand}.`, wide: true, render: () => <LeadMagnetTool kind={kind}/>},
     {key: 'signup', title: 'The signup', hint: 'Every download becomes a name you own.', render: () => <EmailCapture kind={kind}/>},
+    {key: 'resource', title: 'The lead magnet', hint: `Worth an email address. Built for ${brand}.`, full: true, render: () => <LeadMagnetTool kind={kind}/>},
    ]}/>
   <Chapter id="conversations" n={3} label="Conversations" title="Every raised hand gets a conversation." why="We message the people who engage, keep readers warm by email and reach buyers with a live project, even if they never saw your posts."
-   options={[
+   cols={3} samples={[
     {key: 'warm', title: 'Warm reply', hint: 'They asked for it. We open the conversation.', render: () => <WarmChat fixture={fixture}/>},
     {key: 'newsletter', title: 'Newsletter', hint: 'Stays in their inbox until the project is ready.', render: () => <NewsletterEmail fixture={fixture}/>},
     {key: 'cold', title: 'Signal-based outreach', hint: 'Buyers with a live project, reached while it is live.', render: () => <ColdChat fixture={fixture}/>},
@@ -155,7 +149,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   <div className="sp-results"><span className="sp-eyebrow sp-eyebrow-center">Founders we run this for</span><ScanResults/></div>
   <section className="sp-close">
    <img src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi"/>
-   <div><span className="close-byline">Iván Manfredi</span><h2>Your first posts are already written.</h2><p>Everything above was made for {headlineName(plan.brand) || 'you'}. One call and it starts going out.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes. We walk you through the whole plan.</small></div>
+   <div><span className="close-byline">Iván Manfredi</span><h2>Your next clients are already on LinkedIn.</h2><p>We find them, start the conversation and put them on your calendar. We ran Kyle Hunt’s LinkedIn for 90 days and his business went from $30k to $80k a month. {headlineName(plan.brand) || 'You'}{headlineName(plan.brand) ? ' is' : ' are'} next.</p><a className="story-primary sp-close-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call with me <ArrowUpRight size={18} aria-hidden="true"/></a><small>30 minutes with me. You leave with the plan either way.</small></div>
   </section>
   <footer className="journey-footer"><a href="#top">Back to the start ↑</a></footer>
  </div>;
