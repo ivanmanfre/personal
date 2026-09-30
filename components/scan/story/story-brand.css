@@ -164,3 +164,9 @@ ol.brand-slide-points.is-timeline > li > b { width:30px; text-align:center; bord
 .scan-journey .skill-kit-md h5 { margin:0 0 8px; font:700 12px Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark); }
 .skill-kit-file .skill-kit-md .brand-resource-body { padding:0; }
 @media (max-width:760px) { .skill-kit-try p { font-size:13.5px; } .scan-journey .skill-kit-title { font-size:22px; } }
+.assessment-resource .brand-resource-bar { justify-content:flex-start; }
+.assessment-open { margin-left:auto; display:inline-flex; align-items:center; gap:6px; font:600 13px/1 var(--res-font); color:var(--res-light); text-decoration:none; opacity:.85; }
+.assessment-open:hover { opacity:1; text-decoration:underline; }
+.assessment-frame { position:relative; background:#fff; }
+.assessment-frame iframe { display:block; width:100%; height:min(900px,82vh); border:0; }
+.assessment-loading { position:absolute; inset:40px 0 auto; text-align:center; font:500 14px/1.4 var(--res-font); color:#6b6760; }

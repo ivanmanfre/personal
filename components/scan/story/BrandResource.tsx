@@ -5,6 +5,7 @@ import { RichText, cleanCopy } from './RichText';
 import { BrandMark, brandFont, brandPalette } from './BrandSlide';
 import type { ResourceOption } from './types';
 import { SkillKit } from './SkillKit';
+import { AssessmentResource } from './AssessmentResource';
 
 /** Every resource mode read as one document: headed sections in order. */
 function sectionsOf(o: ResourceOption) {
@@ -23,6 +24,7 @@ function sectionsOf(o: ResourceOption) {
 
 export function BrandResource() {
   const plan = useStory();
+  if (plan.resource.mode === 'assessment') return <AssessmentResource/>;
   return plan.resource.mode === 'skills' ? <SkillKit/> : <DocumentResource/>;
 }
 

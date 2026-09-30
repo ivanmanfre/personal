@@ -10,7 +10,7 @@ import {NumberTicker} from './motion';
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 32);
 /** One clean line from a section body: list markers out, first sentence, cut at a word. */
 const summary = (body: string) => { const flat = body.replace(/(^|\s)[-•]\s+/g, ' ').replace(/\s+/g, ' ').trim(); const first = flat.split(/(?<=[.?!])\s/)[0]; return first.length <= 110 ? first : first.slice(0, 106).replace(/\s+\S*$/, '') + '…'; };
-const UNIT = {document: 'worked examples', planner: 'project types', question: 'research events', skills: 'Claude skill kit'} as const;
+const UNIT = {document: 'worked examples', planner: 'project types', question: 'research events', skills: 'Claude skill kit', assessment: 'assessment'} as const;
 
 /** The lead magnet as the reader meets it: its own landing page on the lead's site, in their brand. */
 export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string}) {
@@ -18,8 +18,9 @@ export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string
  const [coverFailed, setCoverFailed] = useState(false);
  const host = (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '') || `${slugify(plan.brand)}.com`;
  const skills = r.options[0]?.skills ?? [];
- const sections = r.mode === 'skills' ? skills.map(k => ({heading: k.title, body: k.when})) : r.options[0]?.sections ?? [];
- const stats = [r.mode === 'skills' ? {n: skills.length, label: 'Claude skills'} : {n: r.options.length, label: UNIT[r.mode]}, sections.length && r.mode !== 'skills' ? {n: sections.length, label: 'sections in each'} : null, r.options[0]?.deliverables?.length ? {n: r.options[0].deliverables.length, label: 'deliverables mapped'} : null].filter(Boolean) as {n: number; label: string}[];
+ const scored = r.options[0]?.assessment;
+ const sections = r.mode === 'skills' ? skills.map(k => ({heading: k.title, body: k.when})) : r.mode === 'assessment' ? (scored?.categories ?? []).map(c => ({heading: c, body: ''})) : r.options[0]?.sections ?? [];
+ const stats = [r.mode === 'skills' ? {n: skills.length, label: 'Claude skills'} : r.mode === 'assessment' ? (scored ? {n: scored.questions, label: 'questions'} : null) : {n: r.options.length, label: UNIT[r.mode]}, sections.length && r.mode !== 'skills' && r.mode !== 'assessment' ? {n: sections.length, label: 'sections in each'} : null, r.options[0]?.deliverables?.length ? {n: r.options[0].deliverables.length, label: 'deliverables mapped'} : null].filter(Boolean) as {n: number; label: string}[];
  return <div className="lmp-browser" style={{fontFamily: brandFont(r.brand.font)}}>
   <div className="lmp-chrome" aria-hidden="true">
    <span className="lmp-dots"><i/><i/><i/></span>
@@ -43,7 +44,7 @@ export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string
    </section>
    {sections.length > 0 && <section className="lmp-index" style={{background: p.light, color: p.dark}}>
     <span className="lmp-eyebrow" style={{color: p.accentOnLight}}><i style={{background: p.accentOnLight}}/>What’s inside</span>
-    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.accentOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b><small>{summary(s.body)}</small></li>)}</ol>
+    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.accentOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b>{s.body && <small>{summary(s.body)}</small>}</li>)}</ol>
    </section>}
    <section className="lmp-doc"><LeadMagnetTool kind={kind}/></section>
   </div>

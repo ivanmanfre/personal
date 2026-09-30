@@ -17,7 +17,7 @@ export function validateEdition(raw:unknown,f:JourneyFixture,production=false):{
  if(!items(raw.segments,['label','note'])||raw.segments.length>5)errors.push('Buyer segments are missing or invalid.');
  if(typeof raw.sourceQuote!=='string'||(raw.sourceQuote&&!f.source.quotes?.includes(raw.sourceQuote)&&!f.samples.posts?.some(p=>p.source_quote===raw.sourceQuote)))errors.push('Source quote cannot be traced to this scan.');
  const r=raw.resource;
- if(!fields(r,['title','mode'])||!['planner','question','document','skills'].includes(r.mode)||!object(r.brand)||!['surface','ink','accent'].every(k=>typeof r.brand[k]==='string'&&/^#[\da-f]{6}$/i.test(r.brand[k]))||!Array.isArray(r.options)||!r.options.length||r.options.length>8)errors.push('Resource content or brand is invalid.');
+ if(!fields(r,['title','mode'])||!['planner','question','document','skills','assessment'].includes(r.mode)||!object(r.brand)||!['surface','ink','accent'].every(k=>typeof r.brand[k]==='string'&&/^#[\da-f]{6}$/i.test(r.brand[k]))||!Array.isArray(r.options)||!r.options.length||r.options.length>8)errors.push('Resource content or brand is invalid.');
  else {
   if(r.brand.logo!==undefined&&!(typeof r.brand.logo==='string'&&/^https:\/\//.test(r.brand.logo)))errors.push('Resource logo must use HTTPS.');
   for(const o of r.options){
@@ -30,6 +30,8 @@ export function validateEdition(raw:unknown,f:JourneyFixture,production=false):{
    if(r.mode==='document'&&!items(o.sections,['heading','body']))errors.push('Document resource is empty.');
    if(o.skills!==undefined&&!items(o.skills,['name','title','when','body','tryIt']))errors.push('Invalid resource skills.');
    if(r.mode==='skills'&&!(items(o.skills,['name','title','when','body','tryIt'],3)&&o.skills.length<=5))errors.push('Skill kit needs 3-5 skills.');
+   if(r.mode==='assessment'&&!text(o.premise))errors.push('Assessment needs its premise.');
+   if(o.assessment!==undefined&&!(object(o.assessment)&&/^[a-z0-9]+(-[a-z0-9]+)*$/.test(o.assessment.slug)&&strings(o.assessment.categories)&&Number.isInteger(o.assessment.questions)))errors.push('Invalid assessment reference.');
   }
  }
  if(!object(raw.cover)||!strings(raw.cover.lines,2)||!strings(raw.cover.details,2)||!fields(raw.cover,['left','right']))errors.push('Lead-magnet cover is incomplete.');
