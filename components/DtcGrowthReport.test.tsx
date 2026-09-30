@@ -1014,6 +1014,15 @@ describe('DtcGrowthReport — round 5 real rows', () => {
 
 
 describe('public evidence quality contract', () => {
+  it('keeps supporting ad records available behind a closed disclosure', () => {
+    const f = loadFixture('tina-new-contract.json');
+    const d = JSON.parse(JSON.stringify(f.dtc));
+    d.ads.google = { status: 'present', data: { total_ads: 4, ads: [] } };
+    const html = renderDtc(d, f.company_name);
+    expect(html).toContain('Supporting public ad records');
+    expect(html).toMatch(/<details data-ad-archive="1"[^>]*>/);
+    expect(html).not.toMatch(/<details data-ad-archive="1"[^>]*\bopen/);
+  });
   it('holds a reviewed page without resurrecting historical diagnoses', () => {
     const f = loadFixture('rodial-com.json');
     const d = { ...f.dtc, quality: { version: 'rise-quality-2026-09-30', approved: false } };

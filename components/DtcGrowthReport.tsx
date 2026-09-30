@@ -2141,17 +2141,25 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       ) : null}
 
       {promise && hasAdEvidence ? (
-        <AdEvidenceSpread
-          google={gAds}
-          metaPage={adsMeta}
-          metaSweep={metaSweep}
-          competitors={competitors}
-          accent={accent}
-          ink={ink}
-          surface={surface}
-          headingFont={headingFont}
-          condensed
-        />
+        <details data-ad-archive="1" style={{ background: ink, color: surface }}>
+          <summary
+            className="mx-auto w-full max-w-[1180px] cursor-pointer px-6 sm:px-8 py-7 text-[1rem] font-semibold"
+            style={{ fontFamily: headingFont }}
+          >
+            Supporting public ad records
+          </summary>
+          <AdEvidenceSpread
+            google={gAds}
+            metaPage={adsMeta}
+            metaSweep={metaSweep}
+            competitors={competitors}
+            accent={accent}
+            ink={ink}
+            surface={surface}
+            headingFont={headingFont}
+            condensed
+          />
+        </details>
       ) : null}
 
       {/* Honest thin-read note — only when there is genuinely little to show */}
