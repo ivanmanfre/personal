@@ -12,10 +12,10 @@
  *
  * Run:  npx vitest run components/client-board/deskreviewsurface.smoke.test.tsx
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { render, waitFor, cleanup, fireEvent, act } from '@testing-library/react';
 import DeskReviewSurface from './DeskReviewSurface';
 import DeskCalendarStrip from './DeskCalendarStrip';
 import type { Board, QueueItem, HistoryEntry } from '../ClientBoardPage';
@@ -455,6 +455,7 @@ describe('DeskReviewSurface', () => {
 
 
 describe('Inline buffer approval', () => {
+  beforeEach(() => localStorage.clear());
   afterEach(cleanup);
   function props() {
     const board = makeBoard(); board.queue = [queueFixture()[2]];
@@ -483,6 +484,82 @@ describe('Inline buffer approval', () => {
     const avatar = r.container.querySelector('[data-founder-avatar]')!;
     expect(avatar.querySelector('img')).toBeNull();
     expect(avatar.textContent).toBe('DŠ');
+    cleanup();
+  });
+  it('restores the full saved feedback from history without resubmitting it', async () => {
+    const note = 'Keep the source detail.\n' + 'Keep this example and its context. '.repeat(15);
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} fetchHistory={async () => [
+      {action:'request_changes', at:'2026-09-30T13:00:00Z', note},
+      {action:'request_changes', at:'2026-09-29T13:00:00Z', note:'Older feedback.'},
+    ]} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement;
+    await waitFor(() => expect(field.value).toBe(note));
+    fireEvent.blur(field);
+    expect(feedback).not.toHaveBeenCalled();
+    cleanup();
+  });
+  it('keeps failed feedback visible across remounts and retries the exact text', async () => {
+    const p = props(); const note = '  Keep the example.\nAdd its source.\n';
+    const feedback = vi.fn().mockResolvedValue({ok:false});
+    const r = render(<DeskReviewSurface {...p} feedbackScope="arch-agency" onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
+    fireEvent.change(r.getByRole('textbox', {name:'Feedback on this post'}), {target:{value:note}});
+    fireEvent.blur(r.getByRole('textbox', {name:'Feedback on this post'}));
+    await waitFor(() => expect(r.getByRole('alert')).toBeTruthy());
+    r.unmount();
+    feedback.mockResolvedValue({ok:true});
+    const restored = render(<DeskReviewSurface {...p} feedbackScope="arch-agency" onFeedback={feedback} />);
+    openDisclosure(restored.container, 'In buffer');
+    expect((restored.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement).value).toBe(note);
+    await waitFor(() => expect(restored.getByRole('status').textContent).toBe('Feedback saved'), {timeout:2000});
+    expect(feedback).toHaveBeenLastCalledWith(p.board.queue[0].id, note);
+    cleanup();
+  });
+  it('does not replace newly typed feedback when history loads later', async () => {
+    let resolve!: (items: HistoryEntry[]) => void;
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} fetchHistory={() => new Promise<HistoryEntry[]>(r => { resolve = r; })} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement;
+    fireEvent.change(field, {target:{value:'My current feedback.'}});
+    await act(async () => resolve([{action:'request_changes', at:'2026-09-30T13:00:00Z', note:'Older saved feedback.'}]));
+    expect(field.value).toBe('My current feedback.');
+    fireEvent.blur(field);
+    await waitFor(() => expect(feedback).toHaveBeenCalledWith(p.board.queue[0].id, 'My current feedback.'));
+    cleanup();
+  });
+  it('persists clearing previously saved feedback', async () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} fetchHistory={async () => [
+      {action:'request_changes', at:'2026-09-30T13:00:00Z', note:'Old feedback.'},
+    ]} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement;
+    await waitFor(() => expect(field.value).toBe('Old feedback.'));
+    fireEvent.change(field, {target:{value:''}});
+    fireEvent.blur(field);
+    await waitFor(() => expect(feedback).toHaveBeenCalledWith(p.board.queue[0].id, ''));
+    cleanup();
+  });
+  it('keeps feedback isolated when switching board scope with the same post id', async () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} feedbackScope="arch-agency" onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
+    fireEvent.change(r.getByRole('textbox', {name:'Feedback on this post'}), {target:{value:'ARCH feedback.'}});
+    r.rerender(<DeskReviewSurface {...p} feedbackScope="another-board" onFeedback={feedback} />);
+    expect((r.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement).value).toBe('');
+    cleanup();
+  });
+  it('uses newer server feedback over an already saved browser cache', async () => {
+    const p = props();
+    localStorage.setItem('cb-feedback:arch-agency:q-buffer-1', JSON.stringify({note:'Old saved note.', savedNote:'Old saved note.'}));
+    const r = render(<DeskReviewSurface {...p} feedbackScope="arch-agency" onFeedback={async () => ({ok:true})} fetchHistory={async () => [
+      {action:'request_changes',at:'2026-09-30T13:00:00Z',note:'New saved feedback.'},
+    ]} />);
+    openDisclosure(r.container, 'In buffer');
+    await waitFor(() => expect((r.getByRole('textbox', {name:'Feedback on this post'}) as HTMLTextAreaElement).value).toBe('New saved feedback.'));
     cleanup();
   });
   it('autosaves feedback after typing and keeps the saved note visible', async () => {

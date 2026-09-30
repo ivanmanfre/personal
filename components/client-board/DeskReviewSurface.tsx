@@ -119,7 +119,9 @@ function InlineBody({ text, onSave, style, wrapStyle, statusStyle }: {
 }
 
 /** Approval is confirmed by the parent only after the server accepts it. */
-function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback }: {
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback, initialFeedback, storageKey }: {
+  initialFeedback?: string;
+  storageKey?: string;
   onFeedback?: (note: string) => Promise<{ ok: boolean; error?: string }>;
   approved: boolean;
   onApprove: () => Promise<{ ok: boolean; error?: string }> | void;
@@ -127,11 +129,24 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
-  const [note, setNote] = useState('');
+  const cachedFeedback = useMemo(() => {
+    try {
+      const raw = storageKey ? localStorage.getItem(storageKey) : null;
+      const cached = raw ? JSON.parse(raw) : null;
+      return typeof cached?.note === 'string' && typeof cached?.savedNote === 'string' ? cached as { note: string; savedNote: string } : null;
+    } catch { return null; }
+  }, [storageKey]);
+  const [note, setNote] = useState(cachedFeedback?.note || '');
   const [feedbackState, setFeedbackState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const feedbackId = useId();
-  const noteRef = useRef('');
-  const savedNoteRef = useRef('');
+  const noteRef = useRef(cachedFeedback?.note || '');
+  const savedNoteRef = useRef(cachedFeedback?.savedNote || '');
+  const editedRef = useRef(false);
+  const cacheFeedback = (next: string, saved: string) => {
+    if (!storageKey) return;
+    try { localStorage.setItem(storageKey, JSON.stringify({ note: next, savedNote: saved })); }
+    catch { /* Server saving still works when browser storage is unavailable. */ }
+  };
   const feedbackRef = useRef(onFeedback);
   feedbackRef.current = onFeedback;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,17 +155,22 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   const saveFeedback = (): Promise<boolean> => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (savingRef.current) return savingRef.current;
-    if (!feedbackRef.current || !noteRef.current.trim() || noteRef.current.trim() === savedNoteRef.current) return Promise.resolve(true);
+    if (!feedbackRef.current || noteRef.current === savedNoteRef.current) return Promise.resolve(true);
     if (mountedRef.current) setFeedbackState('saving');
     // Serialize saves so a slower request can never overwrite newer feedback.
     const save = async () => {
       while (feedbackRef.current) {
-        const next = noteRef.current.trim();
-        if (!next || next === savedNoteRef.current) break;
+        const next = noteRef.current;
+        if (next === savedNoteRef.current) break;
         try {
           const result = await feedbackRef.current(next);
           if (!result.ok) throw new Error(result.error || 'Feedback did not save');
           savedNoteRef.current = next;
+          // A finishing save from a closed card must leave a newer local draft intact.
+          try {
+            const current = storageKey ? JSON.parse(localStorage.getItem(storageKey) || 'null') : null;
+            if (!current || current.note === noteRef.current) cacheFeedback(noteRef.current, next);
+          } catch { /* Keep the server-confirmed state even if storage is unavailable. */ }
         } catch {
           if (mountedRef.current) setFeedbackState('error');
           return false;
@@ -166,17 +186,29 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   saveRef.current = saveFeedback;
   useEffect(() => {
     mountedRef.current = true;
+    if (noteRef.current !== savedNoteRef.current) timerRef.current = setTimeout(() => { void saveRef.current(); }, 800);
     return () => {
       mountedRef.current = false;
       void saveRef.current();
     };
   }, []);
+  useEffect(() => {
+    if (initialFeedback === undefined || editedRef.current) return;
+    if (noteRef.current !== savedNoteRef.current && noteRef.current !== initialFeedback) return;
+    noteRef.current = initialFeedback;
+    savedNoteRef.current = initialFeedback;
+    setNote(initialFeedback);
+    setFeedbackState(initialFeedback ? 'saved' : 'idle');
+    cacheFeedback(initialFeedback, initialFeedback);
+  }, [initialFeedback]);
   const changeFeedback = (value: string) => {
+    editedRef.current = true;
     noteRef.current = value;
+    cacheFeedback(value, savedNoteRef.current);
     setNote(value);
-    setFeedbackState(value.trim() && value.trim() === savedNoteRef.current ? 'saved' : 'idle');
+    setFeedbackState(value === savedNoteRef.current ? 'saved' : 'idle');
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (value.trim()) timerRef.current = setTimeout(() => { void saveRef.current(); }, 800);
+    if (value !== savedNoteRef.current) timerRef.current = setTimeout(() => { void saveRef.current(); }, 800);
   };
   const approve = async () => {
     if (pending) return;
@@ -438,7 +470,7 @@ export default function DeskReviewSurface({
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
-  reviewMode = false, compact = false,
+  reviewMode = false, compact = false, feedbackScope,
 }: {
   board: Board; accent: string; mint: string;
   /** Report boards (stage 3, 28 Sep): headline by date, no aim mix, Scheduled open, tighter
@@ -454,6 +486,7 @@ export default function DeskReviewSurface({
   live?: boolean;
   onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void;
   approvedIds?: Set<string>;
+  feedbackScope?: string;
   onFeedback?: (id: string, note: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live review boards: saves the post text typed in place on a buffer card (same RPC path
    *  as the modal's Edit copy). Absent, the copy renders static and Edit copy is the only way. */
@@ -991,7 +1024,7 @@ export default function DeskReviewSurface({
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
       {bucket !== 'published' && (approvals
-        ? <CardReviewActions approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
+        ? <CardReviewActions key={`${feedbackScope || ''}:${q.id}`} storageKey={feedbackScope ? `cb-feedback:${feedbackScope}:${q.id}` : undefined} initialFeedback={entries === null ? undefined : entriesByPost[q.id]?.find(h => h.action === 'request_changes')?.note || ''} approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
         : (
           /* Buffer-only board: the normal post tools, no sign-off. Photo and remove live in
              the post drawer these open. */
