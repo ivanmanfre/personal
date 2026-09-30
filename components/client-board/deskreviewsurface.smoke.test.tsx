@@ -12,7 +12,7 @@
  *
  * Run:  npx vitest run components/client-board/deskreviewsurface.smoke.test.tsx
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
@@ -455,6 +455,7 @@ describe('DeskReviewSurface', () => {
 
 
 describe('Inline buffer approval', () => {
+  afterEach(cleanup);
   function props() {
     const board = makeBoard(); board.queue = [queueFixture()[2]];
     board.founder = { name: 'Davorin Šmit', headline: 'Co-founder, ARCH', avatar_url: 'https://example.com/avatar.jpg' };
@@ -484,22 +485,77 @@ describe('Inline buffer approval', () => {
     expect(avatar.textContent).toBe('DŠ');
     cleanup();
   });
-  it('keeps inline feedback visible, saves the exact post note and retains it after failure', async () => {
+  it('autosaves feedback after typing and keeps the saved note visible', async () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
+    fireEvent.change(field, {target:{value:'Make the second paragraph more casual.'}});
+    await waitFor(() => expect(r.getByRole('status').textContent).toBe('Feedback saved'), {timeout:2000});
+    expect(feedback).toHaveBeenCalledWith(p.board.queue[0].id, 'Make the second paragraph more casual.');
+    expect(field.value).toBe('Make the second paragraph more casual.');
+    expect(r.queryByRole('button', {name:'Send feedback'})).toBeNull();
+    fireEvent.blur(field);
+    expect(feedback).toHaveBeenCalledTimes(1);
+    cleanup();
+  });
+  it('saves immediately on blur and keeps failed feedback available to retry', async () => {
     const p = props(); const feedback = vi.fn().mockResolvedValueOnce({ok:false}).mockResolvedValueOnce({ok:true});
     const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
     openDisclosure(r.container, 'In buffer');
     const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
-    const send = r.getByRole('button', {name:'Send feedback'}) as HTMLButtonElement;
-    expect(send.disabled).toBe(true);
     fireEvent.change(field, {target:{value:'Make the second paragraph more casual.'}});
-    fireEvent.click(send);
+    fireEvent.blur(field);
     await waitFor(() => expect(r.getByRole('alert').textContent).toContain('Feedback did not save'));
     expect(field.value).toBe('Make the second paragraph more casual.');
-    fireEvent.click(send);
+    fireEvent.click(r.getByRole('button', {name:'Retry save'}));
     await waitFor(() => expect(r.getByRole('status').textContent).toBe('Feedback saved'));
     expect(feedback).toHaveBeenLastCalledWith(p.board.queue[0].id, 'Make the second paragraph more casual.');
-    expect(field.value).toBe('');
     expect(p.onOpen).not.toHaveBeenCalled();
+    cleanup();
+  });
+  it('saves edits made during an in-flight feedback save in order', async () => {
+    let resolve!: (value: {ok:boolean}) => void;
+    const p = props(); const feedback = vi.fn()
+      .mockImplementationOnce(() => new Promise<{ok:boolean}>(r => { resolve = r; }))
+      .mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', { name: 'Feedback on this post' }) as HTMLTextAreaElement;
+    fireEvent.change(field, {target:{value:'Shorten the opening.'}});
+    fireEvent.blur(field);
+    expect(field.disabled).toBe(false);
+    fireEvent.change(field, {target:{value:'Shorten the opening. Keep the example.'}});
+    fireEvent.blur(field);
+    expect(feedback).toHaveBeenCalledTimes(1);
+    resolve({ok:true});
+    await waitFor(() => expect(r.getByRole('status').textContent).toBe('Feedback saved'));
+    expect(feedback.mock.calls.map(call => call[1])).toEqual(['Shorten the opening.', 'Shorten the opening. Keep the example.']);
+    expect(field.value).toBe('Shorten the opening. Keep the example.');
+    cleanup();
+  });
+  it('flushes pending feedback when its card is closed', () => {
+    const p = props(); const feedback = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} />);
+    openDisclosure(r.container, 'In buffer');
+    fireEvent.change(r.getByRole('textbox', {name:'Feedback on this post'}), {target:{value:'Keep the example.'}});
+    r.unmount();
+    expect(feedback).toHaveBeenCalledWith(p.board.queue[0].id, 'Keep the example.');
+  });
+  it('finishes pending feedback before approving the post', async () => {
+    let resolve!: (value: {ok:boolean}) => void;
+    const p = props(); const feedback = vi.fn(() => new Promise<{ok:boolean}>(r => { resolve = r; }));
+    const approve = vi.fn().mockResolvedValue({ok:true});
+    const r = render(<DeskReviewSurface {...p} onFeedback={feedback} onApprove={approve} />);
+    openDisclosure(r.container, 'In buffer');
+    const field = r.getByRole('textbox', {name:'Feedback on this post'});
+    fireEvent.change(field, {target:{value:'Keep the example.'}});
+    fireEvent.blur(field);
+    fireEvent.click(r.getByRole('button', {name:'Approve post'}));
+    expect(approve).not.toHaveBeenCalled();
+    resolve({ok:true});
+    await waitFor(() => expect(approve).toHaveBeenCalledTimes(1));
+    expect(feedback).toHaveBeenCalledTimes(1);
     cleanup();
   });
   it('waits for approval, then keeps the approved undated post in the buffer', async () => {

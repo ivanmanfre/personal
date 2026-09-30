@@ -130,44 +130,87 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
   const [note, setNote] = useState('');
   const [feedbackState, setFeedbackState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const feedbackId = useId();
-  const sendFeedback = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!note.trim() || feedbackState === 'saving' || pending || !onFeedback) return;
-    setFeedbackState('saving');
-    try {
-      const result = await onFeedback(note.trim());
-      if (!result.ok) { setFeedbackState('error'); return; }
-      setNote(''); setFeedbackState('saved');
-    } catch { setFeedbackState('error'); }
+  const noteRef = useRef('');
+  const savedNoteRef = useRef('');
+  const feedbackRef = useRef(onFeedback);
+  feedbackRef.current = onFeedback;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingRef = useRef<Promise<boolean> | null>(null);
+  const mountedRef = useRef(true);
+  const saveFeedback = (): Promise<boolean> => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (savingRef.current) return savingRef.current;
+    if (!feedbackRef.current || !noteRef.current.trim() || noteRef.current.trim() === savedNoteRef.current) return Promise.resolve(true);
+    if (mountedRef.current) setFeedbackState('saving');
+    // Serialize saves so a slower request can never overwrite newer feedback.
+    const save = async () => {
+      while (feedbackRef.current) {
+        const next = noteRef.current.trim();
+        if (!next || next === savedNoteRef.current) break;
+        try {
+          const result = await feedbackRef.current(next);
+          if (!result.ok) throw new Error(result.error || 'Feedback did not save');
+          savedNoteRef.current = next;
+        } catch {
+          if (mountedRef.current) setFeedbackState('error');
+          return false;
+        }
+      }
+      if (mountedRef.current) setFeedbackState('saved');
+      return true;
+    };
+    savingRef.current = save().finally(() => { savingRef.current = null; });
+    return savingRef.current;
+  };
+  const saveRef = useRef(saveFeedback);
+  saveRef.current = saveFeedback;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      void saveRef.current();
+    };
+  }, []);
+  const changeFeedback = (value: string) => {
+    noteRef.current = value;
+    setNote(value);
+    setFeedbackState(value.trim() && value.trim() === savedNoteRef.current ? 'saved' : 'idle');
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (value.trim()) timerRef.current = setTimeout(() => { void saveRef.current(); }, 800);
   };
   const approve = async () => {
     if (pending) return;
     setPending(true); setError(false);
-    try { const result = await onApprove(); if (result && !result.ok) setError(true); }
+    try {
+      if (onFeedback && !await saveFeedback()) return;
+      const result = await onApprove(); if (result && !result.ok) setError(true);
+    }
     catch { setError(true); }
     finally { setPending(false); }
   };
   return (
     <div data-review-actions style={{ padding: '8px 2px 0' }}>
-      {onFeedback && <form onSubmit={sendFeedback} style={{ marginBottom: 8 }}>
+      {onFeedback && <div style={{ marginBottom: 8 }}>
         <label htmlFor={feedbackId} style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Feedback on this post</label>
-        <textarea id={feedbackId} value={note} rows={2} disabled={feedbackState === 'saving'}
-          onChange={event => { setNote(event.target.value); setFeedbackState('idle'); }}
+        <textarea id={feedbackId} value={note} rows={2}
+          onChange={event => changeFeedback(event.target.value)}
+          onBlur={() => { void saveFeedback(); }}
           placeholder="What would you change?"
           style={{ display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 52, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13, lineHeight: 1.5, border: '1px solid #d6d3cd', borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', color: 'var(--cb-ink)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
-          <button type="submit" disabled={!note.trim() || feedbackState === 'saving' || pending}
-            style={{ font: 'inherit', fontSize: 13, fontWeight: 600, padding: '8px 0', minHeight: 44, border: 0, background: 'none', color: 'var(--cb-ink)', cursor: 'pointer', opacity: !note.trim() ? 'var(--cb-disabled-op, .5)' as unknown as number : 1 }}>
-            {feedbackState === 'saving' ? 'Saving feedback…' : 'Send feedback'}
-          </button>
+          {feedbackState === 'idle' && <span style={{ fontSize: 13, color: 'var(--cb-ink-mute)' }}>Saves automatically</span>}
+          {feedbackState === 'saving' && <span role="status" style={{ fontSize: 13 }}>Saving feedback…</span>}
           {feedbackState === 'saved' && <span role="status" style={{ fontSize: 13 }}>Feedback saved</span>}
-          {feedbackState === 'error' && <span role="alert" style={{ fontSize: 13, color: 'var(--cb-danger, #a12622)' }}>Feedback did not save. Your text is kept. Try again.</span>}
+          {feedbackState === 'error' && <>
+            <span role="alert" style={{ fontSize: 13, color: 'var(--cb-danger, #a12622)' }}>Feedback did not save. Your text is kept.</span>
+            <button type="button" onClick={() => { void saveFeedback(); }} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Retry save</button>
+          </>}
         </div>
-      </form>}
+      </div>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {approved
           ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
-          : <Pill onClick={approve} disabled={pending || feedbackState === 'saving'} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-primary, var(--cb-ink))', color: 'var(--cb-primary-ink, rgb(var(--nt-fg, 255 255 255)))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
+          : <Pill onClick={approve} disabled={pending} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-primary, var(--cb-ink))', color: 'var(--cb-primary-ink, rgb(var(--nt-fg, 255 255 255)))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
         {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
         {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
         <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
