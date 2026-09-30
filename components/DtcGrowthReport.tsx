@@ -969,7 +969,7 @@ function PromiseHero({
   const proofUrl = product?.url || item?.evidence?.source_url || null;
   // Numbered after the filter: a page with only a second-order item lists it as 1, not 2.
   const rows = [
-    { k: 'Where shoppers drop off', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
+    { k: 'Purchase path', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
     { k: 'The second order', href: '#second-order', it: promiseItems(d.second_order)[0] },
   ].filter((r) => r.it).map((r, i) => ({ ...r, n: i + 1 }));
 
@@ -1349,7 +1349,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     'utm_source=scan&utm_medium=cta&utm_campaign=growth-scan&utm_content=' + slot;
 
   // New-contract rows lead with the two promised sections (see PromiseHero).
-  const promise = isPromiseRow(d);
+  const qualityHeld = !!d.quality && (d.quality.version !== 'rise-quality-2026-09-30' || d.quality.approved !== true);
+  const promise = !qualityHeld && isPromiseRow(d);
   // Legacy prose scrub (see scrubProse): paid wording only ships when Meta ads were read live.
   const paidOk = d.ads?.meta?.status === 'present';
   // Retired 2026-09-26: the "Email capture is already live" strength card. It rested on
@@ -1391,7 +1392,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   useMetadata({
     title: `A growth scan for ${companyName}`,
-    description: (promise && clean((d as any).hero?.headline)) || legacyHook || `A public read of ${possessive(companyName)} store, and where the growth is.`,
+    description: (qualityHeld ? 'No recommendation qualified from the public pages reviewed.' : null) || (promise && clean((d as any).hero?.headline)) || legacyHook || `A public read of ${possessive(companyName)} store, and where the growth is.`,
     canonical: `${(import.meta as any).env?.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
@@ -1612,6 +1613,15 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     return () => io.disconnect();
   }, []);
 
+  if (qualityHeld) return (
+    <main className="mx-auto max-w-3xl px-6 py-16" style={{ color: ink, fontFamily: bodyFont }}>
+      <a href="https://risedtc.com">{wordmark}</a>
+      <h1 className="mt-10 text-3xl font-bold" style={{ fontFamily: headingFont }}>No recommendation qualified</h1>
+      <p className="mt-5 leading-relaxed">We could not establish a sufficiently supported issue from the public pages reviewed for {companyName}.</p>
+      <p className="mt-4 leading-relaxed">Actual drop-off, repeat orders and ad performance need store and ad-account data.</p>
+    </main>
+  );
+
   return (
     <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', paddingBottom: `calc(${STICKY_BAR_H}px + env(safe-area-inset-bottom))`, ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
       <style>{`
@@ -1721,6 +1731,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
       {promise ? (
         <>
+          {d.public_data_limits && <p className="mx-auto max-w-[1180px] px-6 sm:px-8 pt-6 text-sm leading-relaxed">{d.public_data_limits}</p>}
           <PromiseHero
             d={d}
             companyName={companyName}
@@ -1731,8 +1742,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             headingFont={headingFont}
             ctaHref={ctaUrl('hero')}
           />
-          <PromiseSection id="drop-off" n={1} title="Where shoppers drop off" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
-          <PromiseSection id="second-order" n={2} title="Getting the second order" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection id="drop-off" n={1} title="Purchase path observations" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection id="second-order" n={2} title="Repeat purchase observations" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
         </>
       ) : (
       /* Chapter — Cover / hook (legacy rows) */

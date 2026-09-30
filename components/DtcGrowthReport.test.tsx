@@ -657,7 +657,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(proof).toMatch(/data-hero-fact="1"[^>]*>Sold out</);
     expect(proof).toContain('href="https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"');
     // Both promises named on the first screen, each linking to its section.
-    expect(html).toContain('Where shoppers drop off');
+    expect(html).toContain('Purchase path observations');
     expect(html).toContain('The second order');
     expect(html).toContain('href="#drop-off"');
     expect(html).toContain('href="#second-order"');
@@ -996,8 +996,8 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     assertNoForbidden(html);
     expect(html).not.toContain('data-promise-hero');
     expect(html).not.toContain('data-promise-section');
-    expect(html).not.toContain('Where shoppers drop off');
-    expect(html).not.toContain('Getting the second order');
+    expect(html).not.toContain('Purchase path observations');
+    expect(html).not.toContain('Repeat purchase observations');
     expect(html).toContain('A public read of your store, and where the growth is.');
     expect(html).toContain('The public read gave us the basics');
 
@@ -1009,5 +1009,17 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(heldHtml).not.toContain('data-promise-hero');
     expect(heldHtml).not.toContain('data-promise-section');
     expect(heldHtml).toContain('Where the growth is');
+  });
+});
+
+
+describe('public evidence quality contract', () => {
+  it('holds a reviewed page without resurrecting historical diagnoses', () => {
+    const f = loadFixture('rodial-com.json');
+    const d = { ...f.dtc, quality: { version: 'rise-quality-2026-09-30', approved: false } };
+    const html = renderDtc(d, 'Test Store');
+    expect(html).toContain('No recommendation qualified');
+    expect(html).not.toContain('Testing sprawl');
+    expect(html).not.toContain('Book a');
   });
 });

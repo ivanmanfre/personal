@@ -262,12 +262,16 @@ export interface DtcPromiseBlock {
 export interface DtcGrowth {
   brand: DtcBrand;
   builder_version?: string | null;
+  quality?: { version: string; approved: boolean; reason?: string | null; lead_ref?: string | null };
+  delivery_summary?: string | null;
+  public_data_limits?: string;
+
   completed_at?: string | null;
   store_meta?: DtcSignalMeta<{ currency?: string | null; country?: string | null; published_products_count?: number | null }>;
   bestsellers?: DtcSignalMeta<{ handles: string[]; source_url?: string }>;
   drop_off?: DtcPromiseBlock | null;
   second_order?: DtcPromiseBlock | null;
-  hero?: { headline: string; item_ref: 'drop_off.0' | 'second_order.0' } | null;
+  hero?: { headline: string; item_ref: string } | null;
   completeness: {
     signals: Record<string, DtcSignalStatus>;
     present_count: number;
@@ -289,7 +293,7 @@ export interface DtcGrowth {
   }>;
   ads?: {
     meta?: DtcSignalMeta<{
-      active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number;
+      active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number; distinct_text_count?: number;
       has_video?: boolean; has_static?: boolean;
     }>;
     // audit v3: the prospect's own Google ad record. `capped` true means ads_found is a
