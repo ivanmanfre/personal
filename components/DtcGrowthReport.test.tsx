@@ -1014,6 +1014,54 @@ describe('DtcGrowthReport — round 5 real rows', () => {
 
 
 describe('public evidence quality contract', () => {
+  function returnConflictFixture() {
+    const f = loadFixture('tina-new-contract.json');
+    const d = structuredClone(f.dtc);
+    const citations = [
+      { url: 'https://example.com/pages/returns?policy=current#terms', quote: 'Returns are accepted within 14 days.' },
+      { url: 'https://example.com/policies/refund-policy', quote: 'Returns are accepted within 30 days.' },
+    ];
+    d.drop_off!.items[0] = {
+      id: 'public_terms_conflict',
+      title: 'Your live return pages disagree',
+      detail: 'The return window differs between your two public pages.',
+      fix: 'Publish the same return window on both pages.',
+      lever: 'cro',
+      evidence: { label: 'Two live return pages', value: citations.map(c => c.quote).join(' | '), source_url: citations[0].url, citations },
+    };
+    d.hero = { ...d.hero, headline: 'Your live return pages disagree', item_ref: 'drop_off.0' };
+    return { d, citations };
+  }
+
+  it('pairs each return-policy quote with its exact source and keeps single-source evidence intact', () => {
+    const { d, citations } = returnConflictFixture();
+    const html = renderDtc(d, 'Test Store');
+    const rows = [...html.matchAll(/<blockquote data-promise-citation="1"[^>]*>([\s\S]*?)<\/blockquote>/g)].map(m => m[1]);
+    expect(rows).toHaveLength(2);
+    citations.forEach((citation, i) => {
+      expect(rows[i]).toContain(escHtml(citation.quote));
+      expect(rows[i]).toContain(`href="${escHtml(citation.url)}"`);
+      expect(rows[i]).toMatch(/>Read source [12]<\/a>/);
+      expect(rows[i]).not.toContain(`>${escHtml(citation.url)}<`);
+    });
+    expect(html).not.toContain(escHtml(d.drop_off!.items[0].evidence.value));
+    expect(html).not.toContain('data-hero-proof="1"');
+    const single = d.drop_off!.items[1].evidence;
+    expect(html).toContain(escHtml(single.value));
+    expect(html).toContain(`href="${escHtml(single.source_url)}"`);
+    expect(html).toContain('See this on your storefront');
+  });
+
+  it('does not turn unsafe citation or single-source URLs into active links', () => {
+    const { d } = returnConflictFixture();
+    d.drop_off!.items[0].evidence.citations![1].url = 'data:text/html,unsafe';
+    d.drop_off!.items[1].evidence.source_url = 'javascript:alert(1)';
+    const html = renderDtc(d, 'Test Store');
+    expect(html).toContain('Returns are accepted within 30 days.');
+    expect(html).not.toMatch(/href="(?:javascript:|data:)/i);
+    expect(html).not.toContain('javascript:throw new Error');
+  });
+
   it('keeps supporting ad records available behind a closed disclosure', () => {
     const f = loadFixture('tina-new-contract.json');
     const d = JSON.parse(JSON.stringify(f.dtc));

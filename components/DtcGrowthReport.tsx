@@ -110,9 +110,10 @@ function sourceLabel(url: string, sentenceStart = false): string {
 // Shopify route showing the same catalogue with prices, sale badges and sold-out states, which
 // is exactly what the discount, price-band and out-of-stock findings claim. A per-product `.js`
 // URL gets the same treatment: strip the extension and it is that product's page.
-function proofHref(url: string): string {
+function proofHref(url: string): string | undefined {
   try {
     const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return undefined;
     if (u.pathname.endsWith('/products.json')) return `${u.origin}/collections/all`;
     // 2026-09-18 (StrollAir, first WooCommerce scan shipped): the collector reads Woo stores
     // through `/wp-json/wc/store/v1/products`, which no branch below matched, so three findings
@@ -127,7 +128,7 @@ function proofHref(url: string): string {
       return `${u.origin}${u.pathname.replace(/\.json$/, '')}`;
     }
     if (/sitemap[^/]*\.xml$/.test(u.pathname)) return u.origin;
-  } catch {}
+  } catch { return undefined; }
   return url;
 }
 
@@ -950,6 +951,8 @@ function PromiseHero({
   ctaHref: string;
 }) {
   const item = heroItemOf(d);
+  // Multi-source findings are proved by the linked quotes below, not a storefront image.
+  const hasCitations = (item?.evidence?.citations?.length || 0) > 1;
   const headline = clean(d.hero?.headline) || (item ? clean(item.title) : '');
   const product = item?.product && item.product.image_url ? item.product : null;
   const shots = d.screenshots;
@@ -989,7 +992,7 @@ function PromiseHero({
           </h1>
         </div>
 
-        {item && (product || still) ? (
+        {item && !hasCitations && (product || still) ? (
           <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
             <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
               {product ? (
@@ -1162,7 +1165,21 @@ function PromiseSection({
                       <p className="mt-1 text-[1.05rem] leading-[1.55] font-semibold" style={{ color: ink, maxWidth: '64ch' }}>{clean(it.fix)}</p>
                     </div>
                   ) : null}
-                  {ev && (ev.label || ev.value) ? (
+                  {ev && (ev.label || ev.value) ? ev.citations && ev.citations.length > 1 ? (
+                    <div className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
+                      <p className="font-semibold">{clean(ev.label)}</p>
+                      {ev.citations.map((citation, citationIndex) => (
+                        <blockquote data-promise-citation="1" key={`${citation.url}-${citationIndex}`} className="mt-3">
+                          <p>{clean(citation.quote)}</p>
+                          {proofHref(citation.url) ? (
+                            <a href={proofHref(citation.url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
+                              Read source {citationIndex + 1}
+                            </a>
+                          ) : null}
+                        </blockquote>
+                      ))}
+                    </div>
+                  ) : (
                     <p className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
                       <span className="font-semibold">{clean(ev.label)}</span>
                       {ev.value ? `: ${clean(ev.value)}. ` : '. '}

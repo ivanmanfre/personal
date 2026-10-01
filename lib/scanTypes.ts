@@ -250,7 +250,7 @@ export interface DtcPromiseItem {
   title: string;
   detail: string;
   fix: string;
-  evidence: { label: string; value: string; source_url: string };
+  evidence: { label: string; value: string; source_url: string; citations?: { url: string; quote: string }[] };
   product?: { title: string; url?: string | null; image_url?: string | null; price?: number | string | null; currency?: string | null } | null;
   lever: 'cro' | 'retention_path' | 'paid_media' | 'performance_creative';
 }
