@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { isClientLibraryPhoto } from '../lib/clientPhotoLibrary';
 import {
   loadBoardSession,
   saveBoardSession,
@@ -3644,7 +3645,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
       .from('client-photos')
       .list(slug, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
     if (!error && data) {
-      setPool(data.filter((f) => f.id !== null && !/^\./.test(f.name)).map((f) => ({
+      setPool(data.filter((f) => isClientLibraryPhoto(f, slug)).map((f) => ({
         name: f.name,
         url: supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl,
         createdAt: f.created_at || f.updated_at || '',
@@ -7122,7 +7123,7 @@ function PhotosSurface({ board: _board, accent, slug, compact = false, onDeleteP
     if (!error && data) {
       setPhotos(
         data
-          .filter((f) => f.id !== null && !/^\./.test(f.name))
+          .filter((f) => isClientLibraryPhoto(f, slug))
           .map((f) => ({
             name: f.name,
             url: supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl,
@@ -7971,7 +7972,7 @@ export default function ClientBoardPage() {
       try {
         const { data, error } = await supabase.storage.from('client-photos').list(slug, { limit: 200, sortBy: { column: 'name', order: 'asc' } });
         if (cancelled || error || !data) return;
-        const urls = data.filter((f) => f.id !== null && !/^\./.test(f.name))
+        const urls = data.filter((f) => isClientLibraryPhoto(f, slug))
           .map((f) => supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl);
         setPhotoPool(urls);
       } catch { /* no pool → text-only, as today */ }
