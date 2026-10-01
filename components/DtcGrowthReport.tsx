@@ -951,8 +951,9 @@ function PromiseHero({
   ctaHref: string;
 }) {
   const item = heroItemOf(d);
-  // Multi-source findings are proved by the linked quotes below, not a storefront image.
-  const hasCitations = (item?.evidence?.citations?.length || 0) > 1;
+  // These findings need paired quotes or observed states; a generic store image cannot prove them.
+  const evidenceOnly = (item?.evidence?.citations?.length || 0) > 1
+    || ['unit_price_mismatch', 'broken_help_link'].includes(item?.id || '');
   const headline = clean(d.hero?.headline) || (item ? clean(item.title) : '');
   const product = item?.product && item.product.image_url ? item.product : null;
   const shots = d.screenshots;
@@ -992,7 +993,7 @@ function PromiseHero({
           </h1>
         </div>
 
-        {item && !hasCitations && (product || still) ? (
+        {item && !evidenceOnly && (product || still) ? (
           <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
             <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
               {product ? (

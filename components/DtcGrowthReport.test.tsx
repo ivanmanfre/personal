@@ -1052,6 +1052,16 @@ describe('public evidence quality contract', () => {
     expect(html).toContain('See this on your storefront');
   });
 
+  it.each(['unit_price_mismatch', 'broken_help_link'])('does not present a generic store image as proof of %s', (id) => {
+    const { d } = returnConflictFixture();
+    d.drop_off!.items[0].id = id;
+    delete d.drop_off!.items[0].evidence.citations;
+    d.screenshots = { homepage_url: 'https://example.com/home.png', captured_at: '2026-10-01T10:00:00Z' };
+    const html = renderDtc(d, 'Test Store');
+    expect(html).not.toContain('data-hero-proof="1"');
+    expect(html).toContain('data-promise-evidence="1"');
+  });
+
   it('does not turn unsafe citation or single-source URLs into active links', () => {
     const { d } = returnConflictFixture();
     d.drop_off!.items[0].evidence.citations![1].url = 'data:text/html,unsafe';
