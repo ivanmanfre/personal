@@ -169,8 +169,11 @@ function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · 
   // Performance leads the fee card (Ivan 2026-08-11): accent-highlighted, gate intact.
   expect(html).toContain('Performance Model');
   expect(html).toContain('for qualifying brands');
-  expect(html).toContain('Fixed monthly fee plus a share of growth above your baseline');
-  expect(html).toContain('Base from $2,000 per month');
+  expect(html).toContain('Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend.');
+  expect(html).toContain('Creative, tech and AI included.');
+  expect(html).toContain('Base fee plus a percentage of ad spend');
+  expect(html).not.toContain('typically 20%');
+  expect(html).not.toContain('Base from $2,000');
   expect(html.indexOf('Performance Model')).toBeLessThan(html.indexOf('Growth Model'));
   expect(html).toContain('Which model fits your brand gets settled on the call.');
   expect(html).toContain('Direct with Mattan and the team. No pitch deck.');
