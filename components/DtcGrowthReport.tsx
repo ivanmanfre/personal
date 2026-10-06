@@ -2279,12 +2279,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 <span className="text-[0.75rem] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: headingFont, color: 'rgba(255,255,255,.7)' }}>for qualifying brands</span>
               </div>
               <p className="mt-2.5 text-[1rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.92)' }}>
-                Fixed monthly fee plus a share of growth above your baseline, typically 20%, measured in your own ad account and store backend.
+                Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.
               </p>
             </div>
             <p className="mt-4 text-[0.95rem] leading-relaxed" style={{ color: 'rgba(255,255,255,.7)' }}>
               <span style={{ fontFamily: headingFont, fontWeight: 700, color: 'rgba(255,255,255,.85)' }}>Growth Model.</span>{' '}
-              Base from $2,000 per month plus a percentage of ad spend, senior strategist included.
+              Base fee plus a percentage of ad spend, senior strategist included.
             </p>
             <p className="mt-4 text-[0.875rem]" style={{ color: 'rgba(255,255,255,.7)' }}>
               Which model fits your brand gets settled on the call.
