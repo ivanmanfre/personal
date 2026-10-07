@@ -1,4 +1,5 @@
 import type {StoryEdition} from './types';
+import {validateContentBrainMap} from './contentBrainValidation';
 import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 const object=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const text=(v:unknown):v is string=>typeof v==='string'&&v.trim().length>0;
@@ -36,5 +37,8 @@ export function validateEdition(raw:unknown,f:JourneyFixture,production=false):{
  }
  if(!object(raw.cover)||!strings(raw.cover.lines,2)||!strings(raw.cover.details,2)||!fields(raw.cover,['left','right']))errors.push('Lead-magnet cover is incomplete.');
  if(!object(raw.flow)||!strings(raw.flow.messages,4)||!items(raw.flow.checks,['label','value'])||raw.flow.checks.length!==3||!fields(raw.flow,['signal','callTitle','brief']))errors.push('The example lead journey is incomplete.');
- return{edition:errors.length?null:raw as unknown as StoryEdition,errors};
+ if(errors.length)return{edition:null,errors};
+ const {topicMap,...content}=raw;
+ const graph=validateContentBrainMap(topicMap);
+ return{edition:(graph?{...content,topicMap:graph}:content) as unknown as StoryEdition,errors};
 }

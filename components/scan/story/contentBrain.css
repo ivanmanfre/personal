@@ -1,0 +1,5 @@
+.content-brain{height:620px;width:100%;position:relative;margin:0 0 40px;overflow:hidden}
+.content-brain canvas{display:block;width:100%;height:100%;touch-action:pan-y;outline:none;cursor:default}
+.content-brain canvas:focus-visible{outline:1px solid #705277;outline-offset:-3px}
+.content-brain-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:500px){.content-brain{height:540px;margin-bottom:28px}}
