@@ -35,7 +35,7 @@ function mountBoard(tab = 'performance', slug = 'fixture', light = false) {
  window.history.replaceState(null, '', `/${light ? '?light' : ''}#${tab}`)
  return render(<MemoryRouter initialEntries={[`/client/${slug}?k=test-token`]}><Routes><Route path="/client/:slug" element={<ClientBoardPage />} /></Routes></MemoryRouter>)
 }
-beforeEach(() => {
+beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(fixture.metrics.data.as_of));
  localStorage.clear(); mode = 'live'; skin = 'desk'; configured = true; boardClient = 'risedtc'; tableRows.pending = []
  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }))
  vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} })
@@ -50,7 +50,7 @@ beforeEach(() => {
   return { data: null, error: null }
  })
 })
-afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.unstubAllGlobals() })
 it.each(['desk', 'blackbox'])('mounts board metrics on the %s Performance branch with token scope', async value => {
  skin = value; mountBoard()
  expect(await screen.findByText('First observed text replies')).toBeTruthy()
