@@ -15,9 +15,17 @@ export interface ResourceOption {
  premise?: string;
  assessment?: {slug:string;categories:string[];questions:number};
 }
+export interface ContentBrainMap {
+ version:1;
+ nodes:{id:string;label:string;kind:'cluster'|'topic'|'source';group:string;x:number;y:number;sourceIds:string[]}[];
+ edges:{a:string;b:string;kind:'group'|'evidence'|'shared-source';sourceIds:string[]}[];
+ sources:{id:string;kind:'LinkedIn'|'Website'|'Blog'|'YouTube';label:string;url?:string}[];
+ sourceFingerprint:string;
+}
 /** Reviewed editorial content, bound to one scan. Counts always come from the audit. */
 export interface StoryEdition {
  version: 1;
+ topicMap?:ContentBrainMap;
  reviewStatus: 'draft'|'approved';
  slug: string;
  founderName: string;

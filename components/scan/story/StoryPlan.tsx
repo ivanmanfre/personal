@@ -13,6 +13,7 @@ import {assessAudience} from './assessment';
 import {BlurWords, NumberTicker} from './motion';
 import {StoryFlow, readerName, fillName} from './StoryFlow';
 import {LeadMagnetPage} from './LeadMagnetPage';
+import {ContentBrain} from './ContentBrain';
 import {ImagePost} from './ImagePost';
 import {FeedDiagnosis, reachFrom} from './FeedDiagnosis';
 import '../../dev/scan-walkthrough/journey/connected.css';
@@ -85,13 +86,14 @@ function StepNav() {
 type Sample = {key: string; title?: string; hint?: string; render: () => React.ReactNode; full?: boolean};
 
 /** Every sample on show at once, side by side, each with the one line on what it does for them. */
-function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; after?: React.ReactNode}) {
+function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, beforeSamples, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; beforeSamples?: React.ReactNode; after?: React.ReactNode}) {
  const reduced = useReducedMotion();
  return <section className="sp-chapter story-scene" id={id} data-tone={tone}>
   <header className="sp-chapter-head">
    <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}<em className="sp-eyebrow-group">{n <= 2 ? 'Inbound' : 'Outbound'}</em></span><BlurWords text={title}/></div>
    <div><p>{why}</p>{aside}</div>
   </header>
+  {beforeSamples}
   <div className={`sp-stage sp-grid sp-grid-${cols}`}>
    {samples.map((x, i) => <motion.figure key={x.key} className={`sp-exhibit sp-exhibit-${x.key} ${x.full ? 'is-full' : ''}`} initial={reduced ? false : {opacity: 0, y: 24}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, amount: .1}} transition={{duration: reduced ? 0 : .5, delay: reduced ? 0 : i * .08, ease: [.22, .84, .36, 1]}}>
     {x.title && <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>}
@@ -157,6 +159,7 @@ export function StoryPlan({fixture, kind}: {fixture: JourneyFixture; kind: Story
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
   <Chapter id="content" n={1} label="Content" title={plan.contentHeading} why={plan.contentWhy}
    aside={<><p className="sp-sourced">Built from your expertise, your client calls and what the top performers in your industry already post.</p>{segments.length > 0 && <div className="sp-written-for"><span>Written for</span><ul>{segments.map(s => <li key={s.label}>{s.label}</li>)}</ul></div>}</>}
+   beforeSamples={plan.topicMap && <ContentBrain map={plan.topicMap} name={fixture.founder.name}/>}
    cols={3} samples={[
     {key: 'carousel', render: () => <ProspectPost fixture={fixture} kind={kind}/>},
     {key: 'text', render: () => <TextPost fixture={fixture} kind={kind}/>},
