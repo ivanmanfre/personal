@@ -12,7 +12,7 @@
  * versionOf logic living inside the component (exercised live in the P3 walkthrough).
  */
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { render as rtlRender, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { DetailModal, setBoardZone } from '../ClientBoardPage';
@@ -179,5 +179,54 @@ describe('drawer history: client-safe authors and notes (27 Sep)', () => {
     // Times read in the board's zone (PT), labelled.
     expect(text).toContain('22 Sept, 7:05 AM PT');
     cleanup();
+  });
+});
+
+
+describe('scheduled post copy editing', () => {
+  it('lets RISE edit and save a scheduled post without an approval mark', async () => {
+    const item = { ...ITEM, stage: 'scheduled' as const, body: 'Original scheduled copy' };
+    const editDraft = vi.fn().mockResolvedValue({ ok: true });
+    const r = rtlRender(<DetailModal item={item} board={RISE_BOARD} accent="#FFC71D" stage="scheduled" onClose={() => {}} onApprove={() => {}} isLive approved={false} act={noopAct} editDraft={editDraft} />);
+    try {
+      fireEvent.click(r.getByRole('button', { name: 'Edit copy' }));
+      fireEvent.change(r.getByRole('textbox', { name: 'Post copy' }), { target: { value: 'Updated scheduled copy' } });
+      fireEvent.click(r.getByRole('button', { name: 'Save edit' }));
+      await waitFor(() => expect(editDraft).toHaveBeenCalledWith(item.id, 'Updated scheduled copy'));
+      await waitFor(() => expect(r.queryByRole('textbox', { name: 'Post copy' })).toBeNull());
+      expect(item.body).toBe('Updated scheduled copy');
+      expect(r.queryByRole('button', { name: 'Approve ✓' })).toBeNull();
+    } finally { cleanup(); }
+  });
+
+  it('keeps unsaved copy available when the save fails', async () => {
+    const item = { ...ITEM, stage: 'scheduled' as const, body: 'Original copy' };
+    const r = rtlRender(<DetailModal item={item} board={RISE_BOARD} accent="#FFC71D" stage="scheduled" onClose={() => {}} onApprove={() => {}} isLive initialEditing act={noopAct} editDraft={async () => ({ ok: false, error: 'Save failed. Try again.' })} />);
+    try {
+      fireEvent.change(r.getByRole('textbox', { name: 'Post copy' }), { target: { value: 'Keep my changes' } });
+      fireEvent.click(r.getByRole('button', { name: 'Save edit' }));
+      await waitFor(() => expect(r.container.textContent).toContain('Save failed. Try again.'));
+      expect((r.getByRole('textbox', { name: 'Post copy' }) as HTMLTextAreaElement).value).toBe('Keep my changes');
+      expect(item.body).toBe('Original copy');
+    } finally { cleanup(); }
+  });
+
+  it('keeps the drawer and date intact when clearing the day fails', async () => {
+    const item = { ...ITEM, stage: 'scheduled' as const, scheduled_at: '2026-10-08T16:30:00Z' };
+    const onClose = vi.fn();
+    const r = rtlRender(<DetailModal item={item} board={RISE_BOARD} accent="#FFC71D" stage="scheduled" onClose={onClose} onApprove={() => {}} isLive act={noopAct} setSchedule={async () => ({ ok: false, error: 'Could not save the date' })} />);
+    try {
+      fireEvent.click(r.getByRole('button', { name: 'Clear day' }));
+      await waitFor(() => expect(r.getByRole('alert').textContent).toBe('Could not save the date'));
+      expect(item.scheduled_at).toBe('2026-10-08T16:30:00Z');
+      expect(item.publish_date).toBe(ITEM.publish_date);
+      expect(onClose).not.toHaveBeenCalled();
+    } finally { cleanup(); }
+  });
+
+  it('keeps published copy read-only', () => {
+    const r = rtlRender(<DetailModal item={{ ...ITEM, stage: 'published' }} board={RISE_BOARD} accent="#FFC71D" stage="published" onClose={() => {}} onApprove={() => {}} isLive act={noopAct} />);
+    try { expect(r.queryByRole('button', { name: /Edit/ })).toBeNull(); }
+    finally { cleanup(); }
   });
 });

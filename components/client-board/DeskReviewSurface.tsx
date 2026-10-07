@@ -918,8 +918,12 @@ export default function DeskReviewSurface({
           )}
           {inlineOpen && (
             <div className="prs-inline" data-inline-preview={q.id}>
+              {(stage === 'review' || stage === 'scheduled') && (
+                <div className="prs-schedule-actions" style={{ marginTop: 0, marginBottom: 12 }}>
+                  <button type="button" className="prs-open" onClick={() => onOpen(q, { editing: true })}>Edit copy</button>
+                </div>
+              )}
               <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="lg" cover={q.generating ? 'render' : 'plate'} live={live} foldSwitch={false} mediaMax={380} />
-            
             </div>
           )}
           <div className="prs-extra">{extras}</div>

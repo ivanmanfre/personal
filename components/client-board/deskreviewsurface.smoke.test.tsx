@@ -779,6 +779,11 @@ describe('DeskReviewSurface at night', () => {
       expect(toggle.getAttribute('aria-expanded')).toBe('true');
       expect(container.querySelector(`[data-inline-preview="${id}"] .cb-linkedin-preview`)).not.toBeNull();
       expect(opened.length).toBe(0);
+      const editCopy = container.querySelector(`[data-inline-preview="${id}"] button`) as HTMLElement;
+      expect(editCopy.textContent).toBe('Edit copy');
+      fireEvent.click(editCopy);
+      expect(opened[0][1]).toEqual({ editing: true });
+      opened.length = 0;
       fireEvent.click(toggle);
       expect(container.querySelector('[data-inline-preview]')).toBeNull();
       fireEvent.click(container.querySelector(`[data-open-post="${id}"]`) as HTMLElement);

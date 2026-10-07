@@ -3697,6 +3697,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [err, setErr] = useState('');
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review' || (stage === 'scheduled' && approved);
+  // Scheduled copy remains editable regardless of the board's approval process.
+  const canEdit = stage === 'review' || stage === 'scheduled';
   // Rescheduling stays available after a post is armed: the set_schedule RPC accepts
   // status in (review, scheduled), and the card-level "Edit time" link opens this modal
   // for scheduled posts expecting the scheduler to be here.
@@ -3980,6 +3982,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </div>
                 )}
                 <textarea
+                  aria-label="Post copy"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={Math.min(18, Math.max(8, body.split('\n').length + 2))}
@@ -4027,7 +4030,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     </p>
                   </div>
                 )}
-                {canAct && item.body && (
+                {canEdit && item.body && (
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => { setEditSaved(false); setEditing(true); }}
@@ -4267,7 +4270,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         {/* Sticky action footer. Live: the client powers (edit / remove) — publishing is
             not gated, so there is no approve. Preview keeps the approve flow. */}
-        {canAct && isLive && (
+        {canEdit && isLive && (
           <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
               <button
@@ -4277,9 +4280,19 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               >
                 Edit
               </button>
-              {isScheduled(item) && (
+              {isScheduled(item) && setSchedule && (
                 <button
-                  onClick={async () => { if (setSchedule) { await setSchedule(item.id, null); } item.scheduled_at = undefined; item.publish_date = undefined; onClose(); }}
+                  onClick={async () => {
+                    if (hideBusy) return;
+                    setHideBusy(true); setHideErr('');
+                    try {
+                      const result = await setSchedule(item.id, null);
+                      if (!result.ok) { setHideErr(result.error || 'Could not clear this day. Try again.'); return; }
+                      item.scheduled_at = undefined; item.publish_date = undefined; onClose();
+                    } catch { setHideErr('Could not clear this day. Try again.'); }
+                    finally { setHideBusy(false); }
+                  }}
+                  disabled={hideBusy}
                   className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
                   style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
                 >
@@ -4296,7 +4309,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   {hideBusy ? 'Removing…' : 'Remove'}
                 </button>
               )}
-              {hideErr && <span className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
+              {hideErr && <span role="alert" className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
                 {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
               </span>
