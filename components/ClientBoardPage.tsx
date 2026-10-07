@@ -1,3 +1,6 @@
+import type { ReplyScope } from '../lib/replySources';
+import { ReplySources } from './client-board/ReplySources';
+import { ReplySourceSummary } from './client-board/ReplySourceSummary';
 import { swapScheduledPost } from './client-board/scheduleActions';
 import { isNightUrl, setBoardNight } from './client-board/perf-kit/night';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -6343,7 +6346,8 @@ function UpNextBlock({ status, accent }: { status: OutreachStatus | null; accent
  *  up-next queue, this month's allowance, the bar, the sources, the message sequences,
  *  the first list, the inbox, the client-engager play, orbit finds, and the live send log.
  *  Reads usage + status + the per-lead send log from live RPCs; nothing here is baked. */
-function OutreachSurface({ board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null; foldLeads?: React.ReactNode; signals?: FunnelSignals | null }) {
+function OutreachSurface({ board, accent, usage = null, log = null, status = null, foldLeads = null, signals = null, renderReplySource }: { board: Board; accent: string; usage?: OutreachUsage | null; log?: OutreachLogEntry[] | null; status?: OutreachStatus | null; foldLeads?: React.ReactNode; signals?: FunnelSignals | null; renderReplySource?: (prospectId: string, open: boolean) => React.ReactNode }) {
+  const [openSources, setOpenSources] = useState<Record<string, boolean>>({});
   const o = board.outreach;
   if (!o) {
     return (
@@ -6670,7 +6674,7 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
               {positiveReplierLog(log, ot).map((entry) => {
                 const sent = (entry.messages || []).filter((m) => m.direction === 'outbound');
                 return (
-                  <details key={entry.prospect_id} id={sendLogAnchorId(entry.name) || undefined} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                  <details key={entry.prospect_id} onToggle={e => { const open = e.currentTarget.open; setOpenSources(s => ({ ...s, [entry.prospect_id]: open })); }} id={sendLogAnchorId(entry.name) || undefined} className="group rounded-lg" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                     <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg p-3.5 transition-colors duration-150 hover:bg-[rgba(2,49,47,0.03)] [&::-webkit-details-marker]:hidden">
                       <span className="text-[13px] font-semibold" style={{ color: INK }}>{entry.name || '(unnamed)'}</span>
                       {entry.company && <span className="text-[12px]" style={{ color: DIM }}>{entry.company}</span>}
@@ -6679,6 +6683,7 @@ function OutreachSurface({ board, accent, usage = null, log = null, status = nul
                       <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: 10, color: FAINT }}>{sent.length} sent <span className="inline-block transition-transform duration-150 group-open:rotate-90">→</span></span>
                     </summary>
                     <div className="space-y-2 px-3.5 pb-3.5">
+                      {openSources[entry.prospect_id] && renderReplySource?.(entry.prospect_id, true)}
                       {sent.map((m, i) => (
                         <div key={i} className="rounded-lg bg-white p-3" style={{ border: `1px solid ${LINE}` }}>
                           <div className="mb-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -9132,6 +9137,11 @@ export default function ClientBoardPage() {
   // Live mode = the production tool (not a built-ahead demo). Drives copy stripping, tab
   // removal (Voice + standalone Photos), real RPC actions, and the pricing/pause hide.
   const isLive = !isPreview;
+  const replyScope: ReplyScope = isPreview || mode === 'generating'
+    ? { kind: 'preview' }
+    : session?.token ? { kind: 'board-session', slug: slug || '', session: session.token }
+    : { kind: 'board-token', slug: slug || '', token };
+  const renderReplySource = (prospectId: string, open: boolean) => <ReplySourceSummary scope={replyScope} prospectId={prospectId} enabled={open} displayZone={clientTz()} />;
   isLiveRef.current = isLive;
   const reviewMode = isLive && !!board?.review_mode;
   // Approval UI (Approve / Request changes / pending split / source notes) belongs ONLY to
@@ -9332,12 +9342,15 @@ export default function ClientBoardPage() {
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     outreach: skin === 'desk'
-      ? <DeskOutreachSurface live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={reportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
-      : <OutreachSurface board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
+      ? <DeskOutreachSurface renderReplySource={renderReplySource} live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={reportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      : <OutreachSurface renderReplySource={renderReplySource} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
-    performance: skin === 'desk'
+    performance: <>
+      {skin === 'desk'
       ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} report={reportCtx} />
-      : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />,
+      : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
+      <ReplySources scope={replyScope} displayZone={clientTz()} />
+    </>,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };

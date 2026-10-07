@@ -1,3 +1,4 @@
+import { ReplySources } from '../../../client-board/ReplySources';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { GATE, fmtDate } from './shared';
@@ -47,7 +48,8 @@ interface Template {
 
 const pctFmt = (r: number | null | undefined) => (r == null ? '—' : `${Math.round(r * 100)}%`);
 const STEP_LABEL: Record<string, string> = {
-  connection_note: 'Note', dm1: 'DM 1', dm2: 'DM 2', dm3: 'DM 3', inmail: 'InMail',
+  connection_note: 'Note', dm1: 'DM 1', dm2: 'DM 2', dm3: 'DM 3', dm4: 'DM 4', dm5: 'DM 5',
+  recycle: 'Recycle', deliver: 'Requested delivery', followup: 'Conversation follow-up', inmail: 'InMail', email: 'Email',
   email1: 'Email 1', email2: 'Email 2',
 };
 
@@ -179,7 +181,7 @@ function LaneCard({ lane }: { lane: Lane }) {
           <Stat label="Sendable now" v={k.sendable} sub={runway != null ? `${runway.toFixed(1)}d at today's rate` : undefined} red={dry} />
           <Stat label="Sent" v={k.sent} sub={`${k.sent_1d} today · ${k.sent_7d} this wk`} />
           <Stat label="Accepted" v={k.accepted} sub={pctFmt(k.accept_rate)} />
-          <Stat label="Replied" v={k.replied} sub={pctFmt(k.reply_rate)} />
+          <Stat label="Replied" v={k.replied} sub={<>{pctFmt(k.reply_rate)} · <span>All-time, counter-based</span></>} />
           <Stat label="DM 1" v={k.dm1} sub={k.dm2 > 0 ? `${k.dm2} DM 2` : undefined} />
           <Stat label="Owe reply" v={k.needs_reply} red={k.needs_reply > 0} />
         </div>
@@ -198,7 +200,7 @@ function LaneCard({ lane }: { lane: Lane }) {
   );
 }
 
-function Stat({ label, v, sub, red }: { label: string; v: number; sub?: string; red?: boolean }) {
+function Stat({ label, v, sub, red }: { label: string; v: number; sub?: React.ReactNode; red?: boolean }) {
   return (
     <div className="co4-stat">
       <span className="co4-stat-l">{label}</span>
@@ -227,8 +229,10 @@ export function TemplatesPanel({ clientId }: { clientId: string | null }) {
   const byLane = useMemo(() => {
     const m: Record<string, Template[]> = {};
     (templates || []).filter((t) => showBenched || t.in_rotation).forEach((t) => { (m[t.lane] ||= []).push(t); });
-    const order = ['connection_note', 'dm1', 'dm2', 'dm3', 'inmail', 'email1', 'email2'];
-    Object.values(m).forEach((arr) => arr.sort((a, b) => order.indexOf(a.step) - order.indexOf(b.step)));
+    const order = ['connection_note', 'dm1', 'dm2', 'dm3', 'dm4', 'dm5', 'recycle', 'deliver', 'followup', 'inmail', 'email'];
+    const rank = new Map(order.map((key, index) => [key, index]));
+    const stepRank = (key: string) => rank.get(key) ?? order.length;
+    Object.values(m).forEach((arr) => arr.sort((a, b) => stepRank(a.step) - stepRank(b.step) || a.step.localeCompare(b.step) || a.key.localeCompare(b.key)));
     return m;
   }, [templates, showBenched]);
 
@@ -345,6 +349,7 @@ export function TemplatesKpisView({ clientId }: { clientId: string | null }) {
     <div className="co4-root">
       <style>{CSS}</style>
       <div className="ec-kicker" style={{ marginBottom: '0.7rem' }}>How each live lane is doing</div>
+      <ReplySources scope={{ kind: 'operator', clientId: clientId ?? 'ivan' }} />
       <LaneKpisPanel clientId={clientId} />
       <div className="ec-kicker" style={{ margin: '1.8rem 0 0.7rem' }}>The copy each lane sends</div>
       <TemplatesPanel clientId={clientId} />

@@ -1,3 +1,4 @@
+import { ReplySources } from '../client-board/ReplySources';
 import React, { useState, useMemo } from 'react';
 import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2, AlertTriangle, Users } from 'lucide-react';
 import {
@@ -216,7 +217,8 @@ const PerformancePanel: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingSkeleton cards={3} rows={5} />;
+  const replySources = <ReplySources scope={{ kind: 'operator', clientId: 'ivan' }} />;
+  if (loading) return <>{replySources}<LoadingSkeleton cards={3} rows={5} /></>;
 
   if (error) {
     return (
@@ -225,6 +227,7 @@ const PerformancePanel: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight">Performance</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refreshAll} />
         </div>
+        {replySources}
         <EmptyState
           icon={<AlertTriangle className="w-10 h-10" />}
           title="Couldn't load performance data"
@@ -237,6 +240,7 @@ const PerformancePanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {replySources}
       <PanelIntro
         tourId="performance"
         purpose="What actually landed, and what the system learns from it."

@@ -187,10 +187,11 @@ function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?
 }
 
 export default function DeskOutreachSurface({
-  board, accent, usage = null, log = null, status = null, foldLeads = null, signals, report = null, live = false,
+  board, accent, usage = null, log = null, status = null, foldLeads = null, signals, report = null, live = false, renderReplySource,
 }: {
   board: Board;
   accent: string;
+  renderReplySource?: (prospectId: string, open: boolean) => React.ReactNode;
   /** Live client board: passed through to the top of the panel, which then hides the
    *  pipeline-internals filter drill. */
   live?: boolean;
@@ -206,6 +207,7 @@ export default function DeskOutreachSurface({
    *  send queue) never render. The live review page stays, as the Queue sub-tab. */
   report?: ReportCtx | null;
 }) {
+  const [openSources, setOpenSources] = useState<Record<string, boolean>>({});
   const o = board.outreach;
   // Ivan 2026-09-02: the embedded review page can go full-screen on the same tab.
   const [reviewFull, setReviewFull] = useState(false);
@@ -969,7 +971,7 @@ export default function DeskOutreachSurface({
                       // id: the target a roster name click opens. This IS the trail the
                       // panel already had; the roster reuses it rather than shipping a
                       // second one (mission instruction, critic F7).
-                      <details key={e.prospect_id} id={sendLogAnchorId(e.name) || undefined} className="drill" style={{ marginTop: 8, borderRadius: 12, background: 'var(--cb-paper-sunk)', border: '1px solid var(--cb-line)' }}>
+                      <details key={e.prospect_id} onToggle={event => { const open = event.currentTarget.open; setOpenSources(s => ({ ...s, [e.prospect_id]: open })); }} id={sendLogAnchorId(e.name) || undefined} className="drill" style={{ marginTop: 8, borderRadius: 12, background: 'var(--cb-paper-sunk)', border: '1px solid var(--cb-line)' }}>
                         <summary style={{ listStyle: 'none', cursor: 'pointer', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, padding: '12px 14px' }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cb-ink)' }}>{e.name || '(unnamed)'}</span>
                           {e.company && <span style={{ fontSize: 12, color: 'var(--cb-ink-soft)' }}>{e.company}</span>}
@@ -978,6 +980,7 @@ export default function DeskOutreachSurface({
                           <span style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{sent.length} sent</span>
                         </summary>
                         <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {openSources[e.prospect_id] && renderReplySource?.(e.prospect_id, true)}
                           {sent.map((m, i) => (
                             <div key={i} style={{ borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', border: '1px solid var(--cb-line)', padding: '10px 12px' }}>
                               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>

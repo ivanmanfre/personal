@@ -1,3 +1,4 @@
+import { ReplySources } from '../client-board/ReplySources';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 const PROSPECTS_PER_PAGE = 30;
@@ -222,7 +223,8 @@ const OutreachPanel: React.FC = () => {
 
   const reviewCount = pendingDrafts.length + proposedTargets.length + commentDrafts.length;
 
-  if (loading) return <LoadingSkeleton cards={6} rows={8} />;
+  const replySources = <ReplySources scope={{ kind: 'operator', clientId: 'ivan' }} />;
+  if (loading) return <>{replySources}<LoadingSkeleton cards={6} rows={8} /></>;
 
   const pipelineTab = (
     <div className="space-y-4">
@@ -694,6 +696,8 @@ const OutreachPanel: React.FC = () => {
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{
                       draft.messageType === 'connection_note' ? 'Connection Note'
                       : draft.messageType === 'email' ? `Email ${draft.emailStep ?? 1}/3`
+                      : draft.sequenceStep == null ? 'Unknown touch'
+                      : draft.sequenceStep === 4 ? 'Sequence position 4'
                       : `DM Step ${draft.sequenceStep}`
                     }</span>
                     {draft.channel && (
@@ -1435,6 +1439,7 @@ const OutreachPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
+      {replySources}
       <PanelErrorBoundary label={tab}>
         {activeTab}
       </PanelErrorBoundary>

@@ -1,3 +1,4 @@
+import { ReplySourceSummary } from '../../../client-board/ReplySourceSummary';
 import React, { useMemo, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { OutreachInbox } from './OutreachInbox';
@@ -223,6 +224,7 @@ function ProspectRow({ p, armed, clientId, company }: { p: OutreachProspect; arm
       </button>
       {open && (
         <div className="co3-pdetail">
+          <ReplySourceSummary scope={{ kind: 'operator', clientId }} prospectId={p.id} />
           {gated && p.gate && (
             <div className="co3-flag">
               Blocked until you OK the anchor name{p.gate.anchor_client ? ` (${p.gate.anchor_client})` : ''}. {p.gate.note}
