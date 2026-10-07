@@ -747,6 +747,20 @@ describe('DeskReviewSurface at night', () => {
     } finally { day(); }
   });
 
+  it('shows the weekly schedule above the list for live buffer boards', () => {
+    night();
+    try {
+      const props = { board: makeBoard(), accent: ACCENT, mint: '#2F7D4F', stageOf, onOpen: noop, onOpenIdea: noop, onApprove: noop, flashId: null, view: 'list' as const, setView: noop, skips: {}, live: true, compact: true, onScheduleToDay: noopAsync };
+      const r = render(<DeskReviewSurface {...props} />);
+      expect(r.container.querySelectorAll('[data-week-day]')).toHaveLength(7);
+      expect(r.getByRole('region', { name: 'Weekly schedule' })).toBeTruthy();
+      r.rerender(<DeskReviewSurface {...props} skips={{ 'q-scheduled-1': true }} />);
+      expect(r.container.querySelector('[data-week-day][data-empty="false"]')?.textContent).toContain('Hook A');
+      r.rerender(<DeskReviewSurface {...props} reviewMode />);
+      expect(r.container.querySelector('[data-week-day]')).toBeNull();
+    } finally { day(); }
+  });
+
   it('opens on the headline, no hero ticker', () => {
     night();
     try {

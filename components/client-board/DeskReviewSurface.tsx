@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import PostSourceContext from './PostSourceContext';
+import ScheduleWeek from './ScheduleWeek';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
  *  copy is one click away in the post modal. */
@@ -467,7 +468,7 @@ function statusChipFor(stage: Stage, q: QueueItem, live: boolean, todayIso: stri
 
 export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
-  leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onSwapPost, onEditPromo,
+  leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onSwapPost, onScheduleToDay, recentlyCleared, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
   reviewMode = false, compact = false, feedbackScope,
@@ -498,6 +499,8 @@ export default function DeskReviewSurface({
   onBackToBuffer?: (id: string) => void;
   onLeaveDayEmpty?: (id: string, date?: string) => void;
   onClearDay?: (id: string, date?: string) => Promise<{ ok: boolean; error?: string }>;
+  onScheduleToDay?: (id: string, date: string) => Promise<{ ok: boolean; error?: string }>;
+  recentlyCleared?: Record<string, string>;
   onSwapPost?: (id: string, replacementId: string) => Promise<{ ok: boolean; error?: string }>;
   onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
   flashId: string | null;
@@ -1299,6 +1302,10 @@ export default function DeskReviewSurface({
         )}
       </Plate>
       </>}
+
+      {live && !reviewMode && onScheduleToDay && view !== 'calendar' && (
+        <ScheduleWeek queue={board.queue} ready={swapCandidates} onOpen={onOpen} onAdd={onScheduleToDay} coverFor={q => cardImageUrlLocal(q, board)} recentlyCleared={recentlyCleared} />
+      )}
 
       {/* Block 3: view toggle. */}
       {night ? (
