@@ -792,11 +792,13 @@ export const Drill: React.FC<Base & {
   /** Top hairline over the summary. Off when the drill sits inside an already-ruled row. */
   ruled?: boolean;
   summaryStyle?: React.CSSProperties;
+  onToggle?: React.ReactEventHandler<HTMLDetailsElement>;
   /** 'plate' lightens the summary + body for use on the dark proof plate. */
   on?: Surface;
-}> = ({ label = 'more', summaryLeft, ruled = true, summaryStyle, on, className, style, children }) => (
+}> = ({ label = 'more', summaryLeft, ruled = true, summaryStyle, onToggle, on, className, style, children }) => (
   <details
     className={cx('drill', className)}
+    onToggle={onToggle}
     style={{ borderTop: ruled ? `1px solid ${on === 'plate' ? 'rgba(255,255,255,.18)' : LINE}` : undefined, ...style }}
   >
     <summary

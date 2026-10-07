@@ -36,7 +36,7 @@ import { initialsOf, sliceSeries, axisLabel, type SliceBar } from '../weekResult
 import {
   pipelineData, linesData, funnelStages, storeKindItems, archCameFromItems, isArch, intentChip, lastInboundText,
   shownText, REACTION, norm,
-  type LogEntry, type BookedExtra, type Card_, type Row, type ChipItem, type FunnelStage,
+  type ReplySourceRenderer, type LogEntry, type BookedExtra, type Card_, type Row, type ChipItem, type FunnelStage,
 } from '../report/PipelineBlocks';
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -498,11 +498,12 @@ function Kinds({ label, items }: { label: string; items: ChipItem[] }) {
 
 /* ───────────────────────────── people ───────────────────────────── */
 
-function Thread({ ctx, entry }: { ctx: ReportCtx; entry: LogEntry }) {
+function Thread({ ctx, entry, renderReplySource }: { ctx: ReportCtx; entry: LogEntry; renderReplySource?: ReplySourceRenderer }) {
   const msgs = (entry.messages || []).filter((x) => shownText(x)).slice().sort((a, b) => ((a.sent_at || '') < (b.sent_at || '') ? -1 : 1));
-  if (!msgs.length) return <div className="pn-def" style={{ margin: '4px 0 8px' }}>No messages to show yet.</div>;
+  if (!msgs.length) return <>{renderReplySource?.(entry.prospect_id, true)}<div className="pn-def" style={{ margin: '4px 0 8px' }}>No messages to show yet.</div></>;
   return (
     <div className="pn-thread">
+      {renderReplySource?.(entry.prospect_id, true)}
       {msgs.map((x, i) => {
         const mine = x.direction === 'outbound';
         const email = /email/i.test(`${x.channel || ''} ${x.type || ''}`);
@@ -519,7 +520,7 @@ function Thread({ ctx, entry }: { ctx: ReportCtx; entry: LogEntry }) {
   );
 }
 
-function PersonCard({ ctx, c, booked, hideYes, edge }: { ctx: ReportCtx; c: Card_; booked?: boolean; hideYes?: boolean; edge?: boolean }) {
+function PersonCard({ ctx, c, booked, hideYes, edge, renderReplySource }: { ctx: ReportCtx; c: Card_; booked?: boolean; hideYes?: boolean; edge?: boolean; renderReplySource?: ReplySourceRenderer }) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
   const { p, entry, last, extra } = c;
@@ -554,21 +555,21 @@ function PersonCard({ ctx, c, booked, hideYes, edge }: { ctx: ReportCtx; c: Card
       )}
       {open && entry && (
         <m.div initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: EASE }}>
-          <Thread ctx={ctx} entry={entry} />
+          <Thread ctx={ctx} entry={entry} renderReplySource={renderReplySource} />
         </m.div>
       )}
     </div>
   );
 }
 
-function Cards({ ctx, rows, booked, hideYes }: { ctx: ReportCtx; rows: Card_[]; booked?: boolean; hideYes?: boolean }) {
+function Cards({ ctx, rows, booked, hideYes, renderReplySource }: { ctx: ReportCtx; rows: Card_[]; booked?: boolean; hideYes?: boolean; renderReplySource?: ReplySourceRenderer }) {
   const [all, setAll] = useState(false);
   const shown = all ? rows : rows.slice(0, SHOW);
   return (
     <>
       <ul className="pn-cards">
         {shown.map((c, i) => (
-          <li key={`${c.p.n}-${i}`}><PersonCard ctx={ctx} c={c} booked={booked} hideYes={hideYes} edge={booked && i === 0} /></li>
+          <li key={`${c.p.n}-${i}`}><PersonCard renderReplySource={renderReplySource} ctx={ctx} c={c} booked={booked} hideYes={hideYes} edge={booked && i === 0} /></li>
         ))}
       </ul>
       {rows.length > SHOW && (
@@ -603,13 +604,14 @@ function namesPlain(names: string[], max = 3): string {
 
 /* ───────────────────────────── page ───────────────────────────── */
 
-export default function PipelineNight({ ctx, log, booked = [], queue, queueCount }: {
+export default function PipelineNight({ ctx, log, booked = [], queue, queueCount, renderReplySource }: {
   ctx: ReportCtx;
   accent: string;
   log?: LogEntry[] | null;
   booked?: BookedExtra[];
   queue?: React.ReactNode;
   queueCount?: number | null;
+  renderReplySource?: ReplySourceRenderer;
 }) {
   const reduce = useReducedMotion();
   const [view, setView] = useState<'conv' | 'queue'>('conv');
@@ -685,12 +687,12 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
 
             <section id="cb-pipe-interested" className="pk-sec pn-anchor" aria-labelledby="pn-int-h">
               <ListHead id="pn-int-h" label="Interested right now" n={interested.length} />
-              {interested.length ? <Cards ctx={ctx} rows={interested} hideYes /> : <div className="pn-empty">Nobody right now.</div>}
+              {interested.length ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={interested} hideYes /> : <div className="pn-empty">Nobody right now.</div>}
             </section>
 
             <section id="pn-booked" className="pk-sec pn-anchor" aria-labelledby="pn-bk-h">
               <ListHead id="pn-bk-h" label="Calls booked" n={bookedRows.length} gold />
-              {bookedRows.length ? <Cards ctx={ctx} rows={bookedRows} booked /> : <div className="pn-empty">No calls booked yet.</div>}
+              {bookedRows.length ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} booked /> : <div className="pn-empty">No calls booked yet.</div>}
             </section>
 
             <section id="pn-wrote" className="pk-sec pn-anchor" aria-labelledby="pn-wr-h">
@@ -701,7 +703,7 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
                     <span>{wroteOpen ? 'Close the list' : `Show all ${recent.length}`}</span>
                     <Chevron open={wroteOpen} />
                   </button>
-                  {wroteOpen && <div id="pn-wrote-list"><Cards ctx={ctx} rows={recent} /></div>}
+                  {wroteOpen && <div id="pn-wrote-list"><Cards renderReplySource={renderReplySource} ctx={ctx} rows={recent} /></div>}
                 </>
               )}
             </section>

@@ -526,6 +526,7 @@ export default function DeskOutreachSurface({
       <div className="pb-16" data-surface="desk-outreach">
         <ReportPipeline
           ctx={report}
+          renderReplySource={renderReplySource}
           accent={accent}
           log={log}
           booked={board.outreach_truth?.booked || []}

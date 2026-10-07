@@ -26,6 +26,8 @@ import { useNight, useQuiet } from '../perf-kit/night';
  *  none of it ships in the desk's chunk. */
 const PipelineNight = React.lazy(() => import('../perf-kit/pipeline-night'));
 
+export type ReplySourceRenderer = (prospectId: string, open: boolean) => React.ReactNode;
+
 export type LogMessage = { direction: 'outbound' | 'inbound'; channel: string | null; type: string | null; sent_at: string | null; text: string | null };
 export type LogEntry = { prospect_id: string; name: string | null; company: string | null; last_reply_at: string | null; messages: LogMessage[] };
 export type BookedExtra = { name?: string | null; company?: string | null; booked_at?: string | null; brief_url?: string | null; scan_url?: string | null };
@@ -350,11 +352,12 @@ export function intentChip(ctx: ReportCtx, li?: string | null): string | null {
   return null;
 }
 
-function Thread({ ctx, entry }: { ctx: ReportCtx; entry: LogEntry }) {
+function Thread({ ctx, entry, renderReplySource }: { ctx: ReportCtx; entry: LogEntry; renderReplySource?: ReplySourceRenderer }) {
   const msgs = (entry.messages || []).filter((m) => shownText(m)).slice().sort((a, b) => ((a.sent_at || '') < (b.sent_at || '') ? -1 : 1));
-  if (!msgs.length) return <Footnote style={{ marginTop: 0 }}>No messages to show yet.</Footnote>;
+  if (!msgs.length) return <>{renderReplySource?.(entry.prospect_id, true)}<Footnote style={{ marginTop: 0 }}>No messages to show yet.</Footnote></>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {renderReplySource?.(entry.prospect_id, true)}
       {msgs.map((m, i) => {
         const mine = m.direction === 'outbound';
         const email = /email/i.test(`${m.channel || ''} ${m.type || ''}`);
@@ -384,7 +387,8 @@ export function lastInboundText(entry: LogEntry | null): string {
   return t.length > 150 ? `${t.slice(0, 147).trimEnd()}…` : t;
 }
 
-function PersonRows({ ctx, rows, accent, booked, hideYes }: { ctx: ReportCtx; rows: Card_[]; accent: string; booked?: boolean; hideYes?: boolean }) {
+function PersonRows({ ctx, rows, accent, booked, hideYes, renderReplySource }: { ctx: ReportCtx; rows: Card_[]; accent: string; booked?: boolean; hideYes?: boolean; renderReplySource?: ReplySourceRenderer }) {
+  const [openSources, setOpenSources] = React.useState<Record<string, boolean>>({});
   return (
     <div>
       {rows.map(({ p, entry, last, extra }, i) => {
@@ -405,8 +409,8 @@ function PersonRows({ ctx, rows, accent, booked, hideYes }: { ctx: ReportCtx; ro
             </div>
             {quote && <div style={{ marginTop: 4, fontSize: 13.5, lineHeight: 1.45, color: 'var(--cb-ink-soft)' }}>“{quote}”</div>}
             {entry && (entry.messages || []).length > 0 && (
-              <Drill label="the messages" ruled={false} summaryStyle={{ padding: '4px 0 6px' }}>
-                <Thread ctx={ctx} entry={entry} />
+              <Drill label="the messages" ruled={false} summaryStyle={{ padding: '4px 0 6px' }} onToggle={(event) => { const open = event.currentTarget.open; setOpenSources((old) => ({ ...old, [entry.prospect_id]: open })); }}>
+                <Thread ctx={ctx} entry={entry} renderReplySource={openSources[entry.prospect_id] ? renderReplySource : undefined} />
               </Drill>
             )}
           </div>
@@ -486,7 +490,7 @@ export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: Bo
   return { people, bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames };
 }
 
-export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCount }: {
+export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCount, renderReplySource }: {
   ctx: ReportCtx;
   accent: string;
   log?: LogEntry[] | null;
@@ -494,6 +498,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
   /** ARCH: the live review page (Queue), rendered by the surface. */
   queue?: React.ReactNode;
   queueCount?: number | null;
+  renderReplySource?: ReplySourceRenderer;
 }) {
   const [view, setView] = React.useState<'conv' | 'queue'>('conv');
   const arch = isArch(ctx);
@@ -506,7 +511,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
   if (night) {
     return (
       <React.Suspense fallback={<div aria-busy="true" style={{ minHeight: 900, background: quiet ? 'transparent' : '#111', borderRadius: '26px 8px 8px 8px' }} />}>
-        <PipelineNight ctx={ctx} accent={accent} log={log} booked={booked} queue={queue} queueCount={queueCount} />
+        <PipelineNight renderReplySource={renderReplySource} ctx={ctx} accent={accent} log={log} booked={booked} queue={queue} queueCount={queueCount} />
       </React.Suspense>
     );
   }
@@ -541,13 +546,13 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
           <LinesLedger ctx={ctx} />
           <CallsChart ctx={ctx} />
           <ListSection id="cb-pipe-interested" title="Interested right now" count={interested.length} note={arch ? 'their latest reply, in the last two weeks, says yes or asks for details' : 'said yes to a scan or a chat in the last two weeks, not booked yet'} open={interested.length > 0}>
-            {interested.length ? <PersonRows ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody right now.</Footnote>}
+            {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody right now.</Footnote>}
           </ListSection>
           <ListSection title="Calls booked" count={bookedRows.length} note="most recent first" open={bookedRows.length > 0}>
-            {bookedRows.length ? <PersonRows ctx={ctx} rows={bookedRows} accent={accent} booked /> : <Footnote>Booked calls land here with the pre-call brief.</Footnote>}
+            {bookedRows.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} accent={accent} booked /> : <Footnote>Booked calls land here with the pre-call brief.</Footnote>}
           </ListSection>
           <ListSection title="Wrote back" count={recent.length} note="everyone else who replied in the last 30 days" open={false}>
-            {recent.length ? <PersonRows ctx={ctx} rows={recent} accent={accent} /> : <Footnote>Nobody else in the last 30 days.</Footnote>}
+            {recent.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={recent} accent={accent} /> : <Footnote>Nobody else in the last 30 days.</Footnote>}
           </ListSection>
 
         </>

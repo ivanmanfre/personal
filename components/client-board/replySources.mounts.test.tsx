@@ -26,20 +26,22 @@ import OutreachPanel from '../dashboard/OutreachPanel'
 import { TemplatesKpisView, TemplatesPanel, LaneKpisPanel } from '../dashboard-v2/sections/clientops2/TemplatesKpis'
 import { OutreachView } from '../dashboard-v2/sections/clientops2/OutreachView'
 import { saveBoardSession } from '../../lib/boardSession'
-let mode = 'live', skin = 'desk', configured = true
+let mode = 'live', skin = 'desk', configured = true, boardClient = 'risedtc'
 const log = [{ prospect_id: 'p-a', name: 'Ada Fixture', company: 'Fixture Co', lane: 'cold', replied: true, last_reply_at: '2026-10-07T10:00:00Z', messages: [{ direction: 'outbound', type: 'dm', channel: 'linkedin', sent_at: '2026-10-01T10:00:00Z', text: 'Existing sent message' }] }]
-const board = () => ({ company_name: 'Fixture Co', client_id: configured ? 'risedtc' : null, queue: [], skin, outreach: { sequences: { channels: [] } }, performance: { posts: [] } })
+const board = () => ({ company_name: 'Fixture Co', client_id: configured ? boardClient : null, queue: [], skin, outreach: { sequences: { channels: [] } }, performance: { posts: [] } })
 const sourceCalls = () => rpc.mock.calls.filter(([name]) => /^client_board_reply_source(?:_v2)?$/.test(name))
 const metricCalls = () => rpc.mock.calls.filter(([name]) => /^client_board_reply_sources(?:_v2)?$/.test(name))
-function mountBoard(tab = 'performance') {
- window.history.replaceState(null, '', `/#${tab}`)
- return render(<MemoryRouter initialEntries={['/client/fixture?k=test-token']}><Routes><Route path="/client/:slug" element={<ClientBoardPage />} /></Routes></MemoryRouter>)
+function mountBoard(tab = 'performance', slug = 'fixture', light = false) {
+ window.history.replaceState(null, '', `/${light ? '?light' : ''}#${tab}`)
+ return render(<MemoryRouter initialEntries={[`/client/${slug}?k=test-token`]}><Routes><Route path="/client/:slug" element={<ClientBoardPage />} /></Routes></MemoryRouter>)
 }
 beforeEach(() => {
- localStorage.clear(); mode = 'live'; skin = 'desk'; configured = true; tableRows.pending = []
+ localStorage.clear(); mode = 'live'; skin = 'desk'; configured = true; boardClient = 'risedtc'; tableRows.pending = []
  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }))
+ vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} })
  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
- rpc.mockImplementation(async (name: string) => {
+ rpc.mockImplementation(async (name: string, args: any) => {
+  if (/^client_board_report(?:_v2)?$/.test(name)) return { data: { ok: true, report: { client: args.p_slug === 'arch-agency' ? 'arch' : 'risedtc', start_date: '2026-07-21', people: [{ n: 'Ada Fixture', c: 'Fixture Co', bk: '2026-10-07T10:00:00Z', w: ['2026-10-07T10:00:00Z'], gv: 'apps' }], came: [], engaged: [], posts: [], assists: [] } }, error: null }
   if (name === 'get_client_board' || name === 'get_client_board_by_session') return { data: { board: board(), mode }, error: null }
   if (/^client_board_reply_sources(?:_v2)?$/.test(name)) return { data: configured ? fixture.metrics : { status: 'not_configured', data: null }, error: null }
   if (/^client_board_reply_source(?:_v2)?$/.test(name) || name === 'inbox_reply_source') return { data: fixture.detail, error: null }
@@ -124,4 +126,28 @@ it('reads an operator prospect source when its existing details open', async () 
  const button = await screen.findByRole('button', { name: /Ada Operator/ }); expect(rpc.mock.calls.filter(([n]) => n === 'inbox_reply_source')).toHaveLength(0)
  fireEvent.click(button); expect(await screen.findByText('First observed text reply')).toBeTruthy()
  expect(rpc.mock.calls.filter(([n]) => n === 'inbox_reply_source')).toEqual([['inbox_reply_source', { p_prospect_id: 'p-a' }]])
+})
+
+it.each([
+ ['risedtc-com', 'risedtc', true], ['arch-agency', 'arch', true],
+ ['risedtc-com', 'risedtc', false], ['arch-agency', 'arch', false],
+] as const)('reads the real %s report message source once after open, client=%s light=%s', async (slug, client, light) => {
+ boardClient = client
+ const view = mountBoard('outreach', slug, light)
+ await screen.findAllByText('Ada Fixture')
+ expect(view.container.querySelector('[data-report="pipeline"]')).toBeTruthy()
+ expect(sourceCalls()).toHaveLength(0)
+ if (light) {
+  const detail = screen.getByText('the messages').closest('details')!
+  detail.open = true; fireEvent(detail, new Event('toggle'))
+ } else fireEvent.click(await screen.findByRole('button', { name: /Read the thread/ }))
+ expect(await screen.findByText('First observed text reply')).toBeTruthy()
+ expect(sourceCalls()).toEqual([['client_board_reply_source', { p_slug: slug, p_token: 'test-token', p_prospect_id: 'p-a' }]])
+ expect(screen.getByText('Existing sent message')).toBeTruthy()
+ if (light) {
+  const detail = screen.getByText('the messages').closest('details')!
+  detail.open = false; fireEvent(detail, new Event('toggle'))
+ } else fireEvent.click(screen.getByRole('button', { name: /Hide the thread/ }))
+ expect(screen.queryByText('First observed text reply')).toBeNull()
+ expect(sourceCalls()).toHaveLength(1)
 })
