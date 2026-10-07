@@ -42,7 +42,7 @@
  * fmtSchedLA, kickerOf) are local copies of private functions in ClientBoardPage.tsx. They
  * are not exported from that module and this file may not edit it; see the run report.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Eyebrow, SectionRule, DeskH2, Footnote,
   Plate, PlateMute, PlateRule,
@@ -372,7 +372,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     .sort((a, b) => (a.hook || a.title || '').localeCompare(b.hook || b.title || ''));
   const queueTotal = todayItems.length + laterItems.length + bufferItems.length;
   /** Ready posts a client can drop onto an open day (same filter as the original). */
-  const readyToAdd = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduled(q) && notSkipped(q));
+  const readyToAdd = board.queue.filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && !q.generating && !isScheduled(q) && notSkipped(q));
 
   /* ---- performance join: the ONLY honest source of a published post's reads + URL. ---- */
   const perfPosts: PerfPost[] = board.performance?.posts || [];
@@ -455,11 +455,20 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
   /* ---- day-level write state (add a post to an open day). ---- */
   const [addDay, setAddDay] = useState<string | null>(null);
   const [dayErr, setDayErr] = useState<Record<string, string>>({});
-  const runDayWrite = async (day: string, p?: Promise<{ ok: boolean; error?: string }>) => {
-    if (!p) return;
-    const r = await p;
-    setDayErr((prev) => ({ ...prev, [day]: r.ok ? '' : (r.error || 'Could not save that. Try again.') }));
-    if (r.ok) setAddDay(null);
+  const [dayBusy, setDayBusy] = useState(false);
+  const dayWriteLock = useRef(false);
+  const runDayWrite = async (day: string, write: () => Promise<{ ok: boolean; error?: string }> | undefined) => {
+    if (dayWriteLock.current) return;
+    dayWriteLock.current = true; setDayBusy(true);
+    setDayErr((prev) => ({ ...prev, [day]: '' }));
+    try {
+      const r = await write();
+      if (!r) return;
+      setDayErr((prev) => ({ ...prev, [day]: r.ok ? '' : (r.error || 'Could not save that. Try again.') }));
+      if (r.ok) setAddDay(null);
+    } catch {
+      setDayErr((prev) => ({ ...prev, [day]: 'Could not save that. Try again.' }));
+    } finally { dayWriteLock.current = false; setDayBusy(false); }
   };
 
   /* ---- status vocabulary: out / scheduled / in buffer / in review. Locked register. ---- */
@@ -672,7 +681,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               {actionPill(q, 'Edit time', { scheduling: true })}
               {!live && actionPill(q, 'Swap slot', { changing: true })}
               {!live && stageOf(q) === 'review' && <Pill tone="accent" onClick={() => onApprove(q.id)}>Approve</Pill>}
-              {isScheduled(q) && onClearDay && <Pill onClick={() => void runDayWrite(q.publish_date || '', onClearDay(q.id, q.publish_date))}>Clear the day</Pill>}
+              {isScheduled(q) && onClearDay && <Pill disabled={dayBusy} onClick={() => void runDayWrite(q.publish_date || '', () => onClearDay(q.id, q.publish_date))}>Clear the day</Pill>}
               {isScheduled(q) && onLeaveDayEmpty && <Pill onClick={() => onLeaveDayEmpty(q.id, q.publish_date)}>Clear it and hold the day</Pill>}
               {isScheduled(q) && onBackToBuffer && <Pill onClick={() => onBackToBuffer(q.id)}>Back to the buffer</Pill>}
               <Pill onClick={() => onSkip(q.id)}>Remove this post</Pill>
@@ -816,8 +825,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                 {/* Caption scale, not numeral scale: the kit's blank is sized for a lone
                     em dash, and a six-word caption at that size overflowed its own box. */}
                 <Blank style={{ flex: '1 1 190px', minHeight: 32, maxWidth: 280, padding: '5px 12px', fontSize: 13.5, lineHeight: 1.35, textAlign: 'center' }}>nothing scheduled this day</Blank>
-                {onScheduleToDay && (ready.length > 0 || movable.length > 0) && (
-                  <Pill active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)}>Add a post</Pill>
+                {onScheduleToDay && day >= today && (
+                  <Pill disabled={dayBusy} active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)}>Add post here</Pill>
                 )}
                 {onLeaveEmpty && <Pill onClick={() => onLeaveEmpty(day)}>Leave this day empty</Pill>}
               </div>
@@ -830,7 +839,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                       {cardImageUrl(r) && <img src={cardImageUrl(r)} alt="" loading="lazy" onError={hideBroken} style={{ flex: 'none', width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--cb-line)' }} />}
                       <span style={{ flex: '1 1 170px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Ready draft'}</span>
                       <Chip>{kickerOf(r)}</Chip>
-                      <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Put it here</Pill>
+                      <Pill disabled={dayBusy} onClick={() => void runDayWrite(day, () => onScheduleToDay?.(r.id, day))}>Put it here</Pill>
                     </div>
                   ))}
                   {movable.map((r) => (
@@ -839,12 +848,13 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                       <span style={{ flex: '1 1 170px', minWidth: 0, fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(r.hook || r.title) || 'Scheduled draft'}</span>
                       <Chip>{kickerOf(r)}</Chip>
                       <Chip>{`now ${weekdayLong(r.publish_date!)} ${dayNumOf(r.publish_date!)}`}</Chip>
-                      <Pill onClick={() => void runDayWrite(day, onScheduleToDay?.(r.id, day))}>Move it here</Pill>
+                      <Pill disabled={dayBusy} onClick={() => void runDayWrite(day, () => onScheduleToDay?.(r.id, day))}>Move it here</Pill>
                     </div>
                   ))}
+                  {!ready.length && !movable.length && <Footnote>No ready posts available yet.</Footnote>}
                 </div>
               )}
-              {err && <Footnote>{noDash(err)}</Footnote>}
+              {err && <div role="alert"><Footnote>{noDash(err)}</Footnote></div>}
             </>
           )}
         </div>
@@ -900,7 +910,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             </div>
           )}
         </>
-      ) : (
+      ) : onScheduleToDay && selectedDay >= today && !isWeekendDay(selectedDay) ? emptyRow(selectedDay, true) : (
         <Blank style={{ height: 120 }}>{isWeekendDay(selectedDay) ? 'Weekend, not a posting day' : 'Nothing scheduled this day'}</Blank>
       )}
       <div className="hm-out">
