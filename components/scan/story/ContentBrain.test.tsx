@@ -31,6 +31,14 @@ describe('content brain lifecycle and interaction',()=>{
   reduced=true;render(<ContentBrain map={graph} name="Alex"/>);frame();expect(frames.size).toBe(0);
   const io=observers[1];io.callback([{isIntersecting:false}]);expect(frames.size).toBe(0);io.callback([{isIntersecting:true}]);expect(frames.size).toBe(1);frame();expect(frames.size).toBe(0);
  });
+ it('matches label knockouts to the nearest painted ancestor and uses scan ink',()=>{
+  const backgrounds:string[]=[],textColors:string[]=[];
+  const context=new Proxy({fillStyle:'',measureText:(text:string)=>({width:text.length*6}),fillRect(){backgrounds.push(this.fillStyle)},fillText(){textColors.push(this.fillStyle)}},{get:(o,k)=>k in o?o[k as keyof typeof o]:()=>{}});
+  vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue(context as any);
+  const view=render(<div style={{backgroundColor:'rgb(251, 250, 247)'}}><ContentBrain map={graph} name="Alex"/></div>);
+  const canvas=view.getByRole('img');canvas.style.setProperty('--sg-ink','#131210');observers[0].callback();frame();
+  expect(backgrounds.length).toBeGreaterThan(0);expect(backgrounds.every(color=>color==='rgb(251, 250, 247)')).toBe(true);expect(textColors).toContain('#131210');
+ });
  it('pauses while the document is hidden',()=>{
   render(<ContentBrain map={graph} name="Alex"/>);expect(frames.size).toBe(1);
   const hidden=vi.spyOn(document,'hidden','get').mockReturnValue(true);document.dispatchEvent(new Event('visibilitychange'));expect(frames.size).toBe(0);
