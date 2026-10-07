@@ -1,3 +1,4 @@
+import { swapScheduledPost } from './client-board/scheduleActions';
 import { isNightUrl, setBoardNight } from './client-board/perf-kit/night';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -8397,7 +8398,7 @@ export default function ClientBoardPage() {
   // logs a set_schedule action + refreshes the board queue publish_date, via the
   // SECURITY DEFINER RPC (same token/session posture as editDraft). Passing null clears the
   // slot (back to the buffer). Updates the local schedule map so the change shows at once.
-  const setScheduleRPC = async (draftId: string, scheduledAt: string | null): Promise<{ ok: boolean; error?: string }> => {
+  const setScheduleRPC = async (draftId: string, scheduledAt: string | null): Promise<{ ok: boolean; error?: string; uncertain?: boolean }> => {
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
@@ -8408,14 +8409,14 @@ export default function ClientBoardPage() {
         if (!sess?.token) return { ok: false, error: 'missing session' };
         resp = await supabase.rpc('client_board_set_schedule_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_scheduled_at: scheduledAt });
       }
-      if (resp.error) return { ok: false, error: resp.error.message };
+      if (resp.error) return { ok: false, error: resp.error.message, uncertain: true };
       const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
       if (out.ok) {
         setSchedule((m) => ({ ...m, [draftId]: { status: m[draftId]?.status || 'review', scheduled_at: scheduledAt } }));
       }
       return out;
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      return { ok: false, error: e instanceof Error ? e.message : String(e), uncertain: true };
     }
   };
 
@@ -8518,6 +8519,20 @@ export default function ClientBoardPage() {
     const r = await setScheduleRPC(id, null);
     if (r.ok) { if (d) setRecentlyCleared((s) => ({ ...s, [d]: id })); flash(id); }
     return r;
+  };
+  const swapPost = async (id: string, replacementId: string): Promise<{ ok: boolean; error?: string }> => {
+    const current = viewBoard?.queue.find((q) => q.id === id);
+    const replacement = viewBoard?.queue.find((q) => q.id === replacementId);
+    if (!current || !replacement || current.stage === 'published' || replacement.stage === 'published'
+      || replacement.generating || replacement.scheduled_at || replacement.publish_date
+      || (reviewModeRef.current && replacement.stage !== 'scheduled' && !approvedIds.has(replacementId))) {
+      return { ok: false, error: 'The schedule changed. Refresh and choose a ready post again.' };
+    }
+    const slot = current.scheduled_at || (current.publish_date ? laWallToUtcISO(current.publish_date, '09:00') : null);
+    if (!slot) return { ok: false, error: 'This post no longer has a scheduled date.' };
+    const result = await swapScheduledPost(id, replacementId, slot, setScheduleRPC);
+    if (result.ok) flash(replacementId);
+    return result;
   };
   // "Add a post" (client): schedule a ready post onto a chosen day. Defaults to a morning
   // slot in the client's timezone; the exact time is editable right after on the card.
@@ -9290,7 +9305,7 @@ export default function ClientBoardPage() {
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive ? swapPost : undefined} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,

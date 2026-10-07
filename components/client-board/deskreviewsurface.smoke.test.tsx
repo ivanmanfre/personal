@@ -725,6 +725,28 @@ describe('DeskReviewSurface at night', () => {
   const night = () => { (globalThis as any).IntersectionObserver ??= IO; prev = window.location.href; window.history.replaceState({}, '', '/client/risedtc-com?night'); };
   const day = () => { window.history.replaceState({}, '', prev); cleanup(); };
 
+  it('shows schedule actions before opening a post and reports write failures', async () => {
+    night();
+    try {
+      const onClearDay = vi.fn().mockResolvedValue({ ok: false, error: 'Could not clear this day' });
+      const onSwapPost = vi.fn().mockResolvedValue({ ok: true });
+      const { container } = render(<DeskReviewSurface board={makeBoard()} accent={ACCENT} mint="#2F7D4F" stageOf={stageOf} onOpen={noop} onOpenIdea={noop} onApprove={noop} flashId={null} view="list" setView={noop} skips={{}} live compact onClearDay={onClearDay} onSwapPost={onSwapPost} />);
+      const row = container.querySelector('[data-open-post="q-scheduled-1"]')!.closest('.prs-card')!;
+      expect(row.querySelector('[data-inline-preview]')).toBeNull();
+      fireEvent.click(row.querySelector('[data-swap-post]')!);
+      expect(onSwapPost).not.toHaveBeenCalled();
+      fireEvent.click(row.querySelector('[data-swap-candidate="q-buffer-1"]')!);
+      await waitFor(() => expect(onSwapPost).toHaveBeenCalledWith('q-scheduled-1', 'q-buffer-1'));
+      fireEvent.click(row.querySelector('[data-clear-day]')!);
+      await waitFor(() => expect(onClearDay).toHaveBeenCalledWith('q-scheduled-1', expect.any(String)));
+      await waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toContain('Could not clear this day'));
+      openDisclosure(container, 'Published');
+      const published = container.querySelector('[data-open-post="q-published-1"]')!.closest('.prs-card')!;
+      expect(published.querySelector('[data-swap-post], [data-clear-day]')).toBeNull();
+      expect(published.querySelector('[data-open-post]')?.textContent).toBe('Open');
+    } finally { day(); }
+  });
+
   it('opens on the headline, no hero ticker', () => {
     night();
     try {
@@ -739,7 +761,7 @@ describe('DeskReviewSurface at night', () => {
     } finally { day(); }
   });
 
-  it('toggles the inline preview on the hook and keeps Open wired to the drawer', () => {
+  it('toggles the inline preview on the hook and opens Edit directly in editing mode', () => {
     night();
     try {
       const opened: unknown[][] = [];
@@ -762,6 +784,8 @@ describe('DeskReviewSurface at night', () => {
       fireEvent.click(container.querySelector(`[data-open-post="${id}"]`) as HTMLElement);
       expect(opened.length).toBe(1);
       expect((opened[0][0] as QueueItem).id).toBe(id);
+      expect(opened[0][1]).toEqual({ editing: true });
+      expect(container.querySelector(`[data-open-post="${id}"]`)?.textContent).toBe('Edit');
       expect(container.querySelector('[data-inline-preview]')).toBeNull();
     } finally { day(); }
   });

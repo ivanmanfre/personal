@@ -467,7 +467,7 @@ function statusChipFor(stage: Stage, q: QueueItem, live: boolean, todayIso: stri
 
 export default function DeskReviewSurface({
   board, accent, mint, stageOf, onOpen, onOpenIdea, onApprove, onRemove, flashId, view, setView, skips,
-  leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onEditPromo,
+  leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onSwapPost, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
   reviewMode = false, compact = false, feedbackScope,
@@ -498,6 +498,7 @@ export default function DeskReviewSurface({
   onBackToBuffer?: (id: string) => void;
   onLeaveDayEmpty?: (id: string, date?: string) => void;
   onClearDay?: (id: string, date?: string) => Promise<{ ok: boolean; error?: string }>;
+  onSwapPost?: (id: string, replacementId: string) => Promise<{ ok: boolean; error?: string }>;
   onEditPromo?: (lmId: string, field: 'email' | 'dm', value: unknown) => Promise<{ ok: boolean; error?: string }>;
   flashId: string | null;
   view: 'list' | 'board' | 'feed' | 'calendar';
@@ -531,6 +532,23 @@ export default function DeskReviewSurface({
   // Night: tapping a row's hook opens its LinkedIn preview in place (one at a time); a second
   // tap closes it. The row's Open control still opens the full drawer.
   const [inlineId, setInlineId] = useState<string | null>(null);
+  const [swapId, setSwapId] = useState<string | null>(null);
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const scheduleLock = useRef(false);
+  const [scheduleError, setScheduleError] = useState<{ id: string; message: string } | null>(null);
+  const runScheduleAction = async (id: string, action: () => Promise<{ ok: boolean; error?: string }>) => {
+    if (scheduleLock.current) return;
+    scheduleLock.current = true;
+    setScheduleBusy(true);
+    setScheduleError(null);
+    try {
+      const result = await action();
+      if (result.ok) { setSwapId(null); setHistoryTick((t) => t + 1); }
+      else setScheduleError({ id, message: result.error || 'Could not update the schedule. Try again.' });
+    } catch {
+      setScheduleError({ id, message: 'Could not update the schedule. Try again.' });
+    } finally { scheduleLock.current = false; setScheduleBusy(false); }
+  };
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
 
@@ -550,6 +568,7 @@ export default function DeskReviewSurface({
      the header sentence and the colours follow the night look (2026-09-29, Ivan: "make sure
      u dont fuck up arch review section layout"). Buffer boards (RISE) keep the v3 words. */
   const keepWords = night && approvals;
+  const swapCandidates = board.queue.filter((candidate) => !isScheduledLocal(candidate) && !candidate.generating && !skips[candidate.id] && (stageOf(candidate) === 'scheduled' || (stageOf(candidate) === 'review' && (!reviewMode || approvedIds.has(candidate.id)))));
   const parts = (approvals
     ? [pendingN ? `${pendingN} pending approval` : null, approvedN ? `${approvedN} approved` : null, sched ? `${sched} scheduled` : null]
     : [buffer ? `${buffer} with no date yet` : null, sched ? `${sched} scheduled` : null]).filter(Boolean) as string[];
@@ -875,9 +894,28 @@ export default function DeskReviewSurface({
                   : null)
                 : shipsToday ? <StatusMark kind="today">Ships today</StatusMark>
                 : odd ? <StatusMark kind="plain">{odd}</StatusMark> : null}
-              <button type="button" className="prs-open" data-open-post={q.id} onClick={(e) => { e.stopPropagation(); onOpen(q); }} onKeyDown={(e) => e.stopPropagation()}>Open</button>
+              <button type="button" className="prs-open" data-open-post={q.id} onClick={(e) => { e.stopPropagation(); onOpen(q, bucket === 'published' ? undefined : { editing: true }); }} onKeyDown={(e) => e.stopPropagation()}>{bucket === 'published' ? 'Open' : 'Edit'}</button>
             </div>
           </div>
+          {bucket !== 'published' && isScheduledLocal(q) && (onClearDay || onSwapPost) && (
+            <div className="prs-schedule-actions" data-schedule-actions={q.id}>
+              <button type="button" className="prs-open" onClick={() => onOpen(q, { scheduling: true })}>Edit time</button>
+              {onSwapPost && <button type="button" className="prs-open" data-swap-post={q.id} disabled={scheduleBusy} aria-expanded={swapId === q.id} onClick={() => { setSwapId(swapId === q.id ? null : q.id); setScheduleError(null); }}>Swap</button>}
+              {onClearDay && <button type="button" className="prs-open" data-clear-day={q.id} disabled={scheduleBusy} title="Return this post to your ready posts and clear its date" onClick={() => void runScheduleAction(q.id, () => onClearDay(q.id, q.publish_date))}>Clear day</button>}
+            </div>
+          )}
+          {swapId === q.id && onSwapPost && (
+            <div className="prs-swap-picker">
+              <p>Choose a ready post for this slot. This post returns to your ready posts.</p>
+              {swapCandidates.filter((candidate) => candidate.id !== q.id).map((candidate) => (
+                <button type="button" className="prs-open" key={candidate.id} data-swap-candidate={candidate.id} disabled={scheduleBusy} onClick={() => void runScheduleAction(q.id, () => onSwapPost(q.id, candidate.id))}>
+                  {stripBrand(candidate.hook || candidate.title) || 'Untitled post'}
+                </button>
+              ))}
+              {!swapCandidates.some((candidate) => candidate.id !== q.id) && <p>No ready posts available to swap in.</p>}
+              <button type="button" className="prs-open" disabled={scheduleBusy} onClick={() => setSwapId(null)}>Cancel</button>
+            </div>
+          )}
           {inlineOpen && (
             <div className="prs-inline" data-inline-preview={q.id}>
               <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="lg" cover={q.generating ? 'render' : 'plate'} live={live} foldSwitch={false} mediaMax={380} />
@@ -1181,6 +1219,7 @@ export default function DeskReviewSurface({
 
   const surface = (
     <div data-surface="review" data-night-posts={night ? '' : undefined}>
+      {scheduleError && <p role="alert">{scheduleError.message}</p>}
       {night && <PostsNightStyle />}
       <style>{`
         /* The feed grey and the 555px column of LinkedIn itself (values from the 08-19 review

@@ -130,6 +130,13 @@ export const POSTS_NIGHT_CSS = `
 
 /* the row's Open control (the full drawer) and the inline LinkedIn preview */
 .prs-open { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 4px 12px; border-radius: 999px; border: 1px solid rgb(var(--nt-fg, 255 255 255) / .16); background: rgb(var(--nt-fg, 255 255 255) / .04); cursor: pointer; font: 700 12px/1.2 var(--cb-body, Manrope), sans-serif; color: rgb(var(--nt-fg, 255 255 255)); white-space: nowrap; }
+.prs-schedule-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.prs-open[data-open-post] { min-height: 44px; }
+.prs-schedule-actions .prs-open, .prs-swap-picker .prs-open { margin-left: 0; min-height: 44px; }
+.prs-swap-picker { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 13px; }
+.prs-swap-picker p { margin: 0; }
+.prs-swap-picker .prs-open { white-space: normal; text-align: left; }
+.prs-open:disabled { opacity: .5; cursor: wait; }
 .prs-open:hover { border-color: var(--prs-acc-45); color: var(--cb-accent-fg, var(--cb-accent)); }
 .prs-open:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: 2px; }
 .prs-status + .prs-open, .prs-reads + .prs-open { margin-left: 0; }
