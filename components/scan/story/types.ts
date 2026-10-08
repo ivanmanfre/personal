@@ -26,6 +26,7 @@ export interface ContentBrainMap {
 export interface StoryEdition {
  version: 1;
  topicMap?:ContentBrainMap;
+ rationale?:Partial<Record<'content'|'resource'|'conversations'|'calls'|'close',string>>;
  reviewStatus: 'draft'|'approved';
  slug: string;
  founderName: string;

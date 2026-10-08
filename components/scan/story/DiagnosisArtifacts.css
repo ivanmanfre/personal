@@ -1,0 +1,101 @@
+/* The accepted paper lanes, with the work itself sitting inside a shared dark band. */
+.dart{--dart-paper:#f3efe6;--dart-ink:#0f0e0d;--dart-band:#1d1916;--dart-red:#c8361b;--dart-hot:#e5502f;--dart-pad:clamp(22px,2.5vw,36px);padding:96px var(--studio-pad,22px) 104px;color:var(--dart-paper);border-top:1px solid #f3efe619;font-family:StudioSans,Geist,Arial,sans-serif}
+.dart .dart-head{margin-bottom:46px}
+.dart .dart-head h2{margin:0;max-width:18ch;font:800 clamp(40px,4.4vw,64px)/1.02 StudioDisplay,'Bricolage Grotesque',sans-serif;letter-spacing:-.035em}
+.dart .dart-board{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.06fr) minmax(0,1.12fr);grid-template-rows:auto auto 38px}
+.dart .dart-band{grid-column:2;grid-row:1/-1;z-index:1;border-radius:16px;background:var(--dart-band);box-shadow:inset 0 0 0 1px #f3efe61c,-24px 0 32px -30px #000,24px 0 32px -30px #000}
+.dart .dart-axis{grid-column:1/-1;grid-row:1;display:grid;grid-template-columns:subgrid;position:relative;z-index:2;padding:32px 0 12px;font:500 12px/1.4 StudioMono,monospace;letter-spacing:.065em;text-transform:uppercase}
+.dart .dart-axis>span{padding:0 var(--dart-pad);color:#bdb6aa}
+.dart .dart-axis>span:nth-child(2){color:var(--dart-paper)}
+.dart .dart-axis>span:nth-child(3){color:var(--dart-hot)}
+.dart .dart-list{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:subgrid;gap:16px 0;margin:0;padding:0;list-style:none}
+.dart .dart-lane{display:grid;grid-column:1/-1;grid-template-columns:subgrid;grid-template-rows:116px auto;margin:0;padding:0}
+.dart .dart-cell{position:relative;min-width:0;display:grid;grid-row:1/span 2;grid-template-rows:subgrid;padding:0 var(--dart-pad) 30px}
+.dart .dart-today{grid-column:1;border-radius:16px 0 0 16px;background:linear-gradient(90deg,var(--dart-paper) calc(100% - 40px),#e2d9ca)}
+.dart .dart-month{grid-column:2;z-index:2}
+.dart .dart-result{grid-column:3;border-radius:0 16px 16px 0;background:linear-gradient(90deg,#e2d9ca,var(--dart-paper) 40px)}
+.dart .dart-route,.dart .dart-arrival{display:flex;align-items:center;min-width:0;gap:12px}
+.dart .dart-route{margin-right:calc(-1 * var(--dart-pad))}
+.dart .dart-name{flex-shrink:0;max-width:75%;margin:0;font:800 clamp(20px,1.65vw,24px)/1.06 StudioDisplay,'Bricolage Grotesque',sans-serif;letter-spacing:-.025em;color:var(--dart-ink)}
+.dart .dart-source{flex:none;width:10px;height:10px;border:2px solid var(--dart-ink)}
+.dart .dart-wire{display:block;position:relative;flex:1;min-width:8px;height:1px;background:#f3efe644}
+.dart .dart-route .dart-wire{background:repeating-linear-gradient(90deg,#19191980 0 4px,transparent 4px 9px)}
+.dart .dart-work{display:flex;align-items:center;margin:0 calc(-1 * var(--dart-pad));min-width:0}
+.dart .dart-object{display:block;flex:none;width:clamp(165px,17vw,220px);height:116px;overflow:visible}
+.dart .dart-arrival{margin-left:calc(-1 * var(--dart-pad));padding-right:25%;gap:0}
+.dart .dart-arrival .dart-wire{height:2px;background:var(--dart-red)}
+.dart .dart-target{display:block;width:13px;height:13px;background:var(--dart-red)}
+.dart .dart-signal{position:absolute;inset:-3px 0;animation:dart-arrive 7s cubic-bezier(.4,0,.2,1) infinite;animation-delay:var(--dart-delay)}
+.dart .dart-signal:after{content:'';position:absolute;top:0;right:0;width:8px;height:8px;background:var(--dart-red)}
+.dart .dart-copy p{margin:0;font:400 16px/1.55 StudioSans,Geist,Arial,sans-serif;text-wrap:pretty}
+.dart .dart-today p{color:#4a443c}
+.dart .dart-num{color:var(--dart-ink);font-weight:650;font-variant-numeric:tabular-nums}
+.dart .dart-month p{color:#e4ddd1;line-height:1.6}
+.dart .dart-result p{font:800 clamp(21px,1.85vw,26px)/1.12 StudioDisplay,'Bricolage Grotesque',sans-serif;letter-spacing:-.025em;color:var(--dart-ink)}
+.dart .dart-tag{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* Motions have a working phase, a clear completed state, and a long reading pause. */
+.dart .dart-sheet-back{transform-origin:100px 95px;animation:dart-fan-back 7s ease-in-out infinite}
+.dart .dart-sheet-middle{transform-origin:120px 95px;animation:dart-fan-middle 7s ease-in-out infinite}
+.dart .dart-sheet-front{animation:dart-print 7s ease-in-out infinite}
+.dart .dart-print-tick{stroke-dasharray:25;stroke-dashoffset:0;animation:dart-approve 7s ease-in-out infinite}
+.dart .dart-resource{transform-origin:103px 100px;animation:dart-present 7s ease-in-out infinite}
+.dart .dart-download{animation:dart-receive 7s ease-in-out infinite}
+.dart .dart-download-arrow{animation:dart-download 7s ease-in-out infinite}
+.dart .dart-download-track{transform-origin:151px 111px;animation:dart-track 7s ease-in-out infinite}
+.dart .dart-message-first{animation:dart-message 7s ease-in-out infinite}
+.dart .dart-message-reply{animation:dart-reply 7s ease-in-out infinite}
+.dart .dart-typing rect{animation:dart-type 7s ease-in-out infinite}
+.dart .dart-typing .dart-dot-two{animation-name:dart-type-two}
+.dart .dart-typing .dart-dot-three{animation-name:dart-type-three}
+.dart .dart-object *{animation-delay:var(--dart-delay)}
+.dart .is-paused *,.dart .is-paused *:after{animation-play-state:paused!important}
+@keyframes dart-fan-back{0%,8%,87%,100%{transform:translateX(25px) rotate(0)}23%,74%{transform:translateX(-2px) rotate(-10deg)}}
+@keyframes dart-fan-middle{0%,8%,87%,100%{transform:translateX(13px) rotate(0)}27%,74%{transform:translateX(0) rotate(3deg)}}
+@keyframes dart-print{0%,8%,87%,100%{transform:translateX(-7px)}29%,74%{transform:translateX(3px) rotate(3deg)}}
+@keyframes dart-approve{0%,27%,86%,100%{stroke-dashoffset:25;opacity:0}38%,73%{stroke-dashoffset:0;opacity:1}}
+@keyframes dart-present{0%,8%,87%,100%{transform:rotate(-5deg) translateY(3px)}25%,74%{transform:rotate(3deg) translateY(-3px)}}
+@keyframes dart-receive{0%,14%,87%,100%{transform:translate(6px,-8px)}33%,74%{transform:translate(0,0)}}
+@keyframes dart-download{0%,23%,70%,100%{transform:translateY(0)}33%{transform:translateY(5px)}41%{transform:translateY(0)}}
+@keyframes dart-track{0%,19%,87%,100%{transform:scaleX(.12);opacity:.3}42%,74%{transform:scaleX(1);opacity:1}}
+@keyframes dart-message{0%,8%,88%,100%{transform:translate(-9px,5px)}24%,76%{transform:translate(0,0)}}
+@keyframes dart-reply{0%,25%,88%,100%{transform:translate(12px,7px);opacity:.35}42%,76%{transform:translate(0,0);opacity:1}}
+@keyframes dart-type{0%,13%,40%,100%{opacity:.25;transform:none}19%,29%{opacity:1;transform:translateY(-3px)}}
+@keyframes dart-type-two{0%,17%,44%,100%{opacity:.25;transform:none}23%,33%{opacity:1;transform:translateY(-3px)}}
+@keyframes dart-type-three{0%,21%,48%,100%{opacity:.25;transform:none}27%,37%{opacity:1;transform:translateY(-3px)}}
+@keyframes dart-arrive{0%,43%{transform:translateX(calc(-100% + 8px));opacity:0}44%{transform:translateX(calc(-100% + 8px));opacity:1}61%{transform:none;opacity:1}65%,100%{transform:none;opacity:0}}
+
+@media(max-width:940px){
+ .dart{padding:48px var(--studio-pad,22px) 52px}
+ .dart .dart-head{margin-bottom:28px}
+ .dart .dart-head h2{font-size:clamp(34px,9.4vw,48px);line-height:1.04}
+ .dart .dart-board{display:block}
+ .dart .dart-axis,.dart .dart-band{display:none}
+ .dart .dart-list{display:flex;flex-direction:column;gap:20px}
+ .dart .dart-lane{display:block}
+ .dart .dart-cell{display:block;padding:18px 18px 20px 38px}
+ .dart .dart-today{border-radius:16px 16px 0 0;background:linear-gradient(180deg,var(--dart-paper) calc(100% - 25px),#e2d9ca)}
+ .dart .dart-route{display:block;margin:0 0 12px}
+ .dart .dart-name{max-width:none;font-size:26px}
+ .dart .dart-source{position:absolute;left:16px;top:26px}
+ .dart .dart-route .dart-wire{position:absolute;left:20px;top:44px;bottom:0;width:1px;height:auto;background:repeating-linear-gradient(180deg,#19191980 0 4px,transparent 4px 9px)}
+ .dart .dart-month{margin:0;padding:16px 18px 20px 38px;background:var(--dart-band);box-shadow:inset 0 1px #f3efe61c,inset 0 -1px #f3efe61c}
+ .dart .dart-month:before{content:'';position:absolute;left:20px;top:0;bottom:0;width:1px;background:#f3efe644}
+ .dart .dart-work{position:absolute;right:16px;top:7px;width:86px;height:49px;margin:0;justify-content:center;pointer-events:none}
+ .dart .dart-work .dart-wire{display:none}
+ .dart .dart-object{width:86px;max-width:100%;height:49px;margin:0}
+ .dart .dart-result{border-radius:0 0 16px 16px;background:linear-gradient(180deg,#e2d9ca,var(--dart-paper) 25px)}
+ .dart .dart-arrival{position:absolute;left:20px;top:0;height:27px;margin:0;padding:0;display:block;width:2px;background:var(--dart-red)}
+ .dart .dart-arrival .dart-wire{display:none}
+ .dart .dart-target{position:absolute;left:-5px;bottom:0;width:12px;height:12px}
+ .dart .dart-tag{position:static;display:block;width:auto;height:auto;margin:0 0 8px;overflow:visible;clip-path:none;white-space:normal;font:500 12px/1.4 StudioMono,monospace;letter-spacing:.06em;text-transform:uppercase}
+ .dart .dart-today .dart-tag{color:#6b6359}
+ .dart .dart-month .dart-tag{color:#bdb6aa;max-width:calc(100% - 84px);min-height:34px;margin-bottom:10px}
+ .dart .dart-result .dart-tag{color:#a5301c}
+ .dart .dart-result p{font-size:clamp(21px,5.65vw,25px)}
+ .dart .dart-copy{max-width:62ch}
+}
+@media(prefers-reduced-motion:reduce){
+ .dart .dart-object *,.dart .dart-signal:after{animation:none!important}
+ .dart .dart-signal{display:none}
+}

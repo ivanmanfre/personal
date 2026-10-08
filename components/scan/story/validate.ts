@@ -37,6 +37,7 @@ export function validateEdition(raw:unknown,f:JourneyFixture,production=false):{
  }
  if(!object(raw.cover)||!strings(raw.cover.lines,2)||!strings(raw.cover.details,2)||!fields(raw.cover,['left','right']))errors.push('Lead-magnet cover is incomplete.');
  if(!object(raw.flow)||!strings(raw.flow.messages,4)||!items(raw.flow.checks,['label','value'])||raw.flow.checks.length!==3||!fields(raw.flow,['signal','callTitle','brief']))errors.push('The example lead journey is incomplete.');
+ if(raw.rationale!==undefined&&(!object(raw.rationale)||Object.entries(raw.rationale).some(([k,v])=>!['content','resource','conversations','calls','close'].includes(k)||!text(v)||v.length>600)))errors.push('Section rationale is invalid.');
  if(errors.length)return{edition:null,errors};
  const {topicMap,...content}=raw;
  const graph=validateContentBrainMap(topicMap);
