@@ -732,7 +732,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).not.toContain(escHtml(dtc.screenshots.pdp_url));
     expect(html).toContain(escHtml(dtc.screenshots.homepage_url));
     // The empty block renders its honest note, and the hero drops its second row.
-    expect(html).toContain('Your repeat rate is private, so we did not guess it.');
+    expect(html).toContain('Your repeat-order rate needs store data to assess.');
     expect(html).not.toContain('href="#second-order"');
     expect(html).toContain('walk you through it on your live store');
     // A string price still formats.
@@ -1245,6 +1245,22 @@ describe('evidence-first scan repair', () => {
     const html = renderDtc(d, 'Example');
     expect(html).not.toContain('No verified competitor creatives');
     expect(html).toContain('Too few verified creatives for a comparison');
+  });
+  it.each([true, false])('keeps an empty repeat-order section neutral when verified features are present: %s', (hasFeatures) => {
+    const d = inventoryFixture();
+    d.drop_off.items[0].detail = 'The boxed option and refill cannot be ordered.';
+    d.second_order = { items: [], note: "We couldn't see a clear second-order gap." };
+    d.public_depth = { status: hasFeatures ? 'present' : 'blocked', data: { store_features: [{ kind: 'loyalty', title: 'Club rewards', quote: 'Earn five points per pound.', source_url: 'https://example.com/pages/club' }] } };
+    const html = renderDtc(d, 'Example');
+    expect(html).toContain('The boxed option and refill cannot be ordered.');
+    expect(html).not.toContain('clear second-order gap');
+    if (hasFeatures) {
+      expect(html).toContain('Your repeat-order rate needs store data. The public features below show what is already available to shoppers.');
+      expect(html).toContain('Already on your store');
+    } else {
+      expect(html).toContain('Your repeat-order rate needs store data to assess.');
+      expect(html).not.toContain('public features below');
+    }
   });
   it('puts additional named cases behind a closed disclosure', () => {
     const html = renderDtc(inventoryFixture(), 'Example');

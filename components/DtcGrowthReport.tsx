@@ -1528,6 +1528,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const dAny = d as any;
   const storeFeatures = dAny.public_depth?.status === 'present' && Array.isArray(dAny.public_depth.data?.store_features)
     ? dAny.public_depth.data.store_features.filter((f: any) => f.quote && proofHref(f.source_url)) : [];
+  const secondOrderBlock = d.second_order && !promiseItems(d.second_order).length
+    ? { ...d.second_order, note: storeFeatures.length
+      ? 'Your repeat-order rate needs store data. The public features below show what is already available to shoppers.'
+      : 'Your repeat-order rate needs store data to assess.' }
+    : d.second_order;
   const riseCases = casesFor([
     ...(Array.isArray(dAny.competitors?.data?.keywords) ? dAny.competitors.data.keywords : []),
     ...(Array.isArray(dAny.bestsellers?.data?.handles) ? dAny.bestsellers.data.handles : []),
@@ -1832,7 +1837,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             ctaHref={ctaUrl('hero')}
           />
           <PromiseSection d={d} id="drop-off" n={1} title="Purchase path observations" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
-          <PromiseSection d={d} id="second-order" n={2} title="Repeat purchase observations" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection d={d} id="second-order" n={2} title="Repeat purchase observations" block={secondOrderBlock} accent={accent} ink={ink} headingFont={headingFont} />
           {storeFeatures.length > 0 ? (
             <section data-store-features="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 py-12" style={{ borderTop: `1px solid ${ink}14`, color: ink }}>
               <h2 className="text-[1.75rem] font-bold" style={{ fontFamily: headingFont }}>Already on your store</h2>
