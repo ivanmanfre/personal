@@ -26,6 +26,7 @@
 // Store facts (tech_stack app names, growth_score, pagespeed, peer comparisons) are
 // deliberately NOT rendered as standalone display anywhere.
 import React, { useEffect, useState } from 'react';
+import './DtcGrowthReport.css';
 import { casesFor, caseUrl } from './riseCases';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
@@ -865,56 +866,11 @@ function promiseItems(block?: PromiseBlock | null): PromiseItem[] {
   return Array.isArray(block?.items) ? block!.items.filter((it) => it && it.id !== 'no_new_products' && typeof it.title === 'string' && it.title.trim()) : [];
 }
 
-// The item the headline is about. Falls back to the first item on the page, so a missing or
-// stale ref never blanks the proof card.
-function heroItemOf(d: any): PromiseItem | null {
-  const ref: string = d?.hero?.item_ref || '';
-  const [key, idx] = ref.split('.');
-  const block = key === 'drop_off' ? d.drop_off : key === 'second_order' ? d.second_order : null;
-  return promiseItems(block)[Number(idx) || 0] || promiseItems(d.drop_off)[0] || promiseItems(d.second_order)[0] || null;
-}
-
 function productPrice(p?: PromiseItem['product']): string | null {
   if (!p || p.price == null) return null;
   const n = typeof p.price === 'number' ? p.price : parseFloat(String(p.price));
   if (!Number.isFinite(n) || n <= 0) return null;
   return fmtPrice(n, curSymbol(p.currency));
-}
-
-// Marks the item's public fact inside the headline when the headline states it verbatim
-// ("sold out"). Nothing is marked when it does not appear: the mark never invents emphasis.
-function markedHeadline(headline: string, mark: string | undefined, accent: string): React.ReactNode {
-  const m = clean(mark);
-  if (!m || m.length < 3) return headline;
-  const at = headline.toLowerCase().indexOf(m.toLowerCase());
-  if (at < 0) return headline;
-  return (
-    <>
-      {headline.slice(0, at)}
-      <mark data-hero-mark="1" style={{ background: `linear-gradient(transparent 58%, ${accent} 58%)`, color: 'inherit' }}>
-        {headline.slice(at, at + m.length)}
-      </mark>
-      {headline.slice(at + m.length)}
-    </>
-  );
-}
-
-// Their product image off their own catalog. A failed load renders nothing: never a broken
-// img, never a placeholder box.
-function ProductImg({ src, alt, className, ink }: { src?: string | null; alt: string; className?: string; ink: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return null;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      decoding="async"
-      onError={() => setFailed(true)}
-      className={className}
-      data-store-img="1"
-      style={{ aspectRatio: '4 / 5', objectFit: 'contain', background: '#ffffff', border: `1px solid ${ink}14`, borderRadius: 8, flexShrink: 0 }}
-    />
-  );
 }
 
 // "/products/<handle>" of a URL or path, locale and collection prefixes ignored.
@@ -928,342 +884,97 @@ function sameProductPage(itemUrl?: string | null, shotPath?: string | null): boo
   return !!a && a === productHandle(shotPath);
 }
 
-// Their #1 best seller's product record, when any item on the page carries it with an image.
-function bestSellerProduct(d: any): { title?: string; url?: string; image_url?: string } | null {
-  const top = String(d?.bestsellers?.data?.handles?.[0] || '').toLowerCase();
-  if (!top) return null;
-  const all = [...promiseItems(d.drop_off), ...promiseItems(d.second_order)];
-  const hit = all.find((it) => it?.product?.image_url && productHandle(it.product.url) === top);
-  return hit ? (hit.product as any) : null;
-}
-
 const INVENTORY_IDS = new Set(['bestseller_sold_out', 'refill_sold_out', 'sold_out', 'high_oos', 'out_of_stock']);
 function isInventoryItem(item?: PromiseItem | null): boolean {
   return !!item && INVENTORY_IDS.has(item.id);
 }
 
-function InventoryExhibit({ shop, ink, headingFont }: { shop: any; ink: string; headingFont: string }) {
+function InventoryExhibit({ shop }: { shop: any; ink: string; headingFont: string }) {
   const all = shop?.status === 'present' && Array.isArray(shop.catalog_items) ? shop.catalog_items : [];
   if (!all.length) return null;
   const shown = all.slice(0, 12);
-  return (
-    <div data-inventory-exhibit="1" className="mt-8" style={{ color: ink }}>
-      <h2 className="text-[1.15rem] font-bold" style={{ fontFamily: headingFont }}>Product and variant availability</h2>
-      <p className="mt-2 text-[0.85rem]">Showing {shown.length} of {all.length} collected products. Availability is a snapshot, not a live stock feed.</p>
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-[0.9rem]" style={{ borderCollapse: 'collapse' }}>
-          <thead><tr style={{ borderBottom: `2px solid ${ink}` }}><th className="py-3 pr-3">Product</th><th className="py-3 pr-3">Variant and price</th><th className="py-3">Availability</th></tr></thead>
-          <tbody>{shown.flatMap((product: any, i: number) => {
-            const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ title: 'Variant not recorded', available: null }];
-            return variants.slice(0, 8).map((variant: any, j: number) => (
-              <tr key={`${product.handle || i}-${j}`} style={{ borderBottom: `1px solid ${ink}1f` }}>
-                {j === 0 ? <th scope="rowgroup" rowSpan={Math.min(variants.length, 8)} className="py-3 pr-3 align-top font-semibold" style={{ width: '28%' }}>
-                  {proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{clean(product.title)}</a> : clean(product.title)}
-                  {variants.length > 8 ? <span className="block mt-1 text-[0.75rem] font-normal">First 8 of {variants.length} variants</span> : null}
-                </th> : null}
-                <td className="py-2 pr-3"><span className="block">{clean(variant.title) || 'Variant not recorded'}</span><span className="block text-[0.8rem] opacity-75">{variant.price != null && Number.isFinite(Number(variant.price)) && variant.currency ? fmtPrice(Number(variant.price), curSymbol(variant.currency)) : 'Price unknown'}</span></td>
-                <td className="py-2 font-semibold">{variant.available === true ? 'Available' : variant.available === false ? 'Sold out' : 'Availability unknown'}</td>
-              </tr>
-            ));
-          })}</tbody>
-        </table>
-      </div>
-      <p className="mt-3 text-[0.8rem]">{checkedAt(shop.fetched_at) ? `Catalog checked ${checkedAt(shop.fetched_at)}. ` : ''}
-        {proofHref(shop.source_url) ? <a href={proofHref(shop.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">View your catalog</a> : null}
-      </p>
-    </div>
-  );
+  return <div data-inventory-exhibit="1" className="rise-inventory">
+    <div className="rise-inventory-heading"><h3>Product and variant availability</h3><p>Showing {shown.length} of {all.length} collected products</p></div>
+    <table><caption className="sr-only">Collected product variants, prices and availability</caption><thead><tr><th>Product</th><th>Variant</th><th>Price</th><th>Availability</th></tr></thead>
+      {shown.map((product: any, i: number) => {
+        const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ title: 'Variant not recorded', available: null }];
+        return <tbody data-inventory-product={product.handle || i} data-product-title={clean(product.title)} key={product.handle || i}>
+          {variants.slice(0, 8).map((variant: any, j: number) => <tr key={j} data-variant="1">
+            {j === 0 ? <th scope="rowgroup" rowSpan={Math.min(variants.length, 8)} className="rise-product-name">{proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer">{clean(product.title)}</a> : clean(product.title)}</th> : null}
+            <td className="rise-variant-name">{proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer">{clean(variant.title) || 'Variant not recorded'}</a> : clean(variant.title) || 'Variant not recorded'}</td>
+            <td className="rise-price">{variant.price != null && Number.isFinite(Number(variant.price)) && variant.currency ? fmtPrice(Number(variant.price), curSymbol(variant.currency)) : 'Price unknown'}</td>
+            <td className="rise-availability"><span data-available={variant.available === true ? 'available' : variant.available === false ? 'sold-out' : 'unknown'}>{variant.available === true ? 'Available' : variant.available === false ? 'Sold out' : 'Availability unknown'}</span></td>
+          </tr>)}
+        </tbody>;
+      })}
+    </table>
+    {shown.filter((p: any) => Array.isArray(p.variants) && p.variants.length > 8).map((p: any, i: number) => <p key={i} data-variant-cap="1" className="rise-receipt">{clean(p.title)}: First 8 of {p.variants.length} variants shown.</p>)}
+    <p className="rise-receipt">Availability is a snapshot, not a live stock feed. {checkedAt(shop.fetched_at) ? `Catalog checked ${checkedAt(shop.fetched_at)}. ` : ''}{proofHref(shop.source_url) ? <a href={proofHref(shop.source_url)} target="_blank" rel="noopener noreferrer">View your catalog</a> : null}</p>
+
+  </div>;
 }
 
-function PromiseHero({
-  d,
-  companyName,
-  readDate,
-  accent,
-  ink,
-  surface,
-  headingFont,
-  ctaHref,
-}: {
-  d: any;
-  companyName: string;
-  readDate: string | null;
-  accent: string;
-  ink: string;
-  surface: string;
-  headingFont: string;
-  ctaHref: string;
-}) {
-  const item = heroItemOf(d);
-  // These findings need paired quotes or observed states; a generic store image cannot prove them.
-  const evidenceOnly = (item?.evidence?.citations?.length || 0) > 1
-    || ['unit_price_mismatch', 'broken_help_link'].includes(item?.id || '');
-  const headline = clean(d.hero?.headline) || clean(item?.title);
-  const inventory = isInventoryItem(item);
-  const product = !inventory && item?.product?.image_url ? item.product : null;
-  const shots = datedScreenshots(d.screenshots);
-  const shotDate = checkedAt(shots?.captured_at);
-  // A dated capture takes precedence over a photograph, only for this exact product page.
-  // An undated capture, or one of another page, is not evidence for this item.
-  const capture = shots?.pdp_url && shotDate && sameProductPage(item?.product?.url || item?.evidence?.source_url, shots?.pdp_path)
-    ? String(shots.pdp_url) : null;
-  // Generic store imagery is context only and never stands in for inventory evidence.
-  const homeShot = !inventory && !product && !capture && shots?.homepage_url && shotDate ? String(shots.homepage_url) : null;
-  const bestProduct = !inventory && !product && !capture && !homeShot ? bestSellerProduct(d) : null;
-  const still = capture || homeShot || bestProduct?.image_url || null;
-  const price = productPrice(product || undefined);
-  const proofUrl = product?.url || item?.evidence?.source_url || null;
-  // Numbered after the filter: a page with only a second-order item lists it as 1, not 2.
-  const rows = [
-    { k: 'Purchase path', href: '#drop-off', it: promiseItems(d.drop_off)[0] },
-    { k: 'The second order', href: '#second-order', it: promiseItems(d.second_order)[0] },
-  ].filter((r) => r.it).map((r, i) => ({ ...r, n: i + 1 }));
-
-  return (
-    <section aria-label="The short version" data-promise-hero="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 pt-6 sm:pt-14 pb-12 sm:pb-16">
-      <div className="grid lg:grid-cols-12 gap-y-5 lg:gap-x-12">
-        <div className="lg:col-span-7 lg:row-start-1">
-          <p className="text-[0.75rem] font-bold uppercase tracking-[0.14em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
-            {companyName}
-            {readDate ? ` · Read ${readDate}` : ''}
-          </p>
-          <h1
-            className="mt-3 font-extrabold tracking-[-0.02em]"
-            style={{ fontFamily: headingFont, fontSize: 'clamp(1.8rem, 4.2vw, 3.3rem)', lineHeight: 1.08, color: ink }}
-          >
-            {markedHeadline(headline, item?.evidence?.value, accent)}
-          </h1>
-        </div>
-
-        {item && (capture || (!evidenceOnly && (product || still))) ? (
-          <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
-            <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
-              {product && !capture ? (
-                <div className="flex gap-3 items-start">
-                  <ProductImg src={product.image_url} alt={clean(product.title)} className="w-[118px] sm:w-[160px] lg:w-[180px]" ink={ink} />
-                  <div className="min-w-0 flex-1 py-1">
-                    <div className="font-bold leading-snug" style={{ fontFamily: headingFont, fontSize: '0.98rem', color: ink }}>{clean(product.title)}</div>
-                    {price ? <div className="mt-1 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>From {price}</div> : null}
-                    <div className="mt-3 text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
-                      {clean(item.evidence?.label)}
-                    </div>
-                    <div
-                      data-hero-fact="1"
-                      className="mt-1.5 inline-block font-bold text-[1rem] px-3 py-1.5"
-                      style={{ fontFamily: headingFont, color: ink, background: surface, border: `3px solid ${accent}`, boxShadow: `0 0 0 1.5px ${ink}`, borderRadius: 6, overflowWrap: 'anywhere' }}
-                    >
-                      {clean(item.evidence?.value)}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <a href={still as string} target="_blank" rel="noopener noreferrer" className="block" style={{ borderRadius: 8, overflow: 'hidden', background: surface, border: `1px solid ${ink}14` }}>
-                    <img
-                      src={still as string}
-                      alt={capture ? `${companyName} product page` : homeShot ? `${companyName} homepage` : clean(bestProduct?.title) || `${companyName} best seller`}
-                      decoding="async"
-                      data-store-img="1"
-                      data-store-img-kind={capture ? 'pdp' : homeShot ? 'home' : 'best'}
-                      style={{ display: 'block', width: '100%', height: capture ? 'auto' : 210, objectFit: bestProduct && !capture && !homeShot ? 'contain' : 'cover', objectPosition: homeShot ? '50% 0%' : '50% 30%' }}
-                    />
-                  </a>
-                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1" hidden={!!homeShot || !!bestProduct}>
-                    <span className="text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>{clean(item.evidence?.label)}</span>
-                    <span data-hero-fact="1" className="font-bold text-[1rem] px-2.5 py-1" style={{ fontFamily: headingFont, color: ink, border: `3px solid ${accent}`, boxShadow: `0 0 0 1.5px ${ink}`, borderRadius: 6 }}>
-                      {clean(item.evidence?.value)}
-                    </span>
-                  </div>
-                </>
-              )}
-              <figcaption className="mt-2 text-[0.8rem] leading-snug" style={{ color: ink, opacity: 0.75 }}>
-                {product && !capture
-                  ? `Product photograph for identification, not proof of availability.`
-                  : capture
-                    ? `Your product page, captured ${shotDate}.`
-                    : homeShot
-                      ? `Homepage context only, captured ${shotDate}.`
-                      : `Your best seller, ${clean(bestProduct?.title)}.`}{' '}
-                {proofUrl ? (
-                  <a href={proofHref(proofUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
-                    See it on your store
-                  </a>
-                ) : null}
-              </figcaption>
-            </figure>
-          </div>
-        ) : null}
-
-        <div className="lg:col-span-7 lg:row-start-2">
-          {rows.length ? (
-            <ol className="mt-1" style={{ listStyle: 'none', padding: 0, borderTop: `1px solid ${ink}1f` }}>
-              {rows.map((r) => (
-                <li key={r.n} className="grid py-3.5" style={{ gridTemplateColumns: '30px minmax(0,1fr)', columnGap: 8, borderBottom: `1px solid ${ink}1f` }}>
-                  <span className="font-extrabold text-[1.25rem] leading-none" style={{ fontFamily: headingFont, color: ink }}>{r.n}</span>
-                  <div className="min-w-0">
-                    <div className="text-[0.75rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink }}>{r.k}</div>
-                    <a href={r.href} className="block mt-1 text-[1rem] leading-[1.45] underline-offset-4 hover:underline" style={{ color: ink }}>
-                      {isInventoryItem(r.it) ? 'Product and variant availability' : clean(r.it!.title)}
-                    </a>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : null}
-          <div className="flex items-center gap-3 pt-5">
-            <img
-              src={MATTAN_PHOTO}
-              alt="Mattan Danino"
-              width={900}
-              height={639}
-              decoding="async"
-              style={{ width: 48, height: 48, objectFit: 'cover', objectPosition: '48% 18%', borderRadius: 10, flexShrink: 0 }}
-            />
-            <p className="text-[0.95rem] leading-snug" style={{ color: ink }}>
-              <span className="font-bold">Mattan Danino</span>, CEO, RISE DTC. I'll walk you through {rows.length > 1 ? 'both' : 'it'} on your live store in 30 minutes.
-            </p>
-          </div>
-          <a
-            href={ctaHref}
-            data-cta="hero"
-            data-pill-hide="1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cedt-anim mt-4 flex sm:inline-flex items-center justify-center min-h-[52px] rounded-full px-8 text-[1rem] font-bold transition-transform hover:-translate-y-0.5"
-            style={{ background: accent, color: ink }}
-          >
-            Walk my scan with Mattan
-          </a>
-          <p className="mt-2.5 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.75 }}>
-            A dated snapshot of your public pages. Reopening this link does not rerun the research.
-          </p>
-        </div>
-      </div>
-      {inventory ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
-    </section>
-  );
-}
-
-function PromiseSection({
-  d,
-  id,
-  n,
-  title,
-  block,
-  accent,
-  ink,
-  headingFont,
-}: {
-  d: any;
-  id: string;
-  n: number;
-  title: string;
-  block?: PromiseBlock | null;
-  accent: string;
-  ink: string;
-  headingFont: string;
+function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
+  d: any; id: string; n: number; title: string; block?: PromiseBlock | null; accent: string; ink: string; headingFont: string;
 }) {
   const items = promiseItems(block);
-  const note = clean(block?.note);
-  if (!items.length && !note) return null;
+  if (!items.length) return null;
+  const allItems = [...promiseItems(d.drop_off), ...promiseItems(d.second_order)];
+  const inventoryItem = allItems.find(isInventoryItem);
+  const shots = datedScreenshots(d.screenshots);
+  const capturedItem = checkedAt(shots?.captured_at) && shots?.pdp_url
+    ? allItems.find((it) => sameProductPage(it.product?.url || it.evidence?.source_url, shots.pdp_path)) : null;
   return (
-    <section id={id} aria-label={title} data-promise-section={id} className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 py-14 sm:py-20" style={{ borderTop: `1px solid ${ink}14`, scrollMarginTop: 12 }}>
-      <div className="flex items-center gap-3.5">
-        <span
-          className="inline-flex items-center justify-center font-extrabold text-[1.1rem]"
-          style={{ width: 34, height: 34, background: accent, color: ink, fontFamily: headingFont, borderRadius: 4, flexShrink: 0 }}
-        >
-          {n}
-        </span>
-        <h2 className="font-extrabold tracking-[-0.02em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.75rem, 4.4vw, 3rem)', color: ink, lineHeight: 1.05 }}>
-          {title}
-        </h2>
-      </div>
-
-      {items.length ? (
-        <ol className="mt-10" style={{ listStyle: 'none', padding: 0 }}>
-          {items.map((it, i) => {
-            const hero = heroItemOf(d);
-            const product = !isInventoryItem(it) && it.product?.image_url ? it.product : null;
-            const productImage = product?.image_url !== hero?.product?.image_url && !items.slice(0, i).some((prior) => prior.product?.image_url === product?.image_url) ? product?.image_url : null;
-            const shot = datedScreenshots(d.screenshots);
-            const capture = checkedAt(shot?.captured_at) && sameProductPage(it.product?.url || it.evidence?.source_url, shot?.pdp_path)
-              && !sameProductPage(hero?.product?.url || hero?.evidence?.source_url, shot?.pdp_path) ? shot.pdp_url : null;
-            const price = productPrice(product || undefined);
-            const ev = it.evidence;
-            return (
-              <li
-                key={`${it.id}-${i}`}
-                data-promise-item={it.id}
-                className="grid lg:grid-cols-12 gap-y-4 lg:gap-x-12"
-                style={i > 0 ? { borderTop: `1px solid ${ink}14`, paddingTop: '2.5rem', marginTop: '2.5rem' } : undefined}
-              >
-                <div className="lg:col-span-8 min-w-0">
-                  <div className="flex gap-4 items-start">
-                    {product ? <ProductImg src={productImage} alt={clean(product.title)} className="lg:hidden w-[72px]" ink={ink} /> : null}
-                    <h3 className="min-w-0 font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.3rem, 2.5vw, 1.85rem)', color: ink, lineHeight: 1.15 }}>
-                      {clean(it.title)}
-                    </h3>
-                  </div>
-                  {it.detail ? (
-                    <p className="mt-4 text-[1.0625rem] sm:text-[1.15rem] leading-[1.6]" style={{ color: ink, opacity: 0.85, maxWidth: '64ch' }}>
-                      {clean(it.detail)}
-                    </p>
-                  ) : null}
-                  {it.fix ? (
-                    <div className="mt-5" style={{ borderLeft: `3px solid ${accent}`, paddingLeft: '1rem' }}>
-                      <div className="text-[0.75rem] font-bold uppercase tracking-[0.16em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>The fix</div>
-                      <p className="mt-1 text-[1.05rem] leading-[1.55] font-semibold" style={{ color: ink, maxWidth: '64ch' }}>{clean(it.fix)}</p>
-                    </div>
-                  ) : null}
-                  {capture ? <figure className="mt-5" data-promise-capture="1"><a href={capture} target="_blank" rel="noopener noreferrer"><img src={capture} alt="Captured source product page" className="w-full rounded-lg" loading="lazy" /></a><figcaption className="mt-2 text-[0.8rem]">Product page captured {checkedAt(shot.captured_at)}.</figcaption></figure> : null}
-                  {isInventoryItem(it) && !isInventoryItem(hero) && [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(isInventoryItem)?.id === it.id ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
-                  {ev && (ev.label || ev.value) ? ev.citations && ev.citations.length > 1 ? (
-                    <div className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
-                      <p className="font-semibold">{clean(ev.label)}</p>
-                      {ev.citations.map((citation, citationIndex) => (
-                        <blockquote data-promise-citation="1" key={`${citation.url}-${citationIndex}`} className="mt-3">
-                          <p>{clean(citation.quote)}</p>
-                          {proofHref(citation.url) ? (
-                            <a href={proofHref(citation.url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
-                              Read source {citationIndex + 1}
-                            </a>
-                          ) : null}
-                        </blockquote>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
-                      <span className="font-semibold">{clean(ev.label)}</span>
-                      {ev.value ? `: ${clean(ev.value)}. ` : '. '}
-                      {ev.source_url ? (
-                        <a href={proofHref(ev.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
-                          {sourceLabel(ev.source_url, true)}
-                        </a>
-                      ) : null}
-                    </p>
-                  ) : null}
-                </div>
-                {product ? (
-                  <aside className="hidden lg:block lg:col-span-4">
-                    <ProductImg src={productImage} alt={clean(product.title)} className="w-full max-w-[260px]" ink={ink} />
-                    <div className="mt-3 font-bold leading-snug text-[0.95rem]" style={{ fontFamily: headingFont, color: ink }}>{clean(product.title)}</div>
-                    {price ? <div className="mt-0.5 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>From {price}</div> : null}
-                  </aside>
-                ) : null}
-              </li>
-            );
-          })}
-        </ol>
-      ) : null}
-
-      {note ? (
-        <p data-promise-note="1" className="mt-12 pt-5 text-[0.95rem] leading-relaxed" style={{ borderTop: `1px dashed ${ink}33`, color: ink, opacity: 0.8, maxWidth: '64ch' }}>
-          {note}
-        </p>
-      ) : null}
+    <section id={id} aria-label={title} data-promise-section={id} className="rise-findings">
+      {items.map((it, i) => {
+        const ev = it.evidence;
+        return <article key={`${it.id}-${i}`} className="rise-finding" data-promise-item={it.id}>
+          <div className="rise-finding-header">
+            <div><p className="rise-chapter">Finding {n + i} · {title}</p><h2>{clean(it.title)}</h2>{it.detail ? <p className="rise-detail">{clean(it.detail)}</p> : null}</div>
+            {it.fix ? <aside className="rise-action"><h3>Recommended next step</h3><p>{clean(it.fix)}</p></aside> : null}
+          </div>
+          {ev && (ev.label || ev.value) ? ev.citations && ev.citations.length > 1 ? (
+            <div data-promise-evidence="1"><p className="rise-evidence-label">{clean(ev.label)}</p><div className="rise-paired">
+              {ev.citations.map((citation, ci) => <blockquote data-promise-citation="1" key={`${citation.url}-${ci}`}>
+                <p className="rise-source-label">{it.id === 'refund_policy_mismatch' && ci < 2 ? ['The linked refund destination', 'The separate returns destination'][ci] : `Source ${ci + 1}${proofHref(citation.url) ? ` · ${new URL(citation.url).hostname.replace(/^www\./, '')}` : ''}`}</p>
+                <p className="rise-quote">{clean(citation.quote)}</p>
+                {proofHref(citation.url) ? <a href={proofHref(citation.url)} target="_blank" rel="noopener noreferrer">Read source {ci + 1}</a> : null}
+              </blockquote>)}
+            </div></div>
+          ) : <p data-promise-evidence="1" className="rise-receipt"><strong>{clean(ev.label)}</strong>{ev.value ? `: ${clean(ev.value)}. ` : '. '}{proofHref(ev.source_url) ? <a href={proofHref(ev.source_url)} target="_blank" rel="noopener noreferrer">{sourceLabel(ev.source_url, true)}</a> : null}</p> : null}
+          {it === inventoryItem ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
+          {it === capturedItem ? <figure data-promise-capture="1" className="rise-capture">
+            <a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt={`${clean(it.product?.title) || 'Source product'} page capture`} data-store-img="1" loading="lazy" className="rise-capture-image" /></a>
+            <figcaption><strong>{clean(it.product?.title) || 'Matched product page'}</strong><p>Open the image to inspect the full page.</p><p>Captured {checkedAt(shots.captured_at)}.</p>{proofHref(it.product?.url || ev?.source_url) ? <a href={proofHref(it.product?.url || ev?.source_url)} target="_blank" rel="noopener noreferrer">Open the source page</a> : null}</figcaption>
+          </figure> : null}
+          {!isInventoryItem(it) && it.product ? <p className="rise-receipt">{clean(it.product.title)}{productPrice(it.product) ? ` · From ${productPrice(it.product)}` : ''}</p> : null}
+        </article>;
+      })}
+      {block?.note ? <p className="rise-coverage" data-promise-note="1">{clean(block.note)}</p> : null}
     </section>
   );
+}
+
+function CompactAdRecords({ google, metaPage, metaSweep, competitors }: { google: any; metaPage: any; metaSweep: any; competitors: any }) {
+  const g = google?.status === 'present' ? google.data : null;
+  const m = metaPage?.status === 'present' ? metaPage.data : null;
+  const sweep = ['present', 'empty'].includes(metaSweep?.status) ? metaSweep.data : null;
+  const comp = competitors?.status === 'present' ? competitors.data : null;
+  const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;
+  const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
+  return <div className="rise-ad-records">
+    {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
+    {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active ads.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
+    {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
+      {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
+      {g.newest_first_shown ? <p>Newest first shown: {isoDay(g.newest_first_shown)}{newestAge != null ? `, ${newestAge} ${dayWord(newestAge)} before the check` : ''}.</p> : null}
+      {g.oldest_first_shown ? <p>Oldest first shown: {isoDay(g.oldest_first_shown)}.</p> : null}
+      {g.latest_last_shown ? <p>Latest last shown: {isoDay(g.latest_last_shown)}.</p> : null}
+      <div className="rise-ad-grid">{(Array.isArray(g.creatives) ? g.creatives.slice(0, 6) : []).map((c: any, i: number) => <div key={i}><strong>{clean(c.format) || 'Ad creative'}</strong><p>{c.first_shown ? `First shown ${isoDay(c.first_shown)}. ` : ''}{c.last_shown ? `Last shown ${isoDay(c.last_shown)}.` : ''}</p>{[...new Set([c.ad_url, c.preview_url, creativeImageSrc(c)].filter((url) => url && proofHref(url)))].map((url: any, j) => <a key={url} href={url} target="_blank" rel="noopener noreferrer">{j === 0 ? 'View creative' : 'View source image'}</a>)}</div>)}</div>
+    </div> : null}
+    {comp ? <div><h3>Competitor sample</h3>{Array.isArray(comp.keywords) && comp.keywords.length ? <p>Keywords: {comp.keywords.map(clean).join(', ')}</p> : null}<p>{typeof comp.advertisers_seen === 'number' ? `${amount(comp.advertisers_seen, comp.capped)} separate advertisers. ` : ''}{typeof comp.sampled_items === 'number' ? `${amount(comp.sampled_items, comp.capped)} ads sampled.` : ''}</p><div className="rise-ad-grid">{compStrip(competitors).slice(0, 6).map((c: any, i: number) => <div key={i}><strong>{clean(c.advertiser)}</strong><p>{c.start_date ? `Started ${isoDay(c.start_date)}. ` : ''}{typeof c.age_days === 'number' ? `${c.age_days} ${dayWord(c.age_days)} before the check.` : ''}</p>{c.keyword ? <p>Keyword: {clean(c.keyword)}</p> : null}{c.opening_text ? <p>{clean(c.opening_text)}</p> : null}{proofHref(c.ad_url || c.snapshot_url || creativeImageSrc(c)) ? <a href={proofHref(c.ad_url || c.snapshot_url || creativeImageSrc(c))} target="_blank" rel="noopener noreferrer">View creative</a> : null}</div>)}</div></div> : null}
+  </div>;
 }
 
 // ── Week-one panel: the split of labor, drawn ──────────────────────────────────────────
@@ -1433,7 +1144,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     bookingUrl + (bookingUrl.includes('?') ? '&' : '?') +
     'utm_source=scan&utm_medium=cta&utm_campaign=growth-scan&utm_content=' + slot;
 
-  // New-contract rows lead with the two promised sections (see PromiseHero).
+  // Approved new-contract rows use the dossier; legacy and held rows retain their existing path.
   const qualityHeld = !!d.quality && (d.quality.version !== 'rise-quality-2026-09-30' || d.quality.approved !== true);
   const promise = !qualityHeld && isPromiseRow(d);
   // Legacy prose scrub (see scrubProse): paid wording only ships when Meta ads were read live.
@@ -1716,6 +1427,67 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     </main>
   );
 
+  if (promise) return (
+    <div className="rise-report" style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
+      <header className="rise-cover">
+        <div className="rise-cover-inner">
+          <div className="rise-masthead"><a href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} alt={wordmark} /></a><a href="#rise-conversation" data-cta="header">Discuss the report ↗</a></div>
+          <section data-promise-hero="1" aria-label="Report introduction" className="rise-introduction">
+            <div><p className="rise-kicker">Public storefront review</p><h1>A growth scan for <span>{companyName}</span></h1><p className="rise-intro-copy">We reviewed {possessive(companyName)} public storefront and available advertising signals. Here are the observations, the sources behind them, and the next steps to consider.</p></div>
+            <aside className="rise-cover-meta"><p><span>Report snapshot</span><strong>{scanDate || 'Date not recorded'}</strong></p><p><span>Store</span><a href={`https://${scan.domain}`} target="_blank" rel="noopener noreferrer">{scan.domain} ↗</a></p></aside>
+          </section>
+        </div>
+      </header>
+      <main className="rise-document">
+        <nav className="rise-overview" aria-label="Report contents">
+          <span>In this review</span>
+          {promiseItems(d.drop_off).length ? <a href="#drop-off">Shopper paths <span>↘</span></a> : null}
+          {promiseItems(d.second_order).length ? <a href="#second-order">Repeat purchase <span>↘</span></a> : null}
+          {storeFeatures.length ? <a href="#store-features">Already in place <span>↘</span></a> : null}
+          {findings.length || hasAdEvidence ? <a href="#paid-media">Paid-media check <span>↘</span></a> : null}
+        </nav>
+        <PromiseSection d={d} id="drop-off" n={1} title="Shopper paths" block={d.drop_off} accent={accent} ink={ink} headingFont={headingFont} />
+        <PromiseSection d={d} id="second-order" n={promiseItems(d.drop_off).length + 1} title="Repeat purchase" block={d.second_order} accent={accent} ink={ink} headingFont={headingFont} />
+        {storeFeatures.length ? <section id="store-features" className="rise-section" data-store-features="1">
+          <div className="rise-section-heading"><h2>Already on your store</h2><p>{!promiseItems(d.second_order).length ? secondOrderBlock?.note : 'Public features to consider when planning the next purchase. Their presence does not establish usage or sales impact.'}</p></div>
+          <div className="rise-feature-grid">{storeFeatures.map((feature: any, i: number) => <blockquote key={`${feature.kind}-${i}`} data-store-feature={feature.kind}>
+            <h3>{clean(feature.title)}</h3><p>{clean(feature.quote)}</p><a href={proofHref(feature.source_url)} target="_blank" rel="noopener noreferrer">Read source</a>{checkedAt(feature.fetched_at) ? <time dateTime={feature.fetched_at}>Checked {checkedAt(feature.fetched_at)}</time> : null}
+            {checkedAt(shots?.captured_at) && sameProductPage(feature.source_url, shots?.pdp_path) && !storeFeatures.slice(0, i).some((prior: any) => sameProductPage(prior.source_url, shots?.pdp_path)) && ![...promiseItems(d.drop_off), ...promiseItems(d.second_order)].some((it) => sameProductPage(it.product?.url || it.evidence?.source_url, shots?.pdp_path)) ? <figure className="rise-feature-capture"><a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt="Captured source product page" className="rise-capture-image" loading="lazy" /></a><figcaption>Captured {checkedAt(shots.captured_at)}</figcaption></figure> : null}
+          </blockquote>)}</div>
+        </section> : null}
+        {!storeFeatures.length && !promiseItems(d.second_order).length ? <p className="rise-empty-coverage">{secondOrderBlock?.note || 'Your repeat-order rate needs store data to assess.'}</p> : null}
+        {findings.length || hasAdEvidence ? <section id="paid-media" className="rise-section">
+          <p className="rise-chapter">Paid-media check</p>
+          {findings.map((f, i) => <article className="rise-media-finding" key={i}><div><h2>{clean(f.title)}</h2><p className="rise-detail">{clean(f.evidence)}</p>{proofHref(f.source_url || '') ? <a className="rise-source-link" href={proofHref(f.source_url || '')} target="_blank" rel="noopener noreferrer">{sourceLabel(f.source_url || '', true)}</a> : null}</div>{f.week_one ? <aside className="rise-action"><h3>Next account check</h3><p>{clean(f.week_one)}</p></aside> : null}</article>)}
+          {hasAdEvidence ? <details data-ad-archive="1" className="rise-disclosure"><summary>Supporting public ad records</summary>
+          <div data-source-checks="1" className="rise-source-checks">
+            {([
+              ['Catalog', shop], ['Facebook page', adsMeta], ['Meta keyword search', metaSweep], ['Google advertiser search', gAds], ['Competitor search', competitors],
+            ] as Array<[string, any]>).filter(([, signal]) => signal && signal.status !== 'absent').map(([label, signal]) => {
+              const at = signal.data?.checked_at || signal.fetched_at;
+              const cached = signal.data?.from_cache === true || signal.from_cache === true;
+              const age = at && readIso ? (Date.parse(readIso) - Date.parse(at)) / 3600000 : NaN;
+              const coverage = label === 'Competitor search' && !compStrip(signal).length
+                ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
+                : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
+                : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
+                : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
+              return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
+            })}
+          </div>
+
+            <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} />
+          </details> : null}
+        </section> : null}
+        <section className="rise-section rise-proof"><div className="rise-section-heading"><h2>Work RISE has run</h2><p>Published results from separate client engagements.</p></div><div className="rise-case-rows">{riseCases.map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer"><strong>{c.name}</strong><span>{c.headline}</span><span className="rise-case-read">Read the case study ↗</span></a>)}</div><a className="rise-source-link" href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer">See all case studies</a></section>
+        <section className="rise-closing" id="rise-conversation"><div className="rise-closing-top"><div><h2>Walk through the findings with Mattan.</h2><p>We put the public observations next to your store and ad-account data.</p></div><a href={ctaUrl('close')} data-cta="close" target="_blank" rel="noopener noreferrer" className="rise-booking">30 min with Mattan ↗</a></div>
+          <details className="rise-disclosure"><summary>How RISE charges</summary><div className="rise-pricing"><div><h3>Performance Model</h3><p><strong>For qualifying brands.</strong> Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.</p></div><div><h3>Growth Model</h3><p>Base fee plus a percentage of ad spend, senior strategist included.</p></div></div><p>Which model fits your brand gets settled on the call.</p><p>RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.</p></details>
+        </section>
+      </main>
+      <footer className="rise-footer"><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted link, shared with you only.</span></footer>
+    </div>
+  );
+
   return (
     <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', paddingBottom: `calc(${STICKY_BAR_H}px + env(safe-area-inset-bottom))`, ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
       <style>{`
@@ -1823,41 +1595,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         </div>
       </header>
 
-      {promise ? (
-        <>
-          {d.public_data_limits && <p className="mx-auto max-w-[1180px] px-6 sm:px-8 pt-6 text-sm leading-relaxed">{d.public_data_limits}</p>}
-          <PromiseHero
-            d={d}
-            companyName={companyName}
-            readDate={scanDate}
-            accent={accent}
-            ink={ink}
-            surface={surface}
-            headingFont={headingFont}
-            ctaHref={ctaUrl('hero')}
-          />
-          <PromiseSection d={d} id="drop-off" n={1} title="Purchase path observations" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
-          <PromiseSection d={d} id="second-order" n={2} title="Repeat purchase observations" block={secondOrderBlock} accent={accent} ink={ink} headingFont={headingFont} />
-          {storeFeatures.length > 0 ? (
-            <section data-store-features="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 py-12" style={{ borderTop: `1px solid ${ink}14`, color: ink }}>
-              <h2 className="text-[1.75rem] font-bold" style={{ fontFamily: headingFont }}>Already on your store</h2>
-              <p className="mt-3 text-[1rem]">Public features to consider when planning the next purchase. Their presence does not establish usage or sales impact.</p>
-              <div className="mt-6 grid gap-6 md:grid-cols-2">
-                {storeFeatures.map((feature: any, i: number) => (
-                  <blockquote key={`${feature.kind}-${i}`} data-store-feature={feature.kind} className="pl-4" style={{ borderLeft: `2px solid ${ink}33` }}>
-                    <h3 className="font-bold" style={{ fontFamily: headingFont }}>{clean(feature.title)}</h3>
-                    <p className="mt-2 text-[1rem] leading-relaxed">{clean(feature.quote)}</p>
-                    <a href={proofHref(feature.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] underline underline-offset-4 text-[0.9rem]">Read source</a>
-                    {checkedAt(feature.fetched_at) ? <p className="text-[0.8rem] opacity-75">Checked {checkedAt(feature.fetched_at)}</p> : null}
-                    {checkedAt(shots?.captured_at) && sameProductPage(feature.source_url, shots?.pdp_path) && !storeFeatures.slice(0, i).some((prior: any) => sameProductPage(prior.source_url, shots?.pdp_path)) && ![...promiseItems(d.drop_off), ...promiseItems(d.second_order)].some((it) => sameProductPage(it.product?.url || it.evidence?.source_url, shots?.pdp_path)) ? <figure className="mt-3"><a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt="Captured product page" className="w-full rounded-lg" loading="lazy" /></a><figcaption className="mt-2 text-[0.8rem]">Captured {checkedAt(shots.captured_at)}</figcaption></figure> : null}
-                  </blockquote>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </>
-      ) : (
-      /* Chapter — Cover / hook (legacy rows) */
+      {/* Chapter — Cover / hook (legacy rows) */}
       <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pt-16 sm:pt-24 pb-14">
         <div className="grid lg:grid-cols-12 gap-y-8 lg:gap-x-12 items-end">
           <div className="lg:col-span-9">
@@ -1907,7 +1645,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
         </div>
       </section>
-      )}
 
       {/* Chapter — Evidence-first dark spread. Sits straight after the hook because the ad
           record is the one thing on this page the reader cannot argue with: it is dated, it
@@ -2249,43 +1986,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <WeekOnePanel findings={findings} accent={accent} ink={ink} surface={surface} headingFont={headingFont} />
           ) : null}
         </section>
-      ) : null}
-
-      {promise && hasAdEvidence ? (
-        <details data-ad-archive="1" style={{ background: ink, color: surface }}>
-          <summary
-            className="mx-auto w-full max-w-[1180px] cursor-pointer px-6 sm:px-8 py-7 text-[1rem] font-semibold"
-            style={{ fontFamily: headingFont }}
-          >
-            Supporting public ad records
-          </summary>
-          <div data-source-checks="1" className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pb-7 text-[0.9rem] leading-relaxed">
-            {([
-              ['Catalog', shop], ['Facebook page', adsMeta], ['Meta keyword search', metaSweep], ['Google advertiser search', gAds], ['Competitor search', competitors],
-            ] as Array<[string, any]>).filter(([, signal]) => signal && signal.status !== 'absent').map(([label, signal]) => {
-              const at = signal.data?.checked_at || signal.fetched_at;
-              const cached = signal.data?.from_cache === true || signal.from_cache === true;
-              const age = at && readIso ? (Date.parse(readIso) - Date.parse(at)) / 3600000 : NaN;
-              const coverage = label === 'Competitor search' && !compStrip(signal).length
-                ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
-                : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
-                : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
-                : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
-              return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
-            })}
-          </div>
-          <AdEvidenceSpread
-            google={gAds}
-            metaPage={adsMeta}
-            metaSweep={metaSweep}
-            competitors={competitors}
-            accent={accent}
-            ink={ink}
-            surface={surface}
-            headingFont={headingFont}
-            condensed
-          />
-        </details>
       ) : null}
 
       {/* Honest thin-read note — only when there is genuinely little to show */}
