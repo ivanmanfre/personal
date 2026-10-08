@@ -26,6 +26,7 @@
 // Store facts (tech_stack app names, growth_score, pagespeed, peer comparisons) are
 // deliberately NOT rendered as standalone display anywhere.
 import React, { useEffect, useState } from 'react';
+import { casesFor, caseUrl } from './riseCases';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
@@ -1451,6 +1452,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   // ── audit v3 evidence blocks (all optional, all presence-gated) ─────────────────────
   const dAny = d as any;
+  const riseCases = casesFor([
+    ...(Array.isArray(dAny.competitors?.data?.keywords) ? dAny.competitors.data.keywords : []),
+    ...(Array.isArray(dAny.bestsellers?.data?.handles) ? dAny.bestsellers.data.handles : []),
+    String(dAny.hero?.headline || ''),
+  ]);
   const gAds = dAny.ads?.google;
   const metaSweep = dAny.ads?.meta_sweep;
   const competitors = dAny.competitors;
@@ -2212,35 +2218,52 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         </section>
       ) : null}
 
-      {/* Chapter: proof strip. Static, number-verbatim work RISE has already run. No images,
-          no logos, no data dependency. Client names deliberately withheld: Mattan's 07-27
-          ruling bans brand names in ALL Rise case-study copy (risedtc-casestudy-anonymization),
-          vertical descriptors only. Numerals verbatim from content_prompts rise-company-facts.
-          risedtc.com names these brands itself, which is why the foot line can point there. */}
+      {/* Chapter: proof. Real RISE case studies, three picked for the store's category from the
+          words its own read gives (riseCases.ts). Each number is verbatim from the brand's case page
+          on risedtc.com and each card links there. Ivan 10-08: "way stronger case studies, real
+          case studies with the links to them". */}
       <section className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 py-16" style={{ borderTop: `1px solid ${ink}14`, background: surface }}>
-        <div className="mx-auto w-full max-w-[820px]">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
-            <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Work RISE has run</span>
-          </div>
-          <div>
-            <p className="py-5 text-[1.0625rem] leading-relaxed" style={{ borderTop: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
-              <span style={{ fontFamily: headingFont, fontWeight: 700, color: ink }}>A heritage workwear brand.</span>{' '}
-              RISE ran paid for their women's line launch: $1M+ in profitable ad spend, CPA down 40%.
-            </p>
-            <p className="py-5 text-[1.0625rem] leading-relaxed" style={{ borderTop: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
-              <span style={{ fontFamily: headingFont, fontWeight: 700, color: ink }}>An apparel accessories brand.</span>{' '}
-              RISE ran the Google program: 800%+ ROAS, monthly revenue from $30k to $100k+.
-            </p>
-            <p className="py-5 text-[1.0625rem] leading-relaxed" style={{ borderTop: `1px solid ${ink}14`, borderBottom: `1px solid ${ink}14`, color: ink, opacity: 0.85 }}>
-              <span style={{ fontFamily: headingFont, fontWeight: 700, color: ink }}>A women's activewear brand.</span>{' '}
-              With RISE running paid: $2.2M to $6.5M+ in 24 months.
-            </p>
-          </div>
-          <p className="mt-6 text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
-            Ask Mattan for the mechanism behind any of these on the call. Full case studies at risedtc.com.
-          </p>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="h-px w-10" data-eyebrow-rule="1" style={{ background: ink, opacity: 0.25 }} />
+          <span className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: ink, opacity: 0.7 }}>Work RISE has run</span>
         </div>
+        <h2 className="mb-8 text-[1.6rem] sm:text-[2rem] leading-tight" style={{ fontFamily: headingFont, fontWeight: 700, color: ink }}>
+          Brands like yours, with RISE running growth
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {riseCases.map((c) => (
+            <a
+              key={c.slug}
+              href={caseUrl(c)}
+              data-case={c.slug}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col overflow-hidden rounded-2xl transition-transform hover:-translate-y-0.5"
+              style={{ border: `1px solid ${ink}1f`, background: surface, color: ink }}
+            >
+              <div className="aspect-[16/9] sm:aspect-[4/3] w-full overflow-hidden" style={{ background: `${ink}0d` }}>
+                <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              </div>
+              <div className="flex flex-1 flex-col p-6">
+                <span className="text-[0.95rem] font-bold" style={{ fontFamily: headingFont }}>{c.name}</span>
+                <span className="mt-1 text-[0.85rem] leading-snug" style={{ opacity: 0.7 }}>{c.sells}</span>
+                <span className="mt-5 text-[1.35rem] leading-tight" style={{ fontFamily: headingFont, fontWeight: 700 }}>{c.headline}</span>
+                <ul className="mt-3 space-y-1.5 text-[0.95rem]" style={{ opacity: 0.85 }}>
+                  {c.stats.map((st) => (
+                    <li key={st} className="flex gap-2"><span aria-hidden="true" style={{ color: accent }}>●</span>{st}</li>
+                  ))}
+                </ul>
+                <span className="mt-auto pt-6 text-[0.9rem] font-bold underline underline-offset-4">Read the case study ›</span>
+              </div>
+            </a>
+          ))}
+        </div>
+        <p className="mt-8 text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
+          Every number comes from the brand's case study on risedtc.com. Ask Mattan how any of them was done on the call.{' '}
+          <a href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+            See all case studies
+          </a>
+        </p>
       </section>
 
       {/* Chapter: close band. Ink-on-white flips to white-on-ink, mirroring the tools-hub

@@ -70,9 +70,10 @@ const FORBIDDEN_PATTERNS: Array<[string, RegExp]> = [
   ['retired "Book a call"', /Book a call/],
   ['fabricated "150+ brands"', /150\+ brands/],
   ['fabricated "$725M"', /\$725M/],
-  // Mattan's 07-27 ruling: no client brand names in any Rise case-study copy. The proof
-  // strip runs vertical descriptors only; a named brand or person here is a regression.
-  ['client name leak in proof strip', /Dickies|Tenth Street|Gobi Heat|Carson Finkle|Josie Maran|BARUEAT/],
+  // Ivan 10-08: the proof section now names real RISE cases and links their risedtc.com pages.
+  // Cases RISE's own pages can't carry stay out: a named person, the WEBITMD-credited case, the
+  // case whose page contradicts its own starting spend.
+  ['unsupported case on the page', /Gobi Heat|Carson Finkle|Mama Coco|WEBITMD|BARUEAT/],
   ['aphorism shape "worth running"', /worth running/],
   // Retired 07-31: the bare pull-stat band. A fact with no argument attached does not render.
   ['retired stat band "The store, in numbers"', /The store, in numbers/],
@@ -153,15 +154,12 @@ function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · 
   } else {
     expect(html).toContain('on your live store in 30 minutes.');
   }
-  // Proof strip: three anonymized engagements (vertical descriptors, numerals verbatim
-  // from rise-company-facts) plus the foot line pointing at risedtc.com for the named cases.
+  // Proof: three real RISE cases, each linking its own risedtc.com case page.
   expect(html).toContain('Work RISE has run');
-  expect(html).toContain('A heritage workwear brand.');
-  expect(html).toContain('An apparel accessories brand.');
-  // renderToStaticMarkup escapes the apostrophe in "women's", so match around it.
-  expect(html).toContain('activewear brand.');
-  expect(html).toContain('$2.2M to $6.5M+ in 24 months');
-  expect(html).toContain('Full case studies at risedtc.com.');
+  expect((html.match(/data-case="/g) || []).length).toBe(3);
+  expect(html).toMatch(/href="https:\/\/risedtc\.com\/projects\/[a-z-]+\/\?utm_source=scan&amp;utm_medium=case/);
+  expect(html).toContain('Read the case study');
+  expect(html).toContain('See all case studies');
   // Close band: headline, fee card with the qualifying-brands gate, signature CTA.
   expect(html).toContain('Want this read on');
   expect(html).toContain('your live store?');
