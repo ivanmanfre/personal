@@ -3613,7 +3613,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   approved?: boolean;
   isLive: boolean;
   act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
-  editDraft?: (draftId: string, newBody: string) => Promise<{ ok: boolean; error?: string }>;
+  editDraft?: (draftId: string, newBody: string, base?: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: rename a deck's title (the name the document carries everywhere). */
   editTitle?: (draftId: string, newTitle: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: attach/replace/clear a lifestyle photo on this post. */
@@ -3625,6 +3625,11 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const reduce = useReducedMotion();
   const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
+  // The copy this edit started from (2026-10-08). The save sends it, and the server refuses when the
+  // post changed meanwhile (Ivan edited it in his inbox), so an old text never silently replaces his.
+  // While not editing, the box follows the post as the board refreshes.
+  const baseRef = useRef(item.body || '');
+  useEffect(() => { if (!editing) { setBody(item.body || ''); baseRef.current = item.body || ''; } }, [item.body, editing]);
   // Deck title (live): editable alongside the copy for document posts only — the title is
   // what the deck viewer and the published document carry, so it must read like a post
   // title, never an internal label.
@@ -3863,8 +3868,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
       setBusy(true); setErr('');
       // Prefer the applying RPC: the edit lands on the draft + board immediately, with a
       // before/after row in the operator's edit log. Fallback keeps the log-only path.
-      const r = editDraft ? await editDraft(item.id, body) : await act('edit_copy', item.id, { body });
-      if (!r.ok) { setBusy(false); setErr(r.error || 'Could not save that. Try again.'); return; }
+      const r = editDraft ? await editDraft(item.id, body, baseRef.current) : await act('edit_copy', item.id, { body });
+      if (!r.ok) {
+        setBusy(false);
+        setErr(r.error === 'changed_meanwhile'
+          ? 'This post was updated while you were editing, so your text was not saved. Copy it, close the post, and open it again to see the latest version.'
+          : (r.error || 'Could not save that. Try again.'));
+        return;
+      }
+      baseRef.current = body;
       item.body = body;
       // Deck title rides the same save: only written when it actually changed.
       const trimmed = deckTitle.trim();
@@ -8312,7 +8324,7 @@ export default function ClientBoardPage() {
   // Direct draft editing (live): applies the new copy server-side (draft + board queue in
   // one RPC) and logs a before/after action row for the operator. Local queue state
   // updates so the edit survives navigation without a refetch.
-  const editDraft = async (draftId: string, newBody: string): Promise<{ ok: boolean; error?: string }> => {
+  const editDraft = async (draftId: string, newBody: string, base?: string): Promise<{ ok: boolean; error?: string }> => {
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
@@ -8321,7 +8333,7 @@ export default function ClientBoardPage() {
       } else {
         const sess = sessionRef.current;
         if (!sess?.token) return { ok: false, error: 'missing session' };
-        resp = await supabase.rpc('client_board_edit_draft_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_body: newBody });
+        resp = await supabase.rpc('client_board_edit_draft_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_body: newBody, ...(base != null ? { p_base: base } : {}) });
       }
       if (resp.error) return { ok: false, error: resp.error.message };
       const out = (resp.data as { ok: boolean; error?: string }) ?? { ok: true };
