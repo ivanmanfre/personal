@@ -354,7 +354,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
       // "Ready when you are" no longer carries the accent color.
       const readyLabel = html.match(/<div class="text-\[0\.75rem\][^"]*" style="([^"]*)">Ready when you are<\/div>/)![1];
       expect(readyLabel.toLowerCase()).not.toContain(accent.toLowerCase());
-      const feeLabel = html.match(/<div class="text-\[0\.75rem\][^"]*" style="([^"]*)">How RISE charges<\/div>/)![1];
+      const feeLabel = html.match(/<summary([^>]*)>How RISE charges<\/summary>/)![1];
       expect(feeLabel.toLowerCase()).not.toContain(accent.toLowerCase());
     }
     // The lever chip keeps its gold DOT but its border goes ink.
@@ -645,18 +645,16 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     // Masthead dates from dtc.completed_at (restamped on every build), not the scan row.
     assertConversionLayer(html, /Growth Scan · September 2[56], 2026/, false);
     // Eyebrow: brand + read date from dtc.completed_at, never the generic hook.
-    expect(html).toMatch(/Tina Cassaday Creations · Read Sep 2[56]</);
+    expect(html).toMatch(/Tina Cassaday Creations · Read September 26, 2026 at \d{2}:\d{2} UTC</);
     expect(html).toContain('data-promise-hero="1"');
     expect(html).not.toContain(escHtml(d.hero_hook));
     // Headline with the public fact marked where it states it verbatim.
     expect(html).toMatch(/<h1[^>]*>Your Banana-Banana 6-Pack is <mark data-hero-mark="1"[^>]*>sold out<\/mark>, and your \$4 sachet/);
-    // Proof card: her product image off her own catalog, title, price, and the fact ringed.
-    const proof = html.slice(idx(html, 'data-hero-proof="1"'), idx(html, 'data-hero-proof="1"') + 3000);
-    expect(proof).toContain(escHtml(d.drop_off.items[0].product.image_url));
-    expect(proof).toContain('Banana-Banana Deep Conditioner Sachet 6-Pack');
-    expect(proof).toContain('$25');
-    expect(proof).toMatch(/data-hero-fact="1"[^>]*>Sold out</);
-    expect(proof).toContain('href="https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"');
+    // A product photograph cannot prove stock, and this old row has no catalog matrix.
+    const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('data-promise-section'));
+    expect(hero).not.toContain(escHtml(d.drop_off.items[0].product.image_url));
+    expect(html).toContain('data-promise-evidence="1"');
+    expect(html).toContain('href="https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"');
     // Both promises named on the first screen, each linking to its section.
     expect(html).toContain('Purchase path observations');
     expect(html).toContain('The second order');
@@ -692,14 +690,13 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
       'data-promise-hero="1"',
       'data-promise-section="drop-off"',
       'data-promise-section="second-order"',
-      'Where RISE comes in',
       'aria-label="Public ad records"',
       'Work RISE has run',
       'Ready when you are',
     ].map((n) => idx(html, n));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    // The store's own image comes before any other brand's ad and before the first section.
-    expect(idx(html, 'data-store-img="1"')).toBeLessThan(idx(html, 'data-promise-section="drop-off"'));
+    // Inventory evidence leads; an unrelated store image cannot stand in for it.
+    expect(html.slice(idx(html, 'data-promise-hero'), idx(html, 'data-promise-section="drop-off"'))).not.toContain('data-hero-proof');
     // Other advertisers sit behind a disclosure naming the keywords.
     expect(html).toMatch(/<details[^>]*data-comp-disclosure="1"/);
     expect(html).toContain('See who else advertises on &quot;conditioner&quot;, &quot;oil&quot;');
@@ -708,8 +705,8 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
   it('tina (new contract): RISE findings only, no receipt, no week-one panel, no thin-read, no paid-traffic talk', () => {
     const { fixture, html } = renderFixture('tina-new-contract.json');
     const d = fixture.dtc as any;
-    // The paid-media finding renders; the cro finding that restates a drop-off item does not.
-    expect(html).toContain(escHtml("You're not running paid social right now"));
+    // An old unconfirmed zero cannot support a brand-wide absence claim.
+    expect(html).not.toContain(escHtml("You're not running paid social right now"));
     const cro = d.findings.find((f: any) => f.lever === 'cro');
     expect(html).not.toContain(escHtml(cro.evidence));
     expect(html).not.toContain('Store vitals');
@@ -741,6 +738,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     // A string price still formats.
     const dtc2 = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     dtc2.drop_off.items[0].product.price = '25.00';
+    dtc2.drop_off.items[0].id = 'product_choice';
     expect(renderDtc(dtc2, fixture.company_name)).toContain('$25');
   });
 
@@ -796,11 +794,11 @@ describe('DtcGrowthReport — promise contract, builder fixture', () => {
       }
       expect(html).toContain(escHtml(block.note));
     }
-    expect(html.indexOf('data-store-img="1"')).toBeLessThan(html.indexOf('data-promise-section="drop-off"'));
+    expect(html).toContain('data-promise-evidence="1"');
     // RISE side only: the builder's retention finding restates a second-order item.
     for (const f of d.findings) {
       const shown = html.includes(escHtml(f.title));
-      expect(shown, f.title).toBe(f.lever === 'paid_media' || f.lever === 'performance_creative');
+      expect(shown, f.title).toBe((f.lever === 'paid_media' || f.lever === 'performance_creative') && !(f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty' && d.ads.meta.page_confirmed !== true));
     }
     expect(html).not.toMatch(/paid traffic/i);
   });
@@ -840,7 +838,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     same.screenshots.pdp_path = '/en-us/products/banana-banana-sachet-6-pack';
     const h3 = renderDtc(same, fixture.company_name);
     expect(h3).toContain(escHtml(same.screenshots.pdp_url));
-    expect(h3).toMatch(/Your product page, captured Sep 2[56]\./);
+    expect(h3).toMatch(/Your product page, captured September 26, 2026 at \d{2}:\d{2} UTC\./);
   });
 
   it('a second-order-only hero shows its product image and numbers its row 1', () => {
@@ -870,7 +868,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('data-promise-section="drop-off"'));
     expect(hero).toContain(escHtml(base.screenshots.homepage_url));
     expect(hero).toContain('data-store-img-kind="home"');
-    expect(hero).toMatch(/Your homepage, captured Sep 2[56]\./);
+    expect(hero).toMatch(/Homepage context only, captured September 26, 2026 at \d{2}:\d{2} UTC\./);
     expect(hero).not.toContain(escHtml(base.screenshots.pdp_url));
     expect(html.indexOf('data-store-img="1"')).toBeLessThan(html.indexOf('data-promise-section="drop-off"'));
     // no homepage capture: the #1 best seller's image, carried by another item on the page
@@ -904,10 +902,11 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     expect(spread).not.toContain('1 days');
   });
 
-  it('zero-ads copy is second person', () => {
+  it('a keyword sample does not imply brand-wide zero ads', () => {
     const { html } = renderFixture('tina-new-contract.json');
     const spread = html.slice(html.indexOf('data-adspread'));
-    expect(spread).toContain('zero ads for your brand');
+    expect(spread).not.toContain('zero ads for your brand');
+    expect(spread).toContain('none of the sampled ads');
     expect(spread).not.toContain('this brand');
   });
 });
@@ -964,8 +963,8 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(text).not.toMatch(/profit gap|contribution profit/i);
     expect(text).toContain('No visible reviews on your product page');
     expect(text).toContain("We couldn't find review markup on your product page.");
-    expect(text).toContain("You're not running paid social right now");
-    expect(text).toContain('The public Meta Ad Library shows zero active ads.');
+    expect(text).not.toContain("You're not running paid social right now");
+    expect(text).not.toContain('The public Meta Ad Library shows zero active ads.');
     // Its hook closes on the retired margin angle, so the hero takes the default hook whole.
     expect((fixture.dtc as any).hero_hook).toMatch(/where your margin is going/);
     expect(text).not.toMatch(/margin is going/i);
@@ -1089,5 +1088,168 @@ describe('public evidence quality contract', () => {
     expect(html).toContain('No recommendation qualified');
     expect(html).not.toContain('Testing sprawl');
     expect(html).not.toContain('Book a');
+  });
+});
+
+describe('evidence-first scan repair', () => {
+  function inventoryFixture() {
+    const d = structuredClone(loadFixture('tina-new-contract.json').dtc) as any;
+    const item = { id: 'bestseller_sold_out', title: 'A style is unavailable', detail: 'The boxed option cannot be ordered.', fix: 'Check stock before sending shoppers here.', lever: 'cro', product: { title: 'Round Cut', url: 'https://example.com/products/round', image_url: 'https://example.com/round.jpg', price: 11.99, currency: 'GBP' }, evidence: { label: 'Availability', value: 'Sold out', source_url: 'https://example.com/products/round' } };
+    d.drop_off = { items: [item], note: '' };
+    d.second_order = { items: [{ ...item, id: 'refill_sold_out', title: 'The refill is unavailable', detail: 'The same style cannot be reordered as a refill.' }, { ...item, id: 'no_new_products', title: 'Old catalog recommendation' }], note: '' };
+    d.hero = { headline: item.title, item_ref: 'drop_off.0' };
+    d.shopify = { status: 'present', source_url: 'https://example.com/products.json', fetched_at: '2026-10-08T22:00:16Z', data: { catalog_size: 2 }, catalog_items: [
+      { title: 'Round Cut', handle: 'round', url: item.product.url, variants: [{ title: 'Round Cut with case', price: 25.99, currency: 'GBP', available: false }, { title: 'Round Cut Refill', price: 11.99, currency: 'GBP', available: false }] },
+      { title: 'Oval Cut', handle: 'oval', url: 'https://example.com/products/oval', variants: [{ title: 'Oval Cut with case', price: 25.99, currency: 'GBP', available: true }, { title: 'Oval Cut Refill', price: null, currency: 'GBP', available: null }] },
+    ] };
+    d.screenshots = { pdp_path: '/products/round', pdp_url: 'https://example.com/round-proof.png', homepage_url: 'https://example.com/home-proof.png', captured_at: '2026-10-08T22:00:23Z' };
+    d.completed_at = '2026-10-08T22:00:54Z';
+    return d;
+  }
+  it('shows one sourced inventory exhibit with actual variant names, unknowns and no repeated stock photos', () => {
+    const html = renderDtc(inventoryFixture(), 'Example');
+    expect((html.match(/data-inventory-exhibit="1"/g) || [])).toHaveLength(1);
+    expect(html).toContain('Round Cut with case');
+    expect(html).toContain('Round Cut Refill');
+    expect(html).toContain('£25.99');
+    expect(html).toContain('£11.99');
+    expect(html).toContain('Availability unknown');
+    expect(html).toContain('Price unknown');
+    expect(html).toContain('https://example.com/products/oval');
+    expect(html).not.toContain('https://example.com/round.jpg');
+    expect(html).toContain('data-promise-item="refill_sold_out"');
+    expect(html).toContain('The same style cannot be reordered as a refill.');
+    expect(html).not.toContain('Old catalog recommendation');
+    expect(html).toContain('October 8, 2026 at 22:00 UTC');
+  });
+  it('matches a capture even when a product photograph exists, and never attaches an unrelated product capture', () => {
+    const d = inventoryFixture();
+    expect(renderDtc(d, 'Example')).toContain('https://example.com/round-proof.png');
+    d.screenshots.pdp_path = '/products/unrelated';
+    expect(renderDtc(d, 'Example')).not.toContain('https://example.com/round-proof.png');
+  });
+  it('does not leak catalog data from a blocked signal or held quality gate', () => {
+    const d = inventoryFixture();
+    d.shopify.status = 'blocked';
+    expect(renderDtc(d, 'Example')).not.toContain('data-inventory-exhibit');
+    d.shopify.status = 'present';
+    d.quality = { version: 'rise-quality-2026-09-30', approved: false };
+    expect(renderDtc(d, 'Example')).not.toContain('data-inventory-exhibit');
+  });
+  it('caps inventory samples honestly and never changes null into sold out', () => {
+    const d = inventoryFixture();
+    d.shopify.catalog_items = Array.from({ length: 20 }, (_, i) => ({ ...d.shopify.catalog_items[1], handle: `style-${i}`, title: `Style ${i}` }));
+    const html = renderDtc(d, 'Example');
+    expect(html).toContain('Showing 12 of 20 collected products');
+    expect(html).not.toContain('Style 19');
+  });
+  it('shows source-grounded existing tools and omits unsupported observations', () => {
+    const d = inventoryFixture();
+    d.public_depth = { status: 'present', data: { store_features: [
+      { kind: 'loyalty', title: 'Club rewards', detail: 'Points can be earned on purchases.', source_url: 'https://example.com/pages/club', quote: 'Earn five points per pound.', fetched_at: '2026-10-08T21:55:00Z' },
+      { kind: 'try_on', title: 'Unsupported tool', detail: 'An unverified observation', source_url: '', quote: '' },
+    ] } };
+    const html = renderDtc(d, 'Example');
+    expect(html).toContain('Already on your store');
+    expect(html).toContain('Earn five points per pound.');
+    expect(html).toContain('href="https://example.com/pages/club"');
+    expect(html).not.toContain('Unsupported tool');
+  });
+  it('scopes zero ads to a confirmed page, dates cached searches and keeps coverage limits visible', () => {
+    const d = inventoryFixture();
+    d.ads = { meta: { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:48Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } }, meta_sweep: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, sampled_items: 0, identity_matched_ads: 0 } }, google: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, ads_found: 0 } } };
+    d.competitors = { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { creatives: [] } };
+    const html = renderDtc(d, 'Example');
+    expect(html).toContain('No active ads on the identified Facebook page');
+    expect(html).not.toMatch(/Zero on Meta|zero ads for your brand|first Meta campaign/i);
+    expect(html).toContain('October 8, 2026 at 11:25 UTC');
+    expect(html).toContain('Cached result');
+    expect(html).toContain('No verified competitor creatives');
+    d.ads.meta.page_confirmed = false;
+    expect(renderDtc(d, 'Example')).not.toContain('No active ads on the identified Facebook page');
+  });
+  it('versions captured image URLs by capture time while preserving existing query parameters', () => {
+    const d = inventoryFixture();
+    d.screenshots.pdp_url = 'https://example.com/round-proof.png?download=1';
+    const first = renderDtc(d, 'Example').match(/<img[^>]+src="([^"]*round-proof[^"]*)"/)?.[1];
+    expect(first).toContain('download=1');
+    expect(first).toContain('captured_at=2026-10-08T22%3A00%3A23Z');
+    d.screenshots.captured_at = '2026-10-09T01:00:00Z';
+    const next = renderDtc(d, 'Example').match(/<img[^>]+src="([^"]*round-proof[^"]*)"/)?.[1];
+    expect(next).not.toBe(first);
+  });
+  it('remaps a removed hero reference to the same surviving item for headline and proof', () => {
+    const d = inventoryFixture();
+    d.drop_off.items[0] = { ...d.drop_off.items[0], id: 'purchase_a', title: 'Purchase A' };
+    d.second_order.items = [{ ...d.second_order.items[1], title: 'Removed age finding' }, { ...d.second_order.items[0], id: 'retention_b', title: 'Retention B', product: { title: 'Another product', url: 'https://example.com/products/other', image_url: 'https://example.com/other.jpg' } }];
+    d.hero = { headline: 'Removed age finding', item_ref: 'second_order.0' };
+    const html = renderDtc(d, 'Example');
+    const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('data-promise-section'));
+    expect(hero).toMatch(/<h1[^>]*>Purchase A<\/h1>/);
+    expect(hero).toContain('round-proof.png');
+    expect(hero).not.toContain('other.jpg');
+    expect(hero).not.toContain('Removed age finding');
+  });
+  it('does not merge different inventory aggregates that share a representative product', () => {
+    const d = inventoryFixture();
+    d.drop_off.items[0].title = '4 of 5 best sellers are sold out';
+    d.second_order.items[0].title = '8 of 12 refills are sold out';
+    expect(renderDtc(d, 'Example')).toContain('data-promise-item="refill_sold_out"');
+  });
+  it('shows one capture when multiple observed features cite the same product page', () => {
+    const d = inventoryFixture();
+    d.screenshots.pdp_path = '/products/other';
+    d.public_depth = { status: 'present', data: { store_features: ['reviews', 'try_on'].map((kind) => ({ kind, title: kind, detail: 'Observed feature', quote: 'Observed feature', source_url: 'https://example.com/products/other', fetched_at: '2026-10-08T22:00:00Z' })) } };
+    const html = renderDtc(d, 'Example');
+    expect((html.match(/<img[^>]*round-proof\.png/g) || [])).toHaveLength(1);
+  });
+  it('keeps independent inventory causes and partial refill outages separate', () => {
+    const d = inventoryFixture();
+    d.second_order.items[0].product = { ...d.second_order.items[0].product, title: 'Oval Cut', url: 'https://example.com/products/oval' };
+    expect(renderDtc(d, 'Example')).toContain('data-promise-item="refill_sold_out"');
+    d.second_order.items[0].product = d.drop_off.items[0].product;
+    d.shopify.catalog_items[0].variants[0].available = true;
+    expect(renderDtc(d, 'Example')).toContain('data-promise-item="refill_sold_out"');
+  });
+  it('preserves verified page-scoped tracking facts while removing historical campaign assumptions', () => {
+    const d = inventoryFixture();
+    d.ads.meta = { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:00Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } };
+    d.findings = [{ signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'Your Meta pixel is installed, and your Facebook page runs no ads', evidence: 'Your store loads the Meta pixel and your Facebook page is not currently running ads.', week_one: 'We test a first Meta campaign once purchase events are checked.', source_url: 'https://facebook.com/example' }];
+    const html = renderDtc(d, 'Example');
+    expect(html).toContain('Your store loads the Meta pixel and your Facebook page is not currently running ads.');
+    expect(html).not.toContain('first Meta campaign');
+  });
+  it('keeps legacy rows without new evidence fields readable without fabricated exhibits', () => {
+    const d = inventoryFixture();
+    delete d.shopify.catalog_items;
+    delete d.public_depth;
+    const html = renderDtc(d, 'Example');
+    expect(html).not.toContain('data-inventory-exhibit');
+    expect(html).not.toContain('data-store-features');
+    expect(html).toContain('A style is unavailable');
+    expect(html).toContain('data-promise-item="refill_sold_out"');
+  });
+  it('lets responsive classes control product thumbnails without inline display overrides', () => {
+    const d = inventoryFixture();
+    d.drop_off.items[0].id = 'variant_choice';
+    d.hero = { headline: 'Other observation', item_ref: 'second_order.0' };
+    d.second_order.items = [{ ...d.second_order.items[0], id: 'other_observation', product: null }];
+    const html = renderDtc(d, 'Example');
+    const thumbnail = html.match(/<img[^>]*class="lg:hidden w-\[72px\]"[^>]*>/)?.[0];
+    expect(thumbnail).toBeTruthy();
+    expect(thumbnail).not.toContain('display:block');
+  });
+  it('distinguishes one verified competitor creative from an empty search', () => {
+    const d = inventoryFixture();
+    d.competitors = { status: 'present', fetched_at: '2026-10-08T22:00:00Z', data: { creatives: [{ advertiser: 'Verified peer' }] } };
+    const html = renderDtc(d, 'Example');
+    expect(html).not.toContain('No verified competitor creatives');
+    expect(html).toContain('Too few verified creatives for a comparison');
+  });
+  it('puts additional named cases behind a closed disclosure', () => {
+    const html = renderDtc(inventoryFixture(), 'Example');
+    expect(html).toMatch(/<details data-additional-cases="1"[^>]*>/);
+    expect(html).not.toMatch(/<details data-additional-cases="1"[^>]*\bopen/);
+    expect((html.match(/data-case="/g) || [])).toHaveLength(3);
   });
 });

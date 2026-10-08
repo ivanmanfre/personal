@@ -259,6 +259,15 @@ export interface DtcPromiseBlock {
   note: string;
 }
 
+export interface DtcCatalogItem {
+  title: string;
+  handle: string;
+  url: string;
+  variants: { title: string; price: number | null; currency: string | null; available: boolean | null }[];
+  created_at?: string | null;
+  published_at?: string | null;
+}
+
 export interface DtcGrowth {
   brand: DtcBrand;
   builder_version?: string | null;
@@ -290,12 +299,13 @@ export interface DtcGrowth {
     // scan rows written before 2026-08-12 carry neither and must keep rendering unchanged.
     gift_cards?: number; currency?: string | null;
     note?: string;
-  }>;
+  }> & { catalog_items?: DtcCatalogItem[] };
+  public_depth?: DtcSignalMeta<{ store_features?: { kind: 'loyalty' | 'try_on' | 'reviews'; title: string; detail: string; source_url: string; quote: string; fetched_at?: string | null }[] }>;
   ads?: {
     meta?: DtcSignalMeta<{
       active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number; distinct_text_count?: number;
       has_video?: boolean; has_static?: boolean;
-    }>;
+    }> & { page_confirmed?: boolean; page_status?: string };
     // audit v3: the prospect's own Google ad record. `capped` true means ads_found is a
     // FLOOR, never a total, and every rendered count must say "at least N".
     google?: DtcSignalMeta<{
@@ -306,8 +316,7 @@ export interface DtcGrowth {
       latest_last_shown?: string | null; checked_at?: string;
       creatives?: DtcGoogleCreative[];
     }>;
-    // audit v3: brand-wide Meta keyword sweep. status 'empty' is a PROVABLE brand-wide zero
-    // (the archive was reached and nothing traced back to this brand), never a blocked read.
+    // A keyword sample with no identity-matched result cannot establish a brand-wide zero.
     meta_sweep?: DtcSignalMeta<{
       keywords?: string[]; identity_matched_ads: number; sampled_items?: number;
       max_results?: number; capped?: boolean; matched_pages?: unknown[]; checked_at?: string;

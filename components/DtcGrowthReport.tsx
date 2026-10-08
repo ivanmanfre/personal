@@ -264,11 +264,23 @@ function dayMs(s?: string | null): number | null {
   const [y, mo, da] = d.split('-').map(Number);
   return Date.UTC(y, mo - 1, da);
 }
-function longDay(s?: string | null): string | null {
-  const ms = dayMs(s);
-  if (ms == null) return null;
-  return new Date(ms).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+function checkedAt(s?: string | null): string | null {
+  if (!s || !Number.isFinite(Date.parse(s))) return null;
+  const date = new Date(s);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+    + ' at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
 }
+
+// Storage paths are reused on rebuilds; the capture timestamp selects the matching image version.
+function datedScreenshots(shots: any): any {
+  if (!shots?.captured_at) return shots;
+  const dated = (url?: string | null) => {
+    if (!url) return url;
+    try { const u = new URL(url); u.searchParams.set('captured_at', shots.captured_at); return u.href; } catch { return url; }
+  };
+  return { ...shots, homepage_url: dated(shots.homepage_url), pdp_url: dated(shots.pdp_url) };
+}
+
 // b minus a in whole days. Null when either end is unreadable, so an age is never guessed.
 function daysBetween(a?: string | null, b?: string | null): number | null {
   const A = dayMs(a);
@@ -456,11 +468,10 @@ function AdEvidenceSpread({
   condensed?: boolean;
 }) {
   const g = google?.status === 'present' && google.data ? google.data : null;
-  // Meta zero is provable two ways: the brand page read, and the brand-wide keyword sweep.
-  // Either one alone is honest; the statement below names whichever was actually read.
+  // A confirmed page supports current page activity only; a keyword search is a sample.
   const sweep = metaSweep?.status === 'empty' && metaSweep.data ? metaSweep.data : null;
-  const pageZero = metaPage?.status === 'empty';
-  const metaReadDate = longDay(sweep?.checked_at || metaPage?.fetched_at);
+  const pageZero = metaPage?.status === 'empty' && metaPage?.page_confirmed === true;
+  const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
   const showMeta = (pageZero || sweep) && metaReadDate;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
@@ -468,7 +479,7 @@ function AdEvidenceSpread({
   if (!g && !showMeta && !compCreatives.length) return null;
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
-  const gReadLong = longDay(g?.checked_at || google?.fetched_at);
+  const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
   const newestAge = g ? daysBetween(g.newest_first_shown, gRead) : null;
   const lastAge = g ? daysBetween(g.latest_last_shown, gRead) : null;
 
@@ -508,7 +519,7 @@ function AdEvidenceSpread({
   const axisMax = Math.max(7, Math.ceil((maxAge + 4) / 5) * 5);
   const agePos = (d: number) => Math.max(0, Math.min(100, (1 - d / axisMax) * 100));
   const fresherThanBrand = newestAge != null ? compAges.filter((a) => a < newestAge).length : null;
-  const compReadLong = longDay(comp?.checked_at || competitors?.fetched_at);
+  const compReadLong = checkedAt(comp?.checked_at || competitors?.fetched_at);
   const gCount = g && typeof g.ads_found === 'number' ? countParts(g.ads_found, g.capped) : null;
   // Headline counts, biggest first (Meta first on a tie): Rebalance (09-26) led with "1 on Google."
   // while it runs 46 Meta ads.
@@ -561,7 +572,7 @@ function AdEvidenceSpread({
                 <span key={h.k} data-head-count={h.k}>{h.t}{' '}</span>
               ))}
               {/* The headline absolute is page-confirmed-only (same rule as the statement below). */}
-              {pageZero ? <span style={{ color: accent }}>Zero on Meta.</span> : null}
+              {pageZero ? <span style={{ color: accent }}>No active ads on the identified Facebook page.</span> : null}
             </h2>
           </div>
           <div className="lg:col-span-4">
@@ -680,7 +691,7 @@ function AdEvidenceSpread({
           </div>
         ) : null}
 
-        {/* ── Instrument 2: the brand-wide Meta zero ─────────────────────────────── */}
+        {/* ── Instrument 2: confirmed page status and keyword sample ─────────────── */}
         {showMeta ? (
           <div className="mt-16 pt-10" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
             <div className="grid lg:grid-cols-12 gap-y-8 lg:gap-x-12 items-start">
@@ -703,14 +714,15 @@ function AdEvidenceSpread({
                     was measured and nothing more. */}
                 <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
                   {pageZero
-                    ? `Meta's Ad Library shows zero ads for your brand as of ${metaReadDate}.`
+                    ? `The identified Facebook page had no active ads at ${metaReadDate}. This does not establish brand-wide or historical ad activity.`
                     : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to your brand.`}
                 </p>
+                {pageZero && proofHref(metaPage.source_url) ? <a href={proofHref(metaPage.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline underline-offset-4 mt-3">View the identified Facebook page</a> : null}
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
                   {pageZero ? (
                     <div className="cedt-mrow">
-                      <span className="nm">Brand page read</span>
-                      <span className="vl">0 ads returned</span>
+                      <span className="nm">Identified page read</span>
+                      <span className="vl">0 active ads on this page</span>
                       <span className="dt">{metaReadDate}</span>
                     </div>
                   ) : null}
@@ -720,7 +732,7 @@ function AdEvidenceSpread({
                         {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
                       </span>
                       <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to your brand`}</span>
-                      <span className="dt">{longDay(sweep.checked_at) || metaReadDate}</span>
+                      <span className="dt">{checkedAt(sweep.checked_at || metaSweep?.fetched_at) || metaReadDate}</span>
                     </div>
                   ) : null}
                 </div>
@@ -850,7 +862,7 @@ function isPromiseRow(d: any): boolean {
 }
 
 function promiseItems(block?: PromiseBlock | null): PromiseItem[] {
-  return Array.isArray(block?.items) ? block!.items.filter((it) => it && typeof it.title === 'string' && it.title.trim()) : [];
+  return Array.isArray(block?.items) ? block!.items.filter((it) => it && it.id !== 'no_new_products' && typeof it.title === 'string' && it.title.trim()) : [];
 }
 
 // The item the headline is about. Falls back to the first item on the page, so a missing or
@@ -867,13 +879,6 @@ function productPrice(p?: PromiseItem['product']): string | null {
   const n = typeof p.price === 'number' ? p.price : parseFloat(String(p.price));
   if (!Number.isFinite(n) || n <= 0) return null;
   return fmtPrice(n, curSymbol(p.currency));
-}
-
-// "Sep 26": the eyebrow is one line on a phone; the masthead carries the full date.
-function shortDay(s?: string | null): string | null {
-  const ms = dayMs(s);
-  if (ms == null) return null;
-  return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 // Marks the item's public fact inside the headline when the headline states it verbatim
@@ -907,7 +912,7 @@ function ProductImg({ src, alt, className, ink }: { src?: string | null; alt: st
       onError={() => setFailed(true)}
       className={className}
       data-store-img="1"
-      style={{ aspectRatio: '4 / 5', objectFit: 'contain', background: '#ffffff', border: `1px solid ${ink}14`, borderRadius: 8, flexShrink: 0, display: 'block' }}
+      style={{ aspectRatio: '4 / 5', objectFit: 'contain', background: '#ffffff', border: `1px solid ${ink}14`, borderRadius: 8, flexShrink: 0 }}
     />
   );
 }
@@ -930,6 +935,44 @@ function bestSellerProduct(d: any): { title?: string; url?: string; image_url?: 
   const all = [...promiseItems(d.drop_off), ...promiseItems(d.second_order)];
   const hit = all.find((it) => it?.product?.image_url && productHandle(it.product.url) === top);
   return hit ? (hit.product as any) : null;
+}
+
+const INVENTORY_IDS = new Set(['bestseller_sold_out', 'refill_sold_out', 'sold_out', 'high_oos', 'out_of_stock']);
+function isInventoryItem(item?: PromiseItem | null): boolean {
+  return !!item && INVENTORY_IDS.has(item.id);
+}
+
+function InventoryExhibit({ shop, ink, headingFont }: { shop: any; ink: string; headingFont: string }) {
+  const all = shop?.status === 'present' && Array.isArray(shop.catalog_items) ? shop.catalog_items : [];
+  if (!all.length) return null;
+  const shown = all.slice(0, 12);
+  return (
+    <div data-inventory-exhibit="1" className="mt-8" style={{ color: ink }}>
+      <h2 className="text-[1.15rem] font-bold" style={{ fontFamily: headingFont }}>Product and variant availability</h2>
+      <p className="mt-2 text-[0.85rem]">Showing {shown.length} of {all.length} collected products. Availability is a snapshot, not a live stock feed.</p>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-left text-[0.9rem]" style={{ borderCollapse: 'collapse' }}>
+          <thead><tr style={{ borderBottom: `2px solid ${ink}` }}><th className="py-3 pr-3">Product</th><th className="py-3 pr-3">Variant and price</th><th className="py-3">Availability</th></tr></thead>
+          <tbody>{shown.flatMap((product: any, i: number) => {
+            const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ title: 'Variant not recorded', available: null }];
+            return variants.slice(0, 8).map((variant: any, j: number) => (
+              <tr key={`${product.handle || i}-${j}`} style={{ borderBottom: `1px solid ${ink}1f` }}>
+                {j === 0 ? <th scope="rowgroup" rowSpan={Math.min(variants.length, 8)} className="py-3 pr-3 align-top font-semibold" style={{ width: '28%' }}>
+                  {proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{clean(product.title)}</a> : clean(product.title)}
+                  {variants.length > 8 ? <span className="block mt-1 text-[0.75rem] font-normal">First 8 of {variants.length} variants</span> : null}
+                </th> : null}
+                <td className="py-2 pr-3"><span className="block">{clean(variant.title) || 'Variant not recorded'}</span><span className="block text-[0.8rem] opacity-75">{variant.price != null && Number.isFinite(Number(variant.price)) && variant.currency ? fmtPrice(Number(variant.price), curSymbol(variant.currency)) : 'Price unknown'}</span></td>
+                <td className="py-2 font-semibold">{variant.available === true ? 'Available' : variant.available === false ? 'Sold out' : 'Availability unknown'}</td>
+              </tr>
+            ));
+          })}</tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-[0.8rem]">{checkedAt(shop.fetched_at) ? `Catalog checked ${checkedAt(shop.fetched_at)}. ` : ''}
+        {proofHref(shop.source_url) ? <a href={proofHref(shop.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">View your catalog</a> : null}
+      </p>
+    </div>
+  );
 }
 
 function PromiseHero({
@@ -955,20 +998,18 @@ function PromiseHero({
   // These findings need paired quotes or observed states; a generic store image cannot prove them.
   const evidenceOnly = (item?.evidence?.citations?.length || 0) > 1
     || ['unit_price_mismatch', 'broken_help_link'].includes(item?.id || '');
-  const headline = clean(d.hero?.headline) || (item ? clean(item.title) : '');
-  const product = item?.product && item.product.image_url ? item.product : null;
-  const shots = d.screenshots;
-  const shotDate = shortDay(shots?.captured_at);
-  // No product image on the item: the dated capture stands in, but ONLY when it is the capture of
-  // this item's own product page (09-26: an unrelated PDP shot sat under a rewards headline).
+  const headline = clean(d.hero?.headline) || clean(item?.title);
+  const inventory = isInventoryItem(item);
+  const product = !inventory && item?.product?.image_url ? item.product : null;
+  const shots = datedScreenshots(d.screenshots);
+  const shotDate = checkedAt(shots?.captured_at);
+  // A dated capture takes precedence over a photograph, only for this exact product page.
   // An undated capture, or one of another page, is not evidence for this item.
-  const capture = !product && shots?.pdp_url && shotDate && sameProductPage(item?.product?.url || item?.evidence?.source_url, shots?.pdp_path)
+  const capture = shots?.pdp_url && shotDate && sameProductPage(item?.product?.url || item?.evidence?.source_url, shots?.pdp_path)
     ? String(shots.pdp_url) : null;
-  // Still nothing (a store-wide item: shipping threshold, sold-out share): the first screen still
-  // shows their store (VMI, Safecourt, Neeshi 09-26 had none). Their dated homepage capture, else
-  // the image of their #1 best seller when an item carries it. Never another page's PDP capture.
-  const homeShot = !product && !capture && shots?.homepage_url && shotDate ? String(shots.homepage_url) : null;
-  const bestProduct = !product && !capture && !homeShot ? bestSellerProduct(d) : null;
+  // Generic store imagery is context only and never stands in for inventory evidence.
+  const homeShot = !inventory && !product && !capture && shots?.homepage_url && shotDate ? String(shots.homepage_url) : null;
+  const bestProduct = !inventory && !product && !capture && !homeShot ? bestSellerProduct(d) : null;
   const still = capture || homeShot || bestProduct?.image_url || null;
   const price = productPrice(product || undefined);
   const proofUrl = product?.url || item?.evidence?.source_url || null;
@@ -994,15 +1035,15 @@ function PromiseHero({
           </h1>
         </div>
 
-        {item && !evidenceOnly && (product || still) ? (
+        {item && (capture || (!evidenceOnly && (product || still))) ? (
           <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2">
             <figure data-hero-proof="1" style={{ margin: 0, border: `1px solid ${ink}1f`, borderRadius: 14, background: '#fafafa', padding: 10 }}>
-              {product ? (
+              {product && !capture ? (
                 <div className="flex gap-3 items-start">
                   <ProductImg src={product.image_url} alt={clean(product.title)} className="w-[118px] sm:w-[160px] lg:w-[180px]" ink={ink} />
                   <div className="min-w-0 flex-1 py-1">
                     <div className="font-bold leading-snug" style={{ fontFamily: headingFont, fontSize: '0.98rem', color: ink }}>{clean(product.title)}</div>
-                    {price ? <div className="mt-1 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>{price}</div> : null}
+                    {price ? <div className="mt-1 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>From {price}</div> : null}
                     <div className="mt-3 text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>
                       {clean(item.evidence?.label)}
                     </div>
@@ -1017,17 +1058,17 @@ function PromiseHero({
                 </div>
               ) : (
                 <>
-                  <div style={{ borderRadius: 8, overflow: 'hidden', background: surface, border: `1px solid ${ink}14` }}>
+                  <a href={still as string} target="_blank" rel="noopener noreferrer" className="block" style={{ borderRadius: 8, overflow: 'hidden', background: surface, border: `1px solid ${ink}14` }}>
                     <img
                       src={still as string}
                       alt={capture ? `${companyName} product page` : homeShot ? `${companyName} homepage` : clean(bestProduct?.title) || `${companyName} best seller`}
                       decoding="async"
                       data-store-img="1"
                       data-store-img-kind={capture ? 'pdp' : homeShot ? 'home' : 'best'}
-                      style={{ display: 'block', width: '100%', height: 210, objectFit: bestProduct && !capture && !homeShot ? 'contain' : 'cover', objectPosition: homeShot ? '50% 0%' : '50% 30%' }}
+                      style={{ display: 'block', width: '100%', height: capture ? 'auto' : 210, objectFit: bestProduct && !capture && !homeShot ? 'contain' : 'cover', objectPosition: homeShot ? '50% 0%' : '50% 30%' }}
                     />
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  </a>
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1" hidden={!!homeShot || !!bestProduct}>
                     <span className="text-[0.75rem] font-bold uppercase tracking-[0.1em]" style={{ fontFamily: headingFont, color: ink, opacity: 0.75 }}>{clean(item.evidence?.label)}</span>
                     <span data-hero-fact="1" className="font-bold text-[1rem] px-2.5 py-1" style={{ fontFamily: headingFont, color: ink, border: `3px solid ${accent}`, boxShadow: `0 0 0 1.5px ${ink}`, borderRadius: 6 }}>
                       {clean(item.evidence?.value)}
@@ -1036,12 +1077,12 @@ function PromiseHero({
                 </>
               )}
               <figcaption className="mt-2 text-[0.8rem] leading-snug" style={{ color: ink, opacity: 0.75 }}>
-                {product
-                  ? `Your product page${readDate ? `, read ${readDate}` : ''}.`
+                {product && !capture
+                  ? `Product photograph for identification, not proof of availability.`
                   : capture
                     ? `Your product page, captured ${shotDate}.`
                     : homeShot
-                      ? `Your homepage, captured ${shotDate}.`
+                      ? `Homepage context only, captured ${shotDate}.`
                       : `Your best seller, ${clean(bestProduct?.title)}.`}{' '}
                 {proofUrl ? (
                   <a href={proofHref(proofUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4" style={{ color: ink }}>
@@ -1062,7 +1103,7 @@ function PromiseHero({
                   <div className="min-w-0">
                     <div className="text-[0.75rem] font-bold uppercase tracking-[0.12em]" style={{ fontFamily: headingFont, color: ink }}>{r.k}</div>
                     <a href={r.href} className="block mt-1 text-[1rem] leading-[1.45] underline-offset-4 hover:underline" style={{ color: ink }}>
-                      {clean(r.it!.title)}
+                      {isInventoryItem(r.it) ? 'Product and variant availability' : clean(r.it!.title)}
                     </a>
                   </div>
                 </li>
@@ -1094,15 +1135,17 @@ function PromiseHero({
             Walk my scan with Mattan
           </a>
           <p className="mt-2.5 text-[0.8rem] leading-relaxed" style={{ color: ink, opacity: 0.75 }}>
-            Read from your public store pages, with no login and nothing you sent us.
+            A dated snapshot of your public pages. Reopening this link does not rerun the research.
           </p>
         </div>
       </div>
+      {inventory ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
     </section>
   );
 }
 
 function PromiseSection({
+  d,
   id,
   n,
   title,
@@ -1111,6 +1154,7 @@ function PromiseSection({
   ink,
   headingFont,
 }: {
+  d: any;
   id: string;
   n: number;
   title: string;
@@ -1139,7 +1183,12 @@ function PromiseSection({
       {items.length ? (
         <ol className="mt-10" style={{ listStyle: 'none', padding: 0 }}>
           {items.map((it, i) => {
-            const product = it.product && it.product.image_url ? it.product : null;
+            const hero = heroItemOf(d);
+            const product = !isInventoryItem(it) && it.product?.image_url ? it.product : null;
+            const productImage = product?.image_url !== hero?.product?.image_url && !items.slice(0, i).some((prior) => prior.product?.image_url === product?.image_url) ? product?.image_url : null;
+            const shot = datedScreenshots(d.screenshots);
+            const capture = checkedAt(shot?.captured_at) && sameProductPage(it.product?.url || it.evidence?.source_url, shot?.pdp_path)
+              && !sameProductPage(hero?.product?.url || hero?.evidence?.source_url, shot?.pdp_path) ? shot.pdp_url : null;
             const price = productPrice(product || undefined);
             const ev = it.evidence;
             return (
@@ -1151,7 +1200,7 @@ function PromiseSection({
               >
                 <div className="lg:col-span-8 min-w-0">
                   <div className="flex gap-4 items-start">
-                    {product ? <ProductImg src={product.image_url} alt={clean(product.title)} className="lg:hidden w-[72px]" ink={ink} /> : null}
+                    {product ? <ProductImg src={productImage} alt={clean(product.title)} className="lg:hidden w-[72px]" ink={ink} /> : null}
                     <h3 className="min-w-0 font-bold tracking-[-0.01em]" style={{ fontFamily: headingFont, fontSize: 'clamp(1.3rem, 2.5vw, 1.85rem)', color: ink, lineHeight: 1.15 }}>
                       {clean(it.title)}
                     </h3>
@@ -1167,6 +1216,8 @@ function PromiseSection({
                       <p className="mt-1 text-[1.05rem] leading-[1.55] font-semibold" style={{ color: ink, maxWidth: '64ch' }}>{clean(it.fix)}</p>
                     </div>
                   ) : null}
+                  {capture ? <figure className="mt-5" data-promise-capture="1"><a href={capture} target="_blank" rel="noopener noreferrer"><img src={capture} alt="Captured source product page" className="w-full rounded-lg" loading="lazy" /></a><figcaption className="mt-2 text-[0.8rem]">Product page captured {checkedAt(shot.captured_at)}.</figcaption></figure> : null}
+                  {isInventoryItem(it) && !isInventoryItem(hero) && [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(isInventoryItem)?.id === it.id ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
                   {ev && (ev.label || ev.value) ? ev.citations && ev.citations.length > 1 ? (
                     <div className="mt-4 text-[0.9rem] leading-relaxed" data-promise-evidence="1" style={{ color: ink, opacity: 0.8 }}>
                       <p className="font-semibold">{clean(ev.label)}</p>
@@ -1195,9 +1246,9 @@ function PromiseSection({
                 </div>
                 {product ? (
                   <aside className="hidden lg:block lg:col-span-4">
-                    <ProductImg src={product.image_url} alt={clean(product.title)} className="w-full max-w-[260px]" ink={ink} />
+                    <ProductImg src={productImage} alt={clean(product.title)} className="w-full max-w-[260px]" ink={ink} />
                     <div className="mt-3 font-bold leading-snug text-[0.95rem]" style={{ fontFamily: headingFont, color: ink }}>{clean(product.title)}</div>
-                    {price ? <div className="mt-0.5 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>{price}</div> : null}
+                    {price ? <div className="mt-0.5 text-[0.95rem] tabular-nums" style={{ color: ink, opacity: 0.8 }}>From {price}</div> : null}
                   </aside>
                 ) : null}
               </li>
@@ -1348,8 +1399,23 @@ function WeekOnePanel({
 }
 
 export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
-  const d = report.dtc;
-  if (!d) return null;
+  const original = report.dtc;
+  if (!original) return null;
+  const d = { ...original };
+  // Cause deduplication belongs to the builder, which retains complete evidence membership.
+  // The renderer only suppresses the retired catalog-age recommendation on older rows.
+  for (const key of ['drop_off', 'second_order'] as const) {
+    const block = original[key];
+    if (!block) continue;
+    const items = promiseItems(block);
+    d[key] = { ...block, items, note: items.length || !block.items.length ? block.note : '' };
+  }
+  const [heroBlock, heroIndex] = (original.hero?.item_ref || '').split('.');
+  const originalHero = (original as any)[heroBlock]?.items?.[Number(heroIndex) || 0];
+  const visibleItems = (['drop_off', 'second_order'] as const).flatMap((key) => promiseItems(d[key]).map((item, i) => ({ item, ref: `${key}.${i}` })));
+  const resolvedHero = visibleItems.find(({ item }) => item.id === originalHero?.id) || visibleItems[0];
+  if (resolvedHero) d.hero = { headline: originalHero?.id === resolvedHero.item.id ? original.hero?.headline || resolvedHero.item.title : resolvedHero.item.title, item_ref: resolvedHero.ref };
+
 
   const brand = d.brand;
   const accent = brand.accent_hex || '#ffc71d';
@@ -1384,7 +1450,19 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       // the drop-off section's sold-out item, so only ad-read findings survive on promise rows.
       (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
   )
-    .map((f) => (promise ? f : scrubLegacyFinding(f, paidOk)))
+    .map((f) => {
+      if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
+        if (d.ads.meta.page_confirmed !== true) return null;
+        // Preserve verified page-scoped observations, including installed tracking facts.
+        const pageScoped = /(?:facebook|identified|your|this) page/i.test(f.title) && /(?:facebook|identified|your|this) page/i.test(f.evidence);
+        return { ...f,
+          title: pageScoped ? f.title : 'No active ads on the identified Facebook page',
+          evidence: pageScoped ? f.evidence : `The identified Facebook page had no active ads when checked${checkedAt(d.ads.meta.fetched_at) ? ` on ${checkedAt(d.ads.meta.fetched_at)}` : ''}. This check does not establish brand-wide or historical ad activity.`,
+          week_one: f.week_one?.replace(/a first Meta campaign/gi, 'a Meta campaign'),
+        };
+      }
+      return promise ? f : scrubLegacyFinding(f, paidOk);
+    })
     .filter((f): f is NonNullable<typeof f> => !!f);
 
   // A hook that loses a sentence to the scrub reads as a fragment: it takes the default hook.
@@ -1402,9 +1480,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   // `dtc.completed_at` is restamped on every build (a rebuild reads the store again), so it
   // wins over the scan row's created_at, which only dates the first build.
   const readIso = (d as any).completed_at || scan.created_at;
-  const scanDate = readIso
-    ? new Date(readIso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    : null;
+  const scanDate = checkedAt(readIso);
 
   // REAL DEFECT the floor never fixed: the brand fonts were declared but never loaded. Load them.
   useGoogleFonts([brand.font_heading, brand.font_body]);
@@ -1441,9 +1517,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   // Dated storefront capture: present ONLY after a human QA pass wrote it to the row.
   // Attaches under the finding named by attach_signal, defaulting to the lead finding.
   const capture = d.evidence_capture && d.evidence_capture.url ? d.evidence_capture : null;
-  const captureDate = capture?.captured_at
-    ? new Date(capture.captured_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    : null;
+  const captureDate = checkedAt(capture?.captured_at);
   const captureAttachIndex = capture
     ? Math.max(0, findings.findIndex((f) => f.signal === capture.attach_signal))
     : -1;
@@ -1452,6 +1526,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   // ── audit v3 evidence blocks (all optional, all presence-gated) ─────────────────────
   const dAny = d as any;
+  const storeFeatures = dAny.public_depth?.status === 'present' && Array.isArray(dAny.public_depth.data?.store_features)
+    ? dAny.public_depth.data.store_features.filter((f: any) => f.quote && proofHref(f.source_url)) : [];
   const riseCases = casesFor([
     ...(Array.isArray(dAny.competitors?.data?.keywords) ? dAny.competitors.data.keywords : []),
     ...(Array.isArray(dAny.bestsellers?.data?.handles) ? dAny.bestsellers.data.handles : []),
@@ -1460,24 +1536,18 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const gAds = dAny.ads?.google;
   const metaSweep = dAny.ads?.meta_sweep;
   const competitors = dAny.competitors;
-  // The brand-wide sweep is what upgrades "this page runs nothing" into a brand-wide zero.
-  const sweepZero = metaSweep?.status === 'empty' && !!metaSweep.data;
-  const hasAdEvidence =
-    gAds?.status === 'present' ||
-    sweepZero ||
-    compStrip(competitors).length > 0;
+  const hasAdEvidence = [gAds, adsMeta, metaSweep, competitors].some((signal) => signal && signal.status !== 'absent');
 
   // Dated storefront plates. A URL with no capture date, or a capture date with no URL,
   // renders nothing: an undated screenshot is not evidence.
-  const shots = dAny.screenshots;
-  const shotDate = longDay(shots?.captured_at);
+  const shots = datedScreenshots(dAny.screenshots);
+  const shotDate = checkedAt(shots?.captured_at);
   const shotPlates: Array<{ idx: number; url: string; label: string }> = [];
   if (shots && shotDate) {
     const homeIdx = findings.findIndex((f) => f.signal === 'shopify');
-    const pdpIdx = findings.findIndex((f) => f.signal === 'reviews');
-    if (shots.homepage_url && homeIdx >= 0) shotPlates.push({ idx: homeIdx, url: shots.homepage_url, label: 'Your homepage' });
+    if (shots.homepage_url && homeIdx >= 0) shotPlates.push({ idx: homeIdx, url: shots.homepage_url, label: 'Homepage context only' });
     if (shots.pdp_url) {
-      const at = pdpIdx >= 0 ? pdpIdx : findings.map((f, i) => (f.signal === 'shopify' ? i : -1)).filter((i) => i >= 0 && i !== homeIdx)[0];
+      const at = findings.findIndex((f) => sameProductPage(f.source_url, shots.pdp_path));
       if (at != null && at >= 0) shotPlates.push({ idx: at, url: shots.pdp_url, label: 'Your product page' });
     }
   }
@@ -1565,13 +1635,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   const paidLines: ReceiptLine[] = [];
   if (adsMeta?.status === 'empty' && hasFinding('ads.meta')) {
-    // With the brand-wide sweep on the row the line can state the dated record instead of a
-    // status, which is what the evidence spread argues from. Without it, the pre-v3 wording
-    // stands untouched, so an old row's receipt is byte-identical to the floor.
     paidLines.push(
-      sweepZero
-        ? { signal: 'ads.meta', label: 'Meta Ad Library', value: 'zero ads on record', source: 'Meta Ad Library', none: true }
-        : { signal: 'ads.meta', label: 'Meta Ad Library', value: 'no active ads', source: 'Meta Ad Library', none: true },
+      { signal: 'ads.meta', label: 'Meta Ad Library', value: adsMeta?.page_confirmed === true ? 'no active ads on the identified page' : 'no identity-matched ads in the sample', source: 'Meta Ad Library', none: true },
     );
   } else if (
     adsMeta?.status === 'present' && adsMeta.data &&
@@ -1759,15 +1824,32 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <PromiseHero
             d={d}
             companyName={companyName}
-            readDate={shortDay(readIso)}
+            readDate={scanDate}
             accent={accent}
             ink={ink}
             surface={surface}
             headingFont={headingFont}
             ctaHref={ctaUrl('hero')}
           />
-          <PromiseSection id="drop-off" n={1} title="Purchase path observations" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
-          <PromiseSection id="second-order" n={2} title="Repeat purchase observations" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection d={d} id="drop-off" n={1} title="Purchase path observations" block={(d as any).drop_off} accent={accent} ink={ink} headingFont={headingFont} />
+          <PromiseSection d={d} id="second-order" n={2} title="Repeat purchase observations" block={(d as any).second_order} accent={accent} ink={ink} headingFont={headingFont} />
+          {storeFeatures.length > 0 ? (
+            <section data-store-features="1" className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 py-12" style={{ borderTop: `1px solid ${ink}14`, color: ink }}>
+              <h2 className="text-[1.75rem] font-bold" style={{ fontFamily: headingFont }}>Already on your store</h2>
+              <p className="mt-3 text-[1rem]">Public features to consider when planning the next purchase. Their presence does not establish usage or sales impact.</p>
+              <div className="mt-6 grid gap-6 md:grid-cols-2">
+                {storeFeatures.map((feature: any, i: number) => (
+                  <blockquote key={`${feature.kind}-${i}`} data-store-feature={feature.kind} className="pl-4" style={{ borderLeft: `2px solid ${ink}33` }}>
+                    <h3 className="font-bold" style={{ fontFamily: headingFont }}>{clean(feature.title)}</h3>
+                    <p className="mt-2 text-[1rem] leading-relaxed">{clean(feature.quote)}</p>
+                    <a href={proofHref(feature.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] underline underline-offset-4 text-[0.9rem]">Read source</a>
+                    {checkedAt(feature.fetched_at) ? <p className="text-[0.8rem] opacity-75">Checked {checkedAt(feature.fetched_at)}</p> : null}
+                    {checkedAt(shots?.captured_at) && sameProductPage(feature.source_url, shots?.pdp_path) && !storeFeatures.slice(0, i).some((prior: any) => sameProductPage(prior.source_url, shots?.pdp_path)) && ![...promiseItems(d.drop_off), ...promiseItems(d.second_order)].some((it) => sameProductPage(it.product?.url || it.evidence?.source_url, shots?.pdp_path)) ? <figure className="mt-3"><a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt="Captured product page" className="w-full rounded-lg" loading="lazy" /></a><figcaption className="mt-2 text-[0.8rem]">Captured {checkedAt(shots.captured_at)}</figcaption></figure> : null}
+                  </blockquote>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </>
       ) : (
       /* Chapter — Cover / hook (legacy rows) */
@@ -2172,6 +2254,21 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           >
             Supporting public ad records
           </summary>
+          <div data-source-checks="1" className="mx-auto w-full max-w-[1180px] px-6 sm:px-8 pb-7 text-[0.9rem] leading-relaxed">
+            {([
+              ['Catalog', shop], ['Facebook page', adsMeta], ['Meta keyword search', metaSweep], ['Google advertiser search', gAds], ['Competitor search', competitors],
+            ] as Array<[string, any]>).filter(([, signal]) => signal && signal.status !== 'absent').map(([label, signal]) => {
+              const at = signal.data?.checked_at || signal.fetched_at;
+              const cached = signal.data?.from_cache === true || signal.from_cache === true;
+              const age = at && readIso ? (Date.parse(readIso) - Date.parse(at)) / 3600000 : NaN;
+              const coverage = label === 'Competitor search' && !compStrip(signal).length
+                ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
+                : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
+                : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
+                : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
+              return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
+            })}
+          </div>
           <AdEvidenceSpread
             google={gAds}
             metaPage={adsMeta}
@@ -2230,34 +2327,29 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <h2 className="mb-8 text-[1.6rem] sm:text-[2rem] leading-tight" style={{ fontFamily: headingFont, fontWeight: 700, color: ink }}>
           Brands like yours, with RISE running growth
         </h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {riseCases.map((c) => (
-            <a
-              key={c.slug}
-              href={caseUrl(c)}
-              data-case={c.slug}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex flex-col overflow-hidden rounded-2xl transition-transform hover:-translate-y-0.5"
-              style={{ border: `1px solid ${ink}1f`, background: surface, color: ink }}
-            >
-              <div className="aspect-[16/9] sm:aspect-[4/3] w-full overflow-hidden" style={{ background: `${ink}0d` }}>
-                <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-              </div>
-              <div className="flex flex-1 flex-col p-6">
-                <span className="text-[0.95rem] font-bold" style={{ fontFamily: headingFont }}>{c.name}</span>
-                <span className="mt-1 text-[0.85rem] leading-snug" style={{ opacity: 0.7 }}>{c.sells}</span>
-                <span className="mt-5 text-[1.35rem] leading-tight" style={{ fontFamily: headingFont, fontWeight: 700 }}>{c.headline}</span>
-                <ul className="mt-3 space-y-1.5 text-[0.95rem]" style={{ opacity: 0.85 }}>
-                  {c.stats.map((st) => (
-                    <li key={st} className="flex gap-2"><span aria-hidden="true" style={{ color: accent }}>●</span>{st}</li>
-                  ))}
-                </ul>
-                <span className="mt-auto pt-6 text-[0.9rem] font-bold underline underline-offset-4">Read the case study ›</span>
-              </div>
-            </a>
-          ))}
-        </div>
+        {riseCases.slice(0, 1).map((c) => (
+          <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer" className="grid sm:grid-cols-2 gap-5 items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${ink}1f`, color: ink }}>
+            <img src={c.image} alt={c.name} loading="lazy" className="w-full aspect-[16/9] object-cover" />
+            <div className="p-5 sm:pl-0">
+              <h3 className="font-bold text-[1.15rem]" style={{ fontFamily: headingFont }}>{c.name}</h3>
+              <p className="mt-1 text-[0.9rem] opacity-75">{c.sells}</p>
+              <p className="mt-3 text-[1.3rem] font-bold" style={{ fontFamily: headingFont }}>{c.headline}</p>
+              <ul className="mt-2 text-[0.95rem] space-y-1">{c.stats.map((stat) => <li key={stat}>{stat}</li>)}</ul>
+              <span className="inline-flex items-center min-h-[44px] mt-2 font-semibold underline underline-offset-4">Read the case study ›</span>
+            </div>
+          </a>
+        ))}
+        <details data-additional-cases="1" className="mt-5">
+          <summary className="cursor-pointer min-h-[44px] font-semibold">More RISE case studies</summary>
+          <div className="grid sm:grid-cols-2 gap-5 mt-3">
+            {riseCases.slice(1).map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer" className="p-4 rounded-lg" style={{ border: `1px solid ${ink}1f`, color: ink }}>
+              <h3 className="font-bold" style={{ fontFamily: headingFont }}>{c.name}</h3>
+              <p className="mt-2">{c.headline}</p>
+              <p className="mt-2 text-[0.9rem] opacity-75">{c.sells}</p>
+              <span className="inline-flex items-center min-h-[44px] font-semibold underline underline-offset-4">Read the case study ›</span>
+            </a>)}
+          </div>
+        </details>
         <p className="mt-8 text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
           Every number comes from the brand's case study on risedtc.com. Ask Mattan how any of them was done on the call.{' '}
           <a href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
@@ -2279,7 +2371,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           decoding="async"
           style={{ position: 'absolute', bottom: '-60px', left: '50%', transform: 'translateX(-50%)', width: 420, opacity: 0.07, pointerEvents: 'none' }}
         />
-        <div className="mx-auto w-full max-w-[820px] px-6 text-center" style={{ position: 'relative', padding: '70px 24px 74px' }}>
+        <div className="mx-auto w-full max-w-[820px] px-6 text-center" style={{ position: 'relative', padding: '42px 24px' }}>
           <div className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.7)' }}>Ready when you are</div>
           <h2
             className="mt-4 font-extrabold tracking-[-0.02em]"
@@ -2291,8 +2383,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             On the call Mattan walks this exact page with you, next to your live store numbers.
           </p>
 
-          <div className="my-8 text-left p-6 sm:p-7" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
-            <div className="text-[0.75rem] font-semibold uppercase tracking-[0.28em]" style={{ color: 'rgba(255,255,255,.7)' }}>How RISE charges</div>
+          <details className="my-5 text-left p-4" style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 4 }}>
+            <summary className="cursor-pointer font-semibold min-h-[44px] flex items-center">How RISE charges</summary>
             {/* Performance leads and carries the accent: it is the model this page is selling.
                 The qualifying gate stays — RISE's own pricing publishes it as gated, never
                 universal (content_prompts rise-company-facts). */}
@@ -2312,7 +2404,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <p className="mt-4 text-[0.875rem]" style={{ color: 'rgba(255,255,255,.7)' }}>
               Which model fits your brand gets settled on the call.
             </p>
-          </div>
+          </details>
 
           <p className="text-[0.84rem]" style={{ color: 'rgba(255,255,255,.7)' }}>
             Direct with Mattan and the team. No pitch deck.
@@ -2356,7 +2448,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           </div>
 
           <p className="mx-auto mt-6 text-[0.9rem] leading-relaxed text-left" style={{ color: 'rgba(255,255,255,.7)', maxWidth: '60ch' }}>
-            RISE DTC is run by Mattan Danino and Matt Moore. Mattan has 15+ years in DTC, with work published by HubSpot, Inc. Magazine, Klaviyo and Shopify, and guest lectures at UCLA. RISE is selective: when a brand qualifies, platform work starts within 48 hours of onboarding.
+            RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.
           </p>
         </div>
       </section>
