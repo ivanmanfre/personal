@@ -183,7 +183,7 @@ function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · 
   expect(html).toContain('Matt Moore');
   expect(html).toContain('starts within 48 hours of onboarding');
   // Footer + sticky pill.
-  expect(html).toContain('Unlisted link, shared with you only.');
+  expect(html).toContain('Unlisted report link.');
   expect(html).toContain('30 min with Mattan');
   expect(html).toContain('data-cta="sticky"');
   expect(html).toContain('utm_content=sticky');
@@ -723,7 +723,8 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     // Stale ref falls back to the first drop-off item. It has no product, so a capture of some
     // other product page is NOT proof for it (09-26 validation): their homepage capture shows.
     expect(html).not.toContain(escHtml(dtc.screenshots.pdp_url));
-    expect(html).not.toContain(escHtml(dtc.screenshots.homepage_url));
+    expect(html.slice(html.indexOf('<main'))).not.toContain(escHtml(dtc.screenshots.homepage_url));
+    expect(html).toContain('Homepage context');
     // The empty block renders its honest note, and the hero drops its second row.
     expect(html).toContain('Your repeat-order rate needs store data to assess.');
     expect(html).not.toContain('href="#second-order"');
@@ -853,7 +854,8 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     d.screenshots.pdp_path = '/products/unrelated';
     const html = renderDtc(d, fixture.company_name);
     expect(html).not.toContain(d.screenshots.pdp_url);
-    expect(html).not.toContain(d.screenshots.homepage_url);
+    expect(html.slice(html.indexOf('<main'))).not.toContain(d.screenshots.homepage_url);
+    expect(html).toContain('Homepage context');
     expect(html).toContain(escHtml(d.drop_off.items[0].detail));
     expect(html).not.toContain('data-hero-proof');
   });
@@ -1164,7 +1166,7 @@ describe('evidence-first scan repair', () => {
     expect(html).toContain('Availability unknown');
     expect(html).toContain('Price unknown');
     expect(html).toContain('https://example.com/products/oval');
-    expect(html).not.toContain('https://example.com/round.jpg');
+    expect((html.match(/<img[^>]+round\.jpg/g) || [])).toHaveLength(1);
     expect(html).toContain('data-promise-item="refill_sold_out"');
     expect(html).toContain('The same style cannot be reordered as a refill.');
     expect(html).not.toContain('Old catalog recommendation');
@@ -1283,9 +1285,57 @@ describe('evidence-first scan repair', () => {
     const d = inventoryFixture();
     d.drop_off.items[0].id = 'variant_choice';
     const html = renderDtc(d, 'Example');
-    expect(html).not.toContain('https://example.com/round.jpg');
+    expect((html.match(/<img[^>]+round\.jpg/g) || [])).toHaveLength(1);
     expect((html.match(/<img[^>]+round-proof\.png/g) || [])).toHaveLength(1);
     expect(html).toContain('rise-capture-image');
+  });
+
+  it('keeps context imagery out of findings and omits undated or unsupported cover assets', () => {
+    const d = inventoryFixture();
+    const html = renderDtc(d, 'Example');
+    const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('<main'));
+    expect(hero).toContain('Storefront context. Findings and source evidence follow below.');
+    expect(hero).toContain('round.jpg');
+    expect(hero).toContain('home-proof.png?captured_at=');
+    const homeFigure = hero.match(/<figure class="rise-context-home">([\s\S]*?)<\/figure>/)![1];
+    expect(homeFigure).toContain('aria-label="Open Example homepage capture"');
+    expect(homeFigure).not.toContain('<figcaption');
+    expect(hero.slice(hero.indexOf('rise-cover-meta'))).toContain('Homepage context · Captured October 8, 2026 at 22:00 UTC');
+    expect(hero).not.toContain('round-proof.png');
+    const body = html.slice(html.indexOf('<main'));
+    expect(body).not.toContain('round.jpg');
+    expect(body).not.toContain('home-proof.png');
+    for (const item of [...d.drop_off.items, ...d.second_order.items]) delete item.product.image_url;
+    delete d.screenshots.captured_at;
+    expect(renderDtc(d, 'Example')).not.toContain('data-storefront-context');
+    d.quality = { version: 'rise-quality-2026-09-30', approved: false };
+    expect(renderDtc(d, 'Example')).not.toContain('rise-case-image');
+  });
+  it('replaces a failed context photograph with readable fallback while retaining its source link and evidence', async () => {
+    const { JSDOM } = await import('jsdom');
+    const { createRoot } = await import('react-dom/client');
+    const { act } = await import('react');
+    const dom = new JSDOM('<!doctype html><html><head></head><body><div id="test"></div></body></html>');
+    vi.stubGlobal('window', dom.window);
+    vi.stubGlobal('document', dom.window.document);
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const root = createRoot(dom.window.document.getElementById('test')!);
+    try {
+      const d = inventoryFixture();
+      await act(async () => { root.render(<DtcGrowthReport report={{ dtc: d } as ReportJson} scan={{ domain: 'example.com', company_slug: 'example', created_at: '2026-10-08T22:00:00Z' } as Scan} companyName="Example" />); });
+      const photograph = dom.window.document.querySelector('.rise-context-product img')!;
+      await act(async () => { photograph.dispatchEvent(new dom.window.Event('error')); });
+      const card = dom.window.document.querySelector('.rise-context-product')!;
+      expect(card.querySelector('img')).toBeNull();
+      expect(card.textContent).toContain('Image unavailable. The source link remains available.');
+      expect(card.querySelector('a')!.href).toBe('https://example.com/products/round');
+      expect(dom.window.document.querySelectorAll('[data-variant="1"]')).toHaveLength(4);
+      expect(dom.window.document.querySelector('[data-promise-capture="1"] img')).not.toBeNull();
+    } finally {
+      await act(async () => root.unmount());
+      dom.window.close();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('distinguishes one verified competitor creative from an empty search', () => {
@@ -1354,9 +1404,11 @@ describe('evidence-first scan repair', () => {
     expect(html.indexOf('data-variant-cap="1"')).toBeGreaterThan(html.indexOf('</table>'));
     expect(html).not.toContain('Option 10');
   });
-  it('keeps all three named cases in compact linked rows', () => {
+  it('keeps all three named cases and their own photographs in separate client cards', () => {
     const html = renderDtc(inventoryFixture(), 'Example');
-    expect(html).toContain('rise-case-rows');
+    expect(html).toContain('rise-case-grid');
+    expect((html.match(/class="rise-case-image"/g) || [])).toHaveLength(3);
+    expect(html).toContain('Published results from separate client engagements.');
     expect(html).not.toContain('data-additional-cases');
     expect((html.match(/data-case="/g) || [])).toHaveLength(3);
   });

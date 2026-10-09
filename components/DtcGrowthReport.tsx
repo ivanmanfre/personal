@@ -326,6 +326,14 @@ function creativeImageSrc(c: any): string | null {
   return null;
 }
 
+// Context imagery never replaces source evidence; failed images keep a readable source link.
+function ScanContextImage({ src, alt, className, eager = false }: { src: string; alt: string; className: string; eager?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return <div className={className} data-context-image-state={failed ? 'unavailable' : 'loaded'}>
+    {failed ? <span className="rise-image-fallback">Image unavailable. The source link remains available.</span> : <img src={src} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(true)} />}
+  </div>;
+}
+
 // One evidence tile. No src, or a src that fails to decode, falls through to the caller's
 // dated text tile: never a broken img, never a placeholder box.
 function EvidenceImg({
@@ -955,7 +963,7 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
     <section id={id} aria-label={title} data-promise-section={id} className="rise-findings">
       {items.map((it, i) => {
         const ev = it.evidence;
-        return <article key={`${it.id}-${i}`} className="rise-finding" data-promise-item={it.id}>
+        return <article key={`${it.id}-${i}`} className={`rise-finding${n + i === 1 && ev?.citations?.length > 1 ? ' rise-priority' : ''}`} data-promise-item={it.id}>
           <div className="rise-finding-header">
             <div><p className="rise-chapter">Finding {n + i} · {title}</p><h2>{clean(it.title)}</h2>{it.detail ? <p className="rise-detail">{clean(it.detail)}</p> : null}</div>
             {it.fix ? <aside className="rise-action"><h3>Recommended next step</h3><p>{clean(it.fix)}</p></aside> : null}
@@ -1454,18 +1462,25 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     </main>
   );
 
+  const contextProduct = promise ? [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(it => proofHref(it.product?.image_url) && proofHref(it.product?.url))?.product : null;
+  const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
+
   if (promise) return (
     <div className="rise-report" style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
       <header className="rise-cover">
         <div className="rise-cover-inner">
-          <div className="rise-masthead"><a href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} alt={wordmark} /></a><a href="#rise-conversation" data-cta="header">Discuss the report ↗</a></div>
-          <section data-promise-hero="1" aria-label="Report introduction" className="rise-introduction">
-            <div><p className="rise-kicker">Public storefront review</p><h1>A growth scan for <span>{companyName}</span></h1><p className="rise-intro-copy">We reviewed {possessive(companyName)} public storefront and available advertising signals. Here are the observations, the sources behind them, and the next steps to consider.</p></div>
-            <aside className="rise-cover-meta"><p><span>Report snapshot</span><strong>{scanDate || 'Date not recorded'}</strong></p><p><span>Store</span><a href={`https://${scan.domain}`} target="_blank" rel="noopener noreferrer">{scan.domain} ↗</a></p></aside>
+          <nav className="rise-masthead" aria-label="Main navigation"><a className="rise-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} alt={wordmark} /></a><div className="rise-nav-links"><a href="#report-review" className="rise-nav-active">Your scan</a><a href="#rise-cases">RISE case studies</a></div><a className="rise-nav-invite" href="#rise-conversation" data-cta="header">Let’s talk <span>↗</span></a></nav>
+          <section data-promise-hero="1" aria-label="Report introduction" className={`rise-introduction${contextProduct || contextHomepage ? '' : ' rise-introduction-text'}`}>
+            <div className="rise-hero-copy"><p className="rise-kicker">/ Public storefront review /</p><h1>A growth scan for <span>{companyName}</span></h1><p className="rise-intro-copy">We reviewed {possessive(companyName)} public storefront and available advertising signals. Here are the observations, the sources behind them, and the next steps to consider.</p><a className="rise-explore" href="#report-review"><span>↓</span> Explore your scan</a></div>
+            {contextProduct || contextHomepage ? <div className="rise-hero-visuals" data-storefront-context="1">
+              {contextHomepage ? <figure className="rise-context-home"><a href={contextHomepage} aria-label={`Open ${companyName} homepage capture`} target="_blank" rel="noopener noreferrer"><ScanContextImage src={contextHomepage} alt={`${companyName} homepage capture, storefront context`} className="rise-home-image" eager /></a></figure> : null}
+              {contextProduct ? <figure className="rise-context-product"><a href={proofHref(contextProduct.url)} target="_blank" rel="noopener noreferrer"><ScanContextImage src={proofHref(contextProduct.image_url)} alt={`${clean(contextProduct.title)} product photograph, storefront context`} className="rise-product-image" eager /></a><figcaption>{clean(contextProduct.title)} · Product photograph</figcaption></figure> : null}
+            </div> : null}
+            <aside className="rise-cover-meta">{contextProduct || contextHomepage ? <p className="rise-context-note">Storefront context. Findings and source evidence follow below.</p> : null}{contextHomepage ? <p className="rise-home-date">Homepage context · Captured {shotDate}</p> : null}<p><span>Report snapshot</span><strong>{scanDate || 'Date not recorded'}</strong></p><p><span>Store</span><a href={`https://${scan.domain}`} target="_blank" rel="noopener noreferrer">{scan.domain} ↗</a></p></aside>
           </section>
         </div>
       </header>
-      <main className="rise-document">
+      <main className="rise-document" id="report-review">
         <nav className="rise-overview" aria-label="Report contents">
           <span>In this review</span>
           {promiseItems(d.drop_off).length ? <a href="#drop-off">Shopper paths <span>↘</span></a> : null}
@@ -1511,12 +1526,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} />
           </details> : null}
         </section> : null}
-        <section className="rise-section rise-proof"><div className="rise-section-heading"><h2>Work RISE has run</h2><p>Published results from separate client engagements.</p></div><div className="rise-case-rows">{riseCases.map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer"><strong>{c.name}</strong><span>{c.headline}</span><span className="rise-case-read">Read the case study ↗</span></a>)}</div><a className="rise-source-link" href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer">See all case studies</a></section>
+        <section className="rise-section rise-proof" id="rise-cases"><div className="rise-section-heading"><h2>Work RISE has run</h2><p>Published results from separate client engagements.</p></div><div className="rise-case-grid">{riseCases.map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer"><ScanContextImage src={c.image} alt={`${c.name}, a separate RISE client`} className="rise-case-image" /><div className="rise-case-copy"><strong>{c.name}</strong><span>{c.headline}</span><span className="rise-case-read">Read the case study <b>↗</b></span></div></a>)}</div><a className="rise-source-link" href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer">See all case studies</a></section>
         <section className="rise-closing" id="rise-conversation"><div className="rise-closing-top"><div><h2>Walk through the findings with Mattan.</h2><p>We put the public observations next to your store and ad-account data.</p></div><a href={ctaUrl('close')} data-cta="close" target="_blank" rel="noopener noreferrer" className="rise-booking">30 min with Mattan ↗</a></div>
           <details className="rise-disclosure"><summary>How RISE charges</summary><div className="rise-pricing"><div><h3>Performance Model</h3><p><strong>For qualifying brands.</strong> Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.</p></div><div><h3>Growth Model</h3><p>Base fee plus a percentage of ad spend, senior strategist included.</p></div></div><p>Which model fits your brand gets settled on the call.</p><p>RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.</p></details>
         </section>
       </main>
-      <footer className="rise-footer"><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted report link.</span></footer>
+      <footer className="rise-footer"><a className="rise-footer-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src="https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-wht.png" alt="RISE DTC" loading="lazy" /></a><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted report link.</span></footer>
     </div>
   );
 
