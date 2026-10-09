@@ -2201,7 +2201,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             )}
           </a>
           <p className="text-[0.85rem]" style={{ color: ink, opacity: 0.7 }}>
-            Prepared for {companyName}. Unlisted link, shared with you only.
+            Prepared for {companyName}. Unlisted report link.
           </p>
         </div>
       </footer>
