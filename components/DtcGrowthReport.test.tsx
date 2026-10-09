@@ -9,7 +9,7 @@
 //   - the conversion layer (analyst byline, per-slot UTM CTAs, proof strip, close band,
 //     Mattan photo, fee-card gate) renders, and the retired copy never reappears
 // The useMetadata OG-title side-effect writes to document.head via useEffect, which never
-// fires under renderToStaticMarkup, so it is not asserted here.
+// fires under renderToStaticMarkup; its emitted options are checked at the hook boundary.
 //
 // Receipt elevation (2026-07-31) adds four instrument-grade suites on top:
 //   - GEOMETRY EQUALS DATA: the waterfall's segment widths are RECOMPUTED here from the
@@ -21,7 +21,9 @@
 //   - GOLD DISCIPLINE / STACK SILENCE: no eyebrow rule is gold, no tech_stack app name ships.
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { useMetadata } from '../hooks/useMetadata';
+vi.mock('../hooks/useMetadata', () => ({ useMetadata: vi.fn() }));
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DtcGrowthReport } from './DtcGrowthReport';
 import type { ReportJson, Scan } from '../lib/scanTypes';
@@ -1015,7 +1017,7 @@ describe('public evidence quality contract', () => {
     citations.forEach((citation, i) => {
       expect(rows[i]).toContain(escHtml(citation.quote));
       expect(rows[i]).toContain(`href="${escHtml(citation.url)}"`);
-      expect(rows[i]).toMatch(/>Read source [12]<\/a>/);
+      expect(rows[i]).toContain(i === 0 ? '>Read returns page</a>' : '>Read refund policy</a>');
       expect(rows[i]).not.toContain(`>${escHtml(citation.url)}<`);
     });
     expect(html).not.toContain(escHtml(d.drop_off!.items[0].evidence.value));
@@ -1080,6 +1082,78 @@ describe('evidence-first scan repair', () => {
     d.completed_at = '2026-10-08T22:00:54Z';
     return d;
   }
+  it.each([
+    ['https://facebook.com/example', 'See this on the Facebook page'],
+    ['https://www.facebook.com/ads/library/?id=123', 'See this in the Meta Ad Library'],
+    ['https://notfacebook.com/ads/library', 'See this on your storefront'],
+  ])('labels the actual paid source destination %s', (url, label) => {
+    const d = inventoryFixture();
+    d.ads.meta = { status: 'present', data: { active_ad_count: 1 } };
+    d.findings = [{ signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'Check campaign measurement', evidence: 'A public tracking signal was observed.', source_url: url }];
+    expect(renderDtc(d, 'Example')).toContain(`href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+  });
+  it('uses the citation destination for policy links and a domain for unrelated paths', () => {
+    const d = inventoryFixture();
+    d.drop_off.items[0].evidence = { label: 'Paired public sources', value: 'Different wording', citations: [
+      { url: 'https://www.example.com/pages/returns?view=full#terms', quote: 'Original packaging required.' },
+      { url: 'https://help.example.com/policies/refund-policy-explained', quote: 'See the help centre.' },
+    ] };
+    const html = renderDtc(d, 'Example');
+    const cards = [...html.matchAll(/<blockquote data-promise-citation="1"[^>]*>([\s\S]*?)<\/blockquote>/g)].map(m => m[1]);
+    expect(cards[0]).toContain('>Read returns page</a>');
+    expect(cards[1]).toContain('>Read help.example.com</a>');
+    expect(cards[1]).not.toContain('Read refund policy');
+    expect(cards[1]).toContain('See the help centre.');
+  });
+  it('scopes review and try-on observations to the matching sampled product without cross-domain guesses', () => {
+    const d = inventoryFixture();
+    d.public_depth = { status: 'present', data: { store_features: [
+      { kind: 'reviews', title: 'Product reviews', quote: '5.00 out of 5 Based on 6 reviews', source_url: 'https://www.example.com/products/round/?view=full#reviews' },
+      { kind: 'try_on', title: 'Virtual try-on', quote: 'virtual try on', source_url: 'https://other.example/products/round' },
+    ] } };
+    const html = renderDtc(d, 'Example');
+    const cards = [...html.matchAll(/<blockquote[^>]*data-store-feature="[^"]+"[^>]*>([\s\S]*?)<\/blockquote>/g)].map(m => m[1]);
+    expect(cards[0]).toContain('Round Cut product page');
+    expect(cards[0]).toContain('5.00 out of 5 Based on 6 reviews');
+    expect(cards[0]).toContain('>View Round Cut</a>');
+    expect(cards[1]).toContain('Sampled product page');
+    expect(cards[1]).not.toContain('Round Cut');
+    d.shopify.status = 'blocked';
+    expect(renderDtc(d, 'Example')).not.toContain('Round Cut product page');
+  });
+  it('orders products by verified bestseller handles with ranks in mobile and desktop headings, retaining every variant', () => {
+    const d = inventoryFixture();
+    d.shopify.catalog_items = ['Round', 'Oval', 'Square', 'Princess', 'Marquise', 'Radiant'].map(name => ({ title: name, handle: name.toLowerCase(), url: `https://example.com/products/${name.toLowerCase()}`, variants: [{ title: `${name} with case`, price: 25.99, currency: 'GBP', available: false }, { title: `${name} Refill`, price: 11.99, currency: 'GBP', available: true }] }));
+    d.bestsellers = { status: 'present', source_url: 'https://example.com/collections/all?sort_by=best-selling', fetched_at: '2026-10-08T22:00:00Z', data: { handles: ['princess', 'square', 'round', 'oval'] } };
+    const html = renderDtc(d, 'Example');
+    expect([...html.matchAll(/data-inventory-product="([^"]+)"/g)].map(m => m[1])).toEqual(['princess', 'square', 'round', 'oval', 'marquise', 'radiant']);
+    for (const [i, name] of ['Princess', 'Square', 'Round', 'Oval'].entries()) {
+      expect(html).toContain(`data-product-title="#${i + 1} · ${name}"`);
+      expect(html).toContain(`>#${i + 1} · ${name}</a>`);
+    }
+    expect((html.match(/data-variant="1"/g) || [])).toHaveLength(12);
+    expect((html.match(/£25.99/g) || []).length).toBeGreaterThanOrEqual(6);
+    expect(html).toContain('View best-selling order');
+    d.bestsellers.status = 'blocked';
+    const blocked = renderDtc(d, 'Example');
+    expect([...blocked.matchAll(/data-inventory-product="([^"]+)"/g)].map(m => m[1])).toEqual(['round', 'oval', 'square', 'princess', 'marquise', 'radiant']);
+    expect(blocked).not.toContain('data-product-title="#');
+  });
+  it('describes an approved report as a company-scoped review even without a hero, retaining the held fallback', () => {
+    const d = inventoryFixture();
+    for (const hero of [d.hero, undefined]) {
+      d.hero = hero;
+      renderDtc(d, 'Example');
+      const options = vi.mocked(useMetadata).mock.calls.at(-1)![0];
+      expect(options.description).toContain('Example');
+      expect(options.description).toContain('public storefront');
+      expect(options.description).not.toContain('unavailable');
+      expect(options.noindex).toBe(true);
+    }
+    d.quality = { approved: false, version: 'rise-quality-2026-09-30' };
+    renderDtc(d, 'Example');
+    expect(vi.mocked(useMetadata).mock.calls.at(-1)![0].description).toBe('No recommendation qualified from the public pages reviewed.');
+  });
   it('shows one sourced inventory exhibit with actual variant names, unknowns and no repeated stock photos', () => {
     const html = renderDtc(inventoryFixture(), 'Example');
     expect((html.match(/data-inventory-exhibit="1"/g) || [])).toHaveLength(1);

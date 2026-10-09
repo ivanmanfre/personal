@@ -33,8 +33,11 @@
   text-underline-offset: 4px;
 }
 .rise-report a:focus-visible,.rise-report summary:focus-visible {
-  outline: 3px solid var(--rise-accent,#ffc71d);
+  outline: 3px solid var(--rise-ink,#111);
   outline-offset: 4px;
+}
+.rise-cover a:focus-visible,.rise-cover summary:focus-visible {
+  outline-color: var(--rise-accent,#ffc71d);
 }
 .rise-report img {
   max-width: 100%;
@@ -451,6 +454,12 @@
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 14px;
+}
+.rise-feature-scope {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #555;
 }
 .rise-feature-grid p {
   font-size: 15px;

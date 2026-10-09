@@ -98,10 +98,32 @@ function sourceLabel(url: string, sentenceStart = false): string {
   let label = 'see this on your storefront';
   try {
     const u = new URL(url);
-    if (u.hostname.includes('facebook.com')) label = 'see this in the Meta Ad Library';
+    if (u.hostname === 'facebook.com' || u.hostname.endsWith('.facebook.com')) {
+      label = /^\/ads\/library(?:\/|$)/.test(u.pathname) ? 'see this in the Meta Ad Library' : 'see this on the Facebook page';
+    }
     else if (u.pathname.endsWith('.js') || u.pathname.includes('/products/')) label = 'see this on your product page';
   } catch {}
   return sentenceStart ? label.charAt(0).toUpperCase() + label.slice(1) : label;
+}
+
+function citationLinkLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    if (/\/policies\/refund-policy\/?$/.test(u.pathname)) return 'Read refund policy';
+    if (/\/pages\/returns\/?$/.test(u.pathname)) return 'Read returns page';
+    return `Read ${u.hostname.replace(/^www\./, '')}`;
+  } catch { return 'Read source'; }
+}
+
+// Match collected pages on the same store; matching a handle alone can cross domains.
+function sameStorePage(a: string, b: string): boolean {
+  try {
+    const left = new URL(a), right = new URL(b);
+    return /^https?:$/.test(left.protocol) && /^https?:$/.test(right.protocol)
+      && left.hostname.replace(/^www\./, '') === right.hostname.replace(/^www\./, '')
+      && left.port === right.port
+      && left.pathname.replace(/\/$/, '') === right.pathname.replace(/\/$/, '');
+  } catch { return false; }
 }
 
 // Where the PROOF LINK sends a human. `source_url` is provenance and must stay verbatim in the
@@ -889,18 +911,23 @@ function isInventoryItem(item?: PromiseItem | null): boolean {
   return !!item && INVENTORY_IDS.has(item.id);
 }
 
-function InventoryExhibit({ shop }: { shop: any; ink: string; headingFont: string }) {
+function InventoryExhibit({ shop, bestsellers }: { shop: any; bestsellers?: any; ink: string; headingFont: string }) {
   const all = shop?.status === 'present' && Array.isArray(shop.catalog_items) ? shop.catalog_items : [];
   if (!all.length) return null;
-  const shown = all.slice(0, 12);
+  const handles: string[] = bestsellers?.status === 'present' && Array.isArray(bestsellers.data?.handles)
+    ? bestsellers.data.handles : [];
+  const rankOf = (product: any) => handles.indexOf(product.handle);
+  const shown = [...all].sort((a, b) => (rankOf(a) < 0 ? Infinity : rankOf(a)) - (rankOf(b) < 0 ? Infinity : rankOf(b))).slice(0, 12);
   return <div data-inventory-exhibit="1" className="rise-inventory">
     <div className="rise-inventory-heading"><h3>Product and variant availability</h3><p>Showing {shown.length} of {all.length} collected products</p></div>
+    {handles.length ? <p className="rise-receipt">Numbered products follow the collected best-selling order. {checkedAt(bestsellers.fetched_at) ? `Order checked ${checkedAt(bestsellers.fetched_at)}. ` : ''}{proofHref(bestsellers.source_url || bestsellers.data?.source_url) ? <a href={proofHref(bestsellers.source_url || bestsellers.data?.source_url)} target="_blank" rel="noopener noreferrer">View best-selling order</a> : null}</p> : null}
     <table><caption className="sr-only">Collected product variants, prices and availability</caption><thead><tr><th>Product</th><th>Variant</th><th>Price</th><th>Availability</th></tr></thead>
       {shown.map((product: any, i: number) => {
         const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ title: 'Variant not recorded', available: null }];
-        return <tbody data-inventory-product={product.handle || i} data-product-title={clean(product.title)} key={product.handle || i}>
+        const productHeading = `${rankOf(product) >= 0 ? `#${rankOf(product) + 1} · ` : ''}${clean(product.title)}`;
+        return <tbody data-inventory-product={product.handle || i} data-product-title={productHeading} key={product.handle || i}>
           {variants.slice(0, 8).map((variant: any, j: number) => <tr key={j} data-variant="1">
-            {j === 0 ? <th scope="rowgroup" rowSpan={Math.min(variants.length, 8)} className="rise-product-name">{proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer">{clean(product.title)}</a> : clean(product.title)}</th> : null}
+            {j === 0 ? <th scope="rowgroup" rowSpan={Math.min(variants.length, 8)} className="rise-product-name">{proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer">{productHeading}</a> : productHeading}</th> : null}
             <td className="rise-variant-name">{proofHref(product.url) ? <a href={proofHref(product.url)} target="_blank" rel="noopener noreferrer">{clean(variant.title) || 'Variant not recorded'}</a> : clean(variant.title) || 'Variant not recorded'}</td>
             <td className="rise-price">{variant.price != null && Number.isFinite(Number(variant.price)) && variant.currency ? fmtPrice(Number(variant.price), curSymbol(variant.currency)) : 'Price unknown'}</td>
             <td className="rise-availability"><span data-available={variant.available === true ? 'available' : variant.available === false ? 'sold-out' : 'unknown'}>{variant.available === true ? 'Available' : variant.available === false ? 'Sold out' : 'Availability unknown'}</span></td>
@@ -938,11 +965,11 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
               {ev.citations.map((citation, ci) => <blockquote data-promise-citation="1" key={`${citation.url}-${ci}`}>
                 <p className="rise-source-label">{it.id === 'refund_policy_mismatch' && ci < 2 ? ['The linked refund destination', 'The separate returns destination'][ci] : `Source ${ci + 1}${proofHref(citation.url) ? ` · ${new URL(citation.url).hostname.replace(/^www\./, '')}` : ''}`}</p>
                 <p className="rise-quote">{clean(citation.quote)}</p>
-                {proofHref(citation.url) ? <a href={proofHref(citation.url)} target="_blank" rel="noopener noreferrer">Read source {ci + 1}</a> : null}
+                {proofHref(citation.url) ? <a href={proofHref(citation.url)} target="_blank" rel="noopener noreferrer">{citationLinkLabel(citation.url)}</a> : null}
               </blockquote>)}
             </div></div>
           ) : <p data-promise-evidence="1" className="rise-receipt"><strong>{clean(ev.label)}</strong>{ev.value ? `: ${clean(ev.value)}. ` : '. '}{proofHref(ev.source_url) ? <a href={proofHref(ev.source_url)} target="_blank" rel="noopener noreferrer">{sourceLabel(ev.source_url, true)}</a> : null}</p> : null}
-          {it === inventoryItem ? <InventoryExhibit shop={d.shopify} ink={ink} headingFont={headingFont} /> : null}
+          {it === inventoryItem ? <InventoryExhibit shop={d.shopify} bestsellers={d.bestsellers} ink={ink} headingFont={headingFont} /> : null}
           {it === capturedItem ? <figure data-promise-capture="1" className="rise-capture">
             <a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt={`${clean(it.product?.title) || 'Source product'} page capture`} data-store-img="1" loading="lazy" className="rise-capture-image" /></a>
             <figcaption><strong>{clean(it.product?.title) || 'Matched product page'}</strong><p>Open the image to inspect the full page.</p><p>Captured {checkedAt(shots.captured_at)}.</p>{proofHref(it.product?.url || ev?.source_url) ? <a href={proofHref(it.product?.url || ev?.source_url)} target="_blank" rel="noopener noreferrer">Open the source page</a> : null}</figcaption>
@@ -1198,7 +1225,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
 
   useMetadata({
     title: `A growth scan for ${companyName}`,
-    description: (qualityHeld ? 'No recommendation qualified from the public pages reviewed.' : null) || (promise && clean((d as any).hero?.headline)) || legacyHook || `A public read of ${possessive(companyName)} store, and where the growth is.`,
+    description: (qualityHeld ? 'No recommendation qualified from the public pages reviewed.' : null) || (promise && `A review of ${possessive(companyName)} public storefront and available ad signals, with source evidence and recommended next steps.`) || legacyHook || `A public read of ${possessive(companyName)} store, and where the growth is.`,
     canonical: `${(import.meta as any).env?.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: d.og_image_url || brand.og_image_url || undefined,
     noindex: true,
@@ -1450,10 +1477,15 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         <PromiseSection d={d} id="second-order" n={promiseItems(d.drop_off).length + 1} title="Repeat purchase" block={d.second_order} accent={accent} ink={ink} headingFont={headingFont} />
         {storeFeatures.length ? <section id="store-features" className="rise-section" data-store-features="1">
           <div className="rise-section-heading"><h2>Already on your store</h2><p>{!promiseItems(d.second_order).length ? secondOrderBlock?.note : 'Public features to consider when planning the next purchase. Their presence does not establish usage or sales impact.'}</p></div>
-          <div className="rise-feature-grid">{storeFeatures.map((feature: any, i: number) => <blockquote key={`${feature.kind}-${i}`} data-store-feature={feature.kind}>
-            <h3>{clean(feature.title)}</h3><p>{clean(feature.quote)}</p><a href={proofHref(feature.source_url)} target="_blank" rel="noopener noreferrer">Read source</a>{checkedAt(feature.fetched_at) ? <time dateTime={feature.fetched_at}>Checked {checkedAt(feature.fetched_at)}</time> : null}
+          <div className="rise-feature-grid">{storeFeatures.map((feature: any, i: number) => {
+            const product = dAny.shopify?.status === 'present' && Array.isArray(dAny.shopify.catalog_items)
+              ? dAny.shopify.catalog_items.find((item: any) => sameStorePage(feature.source_url, item.url)) : null;
+            const productTitle = clean(product?.title);
+            const productScoped = feature.kind === 'reviews' || feature.kind === 'try_on' || !!productTitle;
+            return <blockquote key={`${feature.kind}-${i}`} data-store-feature={feature.kind}>
+            <h3>{clean(feature.title)}</h3>{productScoped ? <div className="rise-feature-scope">{productTitle ? `${productTitle} product page` : 'Sampled product page'}</div> : null}<p>{clean(feature.quote)}</p><a href={proofHref(feature.source_url)} target="_blank" rel="noopener noreferrer">{productTitle ? `View ${productTitle}` : productScoped ? 'View sampled product page' : citationLinkLabel(feature.source_url)}</a>{checkedAt(feature.fetched_at) ? <time dateTime={feature.fetched_at}>Checked {checkedAt(feature.fetched_at)}</time> : null}
             {checkedAt(shots?.captured_at) && sameProductPage(feature.source_url, shots?.pdp_path) && !storeFeatures.slice(0, i).some((prior: any) => sameProductPage(prior.source_url, shots?.pdp_path)) && ![...promiseItems(d.drop_off), ...promiseItems(d.second_order)].some((it) => sameProductPage(it.product?.url || it.evidence?.source_url, shots?.pdp_path)) ? <figure className="rise-feature-capture"><a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt="Captured source product page" className="rise-capture-image" loading="lazy" /></a><figcaption>Captured {checkedAt(shots.captured_at)}</figcaption></figure> : null}
-          </blockquote>)}</div>
+          </blockquote>; })}</div>
         </section> : null}
         {!storeFeatures.length && !promiseItems(d.second_order).length ? <p className="rise-empty-coverage">{secondOrderBlock?.note || 'Your repeat-order rate needs store data to assess.'}</p> : null}
         {findings.length || hasAdEvidence ? <section id="paid-media" className="rise-section">
@@ -1484,7 +1516,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           <details className="rise-disclosure"><summary>How RISE charges</summary><div className="rise-pricing"><div><h3>Performance Model</h3><p><strong>For qualifying brands.</strong> Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.</p></div><div><h3>Growth Model</h3><p>Base fee plus a percentage of ad spend, senior strategist included.</p></div></div><p>Which model fits your brand gets settled on the call.</p><p>RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.</p></details>
         </section>
       </main>
-      <footer className="rise-footer"><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted link, shared with you only.</span></footer>
+      <footer className="rise-footer"><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted report link.</span></footer>
     </div>
   );
 
