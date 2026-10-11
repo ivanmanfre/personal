@@ -1,6 +1,3 @@
-import type { ReplyScope } from '../lib/replySources';
-import { ReplySources } from './client-board/ReplySources';
-import { ReplySourceSummary } from './client-board/ReplySourceSummary';
 import { swapScheduledPost } from './client-board/scheduleActions';
 import { isNightUrl, setBoardNight } from './client-board/perf-kit/night';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -9155,11 +9152,9 @@ export default function ClientBoardPage() {
   // Live mode = the production tool (not a built-ahead demo). Drives copy stripping, tab
   // removal (Voice + standalone Photos), real RPC actions, and the pricing/pause hide.
   const isLive = !isPreview;
-  const replyScope: ReplyScope = isPreview || mode === 'generating'
-    ? { kind: 'preview' }
-    : session?.token ? { kind: 'board-session', slug: slug || '', session: session.token }
-    : { kind: 'board-token', slug: slug || '', token };
-  const renderReplySource = (prospectId: string, open: boolean) => <ReplySourceSummary scope={replyScope} prospectId={prospectId} enabled={open} displayZone={clientTz()} quiet={isLive} />;
+  // Reply sources (board metrics block and the per-thread summary) never render on a client
+  // panel (Ivan 2026-10-12): the copy is operator-level. They stay on the operator dashboards.
+  const renderReplySource = undefined;
   isLiveRef.current = isLive;
   const reviewMode = isLive && !!board?.review_mode;
   // Approval UI (Approve / Request changes / pending split / source notes) belongs ONLY to
@@ -9367,7 +9362,6 @@ export default function ClientBoardPage() {
       {skin === 'desk'
       ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} report={reportCtx} />
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
-      <ReplySources scope={replyScope} displayZone={clientTz()} hideUnlessReady={isLive} />
     </>,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,

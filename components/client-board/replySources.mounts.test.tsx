@@ -51,37 +51,23 @@ beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new 
  })
 })
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.unstubAllGlobals() })
-it.each(['desk', 'blackbox'])('mounts board metrics on the %s Performance branch with token scope', async value => {
+// 2026-10-12 (Ivan): reply sources are operator-level copy. A client board never reads or
+// renders them, on Performance or inside a thread; the operator dashboards below still do.
+it.each(['desk', 'blackbox'])('keeps the %s client board Performance free of reply sources', async value => {
  skin = value; mountBoard()
- expect(await screen.findByText('First observed text replies')).toBeTruthy()
- expect(metricCalls()[0]).toEqual(['client_board_reply_sources', { p_slug: 'fixture', p_token: 'test-token', p_days: 30 }])
- expect(screen.getAllByRole('table')).toHaveLength(3)
+ await waitFor(() => expect(rpc.mock.calls.some(([name]) => name === 'get_client_board')).toBe(true))
+ await new Promise((r) => setTimeout(r, 300))
+ expect(metricCalls()).toHaveLength(0); expect(screen.queryByText(/Reply sources/)).toBeNull(); expect(screen.queryByText('First observed text replies')).toBeNull()
 })
-it('prefers the existing board session for the new read when a session and token are present', async () => {
- saveBoardSession('fixture', { token: 'test-session', email: 'fixture@example.test', expires_at: '2099-01-01T00:00:00Z' }); mountBoard()
- expect(await screen.findByText('First observed text replies')).toBeTruthy()
- expect(metricCalls()[0]).toEqual(['client_board_reply_sources_v2', { p_slug: 'fixture', p_session: 'test-session', p_days: 30 }])
+it.each(['preview', 'demo', 'generating'])('keeps the %s board free of live source reads', async value => {
+ mode = value; mountBoard(); await new Promise((r) => setTimeout(r, 50)); expect(metricCalls()).toHaveLength(0); expect(sourceCalls()).toHaveLength(0)
 })
-it.each(['preview', 'demo'])('keeps the %s board free of live source reads', async value => {
- mode = value; mountBoard(); expect(await screen.findByText(/Preview board/)).toBeTruthy(); expect(metricCalls()).toHaveLength(0); expect(sourceCalls()).toHaveLength(0)
-})
-it('makes no live source read for a generating board', async () => {
- mode = 'generating'; mountBoard(); expect(await screen.findByText(/We're building/)).toBeTruthy(); expect(metricCalls()).toHaveLength(0); expect(sourceCalls()).toHaveLength(0)
-})
-it('keeps a null-client live board apart from Ivan metrics, and shows the client no notice', async () => {
- configured = false; mountBoard(); await waitFor(() => expect(metricCalls().length).toBeGreaterThan(0))
- // 2026-10-12: a live client board never prints a reply-source error or not-configured notice.
- await waitFor(() => expect(screen.queryByText(/Reply sources are/)).toBeNull()); expect(screen.queryByRole('table')).toBeNull()
- expect(metricCalls()[0][1]).not.toHaveProperty('p_client_id')
-})
-it.each(['desk', 'blackbox'])('reads one %s board log source only after a prospect detail opens', async value => {
+it.each(['desk', 'blackbox'])('opens a %s client board thread without a reply-source read', async value => {
  skin = value; mountBoard('outreach')
- const name = await screen.findByText('Ada Fixture'); expect(sourceCalls()).toHaveLength(0)
- const element = name.closest('details')!; element.open = true; fireEvent(element, new Event('toggle'))
- expect(await screen.findByText('First observed text reply')).toBeTruthy(); expect(sourceCalls()).toHaveLength(1)
- expect(sourceCalls()[0]).toEqual(['client_board_reply_source', { p_slug: 'fixture', p_token: 'test-token', p_prospect_id: 'p-a' }])
- expect(screen.getByText('Existing sent message')).toBeTruthy()
- element.open = false; fireEvent(element, new Event('toggle')); expect(screen.queryByText('First observed text reply')).toBeNull()
+ const name = await screen.findByText('Ada Fixture')
+ const element = name.closest('details'); if (element) { element.open = true; fireEvent(element, new Event('toggle')) }
+ await new Promise((r) => setTimeout(r, 50))
+ expect(sourceCalls()).toHaveLength(0); expect(screen.queryByText('First observed text reply')).toBeNull()
 })
 it('uses the actual desk log detail slot without reading closed summaries', async () => {
  render(<DeskOutreachSurface board={board()} accent="#FFFFFF" log={log as any} renderReplySource={(id, open) => <ReplySourceSummary scope={{ kind: 'board-token', slug: 'fixture', token: 'test-token' }} prospectId={id} enabled={open} />} />)
@@ -133,23 +119,16 @@ it('reads an operator prospect source when its existing details open', async () 
 it.each([
  ['risedtc-com', 'risedtc', true], ['arch-agency', 'arch', true],
  ['risedtc-com', 'risedtc', false], ['arch-agency', 'arch', false],
-] as const)('reads the real %s report message source once after open, client=%s light=%s', async (slug, client, light) => {
+] as const)('opens the real %s report thread with no reply-source read, client=%s light=%s', async (slug, client, light) => {
  boardClient = client
  const view = mountBoard('outreach', slug, light)
  await screen.findAllByText('Ada Fixture')
  expect(view.container.querySelector('[data-report="pipeline"]')).toBeTruthy()
- expect(sourceCalls()).toHaveLength(0)
  if (light) {
   const detail = screen.getByText('the messages').closest('details')!
   detail.open = true; fireEvent(detail, new Event('toggle'))
  } else fireEvent.click(await screen.findByRole('button', { name: /Read the thread/ }))
- expect(await screen.findByText('First observed text reply')).toBeTruthy()
- expect(sourceCalls()).toEqual([['client_board_reply_source', { p_slug: slug, p_token: 'test-token', p_prospect_id: 'p-a' }]])
- expect(screen.getByText('Existing sent message')).toBeTruthy()
- if (light) {
-  const detail = screen.getByText('the messages').closest('details')!
-  detail.open = false; fireEvent(detail, new Event('toggle'))
- } else fireEvent.click(screen.getByRole('button', { name: /Hide the thread/ }))
+ expect(await screen.findByText('Existing sent message')).toBeTruthy()
  expect(screen.queryByText('First observed text reply')).toBeNull()
- expect(sourceCalls()).toHaveLength(1)
+ expect(sourceCalls()).toHaveLength(0)
 })
