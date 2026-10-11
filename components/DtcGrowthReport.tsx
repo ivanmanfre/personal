@@ -888,8 +888,8 @@ type PromiseBlock = DtcPromiseBlock;
 // promised section with nothing in it: it takes the legacy layout.
 function isPromiseRow(d: any): boolean {
   return typeof d?.builder_version === 'string' && d.builder_version.length > 0 && !!d.drop_off && !!d.second_order
-    && d.shippable?.ok !== false
-    && promiseItems(d.drop_off).length + promiseItems(d.second_order).length > 0;
+    && (d.shippable?.ok !== false || d.preserved_public_report === true)
+    && (promiseItems(d.drop_off).length + promiseItems(d.second_order).length > 0 || commercialTests(d.commercial_evidence).length > 0);
 }
 
 function promiseItems(block?: PromiseBlock | null): PromiseItem[] {
@@ -1214,7 +1214,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     'utm_source=scan&utm_medium=cta&utm_campaign=growth-scan&utm_content=' + slot;
 
   // Approved new-contract rows use the dossier; legacy and held rows retain their existing path.
-  const qualityHeld = !!d.quality && (d.quality.version !== 'rise-quality-2026-09-30' || d.quality.approved !== true);
+  const qualityHeld = !d.preserved_public_report && !!d.quality && (d.quality.version !== 'rise-quality-2026-09-30' || d.quality.approved !== true);
   const promise = !qualityHeld && isPromiseRow(d);
   // Legacy prose scrub (see scrubProse): paid wording only ships when Meta ads were read live.
   const paidOk = d.ads?.meta?.status === 'present';

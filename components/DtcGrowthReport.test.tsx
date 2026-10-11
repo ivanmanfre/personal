@@ -1431,5 +1431,10 @@ describe('commercial experiments stay separate from verified defects', () => {
     expect(html).toContain('https://example.com/pages/service');
     expect(renderDtc({ ...d, commercial_evidence: { ...data, status: 'error' } }, 'Example')).not.toContain('Compare consultation routes');
     expect(renderDtc({ ...d, commercial_evidence: { ...data, version: 'unreviewed' } }, 'Example')).not.toContain('Compare consultation routes');
+    const onlyExperiments = { ...d, drop_off: { items: [] }, second_order: { items: [] }, commercial_evidence: data };
+    expect(renderDtc(onlyExperiments, 'Example')).toContain('Compare consultation routes');
+    const heldRebuild = { ...d, commercial_evidence: data, preserved_public_report: true,
+      quality: { version: 'rise-quality-2026-09-30', approved: false }, shippable: { ok: false } };
+    expect(renderDtc(heldRebuild, 'Example')).toEqual(html);
   });
 });

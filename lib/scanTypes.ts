@@ -283,6 +283,7 @@ export interface DtcGrowth {
   brand: DtcBrand;
   builder_version?: string | null;
   quality?: { version: string; approved: boolean; reason?: string | null; lead_ref?: string | null };
+  preserved_public_report?: boolean; // historical display only; never approval for a new delivery
   delivery_summary?: string | null;
   public_data_limits?: string;
 
