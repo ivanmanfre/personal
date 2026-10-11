@@ -71,9 +71,26 @@ function ReadBlock({ scope, days, displayZone, retry }: { scope: ReplyScope; day
   const state = useReplySources(scope, days)
   return state.kind === 'ready' ? <ReplyTables data={state.data} displayZone={replyDisplayZone(displayZone)} delayed={state.delayed} /> : <ReadNotice state={state} retry={retry} />
 }
-export function ReplySources({ scope, displayZone = 'Europe/Warsaw' }: { scope: ReplyScope; displayZone?: string }): React.ReactElement {
+/** Client boards (`hideUnlessReady`): the block renders only once a read has data. A read that
+ *  fails, is unavailable (the snapshot is older than 15 minutes, or a message it lists was
+ *  deleted after it was taken) or is not configured renders nothing, never an error to a
+ *  client. A later successful read for another period brings it back. */
+function QuietReplySources({ scope, displayZone }: { scope: ReplyScope; displayZone: string }): React.ReactElement | null {
+  const [days, setDays] = useState<Days>(30)
+  const state = useReplySources(scope, days)
+  const [seen, setSeen] = useState(false)
+  React.useEffect(() => { if (state.kind === 'ready') setSeen(true) }, [state.kind])
+  if (state.kind !== 'ready' && !(seen && state.kind === 'loading')) return null
+  return <section className="reply-sources" aria-label="Reply sources" data-reply-sources>
+    <h2>Reply sources</h2>
+    <fieldset className="rs-period"><legend>Reply source period</legend>{([7, 30, 90] as const).map(n => <button type="button" key={n} aria-pressed={days === n} onClick={() => setDays(n)}>{n} days</button>)}</fieldset>
+    {state.kind === 'ready' ? <ReplyTables data={state.data} displayZone={replyDisplayZone(displayZone)} delayed={state.delayed} /> : <ReadNotice state={state} />}
+  </section>
+}
+export function ReplySources({ scope, displayZone = 'Europe/Warsaw', hideUnlessReady = false }: { scope: ReplyScope; displayZone?: string; hideUnlessReady?: boolean }): React.ReactElement | null {
   const [days, setDays] = useState<Days>(30)
   const [retry, setRetry] = useState(0)
+  if (hideUnlessReady) return <QuietReplySources scope={scope} displayZone={displayZone} />
   return <section className="reply-sources" aria-label="Reply sources" data-reply-sources>
     <h2>Reply sources</h2>
     <fieldset className="rs-period"><legend>Reply source period</legend>{([7, 30, 90] as const).map(n => <button type="button" key={n} aria-pressed={days === n} onClick={() => setDays(n)}>{n} days</button>)}</fieldset>

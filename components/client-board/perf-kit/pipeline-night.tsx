@@ -31,11 +31,11 @@ import { AvatarCircles, DotPattern } from './magicui';
 import { AnimateNumber, FunnelShape } from './twentyfirst';
 import { PK_CSS } from './styles';
 import { dm, dayKey, addDays } from '../report/reportModel';
-import type { ReportCtx } from '../report/ReportBlocks';
+import { callsLead, useFigures, type ReportCtx } from '../report/ReportBlocks';
 import { initialsOf, sliceSeries, axisLabel, type SliceBar } from '../weekResults';
 import {
   pipelineData, linesData, funnelStages, storeKindItems, archCameFromItems, isArch, intentChip, lastInboundText,
-  shownText, REACTION, norm,
+  shownText, REACTION, norm, narrows, wroteIn, bookedIn,
   type ReplySourceRenderer, type LogEntry, type BookedExtra, type Card_, type Row, type ChipItem, type FunnelStage,
 } from '../report/PipelineBlocks';
 
@@ -112,6 +112,31 @@ export function weekSpan(w: Pick<SliceBar, 'start' | 'end' | 'current'>): string
   if (last === w.start) return dm(w.start);
   const [d1, m1] = dm(w.start).split(' ');
   return w.start.slice(5, 7) === last.slice(5, 7) ? `${d1} to ${dm(last)}` : `${d1} ${m1} to ${dm(last)}`;
+}
+
+/* ───────────────────────────── period picker ───────────────────────────── */
+
+/** The period select both night tabs carry (Outreach, Performance). `weeksFirst` lists the
+ *  weeks on top, for the Outreach tab, which opens on this week. */
+export function DarkPicker({ ctx, weeksFirst = false }: { ctx: ReportCtx; weeksFirst?: boolean }) {
+  const months = { label: ctx.cfg.kind === 'month17' ? 'Report months' : 'Months', items: ctx.periods.filter((p) => p.kind === 'month') };
+  const weeks = { label: 'Weeks', items: ctx.periods.filter((p) => p.kind === 'week') };
+  const groups = [
+    ...(weeksFirst ? [weeks, months] : [months, weeks]),
+    { label: 'Everything', items: ctx.periods.filter((p) => p.kind === 'all') },
+  ].filter((g) => g.items.length);
+  return (
+    <span className="pk-pick">
+      <select aria-label="Period" value={ctx.period.key} onChange={(e) => ctx.onPeriod(e.target.value)}>
+        {groups.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.items.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </optgroup>
+        ))}
+      </select>
+      <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </span>
+  );
 }
 
 /* ───────────────────────────── funnel ───────────────────────────── */
@@ -416,24 +441,40 @@ const cellsOf = (r: Row) => [r.reached, r.connected, r.wrote, r.interested, r.bo
 
 function Lines({ ctx }: { ctx: ReportCtx }) {
   const arch = isArch(ctx);
-  const data = useMemo(() => linesData(ctx), [ctx]);
+  const P = ctx.period;
+  const data = useMemo(() => linesData(ctx, P), [ctx, P]);
   const people = ctx.payload?.people || [];
-  if (!data.length) return null;
   // The funnel's own words, so the tab carries one glossary.
-  const heads = funnelStages(ctx).map((s) => s.label);
+  const heads = funnelStages(ctx, P).map((s) => s.label);
   const low = heads.map((h) => h.toLowerCase());
-  const archCame = arch ? archCameFromItems(people) : [];
+  const isWrote = (p: (typeof people)[number]) => wroteIn(ctx, P, p);
+  const archCame = arch ? archCameFromItems(people, isWrote) : [];
   const groups = data.map((d) => d.ln.title.toLowerCase());
-  const headline = arch
-    ? 'Grouped by the kind of company, then by how we found each person.'
-    : `Everyone we've contacted since ${dm(ctx.cfg.start)}, split into ${groups.length > 1 ? `${groups.slice(0, -1).join(', ')} and ${groups[groups.length - 1]}` : groups[0]}.`;
+  const split = groups.length > 1 ? `${groups.slice(0, -1).join(', ')} and ${groups[groups.length - 1]}` : groups[0];
+  const scoped = narrows(P);
+  const headline = scoped
+    ? (arch
+      ? `What happened ${P.phrase}, grouped by the kind of company, then by how we found each person.`
+      : `What happened ${P.phrase}, split into ${split}.`)
+    : (arch
+      ? 'Grouped by the kind of company, then by how we found each person.'
+      : `Everyone we've contacted since ${dm(ctx.cfg.start)}, split into ${split}.`);
   const cellText = (v: number | null) => (v === null ? 'already connected' : fmt(v));
+  if (!data.length) {
+    return (
+      <section id="pn-reach" className="pk-sec pn-anchor" aria-labelledby="pn-reach-h">
+        <div className="pk-cap pk-capline">Who we reach · {P.eyebrow}</div>
+        <h2 id="pn-reach-h" className="pk-h2">Nothing new {scoped ? P.phrase : `since ${dm(ctx.cfg.start)}`} yet.</h2>
+      </section>
+    );
+  }
   return (
     <section id="pn-reach" className="pk-sec pn-anchor" aria-labelledby="pn-reach-h">
-      <div className="pk-cap pk-capline">Who we reach</div>
+      <div className="pk-cap pk-capline">Who we reach · {P.eyebrow}</div>
       <h2 id="pn-reach-h" className="pk-h2">{headline}</h2>
+      {scoped && <div className="pn-def">Reached means we sent the first message {P.phrase}. Every other number is what that person did {P.phrase}, whenever we first reached them. Each person is counted once.</div>}
       {data.map(({ ln, inLine, all, rows }) => {
-        const kinds = !arch && ln.key === 'owner' ? storeKindItems(inLine) : [];
+        const kinds = !arch && ln.key === 'owner' ? storeKindItems(inLine, isWrote, (p) => bookedIn(ctx, P, p)) : [];
         return (
           <div key={ln.key} className="pk-panel pn-line">
             <h3>{ln.title}</h3>
@@ -523,9 +564,10 @@ function Thread({ ctx, entry, renderReplySource }: { ctx: ReportCtx; entry: LogE
 function PersonCard({ ctx, c, booked, hideYes, edge, renderReplySource }: { ctx: ReportCtx; c: Card_; booked?: boolean; hideYes?: boolean; edge?: boolean; renderReplySource?: ReplySourceRenderer }) {
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
-  const { p, entry, last, extra } = c;
+  const { p, entry, last, extra, until } = c;
   const k = dayKey(booked ? p.bk : last, ctx.cfg.tz);
-  const quote = lastInboundText(entry);
+  const quote = lastInboundText(entry, until);
+  const role = (p.t || '').split('|')[0].trim();
   const chip = booked || (hideYes && ['positive', 'soft_yes'].includes(norm(p.li))) ? null : intentChip(ctx, p.li);
   const hasMsgs = !!entry && (entry.messages || []).length > 0;
   return (
@@ -534,7 +576,7 @@ function PersonCard({ ctx, c, booked, hideYes, edge, renderReplySource }: { ctx:
         <span className={`pk-av${booked ? '' : ' pn-av-q'}`} aria-hidden="true" style={{ width: 40, height: 40, fontSize: 13 }}>{p.n ? initialsOf(p.n) : '?'}</span>
         <div className="pn-who">
           <div className="pn-name">{p.n || 'Name not shown'}</div>
-          {p.c && <div className="pn-co">{p.c}</div>}
+          {(role || p.c) && <div className="pn-co">{role && p.c && !role.toLowerCase().includes(p.c.toLowerCase()) ? `${role}, ${p.c}` : (role || p.c)}</div>}
         </div>
         {k && <span className="pn-date">{booked ? `Booked ${dm(k)}` : dm(k)}</span>}
       </div>
@@ -617,11 +659,18 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
   const [view, setView] = useState<'conv' | 'queue'>('conv');
   const [wroteOpen, setWroteOpen] = useState(false);
   const arch = isArch(ctx);
-  const d = useMemo(() => pipelineData(ctx, log, booked), [ctx, log, booked]);
-  const { bookedRows, interested, recent, nBooked, nInterested } = d;
-  const who = arch ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
-  const since = dm(ctx.cfg.start);
-  const stages = useMemo(() => funnelStages(ctx), [ctx]);
+  const P = ctx.period;
+  // 2026-10-12: everything on this tab follows the chosen period (default: this week).
+  const d = useMemo(() => pipelineData(ctx, log, booked, P), [ctx, log, booked, P]);
+  const { bookedRows, interested, recent, movedOn } = d;
+  const { f, fm, fAll } = useFigures(ctx);
+  const lead = callsLead(ctx, f, fm, fAll);
+  const scopedLead = lead.phrase !== P.phrase;
+  const when = narrows(P) ? P.phrase : `since ${dm(ctx.cfg.start)}`;
+  const nInt = interested.length;
+  const who = arch ? (nInt === 1 ? 'person' : 'people') : (nInt === 1 ? 'founder' : 'founders');
+  const saidWhat = arch ? 'said yes or asked for details' : 'said yes';
+  const stages = useMemo(() => funnelStages(ctx, P), [ctx, P]);
   const weeks = useMemo(() => sliceSeries(ctx), [ctx]);
 
   const go = (key: FunnelStage['key']) => {
@@ -634,9 +683,9 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
 
   // The avatars and the sentence beside them name the same people: three circles, then the
   // rest as "+16", matching "... and 16 others".
-  const heroNames = bookedRows.map((c) => c.p.n).filter(Boolean) as string[];
+  const heroNames = lead.names;
   const avs = heroNames.slice(0, 3);
-  const def = arch ? 'Their latest reply, in the last two weeks, says yes or asks for details.' : "Said yes in the last 14 days and hasn't booked yet.";
+  const def = 'Their latest reply still says yes, and no call is booked yet.';
 
   return (
     <MotionRoot>
@@ -644,39 +693,43 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
       <div className="pk pk-flat" data-report="pipeline" data-pipe-night="">
         <div aria-hidden className="pk-glow" />
         <DotPattern />
-        {queue && (
-          <header className="pk-head pn-head">
+        <header className="pk-head pn-head" style={{ gap: 10, flexWrap: 'wrap' }}>
+          {view === 'conv' && <DarkPicker ctx={ctx} weeksFirst />}
+          {queue && (
             <div className="pn-seg" role="tablist">
               <button type="button" role="tab" aria-pressed={view === 'conv'} aria-selected={view === 'conv'} onClick={() => setView('conv')}>Conversations</button>
               <button type="button" role="tab" aria-pressed={view === 'queue'} aria-selected={view === 'queue'} onClick={() => setView('queue')}>Queue{queueCount ? ` ${queueCount}` : ''}</button>
             </div>
-          </header>
-        )}
+          )}
+        </header>
 
         {view === 'queue' && queue ? <div style={{ marginTop: 18 }}>{queue}</div> : (
           <>
             <div className="pk-top">
               <section className="pn-hero" aria-labelledby="pn-hero">
-                <div className="pk-cap pk-capline">Since {since}</div>
-                {nBooked > 0 ? (
+                <div className="pk-cap pk-capline">{P.eyebrow}</div>
+                {lead.n > 0 ? (
                   <h1 id="pn-hero" className="pk-hero-h" style={{ margin: '12px 0 0' }}>
-                    <span className="pk-hero-n pk-grad">{fmt(nBooked)}</span>
-                    <span className="pk-hero-l pk-disp">{plural(nBooked, 'call', 'calls')} booked</span>
+                    <span className="pk-hero-n pk-grad">{fmt(lead.n)}</span>
+                    <span className="pk-hero-l pk-disp" style={{ display: 'block' }}>{plural(lead.n, 'call', 'calls')} booked<br />{lead.phrase}</span>
                   </h1>
                 ) : (
-                  <h1 id="pn-hero" className="pk-h2" style={{ fontSize: 'clamp(34px, 9vw, 52px)' }}>No calls booked yet.</h1>
+                  <h1 id="pn-hero" className="pk-h2" style={{ fontSize: 'clamp(34px, 9vw, 52px)' }}>No calls booked since {dm(ctx.cfg.start)} yet.</h1>
                 )}
+                {lead.none && scopedLead && <div className="pn-def">{lead.none}</div>}
                 {heroNames.length > 0 && (
                   <div className="pn-herowho">
                     <AvatarCircles size={44} more={heroNames.length - avs.length} avatars={avs.map((n) => ({ initials: initialsOf(n), label: n }))} />
                     <p className="pn-names" style={{ margin: 0 }}>{namesPlain(heroNames)}</p>
                   </div>
                 )}
-                {nInterested > 0 && (
+                {nInt > 0 ? (
                   <>
-                    <p className="pn-lede"><b>{fmt(nInterested)}</b> more {who} interested right now.</p>
+                    <p className="pn-lede"><b>{fmt(nInt)}</b> {who} {saidWhat} {when}.</p>
                     <div className="pn-def">{def}</div>
                   </>
+                ) : (
+                  <div className="pn-def" style={{ marginTop: 22 }}>Nobody new said yes {when}.</div>
                 )}
               </section>
               <NightFunnel stages={stages} onGo={go} />
@@ -686,18 +739,19 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
             <NightWeeks weeks={weeks} third={ctx.payload ? { label: 'Came to you', of: (w) => w.came } : null} />
 
             <section id="cb-pipe-interested" className="pk-sec pn-anchor" aria-labelledby="pn-int-h">
-              <ListHead id="pn-int-h" label="Interested right now" n={interested.length} />
-              {interested.length ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={interested} hideYes /> : <div className="pn-empty">Nobody right now.</div>}
+              <ListHead id="pn-int-h" label={`Interested · ${P.eyebrow}`} n={nInt} note={def} />
+              {nInt ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={interested} hideYes /> : <div className="pn-empty">Nobody {when}.</div>}
+              {movedOn > 0 && <div className="pn-def" style={{ marginTop: 14 }}>{movedOn} more said yes {when}, but their latest reply does not. They are under Wrote back.</div>}
             </section>
 
             <section id="pn-booked" className="pk-sec pn-anchor" aria-labelledby="pn-bk-h">
-              <ListHead id="pn-bk-h" label="Calls booked" n={bookedRows.length} gold />
-              {bookedRows.length ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} booked /> : <div className="pn-empty">No calls booked yet.</div>}
+              <ListHead id="pn-bk-h" label={`Calls booked · ${P.eyebrow}`} n={bookedRows.length} gold />
+              {bookedRows.length ? <Cards renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} booked /> : <div className="pn-empty">No calls booked {when}.</div>}
             </section>
 
             <section id="pn-wrote" className="pk-sec pn-anchor" aria-labelledby="pn-wr-h">
-              <ListHead id="pn-wr-h" label="Wrote back" n={recent.length} note="Everyone else who wrote back in the last 30 days." />
-              {recent.length === 0 ? <div className="pn-empty">Nobody else in the last 30 days.</div> : (
+              <ListHead id="pn-wr-h" label={`Wrote back · ${P.eyebrow}`} n={recent.length} note={`Everyone else who wrote back ${when}, including people who said no. Newest first.`} />
+              {recent.length === 0 ? <div className="pn-empty">Nobody else {when}.</div> : (
                 <>
                   <button type="button" className="pn-fold" aria-expanded={wroteOpen} aria-controls="pn-wrote-list" onClick={() => setWroteOpen((o) => !o)}>
                     <span>{wroteOpen ? 'Close the list' : `Show all ${recent.length}`}</span>
@@ -708,7 +762,7 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
               )}
             </section>
 
-            <div className="pk-foot">Each person is counted once.</div>
+            <div className="pk-foot">Each person is counted once in each list.</div>
           </>
         )}
       </div>

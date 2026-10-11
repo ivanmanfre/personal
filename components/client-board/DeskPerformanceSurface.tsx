@@ -823,7 +823,11 @@ export function DeskPerformanceSurface({
       {/* Night: dropped. Its outreach cards count on a different basis than the funnel above
           (sent/accepted/replies vs reached/connected/replied), so the page printed two sets of
           numbers for the same thing; the other two are not-tracked-yet blanks. */}
-      {!night && (indicators.length > 0 || (live && outreachInds.length > 0)) && (
+      {/* Report boards: the outreach cards are dropped on the light board too (2026-10-12). They
+          count on another basis (every invite and first message, InMails included), so the page
+          printed 1,063 beside the funnel's 1,031 for the same thing. The funnel is the one
+          definition; the cards stay on boards without a report. */}
+      {!night && (indicators.length > 0 || (live && !report && outreachInds.length > 0)) && (
         <div style={{ marginTop: 40 }}>
           <Eyebrow>What we track</Eyebrow>
           {!night && <Footnote>{(!live && perf?.note) || 'Real series appear the day each one goes live.'}</Footnote>}
@@ -831,7 +835,7 @@ export function DeskPerformanceSurface({
             {(() => {
               const cards: { ind: PerfIndicator; expectation?: string }[] = [
                 ...indicators.map((ind) => ({ ind, expectation: expectationFor(ind) })),
-                ...(live ? outreachInds.map((ind) => ({ ind, expectation: undefined })) : []),
+                ...(live && !report ? outreachInds.map((ind) => ({ ind, expectation: undefined })) : []),
               ];
               return [
                 ...cards.filter((c) => !!c.ind.captured_at),

@@ -37,10 +37,14 @@ describe('PerfReport (ARCH-look Results trial)', () => {
     expect(html).toContain('Kara North and Tom Hale');
     expect(html).toContain('1 brand owner came to you on their own and asked to connect.');
   });
-  it('draws the report\u2019s since-the-start figures with the figure cards\u2019 words, and no shares', () => {
-    expect(html).toContain('Since the start · 21 Jul');
-    expect(html).toContain('3 new connections since 21 Jul, 3 calls booked.');
-    expect(html).toContain('People wrote back for the first time');
+  it('draws the chosen period\u2019s figures with the figure cards\u2019 words, and no shares', () => {
+    // 2026-10-12: the funnel follows the picked period (here this report month), not since the start.
+    expect(html).toContain('This month · 17 Sept to 17 Oct');
+    expect(html).toContain('1 new connection since 17 Sept, 2 calls booked.');
+    const all = renderToStaticMarkup(<PerfReport ctx={{ ...ctx, period: periods[periods.length - 1] }} truth={truth} />);
+    expect(all).toContain('3 new connections since 21 Jul, 3 calls booked.');
+    expect(all).toContain('People wrote back for the first time');
+    expect(html).toContain('Person wrote back for the first time');
     expect(html.replace(/<style>[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ')).not.toMatch(/\d%/);
   });
   it('one card per call, with the brief only when there is one', () => {

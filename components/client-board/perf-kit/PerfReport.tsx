@@ -141,15 +141,15 @@ const FN_GAP = 40;
 
 function Funnel({ ctx, fAll }: { ctx: ReportCtx; fAll: Figures }) {
   const [ref, shown] = useReveal<HTMLDivElement>(0.35);
-  // The report's own since-the-start figures, with the figure cards' own words: the same
-  // numbers the picker's "Since the start" and the month table below add up to.
-  const all = ctx.periods.find((p) => p.kind === 'all') as Period;
+  // 2026-10-12: the chosen period's figures (the caller passes them), with the figure cards'
+  // own words: the same numbers the period's own figures and tables add up to.
+  const all = ctx.period;
   const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
   const stages = [
-    fAll.reach != null ? { label: ctx.cfg.reach === 'connections' ? 'New connections' : 'New people reached', v: fAll.reach } : null,
+    fAll.reach != null ? { label: ctx.cfg.reach === 'connections' ? (fAll.reach === 1 ? 'New connection' : 'New connections') : (fAll.reach === 1 ? 'New person reached' : 'New people reached'), v: fAll.reach } : null,
     fAll.wrote != null ? { label: cap(ctx.cfg.wroteLabel[fAll.wrote === 1 ? 0 : 1]), v: fAll.wrote } : null,
     fAll.yes != null ? { label: cap(ctx.cfg.yesLabel[fAll.yes === 1 ? 0 : 1]), v: fAll.yes } : null,
-    { label: 'Calls booked', v: fAll.calls.n },
+    { label: fAll.calls.n === 1 ? 'Call booked' : 'Calls booked', v: fAll.calls.n },
   ].filter((x): x is { label: string; v: number } => !!x);
   if (stages.length < 2) return null;
   const max = Math.max(1, ...stages.map((s) => s.v));
@@ -535,7 +535,8 @@ const PR4_CSS = `
 /** The funnel's five glossary stages; a board without per-person rows falls back to the
  *  report's own since-the-start figures under the same words. */
 function stagesNight(ctx: ReportCtx, fAll: Figures): FunnelStage[] {
-  const s = funnelStages(ctx);
+  // 2026-10-12: the funnel follows the chosen period, like everything else on the tab.
+  const s = funnelStages(ctx, ctx.period);
   if (s.length) return s;
   return [
     fAll.reach != null ? { key: ctx.cfg.reach === 'connections' ? 'connected' : 'reached', label: ctx.cfg.reach === 'connections' ? 'Connected' : 'Reached', v: fAll.reach } : null,
@@ -737,7 +738,7 @@ function PerfReportNight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
   const scope: Period = lead.phrase === ctx.period.phrase ? ctx.period
     : (ctx.period.month && lead.phrase === ctx.period.month.phrase ? ctx.period.month : ctx.periods.find((p) => p.kind === 'all') as Period);
   const calls = useMemo(() => callsFor(ctx, truth, lead, scope), [ctx, truth, lead.names.join('|'), scope.key]); // eslint-disable-line react-hooks/exhaustive-deps
-  const stages = useMemo(() => stagesNight(ctx, fAll), [ctx, fAll]);
+  const stages = useMemo(() => stagesNight(ctx, f), [ctx, f]);
   const weeks = useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
   const conn = ctx.cfg.reach === 'connections';
   return (
@@ -749,7 +750,7 @@ function PerfReportNight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
         <header className="pk-head pr-head"><DarkPicker ctx={ctx} /></header>
         <div className="pk-top">
           <HeroNight ctx={ctx} f={f} fm={fm} fAll={fAll} />
-          <NightFunnel stages={stages} eyebrow={`Since ${dm(ctx.cfg.start)}`} />
+          <NightFunnel stages={stages} eyebrow={ctx.period.eyebrow} />
         </div>
         <CallsNight rows={calls} />
         <CameNight ctx={ctx} f={f} fm={fm} />
@@ -806,14 +807,14 @@ function PerfReportLight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
         </header>
         <div className="pk-top">
           <Hero ctx={ctx} f={f} fm={fm} fAll={fAll} />
-          <Funnel ctx={ctx} fAll={fAll} />
+          <Funnel ctx={ctx} fAll={f} />
         </div>
         <Calls rows={calls} n={lead.n} phrase={lead.phrase} />
         <Came ctx={ctx} f={f} fm={fm} />
         <Weeks ctx={ctx} f={f} fm={fm} fAll={fAll} />
         <Posts ctx={ctx} f={f} />
         <div className="pk-foot">
-          {ctx.period.eyebrow}. Calls booked, replies and connections come from your LinkedIn outreach; the funnel counts everyone since the start. Posts are ranked by the {ctx.cfg.fit[1]} who engaged with them.
+          {ctx.period.eyebrow}. Calls booked, replies and connections come from your LinkedIn outreach; the funnel counts the same period. Posts are ranked by the {ctx.cfg.fit[1]} who engaged with them.
         </div>
       </div>
     </MotionRoot>

@@ -45,11 +45,13 @@ export function ReplySourceContent({ state, retry, displayZone = 'Europe/Warsaw'
     <p className="rs-note">Full stored history, which is incomplete. Source labels do not establish cause.</p>
   </section>
 }
-function SummaryRead({ scope, prospectId, enabled, retry, displayZone }: { scope: ReplyScope; prospectId: string; enabled: boolean; retry: () => void; displayZone: string }) {
+function SummaryRead({ scope, prospectId, enabled, retry, displayZone, quiet }: { scope: ReplyScope; prospectId: string; enabled: boolean; retry: () => void; displayZone: string; quiet?: boolean }) {
   const state = useReplySource(scope, prospectId, enabled)
+  // Client boards (`quiet`): nothing until there is data, never an error notice to a client.
+  if (quiet && state.kind !== 'ready') return null
   return enabled ? <ReplySourceContent state={state} retry={retry} displayZone={displayZone} /> : null
 }
-export function ReplySourceSummary({ scope, prospectId, enabled = true, displayZone = 'Europe/Warsaw' }: { scope: ReplyScope; prospectId: string; enabled?: boolean; displayZone?: string }): React.ReactElement {
+export function ReplySourceSummary({ scope, prospectId, enabled = true, displayZone = 'Europe/Warsaw', quiet = false }: { scope: ReplyScope; prospectId: string; enabled?: boolean; displayZone?: string; quiet?: boolean }): React.ReactElement {
   const [retry, setRetry] = useState(0)
-  return <SummaryRead key={retry} scope={scope} prospectId={prospectId} enabled={enabled} displayZone={displayZone} retry={() => setRetry(n => n + 1)} />
+  return <SummaryRead key={retry} scope={scope} prospectId={prospectId} enabled={enabled} displayZone={displayZone} quiet={quiet} retry={() => setRetry(n => n + 1)} />
 }

@@ -28,7 +28,16 @@ export type ReportPerson = {
   lr?: string | null;
   /** ARCH: company vertical, source kind, lane, source (raw keys, mapped on the page). */
   gv?: string | null; sk?: string | null; ln?: string | null; src?: string | null;
+  /** RISE only, and only when there is more than one: every reply / every yes (`w` and `y`
+   *  carry the first one). The period views read these through repliesOf / yesesOf. */
+  wa?: string[] | null; ya?: string[] | null;
+  /** Their role (title, else headline), for people who wrote back. */
+  t?: string | null;
 };
+/** Every reply timestamp the payload carries for a person (ARCH: `w`; RISE: `wa` when more than one). */
+export const repliesOf = (p: ReportPerson): string[] => (p.wa && p.wa.length ? p.wa : p.w || []);
+/** Every said-yes timestamp the payload carries for a person (same rule as repliesOf). */
+export const yesesOf = (p: ReportPerson): string[] => (p.ya && p.ya.length ? p.ya : p.y || []);
 export type CameVia = 'asked' | 'viewed' | 'engaged' | 'hand' | 'messaged';
 export type ReportCame = { name?: string | null; company?: string | null; title?: string | null; via: CameVia; at: string };
 export type ReportEngaged = { p: string; k: string; at: string; fit: boolean; checked: boolean; new: boolean };
@@ -162,6 +171,39 @@ export type Period = {
   month?: Period;
 };
 
+/** Mon-Sun weeks from the current one back to the start, newest first. `monthFor` names the
+ *  month a week's zero rule falls back to. */
+function weekPeriods(start: string, today: string, monthFor: (k: string) => Period | undefined): Period[] {
+  let w = mondayOf(today);
+  const weeks: Period[] = [];
+  let i = 0;
+  while (addDays(w, 7) > start) {
+    const ws = w < start ? start : w;
+    const we = addDays(w, 7);
+    const last = addDays(we, -1);
+    const current = i === 0;
+    const span = `${dm(ws).split(' ')[0]}${monthShort(ws) === monthShort(last) ? '' : ` ${monthShort(ws)}`} to ${dm(last)}`;
+    const lastCounted = current ? today : last;
+    weeks.push({
+      key: `w:${ws}`, kind: 'week', start: ws, end: current ? addDays(today, 1) : we,
+      label: current ? `This week (${span})` : i === 1 ? `Last week (${span})` : `Week of ${dm(ws)}`,
+      eyebrow: current ? `This week · ${span}` : `Week of ${dm(ws)} · ${span}`,
+      phrase: current ? 'this week' : i === 1 ? 'last week' : `in the week of ${dm(ws)}`,
+      current, month: monthFor(lastCounted) || undefined,
+    });
+    i++;
+    if (w <= start) break;
+    w = addDays(w, -7);
+  }
+  return weeks;
+}
+
+/** The period the Outreach tab opens on: the current week (Ivan 2026-10-12: the panel shows
+ *  time periods, never the all-time pile by default). Falls back to the board's default. */
+export function outreachDefaultPeriod(periods: Period[]): Period {
+  return periods.find((p) => p.kind === 'week' && p.current) || periods[0];
+}
+
 export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
   const out: Period[] = [];
   const start = cfg.start;
@@ -184,6 +226,9 @@ export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
       if (s <= start) break;
       e = s; s = addMonths(s, -1);
     }
+    // Weeks too (2026-10-12), after the months so the board still opens on its report month.
+    const monthFor = (k: string) => out.find((p) => k >= p.start && k < p.end);
+    out.push(...weekPeriods(start, today, monthFor));
     out.push(all);
     return out;
   }
@@ -207,27 +252,7 @@ export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
   }
   const months = monthsAsc.slice().reverse();
   const monthFor = (k: string) => monthsAsc.find((p) => k >= p.start && k < p.end);
-  let w = mondayOf(today);
-  const weeks: Period[] = [];
-  let i = 0;
-  while (addDays(w, 7) > start) {
-    const ws = w < start ? start : w;
-    const we = addDays(w, 7);
-    const last = addDays(we, -1);
-    const current = i === 0;
-    const span = `${dm(ws).split(' ')[0]}${monthShort(ws) === monthShort(last) ? '' : ` ${monthShort(ws)}`} to ${dm(last)}`;
-    const lastCounted = current ? today : last;
-    weeks.push({
-      key: `w:${ws}`, kind: 'week', start: ws, end: current ? addDays(today, 1) : we,
-      label: current ? `This week (${span})` : i === 1 ? `Last week (${span})` : `Week of ${dm(ws)}`,
-      eyebrow: current ? `This week · ${span}` : `Week of ${dm(ws)} · ${span}`,
-      phrase: current ? 'this week' : i === 1 ? 'last week' : `in the week of ${dm(ws)}`,
-      current, month: monthFor(lastCounted) || undefined,
-    });
-    i++;
-    if (w <= start) break;
-    w = addDays(w, -7);
-  }
+  const weeks = weekPeriods(start, today, monthFor);
   return [...weeks, ...months, all];
 }
 

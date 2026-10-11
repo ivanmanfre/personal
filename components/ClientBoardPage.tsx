@@ -37,7 +37,7 @@ import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import { expectationFor } from './client-board/expectation';
 import { AudienceSection } from './client-board/AudienceSection';
 import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
-import { reportConfigFor, reportPeriods, dayKey, type ReportPayload } from './client-board/report/reportModel';
+import { reportConfigFor, reportPeriods, outreachDefaultPeriod, dayKey, type ReportPayload } from './client-board/report/reportModel';
 import { pipelineStripText } from './client-board/report/PipelineBlocks';
 import { reportStripText, type ReportCtx } from './client-board/report/ReportBlocks';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
@@ -9105,6 +9105,12 @@ export default function ClientBoardPage() {
       payload: reportPayload, board: viewBoard, audience, today: reportToday,
     };
   }, [reportCfg, viewBoard, mode, reportPeriodList, reportPeriodKey, reportPayload, audience, reportToday]);
+  // The Outreach tab opens on this week (Ivan 2026-10-12: time periods, never the all-time pile
+  // by default). The chosen period is shared, so a pick on either tab carries to the other.
+  const outreachReportCtx: ReportCtx | null = useMemo(() => {
+    if (!reportCtx || reportPeriodKey) return reportCtx;
+    return { ...reportCtx, period: outreachDefaultPeriod(reportCtx.periods) };
+  }, [reportCtx, reportPeriodKey]);
   // Deep-link: /client/:slug?token=...&post=<draft-id> (or #post-<id>) opens that post's
   // detail. The week-1 brief links each scheduled post this way. Harmless on any board:
   // an unknown id simply no-ops. Runs once the board is ready and clears the param so a
@@ -9153,7 +9159,7 @@ export default function ClientBoardPage() {
     ? { kind: 'preview' }
     : session?.token ? { kind: 'board-session', slug: slug || '', session: session.token }
     : { kind: 'board-token', slug: slug || '', token };
-  const renderReplySource = (prospectId: string, open: boolean) => <ReplySourceSummary scope={replyScope} prospectId={prospectId} enabled={open} displayZone={clientTz()} />;
+  const renderReplySource = (prospectId: string, open: boolean) => <ReplySourceSummary scope={replyScope} prospectId={prospectId} enabled={open} displayZone={clientTz()} quiet={isLive} />;
   isLiveRef.current = isLive;
   const reviewMode = isLive && !!board?.review_mode;
   // Approval UI (Approve / Request changes / pending split / source notes) belongs ONLY to
@@ -9354,14 +9360,14 @@ export default function ClientBoardPage() {
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     outreach: skin === 'desk'
-      ? <DeskOutreachSurface renderReplySource={renderReplySource} live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={reportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
+      ? <DeskOutreachSurface renderReplySource={renderReplySource} live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={outreachReportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
       : <OutreachSurface renderReplySource={renderReplySource} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: <>
       {skin === 'desk'
       ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} report={reportCtx} />
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
-      <ReplySources scope={replyScope} displayZone={clientTz()} />
+      <ReplySources scope={replyScope} displayZone={clientTz()} hideUnlessReady={isLive} />
     </>,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,

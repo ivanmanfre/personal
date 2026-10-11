@@ -78,6 +78,7 @@ export function PeriodPicker({ ctx }: { ctx: ReportCtx }) {
     ]
     : [
       { label: 'Report months', items: ctx.periods.filter((p) => p.kind === 'month') },
+      { label: 'Weeks', items: ctx.periods.filter((p) => p.kind === 'week') },
       { label: 'Everything', items: ctx.periods.filter((p) => p.kind === 'all') },
     ];
   return (

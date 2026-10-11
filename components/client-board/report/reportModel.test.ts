@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { reportPeriods, computeFigures, shown, series, slices, REPORT_CONFIGS, type ReportPayload } from './reportModel';
+import { reportPeriods, outreachDefaultPeriod, computeFigures, shown, series, slices, REPORT_CONFIGS, type ReportPayload } from './reportModel';
 
 const RISE = REPORT_CONFIGS['risedtc-com'];
 const ARCH = REPORT_CONFIGS['arch-agency'];
@@ -8,12 +8,23 @@ const emptyBoard = { queue: [], outreach_truth: { booked: [] }, performance: { p
 describe('report periods', () => {
   it('RISE: report months on the 17th back to the 21 Jul start, then since the start', () => {
     const ps = reportPeriods(RISE, '2026-09-27');
-    expect(ps.map((p) => [p.start, p.end])).toEqual([
+    expect(ps.filter((p) => p.kind !== 'week').map((p) => [p.start, p.end])).toEqual([
       ['2026-09-17', '2026-10-17'], ['2026-08-17', '2026-09-17'], ['2026-07-21', '2026-08-17'], ['2026-07-21', '2026-09-28'],
     ]);
     expect(ps[0].current).toBe(true);
     expect(ps[1].phrase).toBe('between 17 Aug and 17 Sept');
     expect(ps.map((p) => p.label).join(' ')).not.toMatch(/still counting/i);
+  });
+  it('RISE also lists Mon-Sun weeks after its months, and the Outreach tab opens on this week', () => {
+    const ps = reportPeriods(RISE, '2026-10-12');
+    expect(ps[0].kind).toBe('month');
+    const weeks = ps.filter((p) => p.kind === 'week');
+    expect(weeks[0]).toMatchObject({ start: '2026-10-12', end: '2026-10-13', current: true, phrase: 'this week' });
+    expect(weeks[1]).toMatchObject({ start: '2026-10-05', end: '2026-10-12', phrase: 'last week' });
+    expect(weeks[weeks.length - 1].start).toBe('2026-07-21');
+    expect(weeks[0].month?.start).toBe('2026-09-17');
+    expect(outreachDefaultPeriod(ps).key).toBe(weeks[0].key);
+    expect(outreachDefaultPeriod(reportPeriods(ARCH, '2026-10-12')).start).toBe('2026-10-12');
   });
   it('RISE rolls by itself on the 17th', () => {
     expect(reportPeriods(RISE, '2026-10-16')[0].start).toBe('2026-09-17');

@@ -18,8 +18,8 @@ import React from 'react';
 import {
   Eyebrow, DeskH2, Footnote, Card, Chip, Pill, Ledger, LedgerRow, LedgerCell, Drill,
 } from '../desk-kit';
-import { dayKey, dm, type ReportPerson } from './reportModel';
-import { ReportFigures, CallsChart, PICKER_CSS, type ReportCtx } from './ReportBlocks';
+import { dayKey, dm, repliesOf, yesesOf, type Period, type ReportPerson } from './reportModel';
+import { ReportFigures, CallsChart, PICKER_CSS, PeriodPicker, type ReportCtx } from './ReportBlocks';
 import { useNight, useQuiet } from '../perf-kit/night';
 
 /** NIGHT MOCKUP (local only, 2026-09-29): the Pipeline tab in the ARCH report's look, lazy so
@@ -60,6 +60,43 @@ export function interestedNow(ctx: ReportCtx, p: ReportPerson): boolean {
   return yes && !!p.lr && Date.parse(p.lr) >= Date.now() - 14 * DAY_MS;
 }
 export const wrote = (p: ReportPerson) => (p.w || []).length > 0;
+
+/* ─────────────────────────── periods (2026-10-12) ───────────────────────────
+ * Ivan: the panel is the client's status surface, by time period. A week or a month counts
+ * EVENTS inside it, each person once: reached = first contact sent in the period, connected =
+ * accepted in it, replied = wrote back in it, said yes = a yes (ARCH: or a question) in it,
+ * booked = the call was booked in it. "Since the start" keeps the whole-program counts. */
+
+/** True for a week or a month; "Since the start" (or no period) counts everyone. */
+export const narrows = (p?: Period | null): p is Period => !!p && p.kind !== 'all';
+/** The instant falls on a day (client zone) inside the period. Any instant counts when the
+ *  period does not narrow. */
+export function inPeriod(ctx: ReportCtx, p: Period | null | undefined, ts?: string | null): boolean {
+  if (!ts) return false;
+  if (!narrows(p)) return true;
+  const k = dayKey(ts, ctx.cfg.tz);
+  return !!k && k >= p.start && k < p.end;
+}
+const anyIn = (ctx: ReportCtx, p: Period | null | undefined, arr: string[]) => arr.some((t) => inPeriod(ctx, p, t));
+/** A reply intent that reads as yes (ARCH: yes, or asks for details, price or a time). */
+export const isYes = (ctx: ReportCtx, li?: string | null) => (isArch(ctx) ? ARCH_YES.has(li || '') : li === 'positive');
+export const reachedIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => !narrows(p) || inPeriod(ctx, p, x.out);
+export const connectedIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? inPeriod(ctx, p, x.conn) : !!x.conn);
+export const wroteIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? anyIn(ctx, p, repliesOf(x)) : wrote(x));
+export const yesIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? anyIn(ctx, p, yesesOf(x)) : yesesOf(x).length > 0);
+export const bookedIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? inPeriod(ctx, p, x.bk) : !!x.bk);
+/** Something happened with this person inside the period. */
+const activeIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) =>
+  !narrows(p) || inPeriod(ctx, p, x.out) || connectedIn(ctx, p, x) || wroteIn(ctx, p, x) || yesIn(ctx, p, x) || bookedIn(ctx, p, x);
+/** Interested now: no call booked yet and their LATEST written reply, on any channel, says yes
+ *  (ARCH: or asks). `li` is that reply's intent and is empty when nobody has classified it, so an
+ *  older yes never outlives a later reply (Emma Farrow: yes on 7 Oct, a decline by email on 8 Oct). */
+export const stillInterested = (ctx: ReportCtx, x: ReportPerson) => !x.bk && isYes(ctx, x.li);
+/** The latest reply inside the period (or ever, when the period does not narrow). */
+export function lastReplyIn(ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson): string | null {
+  const ws = repliesOf(x).filter((t) => inPeriod(ctx, p, t));
+  return ws.length ? ws.reduce((a, b) => (a > b ? a : b)) : null;
+}
 
 export type Line = { key: string; title: string; sub: string };
 type Via = { key: string; label: string };
@@ -161,21 +198,24 @@ export function viaOf(ctx: ReportCtx, p: ReportPerson): Via {
 /* ─────────────────────────── counting ─────────────────────────── */
 
 export type Row = { label: string; reached: number; connected: number | null; wrote: number; interested: number; booked: number };
-export function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConnections = false): Row {
+/** One row of counts. With a week or a month, every column counts that event inside it (each
+ *  person once); without one, the whole program. "Interested" is the said-yes event (ARCH: yes
+ *  or asked for details), the same for both clients and every period. */
+export function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConnections = false, period?: Period | null): Row {
   return {
     label,
-    reached: ps.length,
-    connected: noConnections ? null : ps.filter((p) => !!p.conn).length,
-    wrote: ps.filter(wrote).length,
-    // RISE: said yes at any point; ARCH: latest reply says yes or asks (its DATA-MAP rule)
-    interested: ps.filter((p) => (isArch(ctx) ? interestedNow(ctx, p) : (p.y || []).length > 0)).length,
-    booked: ps.filter((p) => !!p.bk).length,
+    reached: narrows(period) ? ps.filter((p) => inPeriod(ctx, period, p.out)).length : ps.length,
+    connected: noConnections ? null : ps.filter((p) => connectedIn(ctx, period, p)).length,
+    wrote: ps.filter((p) => wroteIn(ctx, period, p)).length,
+    interested: ps.filter((p) => yesIn(ctx, period, p)).length,
+    booked: ps.filter((p) => bookedIn(ctx, period, p)).length,
   };
 }
 
-/** One ledger per line: everyone in the line, then one row per way we found them. */
-export function linesData(ctx: ReportCtx): Array<{ ln: Line; inLine: ReportPerson[]; all: Row; rows: Row[] }> {
-  const people = ctx.payload?.people || [];
+/** One ledger per line: everyone in the line, then one row per way we found them. With a week
+ *  or a month, only the people something happened with inside it. */
+export function linesData(ctx: ReportCtx, period?: Period | null): Array<{ ln: Line; inLine: ReportPerson[]; all: Row; rows: Row[] }> {
+  const people = (ctx.payload?.people || []).filter((p) => activeIn(ctx, period, p));
   const lines = isArch(ctx) ? ARCH_LINES : RISE_LINES;
   return lines.map((ln) => {
     const inLine = people.filter((p) => lineOf(ctx, p) === ln.key);
@@ -186,9 +226,9 @@ export function linesData(ctx: ReportCtx): Array<{ ln: Line; inLine: ReportPerso
       byVia.get(v.key)!.ps.push(p);
     }
     const rows = [...byVia.entries()]
-      .map(([k, g]) => tally(ctx, g.ps, g.label, !isArch(ctx) && k === 'asked'))
-      .sort((a, b) => b.reached - a.reached);
-    return { ln, inLine, all: tally(ctx, inLine, `All ${ln.title.toLowerCase()}`), rows };
+      .map(([k, g]) => tally(ctx, g.ps, g.label, !isArch(ctx) && k === 'asked', period))
+      .sort((a, b) => b.reached - a.reached || b.wrote - a.wrote);
+    return { ln, inLine, all: tally(ctx, inLine, `All ${ln.title.toLowerCase()}`, false, period), rows };
   }).filter((x) => x.inLine.length > 0);
 }
 
@@ -197,31 +237,36 @@ export function linesData(ctx: ReportCtx): Array<{ ln: Line; inLine: ReportPerso
  *  ledger above added up, so both tabs print the same five numbers. ARCH's fourth stage is its
  *  own "interested now" rule, so it keeps that name. Empty when the board has no people. */
 export type FunnelStage = { key: 'reached' | 'connected' | 'replied' | 'yes' | 'booked'; label: string; v: number };
-export function funnelStages(ctx: ReportCtx): FunnelStage[] {
-  const lines = linesData(ctx);
-  if (!lines.length) return [];
+export function funnelStages(ctx: ReportCtx, period?: Period | null): FunnelStage[] {
+  // No people at all: no funnel. A quiet week still draws its zeros.
+  if (!(ctx.payload?.people || []).length) return [];
+  const lines = linesData(ctx, period);
   const sum = (k: 'reached' | 'connected' | 'wrote' | 'interested' | 'booked') => lines.reduce((t, l) => t + (l.all[k] ?? 0), 0);
   return [
     { key: 'reached', label: 'Reached', v: sum('reached') },
     { key: 'connected', label: 'Connected', v: sum('connected') },
     { key: 'replied', label: 'Replied', v: sum('wrote') },
-    { key: 'yes', label: isArch(ctx) ? 'Interested now' : 'Said yes', v: sum('interested') },
+    { key: 'yes', label: isArch(ctx) ? 'Said yes or asked' : 'Said yes', v: sum('interested') },
     { key: 'booked', label: 'Booked a call', v: sum('booked') },
   ];
 }
 
 function LinesLedger({ ctx }: { ctx: ReportCtx }) {
-  const people = ctx.payload?.people || [];
-  const interestedLabel = isArch(ctx) ? 'Interested now' : 'Interested';
+  const P = ctx.period;
+  const people = (ctx.payload?.people || []).filter((p) => wroteIn(ctx, P, p));
+  const interestedLabel = isArch(ctx) ? 'Said yes or asked' : 'Said yes';
+  const data = linesData(ctx, P);
+  const when = narrows(P) ? P.phrase : `since ${dm(ctx.cfg.start)}`;
   return (
     <div style={{ marginTop: 36 }}>
       <Eyebrow tone="ink">Who we reach, and what came of it</Eyebrow>
       <Footnote style={{ marginTop: 6, maxWidth: '78ch' }}>
         {isArch(ctx)
-          ? <>Grouped by the kind of company, then by how we found each person. Everyone is counted once, since {dm(ctx.cfg.start)}.</>
-          : <>Two groups of people, and where we found them, since {dm(ctx.cfg.start)}. Interested means they said yes to a scan or a chat.</>}
+          ? <>Grouped by the kind of company, then by how we found each person. Each number counts what happened {when}, each person once.</>
+          : <>Two groups of people, and where we found them. Each number counts what happened {when}, each person once. Said yes means they said yes to a scan or a chat.</>}
       </Footnote>
-      {linesData(ctx).map(({ ln, inLine, all, rows }) => {
+      {!data.length && <Footnote style={{ marginTop: 14 }}>Nothing new {when} yet.</Footnote>}
+      {data.map(({ ln, inLine, all, rows }) => {
         const cells = (r: Row) => [r.reached, r.connected, r.wrote, r.interested, r.booked];
         const heads = ['reached', 'connected', 'wrote back', interestedLabel.toLowerCase(), 'calls booked'];
         return (
@@ -260,7 +305,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
                 </div>
               ))}
             </div>
-            {!isArch(ctx) && ln.key === 'owner' && <StoreKinds ps={inLine} />}
+            {!isArch(ctx) && ln.key === 'owner' && <StoreKinds ps={inLine} isWrote={(p) => wroteIn(ctx, P, p)} isBooked={(p) => bookedIn(ctx, P, p)} />}
           </div>
         );
       })}
@@ -286,12 +331,12 @@ function ChipRow({ items }: { items: ChipItem[] }) {
 }
 
 export type ChipItem = { key: string; n: number; label: string; booked?: number };
-export function storeKindItems(ps: ReportPerson[]): ChipItem[] {
+export function storeKindItems(ps: ReportPerson[], isWrote: (p: ReportPerson) => boolean = wrote, isBooked: (p: ReportPerson) => boolean = (p) => !!p.bk): ChipItem[] {
   const m = new Map<string, { n: number; booked: number }>();
-  for (const p of ps.filter(wrote)) {
+  for (const p of ps.filter(isWrote)) {
     const label = RISE_CAT[norm(p.cat)] || (p.cat ? 'other stores' : 'not sorted yet');
     const e = m.get(label) || { n: 0, booked: 0 };
-    e.n += 1; if (p.bk) e.booked += 1;
+    e.n += 1; if (isBooked(p)) e.booked += 1;
     m.set(label, e);
   }
   return [...m.entries()]
@@ -299,8 +344,8 @@ export function storeKindItems(ps: ReportPerson[]): ChipItem[] {
     .map(([label, e]) => ({ key: label, n: e.n, label, booked: e.booked }));
 }
 
-function StoreKinds({ ps }: { ps: ReportPerson[] }) {
-  const items = storeKindItems(ps);
+function StoreKinds({ ps, isWrote, isBooked }: { ps: ReportPerson[]; isWrote?: (p: ReportPerson) => boolean; isBooked?: (p: ReportPerson) => boolean }) {
+  const items = storeKindItems(ps, isWrote, isBooked);
   if (!items.length) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -310,9 +355,9 @@ function StoreKinds({ ps }: { ps: ReportPerson[] }) {
   );
 }
 
-export function archCameFromItems(ps: ReportPerson[]): ChipItem[] {
+export function archCameFromItems(ps: ReportPerson[], isWrote: (p: ReportPerson) => boolean = wrote): ChipItem[] {
   const m = new Map<string, number>();
-  for (const p of ps.filter(wrote)) { const s = archGroup(p).sub; m.set(s, (m.get(s) || 0) + 1); }
+  for (const p of ps.filter(isWrote)) { const s = archGroup(p).sub; m.set(s, (m.get(s) || 0) + 1); }
   return [...m.entries()]
     .sort((a, b) => (a[0].startsWith('not sorted') ? 1 : b[0].startsWith('not sorted') ? -1 : b[1] - a[1]))
     .map(([label, n]) => ({ key: label, n, label }));
@@ -375,11 +420,13 @@ function Thread({ ctx, entry, renderReplySource }: { ctx: ReportCtx; entry: LogE
   );
 }
 
-export type Card_ = { p: ReportPerson; entry: LogEntry | null; last: string | null; extra?: BookedExtra };
+export type Card_ = { p: ReportPerson; entry: LogEntry | null; last: string | null; extra?: BookedExtra; until?: { day: string; tz: string } | null };
 
-export function lastInboundText(entry: LogEntry | null): string {
+export function lastInboundText(entry: LogEntry | null, until?: { day: string; tz: string } | null): string {
   // The latest thing they WROTE; a bare reaction is skipped when there is real text before it.
-  const ins = (entry?.messages || []).filter((m) => m.direction === 'inbound' && shownText(m));
+  // `until` (a period's exclusive end day) keeps a past period's card on what they said then.
+  const ins = (entry?.messages || []).filter((m) => m.direction === 'inbound' && shownText(m)
+    && (!until || ((dayKey(m.sent_at, until.tz) || '') < until.day)));
   ins.sort((a, b) => ((a.sent_at || '') < (b.sent_at || '') ? -1 : 1));
   const written = ins.filter((m) => !REACTION.test(shownText(m)));
   const t = shownText(written[written.length - 1] || ins[ins.length - 1] || { direction: 'inbound', channel: null, type: null, sent_at: null, text: '' }).replace(/\s+/g, ' ').trim();
@@ -391,9 +438,9 @@ function PersonRows({ ctx, rows, accent, booked, hideYes, renderReplySource }: {
   const [openSources, setOpenSources] = React.useState<Record<string, boolean>>({});
   return (
     <div>
-      {rows.map(({ p, entry, last, extra }, i) => {
+      {rows.map(({ p, entry, last, extra, until }, i) => {
         const k = dayKey(booked ? p.bk : last, ctx.cfg.tz);
-        const quote = lastInboundText(entry);
+        const quote = lastInboundText(entry, until);
         const chip = booked || hideYes && ['positive', 'soft_yes'].includes(norm(p.li)) ? null : intentChip(ctx, p.li);
         return (
           <div key={`${p.n}-${i}`} style={{ borderTop: i ? '1px solid var(--cb-line)' : undefined, padding: '12px 0 4px' }}>
@@ -453,7 +500,7 @@ export function pipelineStripText(ctx: ReportCtx): string {
 }
 
 /** Everything the Pipeline tab counts and lists, shared by the desk and the night view. */
-export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: BookedExtra[] = []) {
+export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: BookedExtra[] = [], period?: Period | null) {
   const people = ctx.payload?.people || [];
   const arch = isArch(ctx);
 
@@ -475,6 +522,29 @@ export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: Bo
     return { p, entry, last, extra };
   };
 
+  if (period) {
+    // The period view (2026-10-12): everyone inside the chosen week or month, nobody capped.
+    const P = period;
+    const until = narrows(P) && !P.current ? { day: P.end, tz: ctx.cfg.tz } : null;
+    const pcard = (p: ReportPerson): Card_ => {
+      const c = card(p);
+      return { ...c, last: (narrows(P) ? lastReplyIn(ctx, P, p) : null) || c.last, until };
+    };
+    const byLast = (a: Card_, b: Card_) => ((a.last || '') < (b.last || '') ? 1 : -1);
+    const bookedRows = visible.filter((p) => bookedIn(ctx, P, p)).map(pcard).sort((a, b) => ((a.p.bk || '') < (b.p.bk || '') ? 1 : -1));
+    const saidYes = visible.filter((p) => yesIn(ctx, P, p) && !p.bk);
+    const interested = saidYes.filter((p) => stillInterested(ctx, p)).map(pcard).sort(byLast);
+    // Said yes inside the period, but their latest reply no longer does: listed under wrote back.
+    const movedOn = saidYes.length - interested.length;
+    const inSet = new Set([...bookedRows, ...interested].map((c) => c.p));
+    const recent = visible.filter((p) => wroteIn(ctx, P, p) && !inSet.has(p)).map(pcard).sort(byLast);
+    const nBooked = people.filter((p) => bookedIn(ctx, P, p)).length;
+    const nInterested = interested.length;
+    const nWrote = people.filter((p) => wroteIn(ctx, P, p)).length;
+    const bookedNames = bookedRows.slice(0, 3).map((c) => c.p.n).filter(Boolean) as string[];
+    return { people, bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames, movedOn };
+  }
+
   const bookedRows = visible.filter((p) => !!p.bk).map(card).sort((a, b) => ((a.p.bk || '') < (b.p.bk || '') ? 1 : -1));
   const interested = visible.filter((p) => interestedNow(ctx, p)).map(card).sort((a, b) => ((a.last || '') < (b.last || '') ? 1 : -1));
   const since = Date.now() - 30 * DAY_MS;
@@ -487,7 +557,7 @@ export function pipelineData(ctx: ReportCtx, log?: LogEntry[] | null, booked: Bo
   const nInterested = people.filter((p) => interestedNow(ctx, p)).length;
   const nWrote = people.filter(wrote).length;
   const bookedNames = bookedRows.slice(0, 3).map((c) => c.p.n).filter(Boolean) as string[];
-  return { people, bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames };
+  return { people, bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames, movedOn: 0 };
 }
 
 export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCount, renderReplySource }: {
@@ -502,8 +572,10 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
 }) {
   const [view, setView] = React.useState<'conv' | 'queue'>('conv');
   const arch = isArch(ctx);
-  const { bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames } = pipelineData(ctx, log, booked);
+  const P = ctx.period;
+  const { bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames, movedOn } = pipelineData(ctx, log, booked, P);
   const who = arch ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
+  const when = narrows(P) ? P.phrase : `since ${dm(ctx.cfg.start)}`;
   const night = useNight();
   const quiet = useQuiet();
   // NIGHT MOCKUP (local only): the same model, drawn in the ARCH report's look. QUIET holds
@@ -517,16 +589,17 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
   }
 
   const figs = [
-    { key: 'calls', strong: true, value: nBooked, caption: `${nBooked === 1 ? 'call' : 'calls'} booked since ${dm(ctx.cfg.start)}` },
-    { key: 'interested', strong: true, value: nInterested, caption: arch ? 'interested right now: their latest reply, in the last two weeks, says yes or asks for details' : 'interested right now: said yes in the last two weeks, not booked yet' },
-    { key: 'wrote', value: nWrote, caption: `${nWrote === 1 ? 'person' : 'people'} wrote back since ${dm(ctx.cfg.start)}` },
-  ].filter((f) => f.key !== 'interested' || f.value > 0);
+    { key: 'calls', strong: true, value: nBooked, caption: `${nBooked === 1 ? 'call' : 'calls'} booked ${when}` },
+    { key: 'interested', strong: true, value: nInterested, caption: arch ? `interested ${when}: said yes or asked for details, and their latest reply still does` : `interested ${when}: said yes, not booked yet` },
+    { key: 'wrote', value: nWrote, caption: `${nWrote === 1 ? 'person' : 'people'} wrote back ${when}` },
+  ];
 
   return (
     <div data-report="pipeline">
       <style>{PICKER_CSS + PIPE_CSS}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <Eyebrow>Outreach</Eyebrow>
+        <Eyebrow>Outreach · {P.eyebrow}</Eyebrow>
+        {view === 'conv' && <PeriodPicker ctx={ctx} />}
         {queue && (
           <div role="tablist" style={{ display: 'flex', gap: 6 }}>
             <Pill active={view === 'conv'} onClick={() => setView('conv')}>Conversations</Pill>
@@ -538,21 +611,22 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
       {view === 'queue' && queue ? queue : (
         <>
           <DeskH2 style={{ maxWidth: '40ch', textWrap: 'balance' } as React.CSSProperties}>
-            {nBooked > 0 ? <><b>{nBooked} {nBooked === 1 ? 'call' : 'calls'} booked</b> so far{bookedNames.length && arch ? `, with ${bookedNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}.</> : <>Your booked calls land here.</>}
-            {nInterested > 0 ? <> {nInterested} more {who} interested right now.</> : null}
+            {nBooked > 0 ? <><b>{nBooked} {nBooked === 1 ? 'call' : 'calls'} booked</b> {when}{bookedNames.length && arch ? `, with ${bookedNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}.</> : <>No calls booked {when}.</>}
+            {nInterested > 0 ? <> {nInterested} {nBooked > 0 ? 'more ' : ''}{who} interested {when}.</> : null}
           </DeskH2>
           <ReportFigures figs={figs} />
 
           <LinesLedger ctx={ctx} />
           <CallsChart ctx={ctx} />
-          <ListSection id="cb-pipe-interested" title="Interested right now" count={interested.length} note={arch ? 'their latest reply, in the last two weeks, says yes or asks for details' : 'said yes to a scan or a chat in the last two weeks, not booked yet'} open={interested.length > 0}>
-            {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody right now.</Footnote>}
+          <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
+            {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody {when}.</Footnote>}
+            {movedOn > 0 && <Footnote>{movedOn} more said yes {when}, but their latest reply does not. They are under Wrote back.</Footnote>}
           </ListSection>
-          <ListSection title="Calls booked" count={bookedRows.length} note="most recent first" open={bookedRows.length > 0}>
-            {bookedRows.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} accent={accent} booked /> : <Footnote>Booked calls land here with the pre-call brief.</Footnote>}
+          <ListSection title="Calls booked" count={bookedRows.length} note={`booked ${when}, most recent first`} open={bookedRows.length > 0}>
+            {bookedRows.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={bookedRows} accent={accent} booked /> : <Footnote>No calls booked {when}.</Footnote>}
           </ListSection>
-          <ListSection title="Wrote back" count={recent.length} note="everyone else who replied in the last 30 days" open={false}>
-            {recent.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={recent} accent={accent} /> : <Footnote>Nobody else in the last 30 days.</Footnote>}
+          <ListSection title="Wrote back" count={recent.length} note={`everyone else who replied ${when}, including people who said no`} open={false}>
+            {recent.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={recent} accent={accent} /> : <Footnote>Nobody else {when}.</Footnote>}
           </ListSection>
 
         </>

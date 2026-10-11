@@ -68,8 +68,10 @@ it.each(['preview', 'demo'])('keeps the %s board free of live source reads', asy
 it('makes no live source read for a generating board', async () => {
  mode = 'generating'; mountBoard(); expect(await screen.findByText(/We're building/)).toBeTruthy(); expect(metricCalls()).toHaveLength(0); expect(sourceCalls()).toHaveLength(0)
 })
-it('keeps a null-client live board apart from Ivan metrics', async () => {
- configured = false; mountBoard(); expect(await screen.findByText(/Reply sources are not configured/)).toBeTruthy(); expect(screen.queryByRole('table')).toBeNull()
+it('keeps a null-client live board apart from Ivan metrics, and shows the client no notice', async () => {
+ configured = false; mountBoard(); await waitFor(() => expect(metricCalls().length).toBeGreaterThan(0))
+ // 2026-10-12: a live client board never prints a reply-source error or not-configured notice.
+ await waitFor(() => expect(screen.queryByText(/Reply sources are/)).toBeNull()); expect(screen.queryByRole('table')).toBeNull()
  expect(metricCalls()[0][1]).not.toHaveProperty('p_client_id')
 })
 it.each(['desk', 'blackbox'])('reads one %s board log source only after a prospect detail opens', async value => {

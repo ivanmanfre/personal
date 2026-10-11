@@ -28,7 +28,8 @@ describe('sliceSeries: one model with the panel', () => {
     expect(bars[bars.length - 1].current).toBe(true);
   });
   it('adds up exactly to every period figure the panel prints', () => {
-    for (const p of periods) {
+    // RISE's Mon-Sun weeks (2026-10-12) are a picker option; the bars are its report-month slices.
+    for (const p of periods.filter((x) => cfg.kind === 'weekly' || x.kind !== 'week')) {
       const f = computeFigures(cfg, p, payload, { queue: [] }, null);
       const inP = bars.filter((b) => b.start >= p.start && b.start < p.end);
       expect(inP.reduce((t, b) => t + b.calls, 0)).toBe(f.calls.n);

@@ -23,6 +23,8 @@ const payload: ReportPayload = {
 const cfg = REPORT_CONFIGS['risedtc-com'];
 const periods = reportPeriods(cfg, '2026-09-27');
 const ctx: ReportCtx = { cfg, periods, period: periods[0], onPeriod: () => {}, payload, board: { queue: [] }, audience: null, today: '2026-09-27' };
+const allP = periods.find((p) => p.kind === 'all')!;
+const allCtx: ReportCtx = { ...ctx, period: allP };
 const log = [{ prospect_id: 'p1', name: 'Tom Hale', company: 'Soda Co', last_reply_at: '2026-09-26T10:00:00Z', messages: [{ direction: 'inbound' as const, channel: 'linkedin', type: null, sent_at: '2026-09-26T10:00:00Z', text: 'Sure, send it over' }] }];
 const booked = [{ name: 'Kara North', booked_at: '2026-09-22T15:14:42Z', brief_url: 'https://example.test/brief' }];
 
@@ -36,8 +38,8 @@ describe('Outreach night v4 (v2 look, v3 words)', () => {
     const s = funnelStages(ctx);
     expect(s.map((x) => x.label)).toEqual(['Reached', 'Connected', 'Replied', 'Said yes', 'Booked a call']);
     expect(s.map((x) => x.v)).toEqual([5, 4, 3, 2, 1]);
-    const out = strip(renderToStaticMarkup(<PipelineNight ctx={ctx} accent="#FFC71D" log={log} booked={booked} />));
-    const perf = strip(renderToStaticMarkup(<PerfReport ctx={ctx} truth={{ booked }} />));
+    const out = strip(renderToStaticMarkup(<PipelineNight ctx={allCtx} accent="#FFC71D" log={log} booked={booked} />));
+    const perf = strip(renderToStaticMarkup(<PerfReport ctx={allCtx} truth={{ booked }} />));
     for (const x of s) {
       // v2's funnel look: the number sits above its caps label
       expect(out).toContain(`${x.v} ${x.label}`);
@@ -56,16 +58,17 @@ describe('Outreach night v4 (v2 look, v3 words)', () => {
     const avs = html.slice(html.indexOf('class="pk-avs"'), html.indexOf('class="pn-names"'));
     expect((avs.match(/class="pk-av"/g) || []).length).toBe(1);
     expect(avs).not.toContain('pk-av-more');
-    expect(t).toContain("Said yes in the last 14 days and hasn't booked yet.");
-    expect(t.split('in the last 14 days').length - 1).toBe(1);
+    expect(t).toContain('1 founder said yes since 17 Sept.');
+    expect(t).toContain('Their latest reply still says yes, and no call is booked yet.');
+    expect(t).not.toContain('in the last 14 days');
     expect(t).not.toContain('Tap a stage');
     expect(t).not.toContain('most recent first');
     expect(t).not.toContain('A dot:');
-    expect(t).toContain('Each person is counted once.');
+    expect(t).toContain('Each person is counted once in each list.');
   });
 
   it('ledger: the headline names both groups, the asked-to-connect row says already connected', () => {
-    const t = strip(renderToStaticMarkup(<PipelineNight ctx={ctx} accent="#FFC71D" log={log} booked={booked} />));
+    const t = strip(renderToStaticMarkup(<PipelineNight ctx={allCtx} accent="#FFC71D" log={log} booked={booked} />));
     expect(t).toContain("Everyone we've contacted since 21 Jul, split into store owners and marketing leads.");
     expect(t).toContain('already connected');
     expect(t).toContain('Kinds of stores that wrote back');
@@ -79,6 +82,34 @@ describe('Outreach night v4 (v2 look, v3 words)', () => {
     expect(html).toMatch(/<a class="pn-lnk gold" href="https:\/\/example.test\/brief"[^>]*>Pre-call brief<\/a>/);
     expect(t).toContain('Booked 22 Sept');
     expect(t).toContain('26 Sept');
+  });
+
+  it('periods: every count, the ledger and the lists follow the picked week (2026-10-12)', () => {
+    const wk = periods.find((p) => p.kind === 'week' && p.start === '2026-09-21')!;
+    const wctx: ReportCtx = { ...ctx, period: wk };
+    // Week of 21 Sept: Kara booked (22 Sept), Tom wrote back and said yes (26 Sept). Nobody was
+    // first contacted or connected that week.
+    expect(funnelStages(wctx, wk).map((x) => x.v)).toEqual([0, 0, 1, 1, 1]);
+    const t = strip(renderToStaticMarkup(<PipelineNight ctx={wctx} accent="#FFC71D" log={log} booked={booked} />));
+    expect(t).toContain('What happened this week, split into store owners.');
+    expect(t).toContain('Tom Hale');
+    expect(t).toContain('Booked 22 Sept');
+    expect(t).not.toContain('Mia Lead');
+    const aug = periods.find((p) => p.kind === 'week' && p.start === '2026-08-17')!;
+    expect(funnelStages({ ...ctx, period: aug }, aug).map((x) => x.v)).toEqual([0, 1, 0, 0, 0]);
+  });
+
+  it('interested follows the latest reply: an unclassified later reply moves a yes to wrote back', () => {
+    const later: ReportPayload = { ...payload, people: payload.people.map((p) => (p.n === 'Tom Hale'
+      ? { ...p, w: ['2026-09-26T10:00:00Z', '2026-09-27T09:00:00Z'], li: null, lr: '2026-09-27T09:00:00Z' } : p)) };
+    const c2: ReportCtx = { ...ctx, payload: later };
+    const log2 = [{ ...log[0], last_reply_at: '2026-09-27T09:00:00Z', messages: [...log[0].messages, { direction: 'inbound' as const, channel: 'email', type: 'email_reply', sent_at: '2026-09-27T09:00:00Z', text: 'We are not looking at this right now.' }] }];
+    const t = strip(renderToStaticMarkup(<PipelineNight ctx={c2} accent="#FFC71D" log={log2} booked={booked} />));
+    expect(t).toContain('Nobody new said yes since 17 Sept.');
+    expect(t).toContain('1 more said yes since 17 Sept, but their latest reply does not. They are under Wrote back.');
+    expect(t).toContain('Show all 1');
+    // the said-yes event still counts in the funnel: it happened
+    expect(funnelStages(c2, c2.period).find((x) => x.key === 'yes')!.v).toBe(2);
   });
 
   it('week spans read plainly', () => {
