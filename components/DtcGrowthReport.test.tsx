@@ -1413,3 +1413,23 @@ describe('evidence-first scan repair', () => {
     expect((html.match(/data-case="/g) || [])).toHaveLength(3);
   });
 });
+
+describe('commercial experiments stay separate from verified defects', () => {
+  it('shows reviewed hypotheses with sourced observations and measurement, hides unavailable research', () => {
+    const files = fs.readdirSync(FIXTURES_DIR).filter(f => f.endsWith('.json'));
+    const d = files.map(f => loadFixture(f).dtc).find(d => d?.drop_off?.items?.length && d?.shippable?.ok)!;
+    expect(d).toBeTruthy();
+    const data = { status: 'present' as const, version: 'commercial-2026-10-11', tests: [{
+      title: 'Compare consultation routes', observation: 'This page offers a consultation.',
+      test: 'Test the dedicated service page.', measure: 'Completed bookings and attendance.',
+      evidence: [{ source_url: 'https://example.com/pages/service', quote: 'Book a lens consultation', kind: 'store' as const }],
+    }] };
+    const html = renderDtc({ ...d, commercial_evidence: data }, 'Example');
+    expect(html).toContain('Compare consultation routes');
+    expect(html).toContain('Proposed test');
+    expect(html).toContain('Completed bookings and attendance.');
+    expect(html).toContain('https://example.com/pages/service');
+    expect(renderDtc({ ...d, commercial_evidence: { ...data, status: 'error' } }, 'Example')).not.toContain('Compare consultation routes');
+    expect(renderDtc({ ...d, commercial_evidence: { ...data, version: 'unreviewed' } }, 'Example')).not.toContain('Compare consultation routes');
+  });
+});

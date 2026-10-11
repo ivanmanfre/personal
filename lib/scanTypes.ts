@@ -268,7 +268,18 @@ export interface DtcCatalogItem {
   published_at?: string | null;
 }
 
+export interface DtcCommercialEvidence {
+  status: 'present' | 'error' | 'absent';
+  version: string;
+  checked_at?: string;
+  tests: { title: string; observation: string; test: string; measure: string;
+    evidence: { source_url: string; quote: string; kind: 'store' | 'ad' | 'reference' }[] }[];
+  journeys?: { ad_url: string; ad_excerpt: string; destinations: string[]; observed_at?: string }[];
+  screenshot?: { url: string; source_url: string; captured_at: string };
+}
+
 export interface DtcGrowth {
+  commercial_evidence?: DtcCommercialEvidence;
   brand: DtcBrand;
   builder_version?: string | null;
   quality?: { version: string; approved: boolean; reason?: string | null; lead_ref?: string | null };

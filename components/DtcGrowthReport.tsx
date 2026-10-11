@@ -980,7 +980,7 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
           {it === inventoryItem ? <InventoryExhibit shop={d.shopify} bestsellers={d.bestsellers} ink={ink} headingFont={headingFont} /> : null}
           {it === capturedItem ? <figure data-promise-capture="1" className="rise-capture">
             <a href={shots.pdp_url} target="_blank" rel="noopener noreferrer"><img src={shots.pdp_url} alt={`${clean(it.product?.title) || 'Source product'} page capture`} data-store-img="1" loading="lazy" className="rise-capture-image" /></a>
-            <figcaption><strong>{clean(it.product?.title) || 'Matched product page'}</strong><p>Open the image to inspect the full page.</p><p>Captured {checkedAt(shots.captured_at)}.</p>{proofHref(it.product?.url || ev?.source_url) ? <a href={proofHref(it.product?.url || ev?.source_url)} target="_blank" rel="noopener noreferrer">Open the source page</a> : null}</figcaption>
+            <figcaption><strong>{clean(it.product?.title) || 'Matched product page'}</strong><p>Open the screenshot at full size.</p><p>Captured {checkedAt(shots.captured_at)}.</p>{proofHref(it.product?.url || ev?.source_url) ? <a href={proofHref(it.product?.url || ev?.source_url)} target="_blank" rel="noopener noreferrer">Open the source page</a> : null}</figcaption>
           </figure> : null}
           {!isInventoryItem(it) && it.product ? <p className="rise-receipt">{clean(it.product.title)}{productPrice(it.product) ? ` · From ${productPrice(it.product)}` : ''}</p> : null}
         </article>;
@@ -999,7 +999,7 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors }: { google
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
   return <div className="rise-ad-records">
     {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
-    {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active ads.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
@@ -1142,6 +1142,40 @@ function WeekOnePanel({
       ) : null}
     </div>
   );
+}
+
+function commercialTests(data: import('../lib/scanTypes').DtcCommercialEvidence | undefined) {
+  if (data?.status !== 'present' || data.version !== 'commercial-2026-10-11') return [];
+  return (data.tests || []).filter(item => item.title && item.observation && item.test && item.measure
+    && item.evidence?.some(e => e.kind === 'store' && proofHref(e.source_url) && e.quote));
+}
+
+function CommercialEvidence({ data }: { data: import('../lib/scanTypes').DtcCommercialEvidence | undefined }) {
+  const tests = commercialTests(data);
+  if (!data || !tests.length) return null;
+  return <section id="commercial-tests" className="rise-section rise-commercial" data-commercial-evidence="1">
+    <div className="rise-section-heading"><p className="rise-chapter">Where we’d focus</p><h2>Tests built around your business</h2>
+      <p>These are proposed experiments based on your public pages. We’d use your store, booking and ad-account data to choose a baseline and assess the result.</p></div>
+    {data.journeys?.filter(j => proofHref(j.ad_url) && j.ad_excerpt && j.destinations?.some(proofHref)).map((j, i) => <div className="rise-ad-journey" key={i}>
+      <div><p className="rise-evidence-label">Observed ad</p><blockquote>{clean(j.ad_excerpt)}{j.ad_excerpt.split(/\s+/).length >= 10 ? '…' : ''}</blockquote>
+        <a href={proofHref(j.ad_url)} target="_blank" rel="noopener noreferrer">Open the ad in Meta’s library ↗</a></div>
+      <div><p className="rise-evidence-label">Recorded destination</p>{j.destinations.filter(proofHref).map(url => <a className="rise-route-link" key={url} href={proofHref(url)} target="_blank" rel="noopener noreferrer">{new URL(url).pathname.replace(/^\//, '') || new URL(url).hostname} ↗</a>)}
+        <p className="rise-research-note">The public record shows the ad and its destination. It does not show spend, bookings or sales.</p></div>
+    </div>)}
+    {data.screenshot && proofHref(data.screenshot.url) && proofHref(data.screenshot.source_url) ? <figure className="rise-commercial-capture">
+      <a href={proofHref(data.screenshot.url)} target="_blank" rel="noopener noreferrer"><img src={proofHref(data.screenshot.url)} alt="Captured service page used in this review" loading="lazy" /></a>
+      <figcaption><a href={proofHref(data.screenshot.source_url)} target="_blank" rel="noopener noreferrer">Open the source page ↗</a><span>Captured {checkedAt(data.screenshot.captured_at)}</span></figcaption></figure> : null}
+    <div className="rise-tests">{tests.map((item, i) => <article className="rise-test" key={i}>
+      <div className="rise-test-title"><span className="rise-test-number">{String(i + 1).padStart(2, '0')}</span><h3>{clean(item.title)}</h3></div>
+      <p className="rise-test-observation">{clean(item.observation)}</p>
+      <div className="rise-test-plan"><div><h4>Proposed test</h4><p>{clean(item.test)}</p></div><div><h4>How we’d measure it</h4><p>{clean(item.measure)}</p></div></div>
+      <div className="rise-test-sources">{item.evidence.filter(e => proofHref(e.source_url) && e.quote).map((e, k) => <blockquote key={k}>
+        <span className="rise-evidence-label">{e.kind === 'reference' ? 'Other-brand example' : e.kind === 'ad' ? 'Ad evidence' : 'Your page'}</span>
+        <p>“{clean(e.quote)}”</p><a href={proofHref(e.source_url)} target="_blank" rel="noopener noreferrer">{new URL(e.source_url).hostname.replace(/^www\./, '')} · Read source ↗</a>
+        {e.kind === 'reference' ? <small>A reference to adapt. Public pages do not establish its performance.</small> : null}
+      </blockquote>)}</div>
+    </article>)}</div>
+  </section>;
 }
 
 export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
@@ -1483,11 +1517,13 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       <main className="rise-document" id="report-review">
         <nav className="rise-overview" aria-label="Report contents">
           <span>In this review</span>
+          {commercialTests(d.commercial_evidence).length ? <a href="#commercial-tests">Proposed tests <span>↘</span></a> : null}
           {promiseItems(d.drop_off).length ? <a href="#drop-off">Shopper paths <span>↘</span></a> : null}
           {promiseItems(d.second_order).length ? <a href="#second-order">Repeat purchase <span>↘</span></a> : null}
           {storeFeatures.length ? <a href="#store-features">Already in place <span>↘</span></a> : null}
           {findings.length || hasAdEvidence ? <a href="#paid-media">Paid-media check <span>↘</span></a> : null}
         </nav>
+        <CommercialEvidence data={d.commercial_evidence} />
         <PromiseSection d={d} id="drop-off" n={1} title="Shopper paths" block={d.drop_off} accent={accent} ink={ink} headingFont={headingFont} />
         <PromiseSection d={d} id="second-order" n={promiseItems(d.drop_off).length + 1} title="Repeat purchase" block={d.second_order} accent={accent} ink={ink} headingFont={headingFont} />
         {storeFeatures.length ? <section id="store-features" className="rise-section" data-store-features="1">
