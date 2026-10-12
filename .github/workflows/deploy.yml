@@ -97,7 +97,9 @@ jobs:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
         run: |
           git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/inboundonsteroids-site.git" /tmp/product-site
-          rsync -a --delete --exclude CNAME dist/ /tmp/product-site/scan/
+          # A scan may publish while this build prerenders. Keep those new routes
+          # and their hashed assets; a stale build must not delete a live DM link.
+          rsync -a --exclude CNAME dist/ /tmp/product-site/scan/
           # Scan reports reference /content-system/*.webp and /ivan-portrait-400.webp by
           # root-absolute path; mirror them to the product-site root so they resolve on
           # inboundonsteroids.com (they 404 when only /scan/ is synced).
