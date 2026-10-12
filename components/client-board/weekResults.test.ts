@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sliceSeries, axisLabel, namesLine, initialsOf } from './weekResults';
+import { sliceSeries, periodBars, axisLabel, namesLine, initialsOf } from './weekResults';
 import { computeFigures, reportPeriods, REPORT_CONFIGS, type ReportPayload } from './report/reportModel';
 
 /** Test-only fabrication shaped like the client_board_report payload. */
@@ -41,6 +41,38 @@ describe('sliceSeries: one model with the panel', () => {
     const i = bars.findIndex((b) => b.start === '2026-09-17');
     expect(axisLabel(bars, 0)).toBe('21 Jul');
     expect(axisLabel(bars, i)).toBe('17');
+  });
+});
+
+describe('periodBars: the chart follows the period picker', () => {
+  it('a week lights that week among the picker weeks, and its bar is the period figure', () => {
+    for (const p of periods.filter((x) => x.kind === 'week')) {
+      const r = periodBars({ ...ctx, period: p });
+      expect(r.scope).toBe('week');
+      expect(r.focus).not.toBeNull();
+      const lit = r.bars[r.focus as number];
+      expect(lit.key).toBe(p.key);
+      const f = computeFigures(cfg, p, payload, { queue: [] }, null);
+      expect([lit.wrote, lit.calls, lit.reach]).toEqual([f.wrote, f.calls.n, f.reach]);
+      expect(r.bars.length).toBeLessThanOrEqual(12);
+    }
+  });
+  it('a month draws only the weeks inside it, adding up to the month', () => {
+    const m = periods.find((x) => x.kind === 'month' && !x.current) as (typeof periods)[number];
+    const r = periodBars({ ...ctx, period: m });
+    expect(r.scope).toBe('month');
+    expect(r.bars.every((b) => b.start >= m.start && b.start < m.end)).toBe(true);
+    const f = computeFigures(cfg, m, payload, { queue: [] }, null);
+    expect(r.bars.reduce((t, b) => t + b.wrote, 0)).toBe(f.wrote);
+  });
+  it('can carry the funnel replied count instead of first-time writers', () => {
+    const w = periods.find((x) => x.kind === 'week') as (typeof periods)[number];
+    const r = periodBars({ ...ctx, period: w }, () => 7);
+    expect(r.bars.every((b) => b.wrote === 7)).toBe(true);
+  });
+  it('since the start draws every slice', () => {
+    const all = periods.find((x) => x.kind === 'all') as (typeof periods)[number];
+    expect(periodBars({ ...ctx, period: all }).bars.length).toBe(sliceSeries(ctx).length);
   });
 });
 

@@ -3,7 +3,7 @@
  * only (2026-09-29); ReportPipeline renders it when the board URL carries `?night`.
  *
  * Same model as the desk version, read through report/PipelineBlocks (pipelineData,
- * linesData, funnelStages, storeKindItems...) and weekResults.sliceSeries, so every number,
+ * linesData, funnelStages, storeKindItems...) and weekResults.periodBars, so every number,
  * name and quote is the one the light tab prints. Nothing here counts on its own.
  *
  * NIGHT v4 (Ivan 2026-09-29 on v3: "looks way less cool and u even changed the font type"):
@@ -15,7 +15,7 @@
  *            (funnelStages: reached, connected, replied, said yes, booked a call); each stage
  *            jumps to its list. No hint line.
  *   ledger   everyone we contacted, split by group (glass panels, the strip, the table)
- *   weeks    the week chart panel: grey bars = replied, a yellow badge = booked a call; the
+ *   weeks    the week chart panel, following the period picker: grey bars = replied, a yellow badge = booked a call; the
  *            busiest reply week pre-selected, the best-week line as the heading
  *   lists    interested right now, calls booked (glowing gold cards), everyone else who
  *            wrote back (folded); "Read the thread", plain counts in caps eyebrows
@@ -30,9 +30,9 @@ import { MotionRoot, useReveal, EASE } from './motion';
 import { AvatarCircles, DotPattern } from './magicui';
 import { AnimateNumber, FunnelShape } from './twentyfirst';
 import { PK_CSS } from './styles';
-import { dm, dayKey, addDays } from '../report/reportModel';
+import { dm, dayKey, addDays, type Period } from '../report/reportModel';
 import { callsLead, useFigures, type ReportCtx } from '../report/ReportBlocks';
-import { initialsOf, sliceSeries, axisLabel, type SliceBar } from '../weekResults';
+import { initialsOf, periodBars, axisLabel, type SliceBar } from '../weekResults';
 import {
   pipelineData, linesData, funnelStages, storeKindItems, archCameFromItems, isArch, intentChip, lastInboundText,
   shownText, REACTION, norm, narrows, wroteIn, bookedIn,
@@ -200,11 +200,18 @@ function ticks(top: number): number[] {
 }
 
 /** The week chart both tabs share, in v2's panel: grey bars = replied, a yellow badge =
- *  booked a call. The busiest reply week is pre-selected (its column lit); a tap swaps the
+ *  booked a call. It follows the period picker (2026-10-12, periodBars): a chosen week is
+ *  lit among the weeks around it and its readout is that week's figures; a month or "since
+ *  the start" draws the weeks inside it with the busiest reply week lit. A tap swaps the
  *  readout. `third` adds one figure to the readout (Performance: connected; Outreach: came
- *  to you). `children` sit at the foot of the panel (Performance: All numbers). */
-export function NightWeeks({ weeks, third, children }: {
+ *  to you). `children` sit at the foot of the panel (Performance: All numbers). Key it by
+ *  the period so a new pick starts from that period's focus. */
+export function NightWeeks({ weeks, focus, period, third, children }: {
   weeks: SliceBar[];
+  /** The bar lit on arrival (periodBars). */
+  focus?: number | null;
+  /** The chosen period; names it in the heading. */
+  period?: Pick<Period, 'kind' | 'phrase' | 'current'>;
   third?: { label: string; of: (w: SliceBar) => number } | null;
   children?: React.ReactNode;
 }) {
@@ -213,24 +220,39 @@ export function NightWeeks({ weeks, third, children }: {
     weeks.forEach((w, i) => { if (w.wrote > 0 && (best < 0 || w.wrote > weeks[best].wrote)) best = i; });
     return best < 0 ? null : best;
   }, [weeks]);
-  const [sel, setSel] = useState<number>(peakI ?? Math.max(0, weeks.length - 1));
+  // The pick is held by key, not index, and the default is derived on every render, so the
+  // focus is right once the report payload lands (it used to freeze on the first, empty render).
+  const [picked, setPicked] = useState<string | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   if (weeks.length < 2) return null;
+  const pickedI = picked ? weeks.findIndex((w) => w.key === picked) : -1;
+  const lead = focus != null && focus >= 0 && focus < weeks.length ? focus : peakI;
+  const sel = pickedI >= 0 ? pickedI : (lead ?? weeks.length - 1);
+  const setSel = (i: number) => setPicked(weeks[i].key);
   const active = hover ?? sel;
   const cur = weeks[active];
   const peak = Math.max(1, ...weeks.map((w) => w.wrote));
   const top = peak * 1.18;
   const grid = ticks(peak);
   const onEnter = (i: number) => (e: PointerEvent) => { if (e.pointerType === 'mouse') setHover(i); };
-  const line = peakI !== null
-    ? `Your best week for replies was ${weekSpan(weeks[peakI])}: ${fmt(weeks[peakI].wrote)} ${plural(weeks[peakI].wrote, 'person', 'people')}.`
-    : 'Replies and calls, week by week.';
+  const people = (n: number) => `${fmt(n)} ${plural(n, 'person', 'people')}`;
+  const line = (() => {
+    if (period?.kind === 'week' && lead != null) {
+      const w = weeks[lead];
+      const when = period.current ? 'This week so far' : period.phrase.charAt(0).toUpperCase() + period.phrase.slice(1);
+      return `${when}, ${people(w.wrote)} replied${w.calls ? ` and ${fmt(w.calls)} booked a call` : ''}.`;
+    }
+    const scope = period?.kind === 'month' ? ` ${period.phrase}` : '';
+    return peakI !== null
+      ? `Your best week for replies${scope} was ${weekSpan(weeks[peakI])}: ${people(weeks[peakI].wrote)}.`
+      : (scope ? `No replies yet${scope}.` : 'Replies and calls, week by week.');
+  })();
   // Phone: every axis label does not fit, so month changes, every other week counted back
-  // from the latest, and the chosen week.
+  // from the latest, and the chosen week. Seven bars or fewer (a month) all fit.
   const month = (i: number) => i === 0 || weeks[i].start.slice(5, 7) !== weeks[i - 1].start.slice(5, 7);
   const keep = new Set<number>();
   weeks.forEach((_, i) => {
-    if (month(i)) keep.add(i);
+    if (weeks.length <= 7 || month(i)) keep.add(i);
     else if ((weeks.length - 1 - i) % 2 === 0 && !(i > 0 && month(i - 1)) && !(i + 1 < weeks.length && month(i + 1))) keep.add(i);
   });
   keep.add(weeks.length - 1);
@@ -671,7 +693,7 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
   const who = arch ? (nInt === 1 ? 'person' : 'people') : (nInt === 1 ? 'founder' : 'founders');
   const saidWhat = arch ? 'said yes or asked for details' : 'said yes';
   const stages = useMemo(() => funnelStages(ctx, P), [ctx, P]);
-  const weeks = useMemo(() => sliceSeries(ctx), [ctx]);
+  const wk = useMemo(() => periodBars(ctx, (p) => funnelStages(ctx, p).find((x) => x.key === 'replied')?.v ?? 0), [ctx]);
 
   const go = (key: FunnelStage['key']) => {
     const to = key === 'booked' ? 'pn-booked' : key === 'replied' ? 'pn-wrote' : key === 'yes' ? 'cb-pipe-interested' : 'pn-reach';
@@ -736,7 +758,7 @@ export default function PipelineNight({ ctx, log, booked = [], queue, queueCount
             </div>
 
             <Lines ctx={ctx} />
-            <NightWeeks weeks={weeks} third={ctx.payload ? { label: 'Came to you', of: (w) => w.came } : null} />
+            <NightWeeks key={ctx.period.key} weeks={wk.bars} focus={wk.focus} period={ctx.period} third={ctx.payload ? { label: 'Came to you', of: (w) => w.came } : null} />
 
             <section id="cb-pipe-interested" className="pk-sec pn-anchor" aria-labelledby="pn-int-h">
               <ListHead id="pn-int-h" label={`Interested · ${P.eyebrow}`} n={nInt} note={def} />

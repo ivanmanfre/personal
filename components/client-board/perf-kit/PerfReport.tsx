@@ -29,7 +29,7 @@ import { PK_CSS } from './styles';
 import { useNight } from './night';
 import { useFigures, callsLead, reportFigures, fallbackNote, type ReportCtx } from '../report/ReportBlocks';
 import { computeFigures, slices, dm, dayKey, addDays, type Period, type Figures, type CameVia } from '../report/reportModel';
-import { initialsOf, namesLine, sliceSeries, axisLabel } from '../weekResults';
+import { initialsOf, namesLine, periodBars, axisLabel } from '../weekResults';
 import { funnelStages, type FunnelStage } from '../report/PipelineBlocks';
 import { NIGHT_CSS, NightFunnel, NightWeeks } from './pipeline-night';
 
@@ -358,14 +358,18 @@ function AllNumbers({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figu
 function Weeks({ ctx, f, fm, fAll }: { ctx: ReportCtx; f: Figures; fm: Figures | null; fAll: Figures }) {
   const reduce = useReducedMotion();
   const [ref, shown] = useReveal<HTMLDivElement>(0.3);
-  const weeks = useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
+  const wk = useMemo(() => periodBars(ctx), [ctx]);
+  const weeks = wk.bars;
   const peakI = useMemo(() => {
     let best = -1;
     weeks.forEach((w, i) => { if (w.wrote > 0 && (best < 0 || w.wrote > weeks[best].wrote)) best = i; });
     return best < 0 ? null : best;
   }, [weeks]);
-  const [sel, setSel] = useState<number | null>(peakI);
+  const [picked, setPicked] = useState<string | null>(null);
   const [hover, setHover] = useState<number | null>(null);
+  const pickedI = picked ? weeks.findIndex((w) => w.key === picked) : -1;
+  const sel: number | null = pickedI >= 0 ? pickedI : (wk.focus ?? peakI);
+  const setSel = (i: number) => setPicked(weeks[i]?.key ?? null);
   if (weeks.length < 2) return <section className="pk-sec"><AllNumbers ctx={ctx} f={f} fm={fm} fAll={fAll} /></section>;
   const active = hover ?? sel;
   const peak = Math.max(1, ...weeks.map((w) => Math.max(w.reach, w.wrote)));
@@ -739,7 +743,7 @@ function PerfReportNight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
     : (ctx.period.month && lead.phrase === ctx.period.month.phrase ? ctx.period.month : ctx.periods.find((p) => p.kind === 'all') as Period);
   const calls = useMemo(() => callsFor(ctx, truth, lead, scope), [ctx, truth, lead.names.join('|'), scope.key]); // eslint-disable-line react-hooks/exhaustive-deps
   const stages = useMemo(() => stagesNight(ctx, f), [ctx, f]);
-  const weeks = useMemo(() => sliceSeries(ctx).slice(-9), [ctx]);
+  const wk = useMemo(() => periodBars(ctx, (p) => funnelStages(ctx, p).find((x) => x.key === 'replied')?.v ?? 0), [ctx]);
   const conn = ctx.cfg.reach === 'connections';
   return (
     <MotionRoot>
@@ -754,8 +758,8 @@ function PerfReportNight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
         </div>
         <CallsNight rows={calls} />
         <CameNight ctx={ctx} f={f} fm={fm} />
-        {weeks.length >= 2
-          ? <NightWeeks weeks={weeks} third={{ label: conn ? 'Connected' : 'Reached', of: (w) => w.reach }}><AllNumbersNight ctx={ctx} f={f} fm={fm} fAll={fAll} /></NightWeeks>
+        {wk.bars.length >= 2
+          ? <NightWeeks key={ctx.period.key} weeks={wk.bars} focus={wk.focus} period={ctx.period} third={{ label: conn ? 'Connected' : 'Reached', of: (w) => w.reach }}><AllNumbersNight ctx={ctx} f={f} fm={fm} fAll={fAll} /></NightWeeks>
           : <section className="pk-sec"><AllNumbersNight ctx={ctx} f={f} fm={fm} fAll={fAll} /></section>}
         <PostsNight ctx={ctx} f={f} />
         <div className="pk-foot">Calls, replies and connections come from your LinkedIn outreach.</div>
@@ -811,7 +815,7 @@ function PerfReportLight({ ctx, truth }: { ctx: ReportCtx; truth: Truth }) {
         </div>
         <Calls rows={calls} n={lead.n} phrase={lead.phrase} />
         <Came ctx={ctx} f={f} fm={fm} />
-        <Weeks ctx={ctx} f={f} fm={fm} fAll={fAll} />
+        <Weeks key={ctx.period.key} ctx={ctx} f={f} fm={fm} fAll={fAll} />
         <Posts ctx={ctx} f={f} />
         <div className="pk-foot">
           {ctx.period.eyebrow}. Calls booked, replies and connections come from your LinkedIn outreach; the funnel counts the same period. Posts are ranked by the {ctx.cfg.fit[1]} who engaged with them.
