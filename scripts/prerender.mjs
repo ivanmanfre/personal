@@ -337,6 +337,17 @@ process.on('SIGTERM', () => shutdown(143));
           .waitForFunction(() => ((document.getElementById('root') || {}).innerText || '').length > 1000, { timeout: 20000 })
           .catch(() => console.error(`[prerender][${route}] scan body under threshold — baking whatever rendered`));
         await page.waitForTimeout(600);
+        // A comparison is born absent until its narrow public visibility RPC approves
+        // this exact revision. Bake the verified section into the mirror only after
+        // that check settles; a failed or revoked RPC leaves the base report intact.
+        const candidateRevision = await page.evaluate(() =>
+          document.querySelector('[data-comparison-candidate]')?.getAttribute('data-comparison-candidate') || null);
+        if (candidateRevision) {
+          const ready = await page.waitForFunction((revision) =>
+            document.querySelector('[data-comparison-revision]')?.getAttribute('data-comparison-revision') === revision,
+            candidateRevision, { timeout: 8000 }).then(() => true).catch(() => false);
+          console.log(`[prerender][${route}] comparison ${candidateRevision}: ${ready ? 'verified in rendered DOM' : 'withheld after visibility wait'}`);
+        }
       }
 
       // Client boards fetch their row via the get_client_board RPC before useMetadata()

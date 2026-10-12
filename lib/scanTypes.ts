@@ -280,6 +280,7 @@ export interface DtcCommercialEvidence {
 
 export interface DtcGrowth {
   commercial_evidence?: DtcCommercialEvidence;
+  comparison_v1?: import('./dtcComparisonTypes').DtcComparisonV1 | null;
   brand: DtcBrand;
   builder_version?: string | null;
   quality?: { version: string; approved: boolean; reason?: string | null; lead_ref?: string | null };

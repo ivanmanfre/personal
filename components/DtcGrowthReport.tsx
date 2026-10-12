@@ -30,6 +30,8 @@ import './DtcGrowthReport.css';
 import { casesFor, caseUrl } from './riseCases';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
+import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
+import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -1180,6 +1182,8 @@ function CommercialEvidence({ data }: { data: import('../lib/scanTypes').DtcComm
 
 export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const original = report.dtc;
+  const comparison = useDtcComparisonVisibility(scan.company_slug,
+    original?.quality && original.quality.approved !== true ? null : original?.comparison_v1);
   if (!original) return null;
   const d = { ...original };
   // Cause deduplication belongs to the builder, which retains complete evidence membership.
@@ -1500,7 +1504,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
   if (promise) return (
-    <div className="rise-report" style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
+    <div className="rise-report" data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
       <header className="rise-cover">
         <div className="rise-cover-inner">
           <nav className="rise-masthead" aria-label="Main navigation"><a className="rise-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} alt={wordmark} /></a><div className="rise-nav-links"><a href="#report-review" className="rise-nav-active">Your scan</a><a href="#rise-cases">RISE case studies</a></div><a className="rise-nav-invite" href="#rise-conversation" data-cta="header">Let’s talk <span>↗</span></a></nav>
@@ -1562,6 +1566,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} />
           </details> : null}
         </section> : null}
+        <DtcComparisonSection comparison={comparison} />
         <section className="rise-section rise-proof" id="rise-cases"><div className="rise-section-heading"><h2>Work RISE has run</h2><p>Published results from separate client engagements.</p></div><div className="rise-case-grid">{riseCases.map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer"><ScanContextImage src={c.image} alt={`${c.name}, a separate RISE client`} className="rise-case-image" /><div className="rise-case-copy"><strong>{c.name}</strong><span>{c.headline}</span><span className="rise-case-read">Read the case study <b>↗</b></span></div></a>)}</div><a className="rise-source-link" href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer">See all case studies</a></section>
         <section className="rise-closing" id="rise-conversation"><div className="rise-closing-top"><div><h2>Walk through the findings with Mattan.</h2><p>We put the public observations next to your store and ad-account data.</p></div><a href={ctaUrl('close')} data-cta="close" target="_blank" rel="noopener noreferrer" className="rise-booking">30 min with Mattan ↗</a></div>
           <details className="rise-disclosure"><summary>How RISE charges</summary><div className="rise-pricing"><div><h3>Performance Model</h3><p><strong>For qualifying brands.</strong> Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.</p></div><div><h3>Growth Model</h3><p>Base fee plus a percentage of ad spend, senior strategist included.</p></div></div><p>Which model fits your brand gets settled on the call.</p><p>RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.</p></details>
@@ -1572,7 +1577,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   );
 
   return (
-    <div style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', paddingBottom: `calc(${STICKY_BAR_H}px + env(safe-area-inset-bottom))`, ['--cedt-hair' as any]: `${ink}14` } as React.CSSProperties}>
+    <div data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ background: surface, color: ink, fontFamily: bodyFont, minHeight: '100vh', paddingBottom: `calc(${STICKY_BAR_H}px + env(safe-area-inset-bottom))`, ['--cedt-hair' as any]: `${ink}14`, ...(comparison ? { ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont } : {}) } as React.CSSProperties}>
       <style>{`
         @media (prefers-reduced-motion: reduce) {
           .cedt-anim { transition: none !important; }
@@ -2070,6 +2075,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
           ) : null}
         </section>
       ) : null}
+
+      <DtcComparisonSection comparison={comparison} />
 
       {/* Honest thin-read note — only when there is genuinely little to show */}
       {thinRead ? (
