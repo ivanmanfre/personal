@@ -3,10 +3,35 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { fireEvent, render, screen } from '@testing-library/react';
 import fixture from '../dev/scanlab/yananails-story.json';
-import { DtcInsightStory, canShowStory, ShippingExample } from './DtcInsightStory';
+import { DtcInsightStory, canShowStory, ShippingExample, type DtcStoryPresentation } from './DtcInsightStory';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
-const data = { ...fixture.commercial, presentation: fixture.presentation } as DtcCommercialEvidence;
+const data = { ...fixture.commercial, presentation: fixture.presentation } as DtcCommercialEvidence & { presentation: DtcStoryPresentation };
 describe('source-backed story', () => {
+  it('uses the approved standard for other stores without copying Yananails products or advice', () => {
+    const tests = [{ title: 'Show the refill cost with the starter', observation: 'Your starter contains three refillable bottles.', test: 'Compare starter and refill costs beside the buying button.', measure: 'Completed orders and margin per order.', evidence: [{ kind: 'store', source_url: 'https://refill.com/products/starter', quote: 'three refillable bottles' }] }];
+    const standard = { ...data, tests, presentation: { version: 'rise-standard-2026-10-14', domain: 'refill.com', headline: 'From first order to refill.', intro: 'We reviewed your public ads and store pages. Here are the changes worth discussing.', review: { approved: true, checked_at: '2026-10-14T00:00:00Z' }, sections: tests.map((t, i) => ({ test_index: i, headline: t.title, body: t.observation, action: t.test, lane: 'store' })) } } as any;
+    expect(canShowStory(standard)).toBe(true);
+    expect(canShowStory(standard, undefined, 'unrelated.com')).toBe(false);
+    const moved = structuredClone(standard); moved.presentation.requested_domain = 'old-refill.com';
+    expect(canShowStory(moved, undefined, 'old-refill.com')).toBe(true);
+    const html = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{ meta: { status: 'blocked' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(html).toContain('Ready to grow Refill Co with paid ads?');
+    expect(html).toContain('Public ad records');
+    expect(html).not.toContain('all Yananails fiber-gel colours');
+    expect(html).not.toContain('Add Primer + Bonder');
+    expect(html).not.toContain('Free shipping above this amount in Sweden');
+    expect(html).toContain('mattan-method-excerpt.mp4');
+    const zero = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{ meta: { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://facebook.com/ads/library' }, google: { status: 'empty', data: { ads_found: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://adstransparency.google.com/' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(zero.match(/<strong>0<\/strong>/g)).toHaveLength(2);
+    expect(zero).not.toContain('Ad activity could not be verified');
+    const broken = structuredClone(standard); broken.presentation.sections[0].body = 'Unreviewed replacement claim';
+    expect(canShowStory(broken)).toBe(false);
+    expect(canShowStory({ ...standard, presentation: { ...standard.presentation, review: { approved: false } } })).toBe(false);
+    expect(canShowStory({ ...standard, presentation: { ...standard.presentation, sections: [null] } })).toBe(false);
+    const exact = structuredClone(standard); exact.tests[0].observation += ' Source wording – retained.'; exact.presentation.sections[0].body = exact.tests[0].observation;
+    const exactHtml = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={exact} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(exactHtml).toContain('Source wording – retained.');
+  });
   it('requires approved story version, complete evidence and the actual recorded ad destination', () => {
     expect(canShowStory(data, fixture.ads.meta)).toBe(true);
     expect(canShowStory({ ...data, status: 'error' }, fixture.ads.meta)).toBe(false);

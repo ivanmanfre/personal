@@ -9,6 +9,7 @@ import { DtcGrowthReport } from '../DtcGrowthReport';
 import type { ReportJson, Scan } from '../../lib/scanTypes';
 import rodial from './scanlab/rodial-com.json';
 import yananailsStory from './scanlab/yananails-story.json';
+import yananailsStandard from './scanlab/yananails-standard.json';
 import apple from './scanlab/apple-com.json';
 import gopure from './scanlab/gopure-com.json';
 import truly from './scanlab/truly-office-branzio.json';
@@ -20,7 +21,7 @@ import pantherV3 from './scanlab/panther-v3.json';
 // intact, zero empty shells. This is the fixture that proves the fallback contract.
 import pantherV3Degraded from './scanlab/panther-v3-degraded.json';
 
-const FIXTURES: Record<string, any> = { yananails: yananailsStory, rodial, apple, gopure, truly, 'panther-v3': pantherV3, 'panther-v3-degraded': pantherV3Degraded };
+const FIXTURES: Record<string, any> = { 'yananails-standard': yananailsStandard, yananails: yananailsStory, rodial, apple, gopure, truly, 'panther-v3': pantherV3, 'panther-v3-degraded': pantherV3Degraded };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';
@@ -51,6 +52,6 @@ export default function ScanLabPage() {
     );
   }
   const report = { matched_offer: 'dtc_growth', dtc: fixture.dtc } as unknown as ReportJson;
-  const scan = { company_slug: `lab-${fixKey}`, domain: fixKey, status: 'complete' } as unknown as Scan;
+  const scan = { company_slug: `lab-${fixKey}`, domain: fixture.domain || fixKey, status: 'complete' } as unknown as Scan;
   return <Candidate report={report} scan={scan} companyName={fixture.company_name} />;
 }
