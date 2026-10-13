@@ -1,0 +1,551 @@
+{
+  "presentation": {
+    "version": "rise-story-2026-10-14",
+    "headline": "From ad click to checkout.",
+    "intro": "We reviewed your public ads and store. These four changes focus on the path to an order. First: where your colour-swatch ad sends shoppers.",
+    "hero_product": {
+      "name": "Fiber Gel OSCAR",
+      "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/OSCARCOLOR.jpg?v=1782199545",
+      "url": "https://yananails.com/products/fiber-gel-oscar",
+      "price": 359.0
+    },
+    "route": {
+      "test_index": 2,
+      "headline": "Show the colours. Let shoppers choose.",
+      "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OSCAR. A collection link would let shoppers browse the range.",
+      "action": "Try the same ad with a link to the gel collection.",
+      "ad_quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+      "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+      "current": {
+        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
+        "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+        "captured_at": "2026-10-13T22:04:24.465752+00:00"
+      },
+      "proposed": {
+        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-proposed.png",
+        "source_url": "https://yananails.com/collections/gel",
+        "captured_at": "2026-10-13T22:04:25.234765+00:00"
+      }
+    },
+    "pair": {
+      "test_index": 0,
+      "headline": "Make the pair easy to add.",
+      "body": "Your Primer and Bonder pages say the two products are used together. Offer both from the Primer page so shoppers can add the pair in one step.",
+      "products": [
+        {
+          "name": "Primer",
+          "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Primer.jpg?v=1782199542",
+          "url": "https://yananails.com/products/primer",
+          "price": 169.0
+        },
+        {
+          "name": "Bonder",
+          "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Bonder.jpg?v=1779226643",
+          "url": "https://yananails.com/products/bonder",
+          "price": 189.0
+        }
+      ]
+    },
+    "guidance": {
+      "test_index": 1,
+      "headline": "Bring the buying advice up front.",
+      "body": "Your replies to RYAN reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
+      "product": {
+        "name": "Builder Gel RYAN",
+        "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Ryan2.jpg?v=1782199541",
+        "url": "https://yananails.com/products/builder-gel-ryan",
+        "price": 359.0
+      }
+    },
+    "shipping": {
+      "test_index": 3,
+      "headline": "Make free shipping easier to reach.",
+      "body": "Your store offers free shipping above 999 kr in Sweden. Show a relevant add-on when it takes a basket past that amount.",
+      "threshold": 999,
+      "currency": "SEK",
+      "products": [
+        {
+          "name": "Nagellim",
+          "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/tipglue_1.png?v=1787566109",
+          "url": "https://yananails.com/products/nagellim",
+          "price": 89.0
+        },
+        {
+          "name": "MULTI-MIST, Prep & Clean",
+          "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Multi-mist.jpg?v=1782199574",
+          "url": "https://yananails.com/products/multi_mist-prep-clean",
+          "price": 119.0
+        }
+      ]
+    },
+    "review": {
+      "approved": true,
+      "checked_at": "2026-10-13T22:16:30.171176+00:00"
+    }
+  },
+  "commercial": {
+    "tests": [
+      {
+        "test": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+        "title": "Offer Bonder with Primer",
+        "measure": "Sales per visitor to the Primer page. Also check Primer-only orders and returns.",
+        "evidence": [
+          {
+            "kind": "store",
+            "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
+            "source_url": "https://yananails.com/products/primer"
+          },
+          {
+            "kind": "store",
+            "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
+            "source_url": "https://yananails.com/products/bonder"
+          }
+        ],
+        "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
+      },
+      {
+        "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+        "title": "Bring RYAN\u2019s handling advice closer to the buy button",
+        "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+        "evidence": [
+          {
+            "kind": "store",
+            "quote": "flash cura: h\u00e4rda 1-2 sekunder",
+            "source_url": "https://yananails.com/products/builder-gel-ryan"
+          },
+          {
+            "kind": "store",
+            "quote": "Gelen h\u00e4rdas i 120 sekunder",
+            "source_url": "https://yananails.com/products/builder-gel-ryan"
+          }
+        ],
+        "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+      },
+      {
+        "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+        "title": "Send the colour-swatch ad to the gel collection",
+        "measure": "Sales per ad click. Also check order value and returns.",
+        "evidence": [
+          {
+            "kind": "ad",
+            "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+            "source_url": "https://www.facebook.com/ads/library/?id=2169223840696220"
+          },
+          {
+            "kind": "store",
+            "quote": "Fiber Gel OLIVER 359 SEK",
+            "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+          },
+          {
+            "kind": "ad",
+            "quote": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+            "source_url": "https://www.facebook.com/ads/library/?id=1615590163535319"
+          }
+        ],
+        "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+      },
+      {
+        "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+        "title": "Help shoppers reach free shipping",
+        "measure": "Sales per cart visit. Also check completed orders and returns.",
+        "evidence": [
+          {
+            "kind": "store",
+            "quote": "Fri frakt \u00f6ver 999 kr inom Sverige",
+            "source_url": "https://yananails.com/"
+          },
+          {
+            "kind": "store",
+            "quote": "Nagellim 89 SEK",
+            "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+          },
+          {
+            "kind": "store",
+            "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+            "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+          }
+        ],
+        "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+      }
+    ],
+    "reason": null,
+    "status": "present",
+    "version": "commercial-2026-10-11",
+    "journeys": [
+      {
+        "ad_url": "https://www.facebook.com/ads/library/?id=4517074168554599",
+        "ad_excerpt": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar",
+        "observed_at": "2026-10-13T21:29:54.081153+00:00",
+        "destinations": [
+          "https://yananails.com/",
+          "https://yananails.com/products/builder-gel-philip",
+          "https://yananails.com/products/builder-gel-ryan",
+          "https://yananails.com/collections/nail-tips",
+          "https://yananails.com/products/builder-gel-anton",
+          "https://yananails.com/collections/gel/products/builder-gel-vincent"
+        ]
+      },
+      {
+        "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+        "ad_excerpt": "Swatchar alla yananails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r yananails",
+        "observed_at": "2026-10-13T21:29:54.081153+00:00",
+        "destinations": [
+          "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+        ]
+      },
+      {
+        "ad_url": "https://www.facebook.com/ads/library/?id=1615590163535319",
+        "ad_excerpt": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+        "observed_at": "2026-10-13T21:29:54.081153+00:00",
+        "destinations": [
+          "https://yananails.com/collections/gel",
+          "https://yananails.com/collections/nail-tips/products/nagellim",
+          "https://yananails.com/collections/nail-tips/products/almond-x-small-nageltippar",
+          "https://yananails.com/collections/nail-tips/products/square-medium-flat-tippar",
+          "https://yananails.com/collections/nail-tips",
+          "https://yananails.com/collections/nail-tips/products/coffin-small-tippar",
+          "https://yananails.com/collections/nail-tips/products/almond-small-tippar"
+        ]
+      }
+    ],
+    "checked_at": "2026-10-13T21:31:02.073637+00:00",
+    "screenshot": null
+  },
+  "ads": {
+    "meta": {
+      "data": {
+        "active_ad_count": 3
+      },
+      "status": "present",
+      "page_id": "1019588207902909",
+      "page_name": null,
+      "fetched_at": "2026-10-13T21:29:54.081249+00:00",
+      "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Yananails&search_type=keyword_unordered&media_type=all",
+      "resolved_via": "homepage_link",
+      "declared_page_rejected": null
+    },
+    "google": {
+      "data": {
+        "ads_found": 9
+      },
+      "status": "present",
+      "fetched_at": "2026-10-08T08:05:55.461215+00:00",
+      "source_url": "https://adstransparency.google.com/?region=SE&q=yananails.com"
+    }
+  },
+  "company_name": "Yananails",
+  "dtc": {
+    "brand": {
+      "ink_hex": "#111111",
+      "is_dark": false,
+      "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+      "wordmark": "RISE DTC",
+      "font_body": "Manrope",
+      "accent_hex": "#ffc71d",
+      "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+      "surface_hex": "#ffffff",
+      "font_heading": "Sora",
+      "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+    },
+    "builder_version": "dtc-2026-10-11b",
+    "quality": {
+      "reason": null,
+      "version": "rise-quality-2026-09-30",
+      "approved": true,
+      "lead_ref": "second_order.0",
+      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel PHILIP. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
+    },
+    "drop_off": {
+      "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
+      "items": []
+    },
+    "second_order": {
+      "note": "Your repeat-order rate isn't public, so we read what your store gives a first-time buyer to come back for.",
+      "items": [
+        {
+          "id": "no_reorder_path",
+          "fix": "Test a subscribe-and-save option on Builder Gel PHILIP, with a small discount on each repeat delivery.",
+          "lever": "retention_path",
+          "title": "No subscribe or refill option on Builder Gel PHILIP",
+          "detail": "Builder Gel PHILIP is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
+          "product": {
+            "url": "https://yananails.com/products/builder-gel-philip",
+            "price": 359.0,
+            "title": "Builder Gel PHILIP",
+            "currency": "SEK",
+            "image_url": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/PHILIP.png?v=1782199562"
+          },
+          "evidence": {
+            "label": "Subscribe option on the replenishable products checked",
+            "value": "None on these 2 replenishable product records: Builder Gel PHILIP; Nagellim",
+            "source_url": "https://yananails.com/products/builder-gel-philip"
+          },
+          "verified": {
+            "ok": true,
+            "quote": "Builder Gel PHILIP: none",
+            "source_url": "data",
+            "judge_version": "claims-2026-10-01t"
+          }
+        }
+      ]
+    },
+    "shippable": {
+      "ok": true,
+      "reason": null,
+      "gap_findings": 0,
+      "drop_off_items": 0,
+      "rise_gap_findings": 0,
+      "second_order_items": 1
+    },
+    "commercial_evidence": {
+      "tests": [
+        {
+          "test": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+          "title": "Offer Bonder with Primer",
+          "measure": "Sales per visitor to the Primer page. Also check Primer-only orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
+              "source_url": "https://yananails.com/products/primer"
+            },
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
+              "source_url": "https://yananails.com/products/bonder"
+            }
+          ],
+          "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
+        },
+        {
+          "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+          "title": "Bring RYAN\u2019s handling advice closer to the buy button",
+          "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "flash cura: h\u00e4rda 1-2 sekunder",
+              "source_url": "https://yananails.com/products/builder-gel-ryan"
+            },
+            {
+              "kind": "store",
+              "quote": "Gelen h\u00e4rdas i 120 sekunder",
+              "source_url": "https://yananails.com/products/builder-gel-ryan"
+            }
+          ],
+          "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+        },
+        {
+          "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+          "title": "Send the colour-swatch ad to the gel collection",
+          "measure": "Sales per ad click. Also check order value and returns.",
+          "evidence": [
+            {
+              "kind": "ad",
+              "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=2169223840696220"
+            },
+            {
+              "kind": "store",
+              "quote": "Fiber Gel OLIVER 359 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "ad",
+              "quote": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=1615590163535319"
+            }
+          ],
+          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+        },
+        {
+          "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+          "title": "Help shoppers reach free shipping",
+          "measure": "Sales per cart visit. Also check completed orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Fri frakt \u00f6ver 999 kr inom Sverige",
+              "source_url": "https://yananails.com/"
+            },
+            {
+              "kind": "store",
+              "quote": "Nagellim 89 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "store",
+              "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            }
+          ],
+          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+        }
+      ],
+      "reason": null,
+      "status": "present",
+      "version": "commercial-2026-10-11",
+      "journeys": [
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=4517074168554599",
+          "ad_excerpt": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/",
+            "https://yananails.com/products/builder-gel-philip",
+            "https://yananails.com/products/builder-gel-ryan",
+            "https://yananails.com/collections/nail-tips",
+            "https://yananails.com/products/builder-gel-anton",
+            "https://yananails.com/collections/gel/products/builder-gel-vincent"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+          "ad_excerpt": "Swatchar alla yananails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r yananails",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=1615590163535319",
+          "ad_excerpt": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/collections/gel",
+            "https://yananails.com/collections/nail-tips/products/nagellim",
+            "https://yananails.com/collections/nail-tips/products/almond-x-small-nageltippar",
+            "https://yananails.com/collections/nail-tips/products/square-medium-flat-tippar",
+            "https://yananails.com/collections/nail-tips",
+            "https://yananails.com/collections/nail-tips/products/coffin-small-tippar",
+            "https://yananails.com/collections/nail-tips/products/almond-small-tippar"
+          ]
+        }
+      ],
+      "checked_at": "2026-10-13T21:31:02.073637+00:00",
+      "screenshot": null,
+      "presentation": {
+        "version": "rise-story-2026-10-14",
+        "headline": "From ad click to checkout.",
+        "intro": "We reviewed your public ads and store. These four changes focus on the path to an order. First: where your colour-swatch ad sends shoppers.",
+        "hero_product": {
+          "name": "Fiber Gel OSCAR",
+          "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/OSCARCOLOR.jpg?v=1782199545",
+          "url": "https://yananails.com/products/fiber-gel-oscar",
+          "price": 359.0
+        },
+        "route": {
+          "test_index": 2,
+          "headline": "Show the colours. Let shoppers choose.",
+          "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OSCAR. A collection link would let shoppers browse the range.",
+          "action": "Try the same ad with a link to the gel collection.",
+          "ad_quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+          "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+          "current": {
+            "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
+            "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+            "captured_at": "2026-10-13T22:04:24.465752+00:00"
+          },
+          "proposed": {
+            "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-proposed.png",
+            "source_url": "https://yananails.com/collections/gel",
+            "captured_at": "2026-10-13T22:04:25.234765+00:00"
+          }
+        },
+        "pair": {
+          "test_index": 0,
+          "headline": "Make the pair easy to add.",
+          "body": "Your Primer and Bonder pages say the two products are used together. Offer both from the Primer page so shoppers can add the pair in one step.",
+          "products": [
+            {
+              "name": "Primer",
+              "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Primer.jpg?v=1782199542",
+              "url": "https://yananails.com/products/primer",
+              "price": 169.0
+            },
+            {
+              "name": "Bonder",
+              "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Bonder.jpg?v=1779226643",
+              "url": "https://yananails.com/products/bonder",
+              "price": 189.0
+            }
+          ]
+        },
+        "guidance": {
+          "test_index": 1,
+          "headline": "Bring the buying advice up front.",
+          "body": "Your replies to RYAN reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
+          "product": {
+            "name": "Builder Gel RYAN",
+            "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Ryan2.jpg?v=1782199541",
+            "url": "https://yananails.com/products/builder-gel-ryan",
+            "price": 359.0
+          }
+        },
+        "shipping": {
+          "test_index": 3,
+          "headline": "Make free shipping easier to reach.",
+          "body": "Your store offers free shipping above 999 kr in Sweden. Show a relevant add-on when it takes a basket past that amount.",
+          "threshold": 999,
+          "currency": "SEK",
+          "products": [
+            {
+              "name": "Nagellim",
+              "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/tipglue_1.png?v=1787566109",
+              "url": "https://yananails.com/products/nagellim",
+              "price": 89.0
+            },
+            {
+              "name": "MULTI-MIST, Prep & Clean",
+              "image": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/Multi-mist.jpg?v=1782199574",
+              "url": "https://yananails.com/products/multi_mist-prep-clean",
+              "price": 119.0
+            }
+          ]
+        },
+        "review": {
+          "approved": true,
+          "checked_at": "2026-10-13T22:16:30.171176+00:00"
+        }
+      }
+    },
+    "ads": {
+      "meta": {
+        "data": {
+          "active_ad_count": 3
+        },
+        "status": "present",
+        "page_id": "1019588207902909",
+        "page_name": null,
+        "fetched_at": "2026-10-13T21:29:54.081249+00:00",
+        "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Yananails&search_type=keyword_unordered&media_type=all",
+        "resolved_via": "homepage_link",
+        "declared_page_rejected": null
+      },
+      "google": {
+        "data": {
+          "ads_found": 9
+        },
+        "status": "present",
+        "fetched_at": "2026-10-08T08:05:55.461215+00:00",
+        "source_url": "https://adstransparency.google.com/?region=SE&q=yananails.com"
+      }
+    },
+    "completed_at": "2026-10-13T21:39:49.518000+00:00",
+    "readiness": {
+      "version": "rise-deliverable-2026-10-11",
+      "review_model": "claude-sonnet-5-5",
+      "state": "ready",
+      "reasons": [],
+      "review": {
+        "business_specific": true,
+        "actionable": true,
+        "coherent": true,
+        "citations_complete": true,
+        "readable": true,
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a PHILIP refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
+      },
+      "checked_at": "2026-10-13T21:39:49.517343+00:00"
+    }
+  }
+}
