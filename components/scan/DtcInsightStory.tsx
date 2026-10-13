@@ -63,7 +63,7 @@ export function DtcInsightStory({ companyName, domain, data, ads, bookingUrl, lo
   useEffect(() => {
     let cancelled = false, context: any, media: any, observer: ResizeObserver | undefined, timer: ReturnType<typeof setTimeout>;
     const node = root.current;
-    if (!node || typeof window.matchMedia !== 'function') return;
+    if (!node || typeof window.matchMedia !== 'function' || (window as Window & { __RISE_PRERENDER__?: boolean }).__RISE_PRERENDER__) return;
     Promise.all([import('gsap'), import('gsap/ScrollTrigger'), import('gsap/ScrollSmoother')]).then(([g, t, smooth]) => {
       if (cancelled || !wrapper.current || !content.current) return;
       const gsap = g.gsap, ScrollTrigger = t.ScrollTrigger, ScrollSmoother = smooth.ScrollSmoother;
