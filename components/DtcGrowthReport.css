@@ -277,35 +277,66 @@
 }
 @media(prefers-reduced-motion:reduce) { .rise-report * { transition:none!important; scroll-behavior:auto!important; } }
 
-/* Commercial research: a visible route, followed by evidence-backed experiments. */
-.rise-commercial .rise-section-heading { max-width: 800px; }
-.rise-ad-journey { display:grid; grid-template-columns:1fr 1fr; gap:32px; padding:28px; margin:28px 0; border:1px solid #d9d4c5; background:#faf8f0; }
-.rise-ad-journey blockquote { margin:12px 0 18px; font-size:21px; line-height:1.55; }
-.rise-commercial a { text-decoration:underline; text-underline-offset:4px; overflow-wrap:anywhere; }
-.rise-route-link { display:block; margin:12px 0; font-weight:700; }
-.rise-commercial .rise-evidence-label { display:block; font-size:12px; line-height:1.5; font-weight:750; letter-spacing:.06em; text-transform:uppercase; color:#685c37; }
-.rise-commercial .rise-research-note { font-size:14px; line-height:1.65; color:#625f54; }
-.rise-tests { display:grid; gap:40px; margin-top:32px; }
-.rise-test { padding-top:28px; border-top:1px solid #c9c5bb; }
-.rise-test-title { display:flex; gap:20px; align-items:baseline; }
-.rise-test-number { flex-shrink:0; white-space:nowrap; font-family:Sora,sans-serif; font-size:20px; color:#8a701d; }
-.rise-test-title h3 { margin:0; font-family:Sora,sans-serif; font-size:clamp(23px,2.5vw,30px); line-height:1.3; max-width:900px; }
-.rise-commercial .rise-test-observation { max-width:900px; font-size:18px; line-height:1.75; margin:20px 0; }
-.rise-test-plan { display:grid; grid-template-columns:1.5fr 1fr; gap:32px; padding:24px; background:#fff5d1; }
-.rise-test-plan h4 { font-size:14px; margin:0 0 10px; }
-.rise-test-plan p { font-size:17px; line-height:1.75; margin:0; }
-.rise-test-sources { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:20px; margin-top:22px; }
-.rise-test-sources blockquote { margin:0; padding:0 0 0 16px; border-left:2px solid #d9d4c5; }
+/* Recommendations lead. Sources remain available without interrupting the read. */
+.rise-report [id] { scroll-margin-top:32px; }
+.rise-commercial .rise-section-heading { max-width:760px; margin:0 auto 28px; }
+.rise-commercial .rise-chapter { font-size:13px; }
+.rise-commercial .rise-section-heading h2 { font-size:clamp(28px,3vw,38px); }
+.rise-tests { display:grid; gap:28px; max-width:860px; margin:0 auto; }
+.rise-test { padding:32px; border:1px solid #e6e3da; border-radius:16px; background:#fff; }
+.rise-test-title { display:flex; gap:18px; align-items:flex-start; }
+.rise-test-number { display:grid; place-items:center; width:38px; height:38px; flex-shrink:0; border-radius:50%; background:#ffc71d; color:#111; font-size:13px; font-weight:700; }
+.rise-test-title>div { min-width:0; }
+.rise-test-title h3 { margin:0; font-size:27px; line-height:1.3; letter-spacing:-.025em; text-wrap:pretty; }
+.rise-commercial .rise-test-subtitle { margin:8px 0 0; font-size:18px; line-height:1.5; color:#555; }
+.rise-commercial .rise-test-observation { font-size:17px; line-height:1.65; margin:24px 0; max-width:68ch; color:#333; }
+.rise-test-plan { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:24px; padding-top:22px; border-top:1px solid #e6e3da; }
+.rise-test-plan h4 { font-size:13px; font-weight:700; margin:0 0 12px; color:#555; }
+.rise-test-plan p,.rise-test-steps dd { font-size:16px; line-height:1.65; margin:0; }
+.rise-test-steps { margin:0; }
+.rise-test-steps>div+div { margin-top:16px; }
+.rise-test-steps dt { font-size:13px; font-weight:700; margin-bottom:4px; }
+.rise-test-measure { background:#faf8f0; border-radius:10px; padding:18px; }
+.rise-test-evidence { margin-top:22px; border-top:1px solid #e6e3da; padding-top:14px; font-size:14px; }
+.rise-test-evidence summary { cursor:pointer; color:#555; padding:4px 0; font-weight:600; }
+.rise-test-sources { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px; margin-top:20px; }
+.rise-test-sources blockquote { margin:0; padding:0 0 0 14px; border-left:2px solid #ffc71d; }
 .rise-test-sources p { font-size:15px; line-height:1.6; margin:8px 0; }
-.rise-test-sources a { font-size:13px; }
+.rise-test-sources a { font-size:13px; overflow-wrap:anywhere; }
 .rise-test-sources small { display:block; color:#625f54; font-size:12px; line-height:1.6; margin-top:8px; }
-.rise-commercial-capture { margin:24px 0; }
+.rise-commercial .rise-evidence-label { font-size:12px; line-height:1.5; font-weight:700; color:#555; }
+.rise-journey-evidence { max-width:860px; margin:28px auto 0; }
+.rise-ad-journey { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; padding:24px; margin-top:20px; border:1px solid #e6e3da; border-radius:12px; background:#faf8f0; }
+.rise-commercial .rise-research-note { font-size:14px; line-height:1.6; color:#555; margin-top:16px; }
+.rise-ad-journey blockquote { margin:12px 0; font-size:17px; line-height:1.6; }
+.rise-ad-journey a { font-size:14px; overflow-wrap:anywhere; }
+.rise-route-link { display:block; margin:10px 0; }
+.rise-commercial-capture { max-width:860px; margin:28px auto; }
 .rise-commercial-capture img { width:100%; max-height:520px; object-fit:contain; background:#f4f3ef; }
 .rise-commercial-capture figcaption { display:flex; justify-content:space-between; gap:16px; margin-top:12px; font-size:13px; color:#625f54; }
+.rise-closing { background:#171717; color:#fff; padding:42px; border-radius:20px; margin:48px 0 64px; }
+.rise-closing-top { display:grid; grid-template-columns:180px minmax(0,1fr); align-items:center; gap:36px; max-width:100%; }
+.rise-mattan-photo { width:180px; height:225px; object-fit:cover; object-position:center 20%; border-radius:12px; }
+.rise-closing .rise-closing-name { font-size:13px; margin:0 0 14px; color:#ccc; }
+.rise-closing h2 { font-size:clamp(26px,3vw,36px); max-width:24ch; }
+.rise-closing-top p { font-size:17px; line-height:1.6; margin:16px 0 22px; }
+.rise-closing .rise-disclosure { border-color:#444; color:#ccc; max-width:100%; margin-top:30px; }
+.rise-closing a:focus-visible,.rise-closing summary:focus-visible,.rise-footer summary:focus-visible { outline-color:#ffc71d; }
+.rise-footer summary { cursor:pointer; font-size:14px; }
+.rise-footer details p { margin-top:14px; font-size:14px; }
 @media(max-width:640px) {
- .rise-ad-journey,.rise-test-plan { grid-template-columns:1fr; gap:24px; padding:20px; }
+ .rise-test { padding:22px 18px; border-radius:12px; }
  .rise-test-title { gap:12px; }
- .rise-tests { gap:32px; }
- .rise-test-sources { grid-template-columns:1fr; }
+ .rise-test-number { width:30px; height:30px; font-size:12px; }
+ .rise-test-title h3 { font-size:22px; }
+ .rise-commercial .rise-test-subtitle { font-size:16px; }
+ .rise-commercial .rise-test-observation { font-size:16px; margin:20px 0; }
+ .rise-test-plan,.rise-ad-journey { grid-template-columns:minmax(0,1fr); gap:18px; }
+ .rise-test-measure { padding:16px; }
+ .rise-test-sources { grid-template-columns:minmax(0,1fr); }
  .rise-commercial-capture figcaption { flex-direction:column; gap:8px; }
+ .rise-closing { padding:26px 22px; margin:32px 0 44px; }
+ .rise-closing-top { grid-template-columns:minmax(0,1fr); gap:22px; }
+ .rise-mattan-photo { width:120px; height:145px; }
+ .rise-closing .rise-booking { width:100%; justify-content:center; padding:16px 20px; }
 }

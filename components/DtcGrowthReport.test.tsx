@@ -1294,7 +1294,6 @@ describe('evidence-first scan repair', () => {
     const d = inventoryFixture();
     const html = renderDtc(d, 'Example');
     const hero = html.slice(html.indexOf('data-promise-hero'), html.indexOf('<main'));
-    expect(hero).toContain('Storefront context. Findings and source evidence follow below.');
     expect(hero).toContain('round.jpg');
     expect(hero).toContain('home-proof.png?captured_at=');
     const homeFigure = hero.match(/<figure class="rise-context-home">([\s\S]*?)<\/figure>/)![1];
@@ -1436,5 +1435,39 @@ describe('commercial experiments stay separate from verified defects', () => {
     const heldRebuild = { ...d, commercial_evidence: data, preserved_public_report: true,
       quality: { version: 'rise-quality-2026-09-30', approved: false }, shippable: { ok: false } };
     expect(renderDtc(heldRebuild, 'Example')).toEqual(html);
+  });
+});
+
+
+describe('RISE report reading flow', () => {
+  it('leads with recommendations while preserving expandable sources and labelled test steps', () => {
+    const d = loadFixture('tina-new-contract.json').dtc;
+    const html = renderDtc({ ...d, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11',
+      tests: [{ title: 'Primer page: offer the Bonder with it', observation: 'The products are used together.',
+        test: 'Control: current Primer page. Variant: add both products with one button. Split traffic 50/50.',
+        measure: 'Revenue per visitor. Guardrails: returns.',
+        evidence: [{ kind: 'store', source_url: 'https://example.com/products/primer', quote: 'Use with Bonder' }] }],
+      journeys: [{ ad_url: 'https://www.facebook.com/ads/library/?id=123', ad_excerpt: 'See all colours', destinations: ['https://example.com/products/gel'] }],
+    } } as any, 'Example');
+    const section = html.slice(html.indexOf('data-commercial-evidence'), html.indexOf('data-promise-section'));
+    expect(section.indexOf('class="rise-test"')).toBeLessThan(section.indexOf('class="rise-ad-journey"'));
+    expect(section).toContain('<h3>Primer page</h3>');
+    expect(section).toContain('offer the Bonder with it');
+    expect(section).toMatch(/<details[^>]*class="rise-test-evidence"/);
+    expect(section).toContain('Use with Bonder');
+    expect(section).toContain('https://example.com/products/primer');
+    expect(section).toContain('Current page');
+    expect(section).toContain('Try this');
+    expect(section).not.toContain('Control:');
+    expect(section).not.toContain('Variant:');
+    expect(section).toContain('Split traffic 50/50.');
+    expect(section).toContain('returns.');
+  });
+  it('puts Mattan and the booking link together at the closing CTA', () => {
+    const html = renderDtc(loadFixture('tina-new-contract.json').dtc, 'Example');
+    const closing = html.slice(html.indexOf('id="rise-conversation"'), html.indexOf('</main>'));
+    expect(closing).toContain('alt="Mattan Danino"');
+    expect(closing).toContain(MATTAN_PHOTO);
+    expect(closing).toContain('data-cta="close"');
   });
 });
