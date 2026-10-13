@@ -271,6 +271,7 @@ export interface DtcCatalogItem {
 export interface DtcCommercialEvidence {
   status: 'present' | 'error' | 'absent';
   version: string;
+  presentation?: import('../components/scan/DtcInsightStory').DtcStoryPresentation;
   checked_at?: string;
   tests: { title: string; observation: string; test: string; measure: string;
     evidence: { source_url: string; quote: string; kind: 'store' | 'ad' | 'reference' }[] }[];
