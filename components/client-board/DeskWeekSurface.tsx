@@ -52,6 +52,7 @@ import {
 import { FeedPreview, FunnelChip, fmtDay, clientTz, boardZone } from '../ClientBoardPage';
 import type { Board, QueueItem, Stage, AltAngle, PoolDraft, CalendarItem, PerfPost } from '../ClientBoardPage';
 import { ReportHome, type ReportCtx } from './report/ReportBlocks';
+import { srcLabelClient } from './clientSourceLabel';
 import { WeekResultsPlate } from './WeekResultsPlate';
 import { useNight } from './perf-kit/night';
 import { MotionRoot } from './perf-kit/motion';
@@ -157,10 +158,10 @@ function provenanceOf(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { l
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*[^-]*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*[^/]*\/\/\s*/i, '').trim();
       return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: ((sd.quote_en ?? '').trim() && (!sd.quote_en_src || sd.quote_en_src === sd.quote) ? (sd.quote_en ?? '').trim() : sd.quote) };
     }
-    if (sd.label && !CURATION_FALLBACK.test(sd.label)) return { label: sd.label, quote: null };
+    if (sd.label && !CURATION_FALLBACK.test(sd.label) && srcLabelClient(sd.label)) return { label: srcLabelClient(sd.label), quote: null };
     return null;
   }
-  if (q.source_label && !CURATION_FALLBACK.test(q.source_label)) return { label: q.source_label, quote: null };
+  if (q.source_label && !CURATION_FALLBACK.test(q.source_label) && srcLabelClient(q.source_label)) return { label: srcLabelClient(q.source_label), quote: null };
   return null;
 }
 /** Long weekday for a bare ISO date. */

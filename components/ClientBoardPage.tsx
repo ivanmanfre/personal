@@ -23,6 +23,7 @@ import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import PostSourceContext from './client-board/PostSourceContext';
+import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
 import OutreachTopOfPanel, {
@@ -1100,25 +1101,6 @@ function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url' | 'image_urls' | 'lm_l
 
 /** Live boards: pipeline source labels rendered in client vocabulary. Labels not in the
  *  map pass through as-is; internal-only labels map to nothing rather than leak. */
-const SOURCE_LABEL_CLIENT: Record<string, string> = {
-  // Honest, concrete labels only — never a vague "Picked by Ivan". Call-grounded and
-  // launch/own-post posts carry richer provenance via source_detail (see sourceChip).
-  'Hand-picked': 'RISE DTC content strategy',
-  'From your sales calls': 'From your sales call',
-  'Needs your client material': 'Needs a client story from you',
-};
-/** Operator notes that leaked into source labels (goal-run ids, ballots, rebuild notes,
- *  review stamps). The client sees no source line for these; other labels keep only their
- *  readable head (before the first "(", ";" or " - "), dropping raw links and run notes. */
-const INTERNAL_SOURCE_LABEL = /goal-run|ballot|ivan-directed|per ivan|picked by ivan|tournament|elevation run|inbox selection|top-performer mining|\bbrief \d{4}-\d{2}-\d{2}/i;
-function srcLabelClient(label?: string): string {
-  if (!label) return '';
-  if (SOURCE_LABEL_CLIENT[label]) return SOURCE_LABEL_CLIENT[label];
-  if (INTERNAL_SOURCE_LABEL.test(label)) return '';
-  if (/^format adapted from a post by/i.test(label)) return "Format adapted from another creator's post";
-  return label.split(/\s\(|;\s|\s-\s/)[0].trim();
-}
-
 /** Inline count-up (logic mirrored from dashboard-v2 useCountUp — not imported across
  *  the client/ops context boundary). Respects prefers-reduced-motion. */
 function useCountUp(target: number, duration = 1100): string {

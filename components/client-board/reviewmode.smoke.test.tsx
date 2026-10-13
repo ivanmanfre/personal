@@ -50,9 +50,10 @@ describe('DetailModal review mode', () => {
     const html = renderToStaticMarkup(<DetailModal item={item} board={BOARD} accent="#3562FF" stage="review"
       onClose={() => {}} onApprove={() => {}} isLive reviewMode act={noopAct} slug="arch-agency" />);
     expect(html.indexOf('data-post-source')).toBeLessThan(html.indexOf('The complete post body.'));
-    expect(html.match(/Why this matters to the buyer\./g)).toHaveLength(1);
     expect(html).toContain('href="https://example.com/original"');
-    expect(html).toContain('The figure is self-reported.');
+    // Explanation and claim boundary are internal review notes: never on the client panel.
+    expect(html).not.toContain('Why this matters to the buyer.');
+    expect(html).not.toContain('The figure is self-reported.');
   });
   it('live + review_mode: approve bar and request-changes render', () => {
     const html = render({ isLive: true, reviewMode: true });

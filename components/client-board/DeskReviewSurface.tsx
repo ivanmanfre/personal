@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import PostSourceContext from './PostSourceContext';
+import { srcLabelClient } from './clientSourceLabel';
 import ScheduleWeek from './ScheduleWeek';
 
 /** Word-boundary truncation for list rows: the fold is real (string level), the full
@@ -342,9 +343,9 @@ function sourceChipLocal(q: Pick<QueueItem, 'source_detail' | 'source_label'>): 
       return { label: who ? `${sd.label || 'From your sales call'} · ${who}` : (sd.label || 'From your sales call'), quote: ((sd.quote_en ?? '').trim() && (!sd.quote_en_src || sd.quote_en_src === sd.quote) ? (sd.quote_en ?? '').trim() : sd.quote), meta };
     }
     if (sd.kind === 'strategy') return null;
-    return { label: sd.label || q.source_label || '', quote: null, meta };
+    return { label: srcLabelClient(sd.label) || srcLabelClient(q.source_label), quote: null, meta };
   }
-  if (q.source_label) return { label: q.source_label, quote: null };
+  if (q.source_label) return { label: srcLabelClient(q.source_label), quote: null };
   return null;
 }
 
@@ -1026,7 +1027,7 @@ export default function DeskReviewSurface({
         const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
         return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>Goes out {day}, {time} {boardZone().label}</div>;
       })()}
-      {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || q.source_label} quote={src?.quote} date={src?.meta} />}
+      {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || srcLabelClient(q.source_label)} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
           size, its grey ink, its head, its action bar. */}
