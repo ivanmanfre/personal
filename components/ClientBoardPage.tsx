@@ -1103,9 +1103,16 @@ const SOURCE_LABEL_CLIENT: Record<string, string> = {
   'From your sales calls': 'From your sales call',
   'Needs your client material': 'Needs a client story from you',
 };
+/** Operator notes that leaked into source labels (goal-run ids, ballots, rebuild notes,
+ *  review stamps). The client sees no source line for these; other labels keep only their
+ *  readable head (before the first "(", ";" or " - "), dropping raw links and run notes. */
+const INTERNAL_SOURCE_LABEL = /goal-run|ballot|ivan-directed|per ivan|picked by ivan|tournament|elevation run|inbox selection|top-performer mining|\bbrief \d{4}-\d{2}-\d{2}/i;
 function srcLabelClient(label?: string): string {
   if (!label) return '';
-  return SOURCE_LABEL_CLIENT[label] ?? label;
+  if (SOURCE_LABEL_CLIENT[label]) return SOURCE_LABEL_CLIENT[label];
+  if (INTERNAL_SOURCE_LABEL.test(label)) return '';
+  if (/^format adapted from a post by/i.test(label)) return "Format adapted from another creator's post";
+  return label.split(/\s\(|;\s|\s-\s/)[0].trim();
 }
 
 /** Inline count-up (logic mirrored from dashboard-v2 useCountUp — not imported across
@@ -1671,7 +1678,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
         <div className="px-5 pb-6 sm:px-6">
           <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{idea.title}</h3>
           {idea.source_label && (
-            <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>{idea.source_label}</div>
+            <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>{srcLabelClient(idea.source_label)}</div>
           )}
           {live && editing ? (
             <div className="mt-3">
@@ -1723,7 +1730,7 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
                 {idea.source_label && (
                   <span className="flex flex-col">
                     <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: FAINT }}>source</span>
-                    <span className="text-[12.5px] font-medium" style={{ color: INK }}>{idea.source_label}</span>
+                    <span className="text-[12.5px] font-medium" style={{ color: INK }}>{srcLabelClient(idea.source_label)}</span>
                   </span>
                 )}
                 {idea.pillar && (
@@ -3938,7 +3945,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
-          {isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || item.source_label} quote={detailChip?.quote} date={detailChip?.meta} />}
+          {isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />}
           <LmResourceBlock gate={item.lm_gate} accent={accent} />
           {/* Content preview / edit */}
           <div className="min-w-0">
