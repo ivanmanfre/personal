@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { fireEvent, render, screen } from '@testing-library/react';
 import fixture from '../dev/scanlab/yananails-story.json';
-import { DtcInsightStory, canShowStory, ShippingExample } from './DtcInsightStory';
+import { DtcInsightStory, canShowStory, ShippingExample, type DtcStoryPresentation } from './DtcInsightStory';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
-const data = { ...fixture.commercial, presentation: fixture.presentation } as DtcCommercialEvidence;
+const data = { ...fixture.commercial, presentation: fixture.presentation } as DtcCommercialEvidence & { presentation: DtcStoryPresentation };
 describe('source-backed story', () => {
   it('uses the approved standard for other stores without copying Yananails products or advice', () => {
     const tests = [{ title: 'Show the refill cost with the starter', observation: 'Your starter contains three refillable bottles.', test: 'Compare starter and refill costs beside the buying button.', measure: 'Completed orders and margin per order.', evidence: [{ kind: 'store', source_url: 'https://refill.com/products/starter', quote: 'three refillable bottles' }] }];
