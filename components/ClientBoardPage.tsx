@@ -155,6 +155,8 @@ interface SourceDetail {
   /** Day the topic entered the idea bank (YYYY-MM-DD, client_ideas.created_at). */
   sourced_at?: string | null;
   quote?: string | null;
+  /** English version of `quote` when the call was not in English (ARCH calls are in Croatian). */
+  quote_en?: string | null;
   lm_ref?: string | null;
 }
 interface QueueItem {
@@ -1020,7 +1022,7 @@ function sourceChip(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { lab
     ].filter(Boolean).join(' · ') || null;
     if (sd.kind === 'call') {
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*(&[^-]*)?-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
-      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote, meta };
+      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote_en?.trim() || sd.quote, meta };
     }
     // 'strategy' is an editorial category, NOT a provenance — never render it as a source
     // chip (it would read like "this came from X" next to the real call / own-post chips).
