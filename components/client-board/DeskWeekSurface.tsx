@@ -155,7 +155,7 @@ function provenanceOf(q: Pick<QueueItem, 'source_detail' | 'source_label'>): { l
     if (sd.kind === 'strategy') return null;
     if (sd.kind === 'call') {
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*[^-]*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*[^/]*\/\/\s*/i, '').trim();
-      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote };
+      return { label: who ? `From your sales call · ${who}` : (sd.label || 'From your sales call'), quote: ((sd.quote_en ?? '').trim() && (!sd.quote_en_src || sd.quote_en_src === sd.quote) ? (sd.quote_en ?? '').trim() : sd.quote) };
     }
     if (sd.label && !CURATION_FALLBACK.test(sd.label)) return { label: sd.label, quote: null };
     return null;

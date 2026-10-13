@@ -339,7 +339,7 @@ function sourceChipLocal(q: Pick<QueueItem, 'source_detail' | 'source_label'>): 
     const meta = srcDayLocal(sd.call_date) || srcDayLocal(sd.sourced_at) || null;
     if (sd.kind === 'call') {
       const who = (sd.call_title || '').replace(/^Intro Call w\/\s*RISE DTC\s*-\s*/i, '').replace(/^ZOOM Meeting\s*-\s*RISE DTC\s*\/\/\s*/i, '').trim();
-      return { label: who ? `${sd.label || 'From your sales call'} · ${who}` : (sd.label || 'From your sales call'), quote: sd.quote, meta };
+      return { label: who ? `${sd.label || 'From your sales call'} · ${who}` : (sd.label || 'From your sales call'), quote: ((sd.quote_en ?? '').trim() && (!sd.quote_en_src || sd.quote_en_src === sd.quote) ? (sd.quote_en ?? '').trim() : sd.quote), meta };
     }
     if (sd.kind === 'strategy') return null;
     return { label: sd.label || q.source_label || '', quote: null, meta };
