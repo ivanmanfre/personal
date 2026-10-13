@@ -987,7 +987,7 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
           {!isInventoryItem(it) && it.product ? <p className="rise-receipt">{clean(it.product.title)}{productPrice(it.product) ? ` · From ${productPrice(it.product)}` : ''}</p> : null}
         </article>;
       })}
-      {block?.note ? <p className="rise-coverage" data-promise-note="1">{clean(block.note)}</p> : null}
+      {block?.note ? <details className="rise-test-evidence"><summary>About this finding</summary><p className="rise-coverage" data-promise-note="1">{clean(block.note)}</p></details> : null}
     </section>
   );
 }
@@ -1152,31 +1152,55 @@ function commercialTests(data: import('../lib/scanTypes').DtcCommercialEvidence 
     && item.evidence?.some(e => e.kind === 'store' && proofHref(e.source_url) && e.quote));
 }
 
+function TestSteps({ text }: { text: string }) {
+  const value = clean(text);
+  const parts = value.match(/^Control:\s*([\s\S]*?)\s*Variant:\s*([\s\S]*)$/);
+  if (!parts) return <p>{value}</p>;
+  return <dl className="rise-test-steps"><div><dt>Current page</dt><dd>{parts[1]}</dd></div><div><dt>Try this</dt><dd>{parts[2]}</dd></div></dl>;
+}
+
+function scrollReportSection(event: React.MouseEvent<HTMLDivElement>) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+  if (!link || !event.currentTarget.contains(link)) return;
+  const target = document.getElementById(link.hash.slice(1));
+  if (!target) return;
+  event.preventDefault();
+  target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+  if (!target.hasAttribute('tabindex')) target.tabIndex = -1;
+  target.focus({ preventScroll: true });
+  if (window.location.hash !== link.hash) window.history.pushState(window.history.state, '', link.hash);
+}
+
 function CommercialEvidence({ data }: { data: import('../lib/scanTypes').DtcCommercialEvidence | undefined }) {
   const tests = commercialTests(data);
   if (!data || !tests.length) return null;
+  const journeys = data.journeys?.filter(j => proofHref(j.ad_url) && j.ad_excerpt && j.destinations?.some(proofHref)) || [];
   return <section id="commercial-tests" className="rise-section rise-commercial" data-commercial-evidence="1">
-    <div className="rise-section-heading"><p className="rise-chapter">Where we’d focus</p><h2>Tests built around your business</h2>
-      <p>These are proposed experiments based on your public pages. We’d use your store, booking and ad-account data to choose a baseline and assess the result.</p></div>
-    {data.journeys?.filter(j => proofHref(j.ad_url) && j.ad_excerpt && j.destinations?.some(proofHref)).map((j, i) => <div className="rise-ad-journey" key={i}>
-      <div><p className="rise-evidence-label">Observed ad</p><blockquote>{clean(j.ad_excerpt)}{j.ad_excerpt.split(/\s+/).length >= 10 ? '…' : ''}</blockquote>
-        <a href={proofHref(j.ad_url)} target="_blank" rel="noopener noreferrer">Open the ad in Meta’s library ↗</a></div>
-      <div><p className="rise-evidence-label">Recorded destination</p>{j.destinations.filter(proofHref).map(url => <a className="rise-route-link" key={url} href={proofHref(url)} target="_blank" rel="noopener noreferrer">{new URL(url).pathname.replace(/^\//, '') || new URL(url).hostname} ↗</a>)}
-        <p className="rise-research-note">The public record shows the ad and its destination. It does not show spend, bookings or sales.</p></div>
-    </div>)}
+    <div className="rise-section-heading"><p className="rise-chapter">Where we’d focus</p><h2>What we’d test first</h2></div>
+    <div className="rise-tests">{tests.map((item, i) => {
+      const title = clean(item.title);
+      const colon = title.indexOf(':');
+      const heading = colon > 0 && colon < 60 ? title.slice(0, colon) : title;
+      const subtitle = heading !== title ? title.slice(colon + 1).trim() : '';
+      return <article className="rise-test" key={i}>
+        <div className="rise-test-title"><span className="rise-test-number">{String(i + 1).padStart(2, '0')}</span><div><h3>{heading}</h3>{subtitle ? <p className="rise-test-subtitle">{subtitle}</p> : null}</div></div>
+        <p className="rise-test-observation">{clean(item.observation)}</p>
+        <div className="rise-test-plan"><div><h4>Proposed test</h4><TestSteps text={item.test} /></div><div className="rise-test-measure"><h4>How we’d measure it</h4><p>{clean(item.measure)}</p></div></div>
+        <details className="rise-test-evidence"><summary>See the source evidence</summary><div className="rise-test-sources">{item.evidence.filter(e => proofHref(e.source_url) && e.quote).map((e, k) => <blockquote key={k}>
+          <span className="rise-evidence-label">{e.kind === 'reference' ? 'Other-brand example' : e.kind === 'ad' ? 'Ad evidence' : 'Your page'}</span>
+          <p>“{clean(e.quote)}”</p><a href={proofHref(e.source_url)} target="_blank" rel="noopener noreferrer">{new URL(e.source_url).hostname.replace(/^www\./, '')} · Read source ↗</a>
+          {e.kind === 'reference' ? <small>A reference to adapt. Public pages do not establish its performance.</small> : null}
+        </blockquote>)}</div></details>
+      </article>;
+    })}</div>
     {data.screenshot && proofHref(data.screenshot.url) && proofHref(data.screenshot.source_url) ? <figure className="rise-commercial-capture">
-      <a href={proofHref(data.screenshot.url)} target="_blank" rel="noopener noreferrer"><img src={proofHref(data.screenshot.url)} alt="Captured service page used in this review" loading="lazy" /></a>
+      <a href={proofHref(data.screenshot.url)} target="_blank" rel="noopener noreferrer"><img src={proofHref(data.screenshot.url)} alt="Captured page used in this review" loading="lazy" /></a>
       <figcaption><a href={proofHref(data.screenshot.source_url)} target="_blank" rel="noopener noreferrer">Open the source page ↗</a><span>Captured {checkedAt(data.screenshot.captured_at)}</span></figcaption></figure> : null}
-    <div className="rise-tests">{tests.map((item, i) => <article className="rise-test" key={i}>
-      <div className="rise-test-title"><span className="rise-test-number">{String(i + 1).padStart(2, '0')}</span><h3>{clean(item.title)}</h3></div>
-      <p className="rise-test-observation">{clean(item.observation)}</p>
-      <div className="rise-test-plan"><div><h4>Proposed test</h4><p>{clean(item.test)}</p></div><div><h4>How we’d measure it</h4><p>{clean(item.measure)}</p></div></div>
-      <div className="rise-test-sources">{item.evidence.filter(e => proofHref(e.source_url) && e.quote).map((e, k) => <blockquote key={k}>
-        <span className="rise-evidence-label">{e.kind === 'reference' ? 'Other-brand example' : e.kind === 'ad' ? 'Ad evidence' : 'Your page'}</span>
-        <p>“{clean(e.quote)}”</p><a href={proofHref(e.source_url)} target="_blank" rel="noopener noreferrer">{new URL(e.source_url).hostname.replace(/^www\./, '')} · Read source ↗</a>
-        {e.kind === 'reference' ? <small>A reference to adapt. Public pages do not establish its performance.</small> : null}
-      </blockquote>)}</div>
-    </article>)}</div>
+    {journeys.length ? <details className="rise-test-evidence rise-journey-evidence"><summary>See the ads and their destination pages</summary><p className="rise-research-note">Public records show the ads and their links. Spend and sales need ad-account data.</p>{journeys.map((j, i) => <div className="rise-ad-journey" key={i}>
+      <div><p className="rise-evidence-label">Observed ad</p><blockquote>{clean(j.ad_excerpt)}</blockquote><a href={proofHref(j.ad_url)} target="_blank" rel="noopener noreferrer">Open the ad ↗</a></div>
+      <div><p className="rise-evidence-label">Destination pages</p>{j.destinations.filter(proofHref).map(url => <a className="rise-route-link" key={url} href={proofHref(url)} target="_blank" rel="noopener noreferrer">{new URL(url).pathname.replace(/^\//, '') || new URL(url).hostname} ↗</a>)}</div>
+    </div>)}</details> : null}
   </section>;
 }
 
@@ -1504,17 +1528,17 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
   if (promise) return (
-    <div className="rise-report" data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
+    <div className="rise-report" onClick={scrollReportSection} data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
       <header className="rise-cover">
         <div className="rise-cover-inner">
           <nav className="rise-masthead" aria-label="Main navigation"><a className="rise-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} alt={wordmark} /></a><div className="rise-nav-links"><a href="#report-review" className="rise-nav-active">Your scan</a><a href="#rise-cases">RISE case studies</a></div><a className="rise-nav-invite" href="#rise-conversation" data-cta="header">Let’s talk <span>↗</span></a></nav>
           <section data-promise-hero="1" aria-label="Report introduction" className={`rise-introduction${contextProduct || contextHomepage ? '' : ' rise-introduction-text'}`}>
-            <div className="rise-hero-copy"><p className="rise-kicker">/ Public storefront review /</p><h1>A growth scan for <span>{companyName}</span></h1><p className="rise-intro-copy">A review of {possessive(companyName)} public storefront, with source evidence and recommended next steps.</p><a className="rise-explore" href="#report-review"><span>↓</span> Explore your scan</a></div>
+            <div className="rise-hero-copy"><p className="rise-kicker">/ Public storefront review /</p><h1>A growth scan for <span>{companyName}</span></h1><p className="rise-intro-copy">Ideas based on {possessive(companyName)} public storefront.</p><a className="rise-explore" href="#report-review"><span>↓</span> Explore your scan</a></div>
             {contextProduct || contextHomepage ? <div className="rise-hero-visuals" data-storefront-context="1">
               {contextHomepage ? <figure className="rise-context-home"><a href={contextHomepage} aria-label={`Open ${companyName} homepage capture`} target="_blank" rel="noopener noreferrer"><ScanContextImage src={contextHomepage} alt={`${companyName} homepage capture, storefront context`} className="rise-home-image" eager /></a></figure> : null}
               {contextProduct ? <figure className="rise-context-product"><a href={proofHref(contextProduct.url)} target="_blank" rel="noopener noreferrer"><ScanContextImage src={proofHref(contextProduct.image_url)} alt={`${clean(contextProduct.title)} product photograph, storefront context`} className="rise-product-image" eager /></a><figcaption>{clean(contextProduct.title)} · Product photograph</figcaption></figure> : null}
             </div> : null}
-            <aside className="rise-cover-meta">{contextProduct || contextHomepage ? <p className="rise-context-note">Storefront context. Findings and source evidence follow below.</p> : null}{contextHomepage ? <p className="rise-home-date">Homepage context · Captured {shotDate}</p> : null}<p><span>Report snapshot</span><strong>{scanDate || 'Date not recorded'}</strong></p><p><span>Store</span><a href={`https://${scan.domain}`} target="_blank" rel="noopener noreferrer">{scan.domain} ↗</a></p></aside>
+            <aside className="rise-cover-meta">{contextHomepage ? <p className="rise-home-date">Homepage context · Captured {shotDate}</p> : null}<p><span>Report snapshot</span><strong>{scanDate || 'Date not recorded'}</strong></p><p><span>Store</span><a href={`https://${scan.domain}`} target="_blank" rel="noopener noreferrer">{scan.domain} ↗</a></p></aside>
           </section>
         </div>
       </header>
@@ -1568,11 +1592,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         </section> : null}
         <DtcComparisonSection comparison={comparison} />
         <section className="rise-section rise-proof" id="rise-cases"><div className="rise-section-heading"><h2>Work RISE has run</h2><p>Published results from separate client engagements.</p></div><div className="rise-case-grid">{riseCases.map((c) => <a key={c.slug} href={caseUrl(c)} data-case={c.slug} target="_blank" rel="noopener noreferrer"><ScanContextImage src={c.image} alt={`${c.name}, a separate RISE client`} className="rise-case-image" /><div className="rise-case-copy"><strong>{c.name}</strong><span>{c.headline}</span><span className="rise-case-read">Read the case study <b>↗</b></span></div></a>)}</div><a className="rise-source-link" href="https://risedtc.com/clients/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=all" target="_blank" rel="noopener noreferrer">See all case studies</a></section>
-        <section className="rise-closing" id="rise-conversation"><div className="rise-closing-top"><div><h2>Walk through the findings with Mattan.</h2><p>We put the public observations next to your store and ad-account data.</p></div><a href={ctaUrl('close')} data-cta="close" target="_blank" rel="noopener noreferrer" className="rise-booking">30 min with Mattan ↗</a></div>
+        <section className="rise-closing" id="rise-conversation"><div className="rise-closing-top"><img className="rise-mattan-photo" src={MATTAN_PHOTO} alt="Mattan Danino" width={240} height={280} loading="lazy" /><div><p className="rise-closing-name">Mattan Danino · RISE DTC</p><h2>Walk through the findings with Mattan.</h2><p>Let’s go through your scan and pick what to test first.</p><a href={ctaUrl('close')} data-cta="close" target="_blank" rel="noopener noreferrer" className="rise-booking">30 min with Mattan ↗</a></div></div>
           <details className="rise-disclosure"><summary>How RISE charges</summary><div className="rise-pricing"><div><h3>Performance Model</h3><p><strong>For qualifying brands.</strong> Lower fixed monthly fee plus a share of net growth above an agreed baseline, after ad spend. Creative, tech and AI included.</p></div><div><h3>Growth Model</h3><p>Base fee plus a percentage of ad spend, senior strategist included.</p></div></div><p>Which model fits your brand gets settled on the call.</p><p>RISE DTC is run by Mattan Danino and Matt Moore. For qualifying brands, platform work starts within 48 hours of onboarding.</p></details>
         </section>
       </main>
-      <footer className="rise-footer"><a className="rise-footer-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src="https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-wht.png" alt="RISE DTC" loading="lazy" /></a><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'} Reopening this link does not rerun the research.</p><span>Prepared for {companyName}. Unlisted report link.</span></footer>
+      <footer className="rise-footer"><a className="rise-footer-logo" href="https://risedtc.com" target="_blank" rel="noopener noreferrer"><img src="https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-wht.png" alt="RISE DTC" loading="lazy" /></a><details><summary>About this scan</summary><p>{d.public_data_limits || 'A dated review of public pages. Conversion, retention and campaign performance need store and ad-account data.'}</p></details><span>Prepared for {companyName}. Unlisted report link.</span></footer>
     </div>
   );
 
