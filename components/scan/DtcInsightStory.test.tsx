@@ -33,6 +33,28 @@ describe('source-backed story', () => {
     expect(blocked).not.toContain('<strong>900</strong>');
     expect(blocked).not.toContain('Google creatives');
   });
+  it('takes the two primary findings into a RISE introduction and call, with extra ideas collapsed', () => {
+    const html = renderToStaticMarkup(<DtcInsightStory companyName="Yananails" domain="yananails.com" data={data} ads={fixture.ads} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" cases={[{ name: 'Josie Maran', url: 'https://risedtc.com/projects/josie-maran/', headline: '28% increase in revenue' }]} />);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const extras = doc.querySelector<HTMLDetailsElement>('#other-store-ideas')!;
+    expect(extras.open).toBe(false);
+    expect(doc.getElementById('buying-guidance')!.closest('details')).toBe(extras);
+    expect(doc.getElementById('free-shipping')!.closest('details')).toBe(extras);
+    expect(html.indexOf('id="product-pair"')).toBeLessThan(html.indexOf('id="rise-method"'));
+    expect(html.indexOf('id="rise-method"')).toBeLessThan(html.indexOf('id="rise-conversation"'));
+    expect(html.indexOf('id="rise-conversation"')).toBeLessThan(html.indexOf('id="other-store-ideas"'));
+    expect(html).toContain('28% increase in revenue');
+    const video = doc.querySelector('video')!;
+    expect(video.getAttribute('preload')).toBe('none');
+    expect(video.hasAttribute('autoplay')).toBe(false);
+    expect(video.querySelector('source')!.getAttribute('src')).toContain('mattan-method-excerpt.mp4');
+    expect(video.querySelector('track')!.getAttribute('kind')).toBe('captions');
+    expect(video.closest('details')!.open).toBe(false);
+    expect(html).toContain('Meta and Google campaigns');
+    expect(html).toContain('Ready to grow Yananails with paid ads?');
+    expect(doc.querySelector('.ris-booking')!.getAttribute('href')).toBe('https://example.com/meeting');
+    expect(html).not.toMatch(/performance-only|no retainers|only get paid|guaranteed/i);
+  });
   it('treats free shipping as strictly above the threshold and labels the basket as an example', () => {
     render(<ShippingExample data={data.presentation!.shipping} />);
     expect(screen.getByText('Example basket')).toBeTruthy();
