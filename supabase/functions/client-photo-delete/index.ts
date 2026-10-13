@@ -14,7 +14,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
+  // supabase-js functions.invoke attaches x-client-info + x-supabase-api-version;
+  // omitting them fails the browser preflight (curl doesn't send them, so it passed).
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
   "Access-Control-Max-Age": "86400",
   "Content-Type": "application/json",
 };
