@@ -1,0 +1,2533 @@
+{
+  "company_name": "Yananails",
+  "domain": "yananails.com",
+  "dtc": {
+    "ads": {
+      "meta": {
+        "data": {
+          "records": [
+            {
+              "text": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar och bara ler \ud83e\udd0d\n\nV\u00e5ra HEMA-fria builder gels \u00e4r l\u00e4tta att forma, rinner inte och ger en j\u00e4mn, glansig yta. Perfekt oavsett om du \u00e4r nagelteknolog eller g\u00f6r dina naglar hemma.\n\nSvep och hitta din favorit: Ryan, Philip, Anton eller Vincent. Och med v\u00e5ra f\u00e4rdigformade tippar slipper du filningen och sparar tid vid varje set.\n\nHitta din p\u00e5 yananails.com",
+              "ad_id": "4517074168554599",
+              "format": "CAROUSEL",
+              "start_date": "2026-10-09 07:00:00",
+              "observed_at": "2026-10-13T21:29:54.081153+00:00",
+              "availability": "not_checked",
+              "destinations": [
+                "https://yananails.com/",
+                "https://yananails.com/products/builder-gel-philip",
+                "https://yananails.com/products/builder-gel-ryan",
+                "https://yananails.com/collections/nail-tips",
+                "https://yananails.com/products/builder-gel-anton",
+                "https://yananails.com/collections/gel/products/builder-gel-vincent"
+              ],
+              "landing_reads": [
+                {
+                  "url": "https://yananails.com/products/builder-gel-philip",
+                  "status": "unread",
+                  "availability": "not_verified"
+                },
+                {
+                  "url": "https://yananails.com/products/builder-gel-ryan",
+                  "status": "unread",
+                  "availability": "not_verified"
+                },
+                {
+                  "url": "https://yananails.com/collections/nail-tips",
+                  "status": "unread",
+                  "availability": "not_verified"
+                }
+              ]
+            },
+            {
+              "text": "Swatchar alla yananails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r yananails #naglar #gelenaglar #fibergel",
+              "ad_id": "2169223840696220",
+              "format": "VIDEO",
+              "start_date": "2026-10-01 07:00:00",
+              "observed_at": "2026-10-13T21:29:54.081153+00:00",
+              "availability": "not_checked",
+              "destinations": [
+                "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+              ],
+              "landing_reads": []
+            },
+            {
+              "text": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+              "ad_id": "1615590163535319",
+              "format": "CAROUSEL",
+              "start_date": "2026-09-29 07:00:00",
+              "observed_at": "2026-10-13T21:29:54.081153+00:00",
+              "availability": "not_checked",
+              "destinations": [
+                "https://yananails.com/collections/gel",
+                "https://yananails.com/collections/nail-tips/products/nagellim",
+                "https://yananails.com/collections/nail-tips/products/almond-x-small-nageltippar",
+                "https://yananails.com/collections/nail-tips/products/square-medium-flat-tippar",
+                "https://yananails.com/collections/nail-tips",
+                "https://yananails.com/collections/nail-tips/products/coffin-small-tippar",
+                "https://yananails.com/collections/nail-tips/products/almond-small-tippar"
+              ],
+              "landing_reads": [
+                {
+                  "url": "https://yananails.com/collections/nail-tips",
+                  "status": "unread",
+                  "availability": "not_verified"
+                }
+              ]
+            }
+          ],
+          "has_video": true,
+          "oldest_ad": {
+            "start_date": "2026-09-29",
+            "opening_text": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+            "ad_archive_id": "1615590163535319"
+          },
+          "has_static": true,
+          "sampled_ads": 3,
+          "dco_share_pct": 0.0,
+          "fresh_30d_pct": 100.0,
+          "active_ad_count": 3,
+          "median_run_days": 12,
+          "distinct_text_count": 3,
+          "oldest_active_run_days": 14
+        },
+        "status": "present",
+        "page_id": "1019588207902909",
+        "page_name": null,
+        "fetched_at": "2026-10-13T21:29:54.081249+00:00",
+        "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Yananails&search_type=keyword_unordered&media_type=all",
+        "resolved_via": "homepage_link",
+        "declared_page_rejected": null
+      },
+      "google": {
+        "data": {
+          "query": "yananails.com",
+          "capped": false,
+          "region": "SE",
+          "formats": {
+            "text": 8,
+            "image": 1,
+            "video": 0
+          },
+          "identity": "domain_query",
+          "ads_found": 9,
+          "creatives": [
+            {
+              "ad_url": "https://adstransparency.google.com/advertiser/AR04371437307509604353/creative/CR02399650085710331905",
+              "format": "text",
+              "image_url": "https://tpc.googlesyndication.com/archive/simgad/989427962607414166",
+              "last_shown": "2026-10-07",
+              "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-gads-0.png",
+              "first_shown": "2026-09-20",
+              "preview_url": null
+            },
+            {
+              "ad_url": "https://adstransparency.google.com/advertiser/AR04371437307509604353/creative/CR16810268393272770561",
+              "format": "text",
+              "image_url": "https://tpc.googlesyndication.com/archive/simgad/14367446910765047935",
+              "last_shown": "2026-10-07",
+              "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-gads-1.png",
+              "first_shown": "2026-09-18",
+              "preview_url": null
+            },
+            {
+              "ad_url": "https://adstransparency.google.com/advertiser/AR04371437307509604353/creative/CR00679176072008302593",
+              "format": "text",
+              "image_url": "https://tpc.googlesyndication.com/archive/simgad/15582105032051674577",
+              "last_shown": "2026-10-07",
+              "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-gads-2.png",
+              "first_shown": "2026-08-03",
+              "preview_url": null
+            },
+            {
+              "ad_url": "https://adstransparency.google.com/advertiser/AR04371437307509604353/creative/CR05266138094016397313",
+              "format": "text",
+              "image_url": "https://tpc.googlesyndication.com/archive/simgad/1097177250802513152",
+              "last_shown": "2026-10-07",
+              "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-gads-3.png",
+              "first_shown": "2026-07-19",
+              "preview_url": null
+            },
+            {
+              "ad_url": "https://adstransparency.google.com/advertiser/AR04371437307509604353/creative/CR07382255424055017473",
+              "format": "text",
+              "image_url": "https://tpc.googlesyndication.com/archive/simgad/536247705744768650",
+              "last_shown": "2026-10-07",
+              "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-gads-4.png",
+              "first_shown": "2026-07-18",
+              "preview_url": null
+            }
+          ],
+          "advertiser": "ads pointing to yananails.com",
+          "checked_at": "2026-10-08T08:05:55.461192+00:00",
+          "from_cache": true,
+          "max_results": 60,
+          "advertiser_id": "AR04371437307509604353",
+          "queries_tried": [
+            "yananails.com"
+          ],
+          "domain_advertiser": "9 of the 9 ads read from the advertiser point to the domain",
+          "latest_last_shown": "2026-10-07",
+          "advertiser_account": "YANA KESHAVARZIAN",
+          "newest_first_shown": "2026-09-20",
+          "oldest_first_shown": "2026-06-04",
+          "advertisers_matched": 1
+        },
+        "status": "present",
+        "fetched_at": "2026-10-08T08:05:55.461215+00:00",
+        "source_url": "https://adstransparency.google.com/?region=SE&q=yananails.com"
+      }
+    },
+    "hero": {
+      "headline": "No subscribe or refill option on Builder Gel PHILIP",
+      "item_ref": "second_order.0"
+    },
+    "brand": {
+      "ink_hex": "#111111",
+      "is_dark": false,
+      "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+      "wordmark": "RISE DTC",
+      "font_body": "Manrope",
+      "accent_hex": "#ffc71d",
+      "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+      "surface_hex": "#ffffff",
+      "font_heading": "Sora",
+      "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+    },
+    "signup": {
+      "data": {
+        "capture_markers": [
+          "popup",
+          "newsletter",
+          "subscribe"
+        ],
+        "has_capture_markers": true
+      },
+      "reason": null,
+      "status": "present",
+      "partial": true,
+      "fetched_at": "2026-10-13T21:29:34.723543+00:00",
+      "source_url": "https://yananails.com/"
+    },
+    "quality": {
+      "reason": null,
+      "version": "rise-quality-2026-09-30",
+      "approved": true,
+      "lead_ref": "second_order.0",
+      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel PHILIP. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
+    },
+    "reviews": {
+      "data": {
+        "rating": 4.97,
+        "served": {
+          "pair": null,
+          "shown": null,
+          "counts": []
+        },
+        "has_reviews": true,
+        "review_count": 402,
+        "published_reviews": [],
+        "visible_review_counts": [
+          6,
+          402
+        ]
+      },
+      "status": "present",
+      "fetched_at": "2026-10-13T21:29:34.614710+00:00",
+      "source_url": "https://yananails.com/products/builder-gel-ryan"
+    },
+    "shopify": {
+      "data": {
+        "oos_pct": 1.1,
+        "currency": "SEK",
+        "platform": "shopify",
+        "non_merch": 1,
+        "oos_basis": "product",
+        "gift_cards": 1,
+        "price_band": {
+          "max": 9999.0,
+          "min": 55.0,
+          "median": 259.0,
+          "core_min": 55.0,
+          "floor_rule": "cheapest goods",
+          "catalog_max": 9999.0,
+          "in_stock_only": true,
+          "priced_products": 85,
+          "priced_variants": 103
+        },
+        "catalog_size": 87,
+        "oos_products": 1,
+        "oos_variants": null,
+        "auto_discount": null,
+        "catalog_capped": false,
+        "has_subscription": null,
+        "new_products_90d": 6,
+        "auto_discount_pct": null,
+        "variant_depth_avg": 1.3,
+        "discount_depth_pct": 22.7,
+        "merch_catalog_size": 86,
+        "products_on_discount": 6,
+        "subscription_source_url": null
+      },
+      "status": "present",
+      "oos_read": {
+        "top": null,
+        "listed": 87,
+        "oos_pct": 1.1,
+        "variants": 116,
+        "oos_basis": "product",
+        "unchecked": 0,
+        "oos_products": 1,
+        "not_sold_online": [],
+        "variants_listed": 116,
+        "variants_unavailable": 7,
+        "variants_unavailable_listed": 7
+      },
+      "fetched_at": "2026-10-13T21:29:19.735274+00:00",
+      "source_url": "https://yananails.com/products.json",
+      "refill_read": null,
+      "catalog_read": {
+        "why": null,
+        "read": 87,
+        "pages": [
+          87
+        ],
+        "complete": true,
+        "store_count": 87
+      },
+      "catalog_items": [
+        {
+          "url": "https://yananails.com/products/komplett-startkit-for-gele",
+          "title": "Komplett Startkit f\u00f6r Gel\u00e9",
+          "handle": "komplett-startkit-for-gele",
+          "variants": [
+            {
+              "price": 9999.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-09-14T10:14:46+02:00",
+          "published_at": "2026-09-21T23:32:37+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/salongsforklade-pro-crossback",
+          "title": "Salongsf\u00f6rkl\u00e4de Pro Crossback",
+          "handle": "salongsforklade-pro-crossback",
+          "variants": [
+            {
+              "price": 329.0,
+              "title": "Brun",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 329.0,
+              "title": "Vitt",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-09-18T18:53:15+02:00",
+          "published_at": "2026-09-18T19:00:42+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/salongsforklade-pro-button",
+          "title": "Salongsf\u00f6rkl\u00e4de Pro Button",
+          "handle": "salongsforklade-pro-button",
+          "variants": [
+            {
+              "price": 329.0,
+              "title": "Svart",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 329.0,
+              "title": "Beige",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-09-18T18:39:51+02:00",
+          "published_at": "2026-09-18T18:52:53+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/nagelforklade-essential",
+          "title": "Salongsf\u00f6rkl\u00e4de Essential",
+          "handle": "nagelforklade-essential",
+          "variants": [
+            {
+              "price": 179.0,
+              "title": "Svart",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 179.0,
+              "title": "Vitt",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-09-18T18:11:02+02:00",
+          "published_at": "2026-09-18T18:37:05+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/akryl-utforsaljning",
+          "title": "UTF\u00d6RS\u00c4LJNING AV AKRYLSORTIMENT",
+          "handle": "akryl-utforsaljning",
+          "variants": [
+            {
+              "price": 633.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-09-11T23:14:39+02:00",
+          "published_at": "2026-09-11T23:25:29+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/prep-kit-stor",
+          "title": "Prep Kit Stor",
+          "handle": "prep-kit-stor",
+          "variants": [
+            {
+              "price": 1676.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-16T12:58:52+01:00",
+          "published_at": "2026-08-28T12:40:58+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/3d-gel-forming-pallet",
+          "title": "3D Gel Forming Pallet",
+          "handle": "3d-gel-forming-pallet",
+          "variants": [
+            {
+              "price": 89.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-07-27T16:12:27+02:00",
+          "published_at": "2026-07-27T16:12:29+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/cone-diamond-bit-f",
+          "title": "Cone Diamond Bit F",
+          "handle": "cone-diamond-bit-f",
+          "variants": [
+            {
+              "price": 169.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-07-14T13:47:53+02:00",
+          "published_at": "2026-07-14T13:47:54+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-cone-removal-bit-c",
+          "title": "Carbide Cone Removal Bit C",
+          "handle": "carbide-cone-removal-bit-c",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-07-14T13:39:17+02:00",
+          "published_at": "2026-07-14T13:39:19+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/combo-brush-oval-gel-brush-spatel",
+          "title": "Combo Brush \u2013 Oval Gel Brush & Spatel",
+          "handle": "combo-brush-oval-gel-brush-spatel",
+          "variants": [
+            {
+              "price": 199.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-07-14T12:48:20+02:00",
+          "published_at": "2026-07-14T12:48:21+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/skadade-produkter",
+          "title": "Skadade produkter - Rabatterade",
+          "handle": "skadade-produkter",
+          "variants": [
+            {
+              "price": 69.0,
+              "title": "3D Gel Forming Pallet",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 287.0,
+              "title": "Grip Crime Base Gel",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 287.0,
+              "title": "Builder Gel Samuel",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 135.0,
+              "title": "sanding bands mini 240# utan mandrel bit",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 119.0,
+              "title": "Vitt F\u00f6rkl\u00e4de (alternativ 2 i video)",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 119.0,
+              "title": "Svart f\u00f6rkl\u00e4de (alternativ 1 i video)",
+              "currency": "SEK",
+              "available": false
+            },
+            {
+              "price": 219.0,
+              "title": "Beige F\u00f6rkl\u00e4de (alternativ 4 i video)",
+              "currency": "SEK",
+              "available": false
+            }
+          ],
+          "created_at": "2026-07-08T15:03:06+02:00",
+          "published_at": "2026-07-08T17:50:16+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-samuel",
+          "title": "Builder Gel SAMUEL",
+          "handle": "builder-gel-samuel",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-06-02T18:00:29+02:00",
+          "published_at": "2026-06-02T18:02:36+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-anton",
+          "title": "Builder Gel ANTON",
+          "handle": "builder-gel-anton",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-06-02T17:58:21+02:00",
+          "published_at": "2026-06-02T18:00:03+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-luca",
+          "title": "Builder Gel LUCA",
+          "handle": "builder-gel-luca",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-06-02T17:54:58+02:00",
+          "published_at": "2026-06-02T17:57:40+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/grip-crime-base-coat",
+          "title": "Grip Crime Base Coat 30ml",
+          "handle": "grip-crime-base-coat",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-05-30T11:40:51+02:00",
+          "published_at": "2026-05-30T11:40:52+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/professional-elfil-35000-rpm",
+          "title": "Elfil",
+          "handle": "professional-elfil-35000-rpm",
+          "variants": [
+            {
+              "price": 2999.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-05-18T18:57:01+02:00",
+          "published_at": "2026-05-18T19:12:34+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/nagellim",
+          "title": "Nagellim",
+          "handle": "nagellim",
+          "variants": [
+            {
+              "price": 89.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-05-13T14:01:57+02:00",
+          "published_at": "2026-05-13T14:13:32+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/prep-kit-liten",
+          "title": "Prep Kit Liten",
+          "handle": "prep-kit-liten",
+          "variants": [
+            {
+              "price": 950.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-10T09:09:21+01:00",
+          "published_at": "2026-05-11T15:28:11+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/startkit-akryl",
+          "title": "Startkit Akryl",
+          "handle": "startkit-akryl",
+          "variants": [
+            {
+              "price": 3999.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-16T12:25:37+01:00",
+          "published_at": "2026-05-11T15:27:00+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/startkit-gel",
+          "title": "Startkit Gel",
+          "handle": "startkit-gel",
+          "variants": [
+            {
+              "price": 3699.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-16T12:39:31+01:00",
+          "published_at": "2026-05-11T15:10:32+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/mini-carbide-barrel-bit-c",
+          "title": "Mini Carbide Barrel Bit C",
+          "handle": "mini-carbide-barrel-bit-c",
+          "variants": [
+            {
+              "price": 349.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-04-21T17:44:54+02:00",
+          "published_at": "2026-04-21T17:44:54+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-liam",
+          "title": "Fiber Gel LIAM",
+          "handle": "fiber-gel-liam",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-04-18T21:58:44+02:00",
+          "published_at": "2026-04-21T17:29:38+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-sam",
+          "title": "Fiber Gel SAM",
+          "handle": "fiber-gel-sam",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-04-18T22:01:17+02:00",
+          "published_at": "2026-04-21T17:29:30+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-oliver",
+          "title": "Fiber Gel OLIVER",
+          "handle": "fiber-gel-oliver",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-04-18T22:16:17+02:00",
+          "published_at": "2026-04-21T17:29:22+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-fabian",
+          "title": "Fiber Gel FABIAN",
+          "handle": "fiber-gel-fabian",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-04-18T22:18:24+02:00",
+          "published_at": "2026-04-21T17:29:16+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/uv-lamp",
+          "title": "Mini Nail lamp",
+          "handle": "uv-lamp",
+          "variants": [
+            {
+              "price": 449.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-31T18:10:08+02:00",
+          "published_at": "2026-04-20T13:07:55+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/bords-kit",
+          "title": "Nagelbord Kit",
+          "handle": "bords-kit",
+          "variants": [
+            {
+              "price": 5646.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-03-16T13:00:30+01:00",
+          "published_at": "2026-03-16T16:17:55+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/sanding-bands-mini",
+          "title": "Sanding Bands Mini",
+          "handle": "sanding-bands-mini",
+          "variants": [
+            {
+              "price": 169.0,
+              "title": "#180",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 169.0,
+              "title": "#240",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-26T15:28:50+01:00",
+          "published_at": "2026-02-26T15:36:11+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-barrel-bit-m",
+          "title": "Carbide Barrel Bit M",
+          "handle": "carbide-barrel-bit-m",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-17T22:01:46+01:00",
+          "published_at": "2026-02-17T22:09:27+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/filter-till-utsug",
+          "title": "Filter till utsug",
+          "handle": "filter-till-utsug",
+          "variants": [
+            {
+              "price": 169.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-17T21:45:43+01:00",
+          "published_at": "2026-02-17T21:50:59+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/sandwich-dual-form",
+          "title": "Sandwich Dual Form",
+          "handle": "sandwich-dual-form",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Coffin",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Almond",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-12T20:30:01+01:00",
+          "published_at": "2026-02-12T20:30:02+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/utsug",
+          "title": "Utsug",
+          "handle": "utsug",
+          "variants": [
+            {
+              "price": 1599.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-11T17:56:07+01:00",
+          "published_at": "2026-02-11T17:56:07+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/uv-led-lampa",
+          "title": "UV-/LED-lampa",
+          "handle": "uv-led-lampa",
+          "variants": [
+            {
+              "price": 1599.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-11T09:56:47+01:00",
+          "published_at": "2026-02-11T10:17:04+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/coffin-medium-tippar",
+          "title": "Coffin Medium Tippar",
+          "handle": "coffin-medium-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T21:04:41+01:00",
+          "published_at": "2026-02-10T21:21:55+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/coffin-small-tippar",
+          "title": "Coffin Small Tippar",
+          "handle": "coffin-small-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:54:09+01:00",
+          "published_at": "2026-02-10T21:21:54+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/square-medium-flat-tippar",
+          "title": "Square Medium Flat Tippar",
+          "handle": "square-medium-flat-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:47:25+01:00",
+          "published_at": "2026-02-10T21:21:54+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/square-medium-c-curve",
+          "title": "Square Medium C-Curve Tippar",
+          "handle": "square-medium-c-curve",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:35:44+01:00",
+          "published_at": "2026-02-10T21:21:53+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/square-x-large-flat-tippar",
+          "title": "Square X-Large Flat Tippar",
+          "handle": "square-x-large-flat-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:25:28+01:00",
+          "published_at": "2026-02-10T21:21:52+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/square-x-large-c-curve-tippar",
+          "title": "Square X-Large C-Curve Tippar",
+          "handle": "square-x-large-c-curve-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:15:39+01:00",
+          "published_at": "2026-02-10T21:21:52+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/stiletto-large-tippar",
+          "title": "Stiletto Large Tippar",
+          "handle": "stiletto-large-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T20:04:58+01:00",
+          "published_at": "2026-02-10T21:21:51+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/almond-medium-tippar",
+          "title": "Almond Medium Tippar",
+          "handle": "almond-medium-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T19:58:15+01:00",
+          "published_at": "2026-02-10T21:21:51+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/almond-small-tippar",
+          "title": "Almond Small Tippar",
+          "handle": "almond-small-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T19:50:26+01:00",
+          "published_at": "2026-02-10T21:21:50+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/almond-x-small-nageltippar",
+          "title": "Almond X-small Tippar",
+          "handle": "almond-x-small-nageltippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Genomskinlig",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T18:51:54+01:00",
+          "published_at": "2026-02-10T21:21:49+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/coffin-large-tippar",
+          "title": "Coffin Large Tippar",
+          "handle": "coffin-large-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T21:11:38+01:00",
+          "published_at": "2026-02-10T21:21:22+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/coffin-x-large-tippar",
+          "title": "Coffin X-Large Tippar",
+          "handle": "coffin-x-large-tippar",
+          "variants": [
+            {
+              "price": 239.0,
+              "title": "Clear",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 239.0,
+              "title": "Natural",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-09T21:15:41+01:00",
+          "published_at": "2026-02-10T21:21:05+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/armstod",
+          "title": "Ergonomiskt Armst\u00f6d",
+          "handle": "armstod",
+          "variants": [
+            {
+              "price": 849.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2026-02-10T15:02:36+01:00",
+          "published_at": "2026-02-10T21:19:51+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/magnet",
+          "title": "Cat Eye Magnet",
+          "handle": "magnet",
+          "variants": [
+            {
+              "price": 69.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-12-15T10:57:18+01:00",
+          "published_at": "2025-12-27T12:25:10+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/left-hand-cone-bit-c",
+          "title": "V\u00e4nsterh\u00e4nt Carbide Cone Bit C",
+          "handle": "left-hand-cone-bit-c",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-11-18T12:25:13+01:00",
+          "published_at": "2025-11-18T13:00:35+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/nagel-sax",
+          "title": "Nagelbandssax",
+          "handle": "nagel-sax",
+          "variants": [
+            {
+              "price": 259.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-11-18T12:15:47+01:00",
+          "published_at": "2025-11-18T12:59:20+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/nipper",
+          "title": "Cuticle Nipper",
+          "handle": "nipper",
+          "variants": [
+            {
+              "price": 259.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-11-18T12:18:02+01:00",
+          "published_at": "2025-11-18T12:57:24+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/vanster-hand-carbide-barrel-bit-c",
+          "title": "V\u00e4nsterh\u00e4nt Carbide Barrel Bit C",
+          "handle": "vanster-hand-carbide-barrel-bit-c",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-11-18T12:26:48+01:00",
+          "published_at": "2025-11-18T12:29:27+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/akryl-vatska",
+          "title": "Akrylv\u00e4tska FAST",
+          "handle": "akryl-vatska",
+          "variants": [
+            {
+              "price": 159.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-04-29T11:07:56+02:00",
+          "published_at": "2025-11-05T22:26:55+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-emil",
+          "title": "Builder Gel EMIL (genomskinlig)",
+          "handle": "builder-gel-emil",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-13T22:34:21+02:00",
+          "published_at": "2025-11-05T22:26:44+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-philip",
+          "title": "Builder Gel PHILIP",
+          "handle": "builder-gel-philip",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-14T14:12:06+02:00",
+          "published_at": "2025-11-05T22:26:33+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/akryl-pulver-erik",
+          "title": "Akryl Pulver ERIK",
+          "handle": "akryl-pulver-erik",
+          "variants": [
+            {
+              "price": 263.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-02-27T13:54:02+01:00",
+          "published_at": "2025-11-05T22:26:29+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-linus",
+          "title": "Builder Gel LINUS (mj\u00f6lkvit)",
+          "handle": "builder-gel-linus",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-14T14:15:07+02:00",
+          "published_at": "2025-11-05T22:26:21+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-vincent",
+          "title": "Builder Gel VINCENT",
+          "handle": "builder-gel-vincent",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-14T14:19:01+02:00",
+          "published_at": "2025-11-05T22:26:09+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/akryl-pulver-noah",
+          "title": "Akryl Pulver NOAH",
+          "handle": "akryl-pulver-noah",
+          "variants": [
+            {
+              "price": 263.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-02-27T13:46:35+01:00",
+          "published_at": "2025-11-05T22:26:09+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-matteus",
+          "title": "Fiber Gel MATTEUS",
+          "handle": "fiber-gel-matteus",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-14T14:23:24+02:00",
+          "published_at": "2025-11-05T22:25:56+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/akryl",
+          "title": "Akrylv\u00e4tska SLOW",
+          "handle": "akryl",
+          "variants": [
+            {
+              "price": 159.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-14T18:27:11+02:00",
+          "published_at": "2025-11-05T22:25:43+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/multi_mist-prep-clean",
+          "title": "MULTI-MIST, Prep & Clean",
+          "handle": "multi_mist-prep-clean",
+          "variants": [
+            {
+              "price": 119.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-15T09:26:05+02:00",
+          "published_at": "2025-11-05T22:25:33+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/cleanser",
+          "title": "CLEANSER",
+          "handle": "cleanser",
+          "variants": [
+            {
+              "price": 199.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-15T09:52:54+02:00",
+          "published_at": "2025-11-05T22:25:14+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/top-coat-shine-crime",
+          "title": "Top Coat SHINE CRIME",
+          "handle": "top-coat-shine-crime",
+          "variants": [
+            {
+              "price": 219.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-27T17:09:36+01:00",
+          "published_at": "2025-10-27T18:00:18+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/oval-brush-5",
+          "title": "Oval Brush 5",
+          "handle": "oval-brush-5",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-10-02T14:16:31+02:00",
+          "published_at": "2025-10-02T14:16:32+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/2in1-fil-buffer",
+          "title": "2in1 Fil & Buffer -10pack",
+          "handle": "2in1-fil-buffer",
+          "variants": [
+            {
+              "price": 159.0,
+              "title": "Fil 180 / Buffer 240",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 159.0,
+              "title": "Fil 180 / Buffer 180",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 159.0,
+              "title": "Fil 100 / Buffer 180",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 159.0,
+              "title": "Fil 240 / Buffer 240",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-19T15:35:51+02:00",
+          "published_at": "2025-09-19T16:31:56+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/liner-brush-20mm",
+          "title": "Liner brush 20mm",
+          "handle": "liner-brush-20mm",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:00:22+02:00",
+          "published_at": "2025-09-02T16:45:03+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/liner-brush-11-mm",
+          "title": "Liner Brush 11 mm",
+          "handle": "liner-brush-11-mm",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:35:32+02:00",
+          "published_at": "2025-09-02T16:44:48+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/liner-brush-5-mm",
+          "title": "Liner Brush 5 mm",
+          "handle": "liner-brush-5-mm",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:38:36+02:00",
+          "published_at": "2025-09-02T16:44:34+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/ombre-brush",
+          "title": "Ombre Brush",
+          "handle": "ombre-brush",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:43:16+02:00",
+          "published_at": "2025-09-02T16:44:09+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/square-brush-8",
+          "title": "Square Brush 8",
+          "handle": "square-brush-8",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:47:42+02:00",
+          "published_at": "2025-09-02T16:44:00+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/oval-brush-8",
+          "title": "Oval Brush 8",
+          "handle": "oval-brush-8",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-09-01T22:50:10+02:00",
+          "published_at": "2025-09-02T16:43:45+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/lint-free-pads-300psc",
+          "title": "Lint Free Pads",
+          "handle": "lint-free-pads-300psc",
+          "variants": [
+            {
+              "price": 149.0,
+              "title": "1000 pcs",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 55.0,
+              "title": "300 pcs",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:28:17+02:00",
+          "published_at": "2025-05-24T10:28:17+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-underneath-bit",
+          "title": "Carbide Undernail Cleaner Bit",
+          "handle": "carbide-underneath-bit",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:23:22+02:00",
+          "published_at": "2025-05-24T10:23:22+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-cone-bit-f",
+          "title": "Carbide Cone Bit F",
+          "handle": "carbide-cone-bit-f",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:19:50+02:00",
+          "published_at": "2025-05-24T10:19:50+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-barrel-bit-c",
+          "title": "Carbide Barrel Bit C",
+          "handle": "carbide-barrel-bit-c",
+          "variants": [
+            {
+              "price": 399.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:15:25+02:00",
+          "published_at": "2025-05-24T10:15:25+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/ceramic-barrel-bit-m",
+          "title": "Ceramic Barrel Bit M",
+          "handle": "ceramic-barrel-bit-m",
+          "variants": [
+            {
+              "price": 289.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:13:29+02:00",
+          "published_at": "2025-05-24T10:13:29+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/carbide-cuticle-clean-bit",
+          "title": "Carbide Cuticle Clean Bit",
+          "handle": "carbide-cuticle-clean-bit",
+          "variants": [
+            {
+              "price": 259.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:10:55+02:00",
+          "published_at": "2025-05-24T10:10:55+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/brush-bit",
+          "title": "Cleaning Brush bit",
+          "handle": "brush-bit",
+          "variants": [
+            {
+              "price": 129.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:08:20+02:00",
+          "published_at": "2025-05-24T10:08:20+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/sanding-bands-180",
+          "title": "Sanding Bands",
+          "handle": "sanding-bands-180",
+          "variants": [
+            {
+              "price": 139.0,
+              "title": "#180",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 139.0,
+              "title": "#240",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:04:44+02:00",
+          "published_at": "2025-05-24T10:04:44+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/kolinsky-akrylborste",
+          "title": "Kolinsky Akrylborste",
+          "handle": "kolinsky-akrylborste",
+          "variants": [
+            {
+              "price": 379.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-24T10:01:00+02:00",
+          "published_at": "2025-05-24T10:01:00+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/flame-diamond-drill-bit",
+          "title": "Flame Diamond Bit",
+          "handle": "flame-diamond-drill-bit",
+          "variants": [
+            {
+              "price": 169.0,
+              "title": "Fine",
+              "currency": "SEK",
+              "available": true
+            },
+            {
+              "price": 169.0,
+              "title": "Coarse",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-05-13T10:52:36+02:00",
+          "published_at": "2025-05-13T10:52:36+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/fiber-gel-oscar",
+          "title": "Fiber Gel OSCAR",
+          "handle": "fiber-gel-oscar",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-04-27T19:31:07+02:00",
+          "published_at": "2025-04-27T19:31:07+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-ryan",
+          "title": "Builder Gel RYAN",
+          "handle": "builder-gel-ryan",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-04-27T19:15:36+02:00",
+          "published_at": "2025-04-27T19:15:36+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/builder-gel-ludvig",
+          "title": "Builder Gel LUDVIG",
+          "handle": "builder-gel-ludvig",
+          "variants": [
+            {
+              "price": 359.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-04-27T19:10:13+02:00",
+          "published_at": "2025-04-27T19:10:13+02:00"
+        },
+        {
+          "url": "https://yananails.com/products/bonder",
+          "title": "Bonder",
+          "handle": "bonder",
+          "variants": [
+            {
+              "price": 189.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-02-27T13:00:03+01:00",
+          "published_at": "2025-02-27T13:00:03+01:00"
+        },
+        {
+          "url": "https://yananails.com/products/primer",
+          "title": "Primer",
+          "handle": "primer",
+          "variants": [
+            {
+              "price": 169.0,
+              "title": "Default Title",
+              "currency": "SEK",
+              "available": true
+            }
+          ],
+          "created_at": "2025-02-27T12:12:26+01:00",
+          "published_at": "2025-02-27T12:12:26+01:00"
+        }
+      ],
+      "endpoint_used": "products.json",
+      "subscription_read": {
+        "app": null,
+        "read": 59,
+        "whole": false,
+        "probed": 72,
+        "catalog": 87,
+        "with_plans": null
+      }
+    },
+    "drop_off": {
+      "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
+      "items": []
+    },
+    "findings": [],
+    "hero_hook": "A public read of your store, and where the growth is.",
+    "pagespeed": {
+      "reason": "pagespeed retired 2026-08-07 (v3): deliberately not collected",
+      "status": "absent"
+    },
+    "readiness": {
+      "state": "ready",
+      "review": {
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a PHILIP refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found.",
+        "coherent": true,
+        "readable": true,
+        "actionable": true,
+        "business_specific": true,
+        "citations_complete": true
+      },
+      "reasons": [],
+      "version": "rise-deliverable-2026-10-11",
+      "checked_at": "2026-10-13T21:39:49.517343+00:00",
+      "review_model": "claude-sonnet-5-5",
+      "presentation_review": {
+        "factual": true,
+        "business_specific": true,
+        "useful": true,
+        "readable": true,
+        "coherent": true,
+        "reason": "No faulty phrase found. Prices, images and URLs match the fresh feeds, and the quotes appear in the source pages and ads. The 999 kr 'above' threshold is correct, and the shipping calculator's three states are consistent with it (900 + 89 = 989 stays below; 900 + 119 = 1019 passes). The ad-to-OSCAR destination is in the recorded journey. The Meta count (3 active, checked 13 Oct) and Google count (9 creatives, checked 8 Oct, not claimed active) match the structured records, and test indices 0-3 map to the right sections. Section copy is framed as proposed and untested, with no promised uplift or claims about known shopper behaviour. Published results are limited to Josie Maran and InStyler and labelled as separate engagements; the 1:16 video length matches 19.68-95.92 seconds. One minor point: in the intro, 'the Primer + Bonder offer' could be read as an existing store offer, although the section itself labels it 'Suggested button'. This does not break factual accuracy. The follow-up draft is supported: storefront and Meta were re-run 13 Oct with new screenshots and the swatch-ad destination was re-read, and the report dates Google as 8 Oct. 'updated store and ad findings' does not claim every source was freshly fetched.",
+        "checked_at": "2026-10-13T22:52:52.067105+00:00",
+        "presentation_sha256": "4a53833646001b3cc6b79d2b6fd74c6babf037756db4b78593aacbf889428466"
+      }
+    },
+    "shippable": {
+      "ok": true,
+      "reason": null,
+      "gap_findings": 0,
+      "drop_off_items": 0,
+      "rise_gap_findings": 0,
+      "second_order_items": 1
+    },
+    "dm_insight": null,
+    "dm_message": null,
+    "fact_table": [
+      "0",
+      "1",
+      "1.1",
+      "1.3",
+      "100",
+      "103",
+      "119",
+      "12",
+      "129",
+      "14",
+      "169",
+      "173",
+      "189",
+      "2",
+      "200",
+      "219",
+      "22.7",
+      "239",
+      "259",
+      "261",
+      "3",
+      "32",
+      "359",
+      "399",
+      "4",
+      "4.95",
+      "4.97",
+      "402",
+      "5",
+      "55",
+      "6",
+      "60",
+      "61",
+      "633",
+      "8",
+      "85",
+      "86",
+      "87",
+      "89",
+      "9",
+      "90",
+      "9999"
+    ],
+    "store_meta": {
+      "data": {
+        "country": "SE",
+        "currency": "SEK",
+        "ships_to_home_country": true,
+        "published_products_count": 87
+      },
+      "status": "present",
+      "fetched_at": "2026-10-13T21:29:19.896072+00:00",
+      "source_url": "https://yananails.com/meta.json"
+    },
+    "tech_stack": {
+      "data": {
+        "confirmed": [
+          "klaviyo",
+          "judge.me",
+          "meta pixel",
+          "meta conversions api",
+          "google ads tag",
+          "shopify web pixels"
+        ],
+        "is_shopify": true,
+        "email_tools": [
+          "klaviyo"
+        ],
+        "pdp_checked": true,
+        "missing_critical": [
+          "attentive",
+          "recharge",
+          "rebuy"
+        ]
+      },
+      "status": "present",
+      "fetched_at": "2026-10-13T21:29:14.749774+00:00",
+      "source_url": "https://yananails.com/"
+    },
+    "bestsellers": {
+      "data": {
+        "handles": [
+          "builder-gel-ryan",
+          "primer",
+          "bonder",
+          "almond-x-small-nageltippar",
+          "top-coat-shine-crime",
+          "oval-brush-8",
+          "builder-gel-philip",
+          "nagellim",
+          "multi_mist-prep-clean",
+          "almond-small-tippar",
+          "builder-gel-ludvig",
+          "2in1-fil-buffer",
+          "fiber-gel-oscar",
+          "lint-free-pads-300psc",
+          "carbide-cuticle-clean-bit",
+          "liner-brush-11-mm",
+          "fiber-gel-oliver",
+          "builder-gel-vincent",
+          "cleanser",
+          "coffin-small-tippar"
+        ],
+        "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+      },
+      "status": "present",
+      "fetched_at": "2026-10-13T21:29:20.707615+00:00",
+      "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+    },
+    "claim_check": {
+      "model": "claude-sonnet-5",
+      "claims": [
+        {
+          "ok": true,
+          "key": "second_order:no_reorder_path",
+          "text": "Headline if it leads the page: Your Builder Gel PHILIP gets used up, and there's no way to reorder it on a schedule\nTitle: No subscribe or refill option on Builder Gel PHILIP\nDetail: Builder Gel PHILIP is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.\nProposed action: Test a subscribe-and-save option on Builder Gel PHILIP, with a small discount on each repeat delivery.\nEvidence shown: Subscribe option on the replenishable products checked: None on these 2 replenishable product records: Builder Gel PHILIP; Nagellim\nProduct named: Builder Gel PHILIP",
+          "quote": "Builder Gel PHILIP: none",
+          "title": "No subscribe or refill option on Builder Gel PHILIP",
+          "reason": "D1 confirms no subscribe/selling-plan option on this product record",
+          "source_url": "data",
+          "judge_version": "claims-2026-10-01t"
+        }
+      ],
+      "status": "ok",
+      "checked": 1,
+      "dropped": [],
+      "judge_version": "claims-2026-10-01t"
+    },
+    "competitors": {
+      "data": {
+        "capped": false,
+        "keywords": [
+          "nagelgel",
+          "nail tips",
+          "akrylpulver"
+        ],
+        "creatives": [],
+        "checked_at": "2026-10-13T21:30:22.441673+00:00",
+        "max_results": 90,
+        "sampled_items": 61,
+        "market_country": "SE",
+        "relevance_judge": {
+          "kept": 0,
+          "model": "claude-opus-5",
+          "status": "ok",
+          "dropped": 12,
+          "version": "strict-2026-10-01-r7",
+          "decisions": [
+            {
+              "ad_id": "967416079121712",
+              "score": 3,
+              "market": "SE",
+              "reason": "At-home press-ons, not pro supplies",
+              "ad_text": "\u00c4ntligen en l\u00f6sning f\u00f6r mig som inte vill l\u00e4gga mer pengar p\u00e5 salongen.",
+              "keyword": "nail tips",
+              "landing": "Tips f\u00f6r snygga naglar! | Milj\u00f6v\u00e4nliga salongsnaglar hemma p\u00e5 bara n\u00e5gra minuter | switch-nails.com | https://switch-nails.com/collections/popular",
+              "page_id": "102581099453965",
+              "relevant": false,
+              "advertiser": "Switch Nails",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "1034594269599050",
+              "score": 1,
+              "market": "SE",
+              "reason": "Kids' polish pen, different product",
+              "ad_text": "\"Can you paint my nails?\"\n\"Not today.\"\n\nYou've said it. And it was never about her nails - it was about the bottle. The one that tips. The smell. The twenty minutes of sitting still that she manages for about four.\n\nMagicMani\u2122 is a pen. Nothing to spill, and the fine tip goes where she points it, so she can draw a heart on her own thumb and have it look like a heart. Dry in seconds.\n\nShe asks. You say yes.\n\n90 days to send it back.\n\ud83d\udc49 https://heywondr.com/products/magicmani",
+              "keyword": "nail tips",
+              "landing": "Nothing to Spill on the Sofa | Sale Ends Soon! | heywondr.com | https://heywondr.com/products/magicmani",
+              "page_id": "104256269351906",
+              "relevant": false,
+              "advertiser": "HeyWondr",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "2527978644281655",
+              "score": 3,
+              "market": "SE",
+              "reason": "General store, nail strengthener not builder gel",
+              "ad_text": "\ud83d\udc85\ud83c\udffb Reparera och st\u00e4rk spruckna naglar omedelbart med denna kraftfulla nagelgel!\n- F\u00f6rebygger sprickor och \u00f6kar tillv\u00e4xten\n- Snabbtorkande, l\u00e5ngvarigt skydd\n- Finish som ser naturlig ut\n\ud83d\udc49\ud83c\udffbhttps://sebutik.se/products/nailgel",
+              "keyword": "nagelgel",
+              "landing": "sebutik.se | https://sebutik.se/products/nailgel",
+              "page_id": "104526282000771",
+              "relevant": false,
+              "advertiser": "Sebutik S",
+              "model_market": "same",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "925684336865037",
+              "score": 3,
+              "market": "SE",
+              "reason": "Consumer press-on sets, not pro supplies",
+              "ad_text": "Want nails that last 14 days? \ud83d\udc85\u2728\n\nFollow these small tips to make your press-ons stay flawless longer.\nSave this before your next CurvLife set!\n\n#CurvLife #PressOnNails #NailTips #LongLastingNails #PressOnNailTips #AtHomeNails #FakeNails #SelfCareForRealLife",
+              "keyword": "nail tips",
+              "landing": "www.curvlife.com | https://www.curvlife.com/collections/semi-solid-glue?sort_by=gel-press-on-nails-16-sizes-32-nails-kit-xnqc121%2Ctabqueen-nail-adhesive-tabs",
+              "page_id": "106865841636148",
+              "relevant": false,
+              "advertiser": "CurvLife",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "1044942038054433",
+              "score": 2,
+              "market": "SE",
+              "reason": "Chinese wholesale factory, Facebook landing",
+              "ad_text": "Foreign engineering companies,\nwhy the nail tips you ordered are so expensive?\nThat's because\nyou haven't found\nthe real Chinese source manufacturer of nail tips,\nFactory direct supply,\nThe price is very favorable.\nWhether it's product design or product processing,\nEvery link will be refined to the best.\nto ensure product quality.\nIf you need to wholesale nail tips now\nand are looking for a real Chinese source factory,\nplease contact me quickly.",
+              "keyword": "nail tips",
+              "landing": "Foreign engineering companies, why the nail tips you ordered are so expensive? That's because you haven't found the real Chinese source manufacturer of nail tips, Factory direct supply, The price is very favorable. Whether it's product design or product processing, Every link will be refined to the best. to ensure product quality. If you need to wholesale nail tips now and are looking for a real Chinese source factory, please contact me quickly. | Foreign engineering companies,\nwhy the nail tips you ordered are so expensive?\nThat's because\nyou haven't found\nthe real Chinese source manufacturer of nail tips,\nFactory direct supply,\nThe price is very favorable.\nWhether it's product design or product processing,\nEvery link will be refined to the best.\nto ensure product quality.\nIf you need to wholesale nail tips now\nand are looking for a real Chinese source factory,\nplease contact me quickly. | fb.me | http://fb.me/",
+              "page_id": "1164274343440395",
+              "relevant": false,
+              "advertiser": "Cuizm",
+              "model_market": "other",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "4261025587498206",
+              "score": 2,
+              "market": "SE",
+              "reason": "Acrylic art markers; German-oriented",
+              "ad_text": "\ud83c\udfa8 Take your creativity to the next level! The 12/24 color acrylic marker set is perfect for precise nail art and painting. \ud83d\udc85\n\nThese high-quality, dual-tip markers (fine and broad) are ideal for intricate nail designs, decorative drawings, and craft projects. They are waterproof, quick-drying, and opaque. Perfect for artists, beauty enthusiasts, and hobbyists. \ud83c\udf1f\u2728\n\n\ud83c\udf1f Your versatile creative tool:\n\n\u2705 12/24 vibrant acrylic colors: waterproof and opaque\n\u2705 Dual tips: 1mm fine tip for details and 3mm tip for larger areas\n\u2705 Quick-drying: perfect for layering and fast results\n\u2705 Ideal for nail art, glass painting, stone drawing, and personalized gifts\n\n\u2705 Convenient case: perfect for travel and as a gift\n\nFrom delicate nail designs to artistic projects, your creativity knows no bounds! \ud83c\udf08\ud83d\udd8c\ufe0f\n\n\ud83d\udc49 Open it by twisting, draw, and be amazed.\n\n#AcrylicMarkers #NailDesign #CreativeKit #Painting #DIY #Germany #ArtSupplies",
+              "keyword": "nail tips",
+              "landing": "copenrain.com | https://copenrain.com/products/dual-tip-nail-art-marker-pen-set",
+              "page_id": "117517064774650",
+              "relevant": false,
+              "advertiser": "Copenrain",
+              "model_market": "other",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "27782017731473151",
+              "score": 2,
+              "market": "SE",
+              "reason": "Content channel landing, not product store",
+              "ad_text": "Welcome to KUPA TV, your 24/7 destination for professional nail education, product demonstrations, techniques, inspiration, and everything KUPA.\n\nTune in anytime to discover KUPA products in action, learn new techniques, and get inspired by professional nail artists and educators. Plus, join us for our weekly live demos, where our educators showcase techniques, answer your questions, and share tips to help you get the most out of your KUPA products.\n\nWhether you\u2019re learning something new, perfecting your craft, or just looking for inspiration, KUPA TV is always on.\n\nWatch. Learn. Create.",
+              "keyword": "nail tips",
+              "landing": "KUPA TV",
+              "page_id": "186793644684167",
+              "relevant": false,
+              "advertiser": "Kupa Inc.",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "1350783300460498",
+              "score": 0,
+              "market": "SE",
+              "reason": "Course workbooks, not nail products",
+              "ad_text": "\u2705 NAIL INSTRUCTOR, are you looking for a professional, ready-to-use workbook to teach your nail courses?\n\n\ud83d\udc49 Discover our fully editable Nail Course Workbooks, designed in Canva Free, so you can customize them with your own brand and provide an even better learning experience for your students.\n\nAvailable Workbooks:\n\n\u2705 Fiberglass Nails\n\u2705 F1 Nail Forms\n\u2705 Russian Nail Forms\n\u2705 Gel on Tips\n\u2705 Realistic Press-On Nails\n\u2705 Soft Gel\n\nStand out from other nail instructors in your area with professional teaching materials.\n\nClick \"LEARN MORE\" and explore the complete collection today! \ud83e\udd29",
+              "keyword": "nail tips",
+              "landing": "Click (LEARN MORE) | \u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0f 4.9/5.0 | daianeoliveiraquiz.vercel.app | https://daianeoliveiraquiz.vercel.app/",
+              "page_id": "325321474666268",
+              "relevant": false,
+              "advertiser": "Daiane Oliveira",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "898365079858560",
+              "score": 4,
+              "market": "SE",
+              "reason": "Nail lamp, different product type",
+              "ad_text": "\u274c Stop Struggling with Messy Gel Tip Applications\ud83e\udd2f Vettsy Hands-Free Foot Pedal Nail Lamp is here to save your manicures.\ud83d\udc85\n\nWhy you\u2018ll love it:\n\n\ud83e\uddb6Foot Pedal Control: Tap to cure. Keep both hands on your client for perfect placement.\n\n\ud83d\udd06 Spotlight Design: Advanced focused lens concentrates light for a FASTER, deeper cure. Perfect for builder gels & 3D art! \ud83c\udfa8\n\n\ud83e\udda2 Flexible Gooseneck: Angle it exactly where you need it. \ud83d\udc4c\n\nSay goodbye to bubbles and shifting tips. Upgrade to pro-level efficiency! \ud83d\ude4c\n\n\ud83d\uded2Using Vettsy: \u2728Hands-Free Foot Pedal Lamp\n\n\ud83d\udc49 Shop the same nail supplies via my bio or visit vettsy.com\n\nFollow @vettsystore & @vettsynails for more nail inspiration \ud83e\uddda\u200d\u2640\ufe0f\n\n\ud83d\udc6dTag friends who would like this\ud83d\udc6d\n#NailTechTips #GelX #NailLamp #HandsFreeNailLamp #NailStudioEssentials",
+              "keyword": "nail tips",
+              "landing": "www.vettsy.com | https://www.vettsy.com/products/hands-free-foot-pedal-nail-lamp",
+              "page_id": "479892179243869",
+              "relevant": false,
+              "advertiser": "Vettsy",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "1994158291298205",
+              "score": 3,
+              "market": "SE",
+              "reason": "Finished press-on sets for consumers",
+              "ad_text": "Your Halloween nails have entered the chat \ud83d\udd77\ufe0f\ud83e\ude78\nFrom glossy blood-drip designs and dark ombr\u00e9 tips to playful pumpkins, bats, and spiderwebs \u2014 the Halloween Edit has a look for every spooky mood.\n\nChoose your favorites and get 4 nail sets while paying for only 2. No code needed.",
+              "keyword": "nail tips",
+              "landing": "Shop the Halloween Edit | Buy 4 Nail Sets, Pay For 2 | stellaandmoon.com | https://stellaandmoon.com/collections/halloween",
+              "page_id": "725428070655770",
+              "relevant": false,
+              "advertiser": "Stella & Moon",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "2492475134595870",
+              "score": 4,
+              "market": "SE",
+              "reason": "Nail glue, not gel or tips",
+              "ad_text": "Do your nail tips keep popping off? \ud83d\udc85\ud83d\ude29\nDon't worry! Try our new Low Heat Nail Glue Gel! \u2728\ufe0f\nUnlike standard nail glues, our upgraded formula offers superior adhesion with a low-heat sensation, ensuring your press-ons stay securely in place without falling off easily. \ud83d\udc96",
+              "keyword": "nail tips",
+              "landing": "brightrainbownail.com | https://brightrainbownail.com/products/low-heat-nail-glue-gel-15ml-7-in-1-multi-function-for-nail-tips-art",
+              "page_id": "728273710376747",
+              "relevant": false,
+              "advertiser": "Bright Rainbow Nail",
+              "model_market": "unsure",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            },
+            {
+              "ad_id": "1733275511204614",
+              "score": 0,
+              "market": "SE",
+              "reason": "Health community page, unrelated supplement",
+              "ad_text": "I'm a Nurse. My Own Hands Were Ice for 30 Years.\n\nMy hands have been cold for as long as I can remember.\n\nNot cool-to-the-touch cold.\n\nCold like I'd just come in from a January parking lot, in the middle of August.\n\nI'd hold a hot mug with both hands at the nurses' station just to feel my fingers.\n\nI did that every morning for years.\n\nI wore socks to bed in July.\n\nMy husband noticed and made a face the first few summers.\n\nAfter that he stopped saying anything.\n\nI told myself it was the job.\n\nLong shifts on cold floors will do that to you.\n\nWhen that stopped making sense, I told myself it was my age.\n\nEvery doctor I ever mentioned it to said the same thing.\n\n\"That's just your circulation, Diane. It happens to a lot of women your age.\"\n\nNot one of them told me what to do about it.\n\nI'd stand at the kitchen sink before bed and run warm water over my hands, standing there like I had nowhere else to be.\n\nI did what I'd always told my own patients not to do.\n\nI lived with it.\n\nI had almost 38 years of nursing behind me, and I figured if there were a real answer, I'd have found it by now.\n\nSo I stopped looking.\n\nThen a few months ago, one of my regular patients came in for her checkup.\n\nLovely woman, mid-sixties, hands and feet cold the whole time I'd known her.\n\nShe'd sit in the waiting room with her gloves still on.\n\nBut this time, when I went to take her pulse, her hands were warm.\n\nActually warm.\n\nI asked her about it, half expecting her to say she'd just come in from a hot car.",
+              "keyword": "nail tips",
+              "landing": "Natural Relief in Weeks | \"I've been dealing with constant bloating and digestive issues for years. Since starting PiPi Tea, my gut feels so much better and I can actually eat without that uncomfortable bloated feeling.\" | shop.pipitea.com | https://shop.pipitea.com/p/sp",
+              "page_id": "866655706540346",
+              "relevant": false,
+              "advertiser": "Cholesterol Relief Community",
+              "model_market": "other",
+              "landing_market": {
+                "reason": "not read",
+                "verdict": null
+              }
+            }
+          ],
+          "candidates": 12,
+          "judged_relevant": 0,
+          "dropped_advertisers": [
+            "Switch Nails",
+            "HeyWondr",
+            "Sebutik S",
+            "CurvLife",
+            "Cuizm",
+            "Copenrain",
+            "Kupa Inc.",
+            "Daiane Oliveira",
+            "Vettsy",
+            "Stella & Moon",
+            "Bright Rainbow Nail",
+            "Cholesterol Relief Community"
+          ]
+        },
+        "advertisers_seen": 32,
+        "keywords_requested": [
+          "nagelgel",
+          "nail tips",
+          "akrylpulver"
+        ]
+      },
+      "reason": "12 advertiser(s) surfaced but fewer than 2 judged direct competitors, no strip",
+      "status": "empty",
+      "fetched_at": "2026-10-13T21:30:22.441696+00:00",
+      "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=SE&q=nagelgel&search_type=keyword_unordered&media_type=all"
+    },
+    "screenshots": {
+      "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-pdp_url.png",
+      "pdp_path": "/products/builder-gel-philip",
+      "captured_at": "2026-10-13T21:32:25.554587+00:00",
+      "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
+      "capture_method": "t3-collaborative-browser",
+      "market_country": "SE"
+    },
+    "completed_at": "2026-10-13T21:39:49.518000+00:00",
+    "completeness": {
+      "tier": "rich",
+      "present": [
+        "shopify",
+        "ads.meta",
+        "tech_stack",
+        "reviews",
+        "signup"
+      ],
+      "signals": {
+        "signup": "present",
+        "reviews": "present",
+        "shopify": "present",
+        "ads.meta": "present",
+        "pagespeed": "absent",
+        "tech_stack": "present"
+      },
+      "scored_of": 6,
+      "present_count": 5
+    },
+    "fact_quality": {
+      "reason": null,
+      "version": "rise-quality-2026-09-30",
+      "approved": true,
+      "lead_ref": "second_order.0",
+      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel PHILIP. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
+    },
+    "growth_score": null,
+    "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg",
+    "public_depth": {
+      "data": {
+        "items": [],
+        "sources": [
+          {
+            "id": "PT1",
+            "ok": true,
+            "url": "https://yananails.com/policies/refund-policy",
+            "why": null,
+            "kind": "terms",
+            "text": "\u00c5terbetalningspolicy K\u00f6pvillkor \u00c5ngerr\u00e4tt & Returer Som privatkund har du r\u00e4tt att \u00e5ngra ditt k\u00f6p inom 14 dagar fr\u00e5n det att du mottagit din best\u00e4llning. F\u00f6r att \u00e5ngerr\u00e4tten ska g\u00e4lla m\u00e5ste produkten vara oanv\u00e4nd och i o\u00f6ppnad originalf\u00f6rpackning. Returer som skickas till oss utan att f\u00f6rst ha beg\u00e4rts godk\u00e4nns inte. Vid godk\u00e4nd retur \u00e5terbetalas k\u00f6pesumman inom 14 dagar efter att vi mottagit och kontrollerat varan. Observera att det kan ta n\u00e5gra dagar innan \u00e5terbetalningen syns p\u00e5 ditt konto beroende p\u00e5 bankens hanteringstid. Du som kund ansvarar f\u00f6r returfrakten. Returen m\u00e5ste skickas med sp\u00e5rbar f\u00f6rs\u00e4ndelse. Om produkten returneras i bruten f\u00f6rpackning eller \u00e4r skadad, godk\u00e4nns inte returen. I dessa fall st\u00e5r du som kund \u00e4ven f\u00f6r frakten tillbaka till dig. Om du returnerar en del av din best\u00e4llning och det \u00e5terst\u00e5ende orderv\u00e4rdet understiger gr\u00e4nsen f\u00f6r fri frakt, kommer kostnaden f\u00f6r den ursprungliga frakten att dras av fr\u00e5n \u00e5terbetalningen. Returer skickas till: Yananails Jordlottsv\u00e4gen 15 197 36 Bro Paketet m\u00e5ste skickas direkt till v\u00e5r adress. Vi kan inte h\u00e4mta ut paket som levereras till ombud. Anv\u00e4nd en sp\u00e5rbar fraktmetod som passar dig, exempelvis PostNord, DHL eller Schenker. F\u00f6r att returen ska kunna behandlas smidigt, se till att produkten \u00e4r v\u00e4l skyddad vid transport och bifoga g\u00e4rna f\u00f6ljesedeln eller en lapp med ditt ordernummer. Observera att \u00e5ngerr\u00e4tten endast g\u00e4ller privatpersoner. F\u00f6retagskunder omfattas inte av \u00e5ngerr\u00e4tten. Vid fr\u00e5gor, kontakta oss g\u00e4rna p\u00e5: info@yananails.com Reklamation Kontrollera din best\u00e4llning vid mottagandet. Om en vara \u00e4r skadad, defekt eller felaktig \u2013 kontakta oss omg\u00e5ende s\u00e5 att vi kan bed\u00f6ma situationen och hj\u00e4lpa dig. Observera att mindre f\u00e4rgskillnader mellan produktbild och verklighet kan f\u00f6rekomma p\u00e5 grund av sk\u00e4rm- och ljusinst\u00e4llningar, och dessa godtas inte som giltiga reklamations\u00e4renden. Vid reklamation, mejla oss f\u00f6ljande: En bild eller kort video som tydligt visar felet En kort beskrivning av problemet Ditt ordernummer info@yananails.com",
+            "label": "Public shipping/return-policy page",
+            "linked": true,
+            "fetch_meta": {
+              "context": "depth20232c8c29094f1b",
+              "transport": "residential-US",
+              "fetched_at": "2026-10-13T21:29:36.136264+00:00",
+              "response_url": "https://yananails.com/policies/refund-policy",
+              "requested_url": "https://yananails.com/policies/refund-policy"
+            },
+            "source_url": "https://yananails.com/",
+            "status_code": 200,
+            "anchor_label": "\u00c5terbetalningspolicy"
+          },
+          {
+            "id": "PT2",
+            "ok": true,
+            "url": "https://yananails.com/products/builder-gel-ryan",
+            "why": null,
+            "kind": "terms",
+            "text": "B\u00e4sts\u00e4ljare Builder gel ryan Builder Gel RYAN 359 SEK 359 SEK Meddela mig V\u00e5r builder gel RYAN \u00e4r en h\u00f6gkvalitativ bygggel med thixotropa egenskaper, vilket inneb\u00e4r att den \u00e4r fast i vila men blir mjukare och l\u00e4tt att forma n\u00e4r du arbetar med den. Gelen rinner inte ut i nagelbanden utan ger dig full kontroll vid applicering, samtidigt som den sj\u00e4lvutj\u00e4mnar och skapar en sl\u00e4t och j\u00e4mn finish. Perfekt f\u00f6r b\u00e5de f\u00f6rl\u00e4ngningar och f\u00f6rst\u00e4rkningar. Formulan \u00e4r fri fr\u00e5n HEMA, TPO och IBOA. Undvik hudkontakt med oh\u00e4rdad gel. Gelen h\u00e4rdas i 120 sekunder i UV-lampa och 60 sekunder i LED-lampa f\u00f6r ett h\u00e5llbart och starkt resultat. OBS: Hantering av gel\u00e9n P\u00e5 grund av gel\u00e9ns thixotropa egenskaper b\u00f6r den inte r\u00f6ras om i on\u00f6dan, d\u00e5 den tappar sin fasta form och f\u00e5r en l\u00e4gre viskositet. Gelen \u00e5terg\u00e5r successivt till sin fasta konsistens n\u00e4r den f\u00e5r vila, och det tar cirka 2 veckor f\u00f6r den att \u00e5terst\u00e4lla sig helt. Sj\u00e4lvutj\u00e4mnande och l\u00e4tt att forma tack vare thixotropi HEMA-fri, TPO-fri och IBOA-fri Passar b\u00e5de f\u00f6r f\u00f6rl\u00e4ngning och f\u00f6rst\u00e4rkning H\u00e4rdas p\u00e5 120 sekunder i UV och 60 sekunder i LED 30 ml F\u00e4rgen p\u00e5 bilden kan skilja sig n\u00e5got fr\u00e5n den faktiska produkten beroende p\u00e5 sk\u00e4rminst\u00e4llningar. Fri frakt \u00f6ver 999 kr Hanteras samma dag 14 dagars returpolicy L\u00e4gg till \u2014 359 SEK Se alla detaljer 5 stars: 397 (99%) 4 stars: 1 (0%) 3 stars: 3 (1%) 2 stars: 0 (0%) 1 star: 1 (0%) M Molly S. V\u00e4ldigt bra gel\u00e9, fin f\u00e4rg och as nice viskositet. O Ottilia H. J\u00e4ttel\u00e4tt att arbeta med och underbart fin f\u00e4rg. Rekommenderar starkt\ud83e\ude77 S Sara Underbar att jobba med T Tyra Super l\u00e4tt att jobba med. V\u00e4ldigt unik viskositet N Nailedbyfeliciia Fin och trevlig gel\u00e9 A Anonym Den var j\u00e4tte bra och jobba med dessutom var f\u00e4rgerna underbart fina Tusen tack! S\u00e5 kul att du f\u00f6ll f\u00f6r f\u00e4rgerna, vi \u00e4lskar dem ocks\u00e5. Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\udc85 C Celine B. v\u00e4ldigt fin basf\u00e4rg f\u00f6r b\u00e5de basicnaglar och mycket design. Rekomenderar Ryan med brunt gellack nu f\u00f6r h\u00f6st SUPERFINT!! Hej Celine! Vilket bra tips, Ryan med brunt ovanp\u00e5 l\u00e5ter perfekt nu i h\u00f6st. Tack f\u00f6r att du delar med dig! Kram fr\u00e5n oss p\u00e5 Yananails \ud83c\udf42 A Amelia J\u00e4tte bra. Fin f\u00e4rg och enkel att jobba med! Super n\u00f6jd Hej Amelia! Super n\u00f6jd \u00e4r precis vad vi vill att alla ska vara. Tack f\u00f6r att du delade! Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\udc96 M Maja S. Helt klart den b\u00e4sta gelen p\u00e5 marknaden. Provat flera olika men den h\u00e4r \u00e4r favoriten, l\u00e4tt att arbeta med, sitter bra och absolut v\u00e4rd sitt pris. Wow Maja, tre fina recensioner fr\u00e5n dig! 'V\u00e4rd sitt pris' betyder extra mycket f\u00f6r oss. Stort tack! Kram fr\u00e5n oss p\u00e5 Yananails \ud83e\udd70 S Sara T. S\u00e5 fin f\u00e4rg! Visst \u00e4r den! Tack Sara, kul att du gillar RYAN. Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\ude0a S Silje O.E. En dr\u00f6m att jobb med! \u00c5 s\u00e5\u00e5\u00e5\u00e5 fin! L Lisa A. Kan rekommendera starkt denna produkt \u2764\ufe0f E Ellen L. Den br\u00e4nde lite i lampan, men va l\u00e4tt att arbeta med Hej Ellen, tack f\u00f6r din feedback! V\u00e4rmen i lampan \u00e4r en helt normal reaktion n\u00e4r gelen h\u00e4rdar. Ett tips \u00e4r att flash cura: h\u00e4rda 1-2 sekunder, ta ut handen en kort stund och upprepa innan full h\u00e4rdning. Vi har skrivit mer om det i v\u00e5r blogg. Kul att RYAN var l\u00e4tt att arbeta med! Varma h\u00e4lsningar, Yananails \ud83d\udc97 A Anonym Super fin f\u00e4rg, gel\u00e9n blir verkligen stenh\u00e5rd vilket jag \u00e4lskar f\u00f6r jag har upplevt att m\u00e5nga andra geler \u00e4r f\u00f6r mjuka. Br\u00e4nns dock lite i lampan s\u00e5 var noga med att bara k\u00f6ra 5 sekunder i taget och ta ut handen d\u00e4r i mellan i n\u00e5n sekund F Frida Trodde den skulle vara mer fast n\u00e4r man b\u00f6rjade arbeta men den, men den var l\u00f6s redan fr\u00e5n b\u00f6rjan!! Hej Frida, tack f\u00f6r din feedback! RYAN har tixotropa egenskaper, den mjuknar n\u00e4r man arbetar med den och blir fastare igen n\u00e4r den f\u00e5r vila. Undvik att r\u00f6ra om i gelen s\u00e5 beh\u00e5ller den sin fasta form. Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\udc97 M Meja U.\u00c5. Br\u00e4nner j\u00e4ttemycket i lampan men annars \u00e4r den toppen Hej Meja, tack! Vad kul att du tycker att RYAN \u00e4r toppen. Att det v\u00e4rmer i lampan \u00e4r helt normalt n\u00e4r gelen h\u00e4rdar. Prova g\u00e4rna att flash cura, eller att f\u00f6ra en mini nail lamp i svepande r\u00f6relser \u00f6ver nageln n\u00e5gra sekunder innan full h\u00e4rdning. Varma h\u00e4lsningar, Yananails \ud83d\udc97 L Liliana A. \u00c4lskar Ryan ,ingen \u00e4r b\u00e4ttre. K\u00f6pt flera ggr. Perfekt att jobba med o finast f\u00e4rg \ud83c\udf38 B Bella Har aldrig arbetat med builder gel innan men det blev helt perfekt redan f\u00f6rsta g\u00e5ngen jag anv\u00e4nde den\ud83d\ude0d A Alva A. \u00c4r nyb\u00f6rjare och tyckte verkligen att den var l\u00e4tt att arbeta med. Den j\u00e4mnade ut sig v\u00e4ldigt fint samtidigt som den inte rann iv\u00e4g! En mycket bra produkt, rekommenderar starkt! E Emelie B. WOW wow wow s\u00e4ger jag bara! Otroligt bra \ud83d\ude0d Y Yaranaglar \u00c4lskar som vanligt! A Anonym \u00c4lskar! L Lava H. J\u00e4ttefint, \u00e4lskar viskositeten T Tuva A. \u2800 T Thea S. \u2800 E Ella O. \u2800 M Marcus \u00c5. \u2800 A Ann-Mari E. \u2800 I Ida D. \u2800 M Minna P. \u2800 C Clara S. \u2800 E Erica L. \u2800 D Daniella W. \u2800",
+            "label": "Product-page shipping and return terms",
+            "linked": false,
+            "product": true,
+            "fetch_meta": {
+              "context": "depth20232c8c29094f1b",
+              "transport": "residential-US",
+              "fetched_at": "2026-10-13T21:29:36.082161+00:00",
+              "response_url": "https://yananails.com/products/builder-gel-ryan",
+              "requested_url": "https://yananails.com/products/builder-gel-ryan"
+            },
+            "source_url": null,
+            "status_code": 200,
+            "anchor_label": ""
+          },
+          {
+            "id": "PT3",
+            "ok": true,
+            "url": "https://yananails.com/products/primer",
+            "why": null,
+            "kind": "terms",
+            "text": "B\u00e4sts\u00e4ljare Primer Primer 169 SEK 169 SEK Meddela mig Primer V\u00e5r lufttorkande Primer appliceras i ett tunt lager p\u00e5 en f\u00e4rdigpreppad nagel f\u00f6r att maximera vidh\u00e4ftningen. Den anv\u00e4nds som steg 2 efter v\u00e5r Acid-Free Bonder och \u00e4r anpassad f\u00f6r b\u00e5de akryl- och gelbehandlingar. Inneh\u00e5ller syra f\u00f6r extra stark bindning och l\u00e5ngvarigt resultat. V\u00e5r primer inneh\u00e5ller Methacrylic Acid, en syra som anv\u00e4nds i professionella nagelprodukter f\u00f6r att f\u00f6rb\u00e4ttra vidh\u00e4ftningen mellan den naturliga nageln och produkten ovanp\u00e5. Syran f\u00f6rbereder nagelytan, ger b\u00e4ttre f\u00e4ste och minskar risken f\u00f6r sl\u00e4pp, vilket \u00f6kar h\u00e5llbarheten p\u00e5 behandlingen. Eftersom Methacrylic Acid \u00e4r en aktiv syra kan primern ha en stark eller stickande doft. Detta \u00e4r helt normalt och doften f\u00f6rsvinner n\u00e4r produkten torkar. Syran har \u00e4ven en relativt h\u00f6g fryspunkt, vilket inneb\u00e4r att produkten kan bli tjockare eller frysa vid temperaturer runt 15 \u00b0C eller l\u00e4gre. Detta p\u00e5verkar inte kvaliteten, l\u00e5t bara produkten st\u00e5 i rumstemperatur en stund s\u00e5 \u00e5terg\u00e5r den till det normala. Lufttorkande Anpassad f\u00f6r akryl & gel Anv\u00e4nds tillsammans med v\u00e5r Bonder 15 ml Fri frakt \u00f6ver 999 kr Hanteras samma dag 14 dagars returpolicy L\u00e4gg till \u2014 169 SEK Se alla detaljer 5 stars: 258 (99%) 4 stars: 1 (0%) 3 stars: 0 (0%) 2 stars: 0 (0%) 1 star: 2 (1%) R Rafaela I. Supeeer Tack Rafaela! Och tack f\u00f6r att du delade med dig av dina naglar, de blev j\u00e4ttefina! Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\ude0d N Nailedbyfeliciia Den f\u00f6rsta och enda primern som har funkat f\u00f6r mig. Jag har gjort naglar i ca 3 \u00e5r och aldrig f\u00e5tt naglarna att sitta fast! Nu har jag aldrig ett enda sl\u00e4pp l\u00e4ngre \ud83e\ude77 rekommenderar 10/10 produkt Tre \u00e5r och nu \u00e4ntligen inga sl\u00e4pp, vilken skillnad! Det g\u00f6r oss s\u00e5 glada att h\u00f6ra. Tack f\u00f6r att du tog dig tid att ber\u00e4tta, Felicia. Kram fr\u00e5n oss p\u00e5 Yananails \ud83d\udc97 A Andrea S. Funkar utm\u00e4rkt! \ud83d\udc4c H Helena E. Luktar fruktansv\u00e4rt illa kan inte ens anv\u00e4nda den Hej Helena, tack f\u00f6r din feedback! V\u00e5r primer inneh\u00e5ller Methacrylic Acid, en syra som ger extra starkt f\u00e4ste och minskar risken f\u00f6r sl\u00e4pp. D\u00e4rf\u00f6r har den en stark doft, vilket \u00e4r helt normalt och f\u00f6rsvinner n\u00e4r den torkat. Vi f\u00f6rst\u00e5r att det inte passar alla och hoppas att du hittar en produkt du trivs med. Varma h\u00e4lsningar, Yananails \ud83d\udc97 B Boel Har alltid haft v\u00e4ldiga problem med att jag f\u00e5r sl\u00e4pp snabbt. M en med denna tillsammans med bonder och mulitmist s\u00e5 kan jag \u00e4ntligen iallafall g\u00e5 2 veckor utan det b\u00f6rjar sl\u00e4ppa. A Anonym Sved skit mycket Hej, tack f\u00f6r din feedback! \ud83e\udd0d V\u00e5r primer inneh\u00e5ller Methacrylic Acid, en syra som ger extra starkt f\u00e4ste och minskar risken f\u00f6r sl\u00e4pp. Eftersom det \u00e4r en syra kan det svida om produkten kommer i kontakt med huden, s\u00e4rskilt om man har k\u00e4nsliga nagelband. Det \u00e4r d\u00e4rf\u00f6r viktigt att applicera primern endast p\u00e5 nageln och undvika kontakt med huden. Varma h\u00e4lsningar, Yananails \ud83d\udc97 A Ann-Sofie B. Sitter as bra min riktiga nagel \u00e5kte av n\u00e4r jag slog i naglen F Frida Love C Caroline \u00d6. Nej men ass\u00e5 HJ\u00c4LP vad bra prepp f\u00f6r att f\u00e5 naglarna att h\u00e5lla l\u00e4nge! \u00c4lskar \u00e4lskar \u00e4lskaaar!! \ud83d\ude0d\ud83d\ude0d A Agnes H. Super bra, luftt\u00e5rkar snabbt och de f\u00e5r naglarna att h\u00e5lla i veckor. A Anonym H\u00e5ller i flera veckor A Amelie L. H\u00e5ller bra, men luktar extremt \u00e4ckligt. Detta \u00e4r inget som g\u00e5r att \u00e4ndra men luktar \u00e4nd\u00e5 v\u00e4ldigt d\u00e5ligt. A Anonym S\u00e5 BRA M Malin F. \u2800 F Frida S. \u2800 L Lisa P. \u2800 C Carla C. \u2800 J Johanna G. \u2800 N Nellie F. \u2800 B Bettie B. \u2800 T Therese A. \u2800 I Ida C. \u2800 K Kristina J. \u2800 J Julia P. \u2800 A Andreea F. \u2800 T Tindra W. \u2800 E Elsa M. \u2800 A Anita S. \u2800 S Stina L. \u2800 M Maria J.B. \u2800 S Saga H. \u2800 T Tilda F.T.F. \u2800 S Susanna S. \u2800 J Jenny \u00d6. \u2800 M Mikael E. \u2800 E Elvira L. \u2800",
+            "label": "Product-page shipping and return terms",
+            "linked": false,
+            "product": true,
+            "fetch_meta": {
+              "context": "depth20232c8c29094f1b",
+              "transport": "residential-US",
+              "fetched_at": "2026-10-13T21:29:36.215178+00:00",
+              "response_url": "https://yananails.com/products/primer",
+              "requested_url": "https://yananails.com/products/primer"
+            },
+            "source_url": null,
+            "status_code": 200,
+            "anchor_label": ""
+          }
+        ],
+        "version": "public-depth-2026-10-09",
+        "checked_at": "2026-10-13T21:29:39.222751+00:00",
+        "unit_price": {
+          "reason": "no supported selected-plan widget in promoted page sample",
+          "status": "unavailable",
+          "pages_considered": 5
+        },
+        "delivery_dates": {
+          "items": [],
+          "sources": [],
+          "probed_urls": [],
+          "pages_considered": 3
+        },
+        "store_features": [],
+        "policy_decision": {
+          "answer": null,
+          "status": "ok",
+          "accepted": false
+        }
+      },
+      "status": "present",
+      "source_url": "https://yananails.com/"
+    },
+    "second_order": {
+      "note": "Your repeat-order rate isn't public, so we read what your store gives a first-time buyer to come back for.",
+      "items": [
+        {
+          "id": "no_reorder_path",
+          "fix": "Test a subscribe-and-save option on Builder Gel PHILIP, with a small discount on each repeat delivery.",
+          "lever": "retention_path",
+          "title": "No subscribe or refill option on Builder Gel PHILIP",
+          "detail": "Builder Gel PHILIP is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
+          "product": {
+            "url": "https://yananails.com/products/builder-gel-philip",
+            "price": 359.0,
+            "title": "Builder Gel PHILIP",
+            "currency": "SEK",
+            "image_url": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/PHILIP.png?v=1782199562"
+          },
+          "evidence": {
+            "label": "Subscribe option on the replenishable products checked",
+            "value": "None on these 2 replenishable product records: Builder Gel PHILIP; Nagellim",
+            "source_url": "https://yananails.com/products/builder-gel-philip"
+          },
+          "verified": {
+            "ok": true,
+            "quote": "Builder Gel PHILIP: none",
+            "source_url": "data",
+            "judge_version": "claims-2026-10-01t"
+          }
+        }
+      ]
+    },
+    "dm_insight_why": null,
+    "builder_version": "dtc-2026-10-11b",
+    "score_breakdown": {},
+    "delivery_summary": "A visual review of your ad link and three store changes, with sources and proposed tests.",
+    "dm_insight_source": null,
+    "public_data_limits": "This is a public-site review. Actual drop-off, repeat orders and ad performance need your store and ad-account data.",
+    "commercial_evidence": {
+      "tests": [
+        {
+          "test": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+          "title": "Offer Bonder with Primer",
+          "measure": "Sales per visitor to the Primer page. Also check Primer-only orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
+              "source_url": "https://yananails.com/products/primer"
+            },
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
+              "source_url": "https://yananails.com/products/bonder"
+            }
+          ],
+          "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
+        },
+        {
+          "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+          "title": "Bring RYAN\u2019s handling advice closer to the buy button",
+          "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "flash cura: h\u00e4rda 1-2 sekunder",
+              "source_url": "https://yananails.com/products/builder-gel-ryan"
+            },
+            {
+              "kind": "store",
+              "quote": "Gelen h\u00e4rdas i 120 sekunder",
+              "source_url": "https://yananails.com/products/builder-gel-ryan"
+            }
+          ],
+          "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+        },
+        {
+          "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+          "title": "Send the colour-swatch ad to the gel collection",
+          "measure": "Sales per ad click. Also check order value and returns.",
+          "evidence": [
+            {
+              "kind": "ad",
+              "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=2169223840696220"
+            },
+            {
+              "kind": "store",
+              "quote": "Fiber Gel OLIVER 359 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "ad",
+              "quote": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=1615590163535319"
+            }
+          ],
+          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+        },
+        {
+          "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+          "title": "Help shoppers reach free shipping",
+          "measure": "Sales per cart visit. Also check completed orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Fri frakt \u00f6ver 999 kr inom Sverige",
+              "source_url": "https://yananails.com/"
+            },
+            {
+              "kind": "store",
+              "quote": "Nagellim 89 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "store",
+              "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+            }
+          ],
+          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+        }
+      ],
+      "reason": null,
+      "status": "present",
+      "version": "commercial-2026-10-11",
+      "journeys": [
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=4517074168554599",
+          "ad_excerpt": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/",
+            "https://yananails.com/products/builder-gel-philip",
+            "https://yananails.com/products/builder-gel-ryan",
+            "https://yananails.com/collections/nail-tips",
+            "https://yananails.com/products/builder-gel-anton",
+            "https://yananails.com/collections/gel/products/builder-gel-vincent"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+          "ad_excerpt": "Swatchar alla yananails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r yananails",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=1615590163535319",
+          "ad_excerpt": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://yananails.com/collections/gel",
+            "https://yananails.com/collections/nail-tips/products/nagellim",
+            "https://yananails.com/collections/nail-tips/products/almond-x-small-nageltippar",
+            "https://yananails.com/collections/nail-tips/products/square-medium-flat-tippar",
+            "https://yananails.com/collections/nail-tips",
+            "https://yananails.com/collections/nail-tips/products/coffin-small-tippar",
+            "https://yananails.com/collections/nail-tips/products/almond-small-tippar"
+          ]
+        }
+      ],
+      "checked_at": "2026-10-13T21:31:02.073637+00:00",
+      "screenshot": {
+        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
+        "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+        "captured_at": "2026-10-13T22:04:24.465752+00:00"
+      },
+      "presentation": {
+        "version": "rise-standard-2026-10-14",
+        "domain": "yananails.com",
+        "requested_domain": "yananails.com",
+        "review": {
+          "approved": true,
+          "checked_at": "2026-10-14T00:00:00Z"
+        },
+        "headline": "Your next growth opportunity.",
+        "intro": "We reviewed your store pages and checked the available public ad records. These findings show the changes worth considering and what we would check with your numbers.",
+        "hero_capture": {
+          "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
+          "source_url": "https://yananails.com/",
+          "captured_at": "2026-10-13T21:32:25.554587+00:00"
+        },
+        "sections": [
+          {
+            "test_index": 2,
+            "headline": "Send the colour-swatch ad to the gel collection",
+            "body": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately.",
+            "action": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+            "lane": "paid",
+            "capture": {
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
+              "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+              "captured_at": "2026-10-13T22:04:24.465752+00:00"
+            },
+            "ad": {
+              "url": "https://www.facebook.com/ads/library/?id=2169223840696220",
+              "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+              "destinations": [
+                "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+              ],
+              "observed_at": "2026-10-13T21:29:54.081153+00:00"
+            }
+          },
+          {
+            "test_index": 0,
+            "headline": "Offer Bonder with Primer",
+            "body": "Both pages say the products are used together. The pairing appears in their product descriptions.",
+            "action": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+            "lane": "store"
+          },
+          {
+            "test_index": 1,
+            "headline": "Bring RYAN\u2019s handling advice closer to the buy button",
+            "body": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering.",
+            "action": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+            "lane": "store"
+          },
+          {
+            "test_index": 3,
+            "headline": "Help shoppers reach free shipping",
+            "body": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK.",
+            "action": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+            "lane": "store",
+            "capture": {
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
+              "source_url": "https://yananails.com/",
+              "captured_at": "2026-10-13T21:32:25.554587+00:00"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
