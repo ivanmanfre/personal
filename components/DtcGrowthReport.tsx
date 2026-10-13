@@ -1528,7 +1528,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextProduct = promise ? [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(it => proofHref(it.product?.image_url) && proofHref(it.product?.url))?.product : null;
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
-  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c) }))} />;
+  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
 
   if (promise) return (
     <div className="rise-report" onClick={scrollReportSection} data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
