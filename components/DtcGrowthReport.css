@@ -321,6 +321,7 @@
 .rise-closing h2 { font-size:clamp(26px,3vw,36px); max-width:24ch; }
 .rise-closing-top p { font-size:17px; line-height:1.6; margin:16px 0 22px; }
 .rise-closing .rise-disclosure { border-color:#444; color:#ccc; max-width:100%; margin-top:30px; }
+.rise-closing .rise-booking { color:#111; }
 .rise-closing a:focus-visible,.rise-closing summary:focus-visible,.rise-footer summary:focus-visible { outline-color:#ffc71d; }
 .rise-footer summary { cursor:pointer; font-size:14px; }
 .rise-footer details p { margin-top:14px; font-size:14px; }
