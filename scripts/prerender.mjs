@@ -37,6 +37,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import http from 'node:http';
+import { configurePrerenderImages } from './prerender-images.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -291,6 +292,8 @@ process.on('SIGTERM', () => shutdown(143));
       'Mozilla/5.0 (compatible; IvanPrerender/1.0; +https://ivanmanfredi.com)',
     viewport: { width: 1280, height: 1024 },
   });
+
+  await configurePrerenderImages(context, BASE);
 
   let failures = 0;
 
