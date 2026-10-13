@@ -310,6 +310,9 @@ process.on('SIGTERM', () => shutdown(143));
       // 'networkidle' hangs on apps with Supabase realtime / long-poll connections.
       // 'domcontentloaded' is enough — useMetadata() runs in useEffect after first paint
       // anyway, and we explicitly waitForFunction below.
+      // Story motion is a client enhancement. Bake its native, fully visible layout
+      // so a slow or blocked JS request never leaves offscreen insights hidden.
+      await page.addInitScript(() => { window.__RISE_PRERENDER__ = true; });
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       // useMetadata() runs in useEffect after first paint. Wait one micro-tick
       // for the title to update from the index.html default to the route title.
@@ -330,7 +333,7 @@ process.on('SIGTERM', () => shutdown(143));
       // carries the right share tags (other routes set metadata synchronously).
       if (route.startsWith('/scan/')) {
         await page
-          .waitForFunction(() => (/^(A content system|An inbound engine|An inbound service|A growth scan|LinkedIn as a revenue line) for /.test(document.title) || /, your LinkedIn plan for qualified calls$/.test(document.title) || /^Turn LinkedIn into booked calls \| /.test(document.title)), { timeout: 15000 })
+          .waitForFunction(() => (/^(A content system|An inbound engine|An inbound service|A growth scan|LinkedIn as a revenue line) for /.test(document.title) || /, your LinkedIn plan for qualified calls$/.test(document.title) || /^Turn LinkedIn into booked calls \| /.test(document.title) || (document.querySelector('[data-rise-story] h1') && document.title.endsWith(document.querySelector('[data-rise-story] h1').innerText.replace(/\s+/g, ' ').trim()))), { timeout: 15000 })
           .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
         // Bake the full report body, not just OG tags. The scan content arrives via a
         // client-side Supabase fetch, so without this wait the baked #root is empty and
