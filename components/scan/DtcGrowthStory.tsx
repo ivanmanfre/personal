@@ -63,7 +63,7 @@ function ZoomView({ capture, alt, onClose }: { capture: Capture; alt: string; on
   useEffect(() => { const d = dialog.current; if (d && !d.open) d.showModal?.(); }, []);
   useEffect(() => { const p = pane.current, f = focus.current; if (!p || !f) return; p.scrollLeft = f.fx * p.scrollWidth - p.clientWidth / 2; p.scrollTop = f.fy * p.scrollHeight - p.clientHeight / 2; focus.current = null; }, [scale]);
   const m = capture.mark, zoomTo = (next: number, fx = m ? m.x + m.w / 2 : .5, fy = m ? m.y + m.h / 2 : .5) => { focus.current = { fx, fy }; setScale(Math.min(4, Math.max(1, next))); };
-  return <dialog ref={dialog} className="ris-zoom" aria-label={`Zoomed view: ${alt}`} onClose={onClose} onCancel={onClose}>
+  return <dialog ref={dialog} className="ris-zoom" aria-label={`Zoomed view: ${alt}`} onClose={onClose}>
     <div className="ris-zoom-bar"><span>{capture.quote ? <>Marked: “{capture.quote}”</> : capture.kind === 'ad' ? 'Your public ad' : 'Reviewed page'}</span><div>
       <button type="button" onClick={() => zoomTo(scale - 1)} disabled={scale <= 1} aria-label="Zoom out">−</button><output aria-live="polite">{scale * 100}%</output>
       <button type="button" onClick={() => zoomTo(scale + 1)} disabled={scale >= 4} aria-label="Zoom in">+</button>
