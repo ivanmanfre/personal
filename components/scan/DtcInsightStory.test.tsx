@@ -7,6 +7,20 @@ import { DtcInsightStory, canShowStory, ShippingExample, type DtcStoryPresentati
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 const data = { ...fixture.commercial, presentation: fixture.presentation } as DtcCommercialEvidence & { presentation: DtcStoryPresentation };
 describe('source-backed story', () => {
+  it('labels reviewed store-grounded paid proposals without claiming a live ad', () => {
+    const t = { title: 'Test a new starter-plan ad', observation: 'Your store offers a starter plan.', test: 'Proposed new ad: compare plan and product messages.', measure: 'First-order revenue per visitor.', proposal_type: 'paid_creative', evidence: [{ kind: 'store', source_url: 'https://refill.com/', quote: 'starter plan' }] };
+    const standard = { status: 'present', tests: [t], journeys: [], presentation: { version: 'rise-standard-2026-10-14', domain: 'refill.com', headline: t.title, intro: 'Paid creative ideas are proposed new tests.', review: { approved: true, checked_at: '2026-10-14T00:00:00Z' }, sections: [{ test_index: 0, headline: t.title, body: t.observation, action: t.test, lane: 'store', proposal_type: 'paid_creative' }] } } as any;
+    expect(canShowStory(standard)).toBe(true);
+    const html = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(html).toContain('01 / Proposed paid test');
+    expect(html).toContain('New paid test');
+    expect(html).not.toContain('From your public ad');
+    const unreviewed = structuredClone(standard); delete unreviewed.tests[0].proposal_type;
+    expect(canShowStory(unreviewed)).toBe(false);
+    const mislabelled = structuredClone(standard); delete mislabelled.presentation.sections[0].proposal_type;
+    expect(canShowStory(mislabelled)).toBe(false);
+  });
+
   it('uses the approved standard for other stores without copying Yananails products or advice', () => {
     const tests = [{ title: 'Show the refill cost with the starter', observation: 'Your starter contains three refillable bottles.', test: 'Compare starter and refill costs beside the buying button.', measure: 'Completed orders and margin per order.', evidence: [{ kind: 'store', source_url: 'https://refill.com/products/starter', quote: 'three refillable bottles' }] }];
     const standard = { ...data, tests, presentation: { version: 'rise-standard-2026-10-14', domain: 'refill.com', headline: 'From first order to refill.', intro: 'We reviewed your public ads and store pages. Here are the changes worth discussing.', review: { approved: true, checked_at: '2026-10-14T00:00:00Z' }, sections: tests.map((t, i) => ({ test_index: i, headline: t.title, body: t.observation, action: t.test, lane: 'store' })) } } as any;
