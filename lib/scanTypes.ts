@@ -273,7 +273,7 @@ export interface DtcCommercialEvidence {
   version: string;
   presentation?: import('../components/scan/DtcInsightStory').DtcStoryPresentation | import('../components/scan/DtcGrowthStory').DtcStandardPresentation;
   checked_at?: string;
-  tests: { title: string; observation: string; test: string; measure: string;
+  tests: { title: string; observation: string; test: string; measure: string; proposal_type?: 'paid_creative';
     evidence: { source_url: string; quote: string; kind: 'store' | 'ad' | 'reference' }[] }[];
   journeys?: { ad_url: string; ad_excerpt: string; destinations: string[]; observed_at?: string }[];
   screenshot?: { url: string; source_url: string; captured_at: string };
