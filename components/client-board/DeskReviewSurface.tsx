@@ -558,12 +558,13 @@ export default function DeskReviewSurface({
 
   // ---- Block 1/2: pipeline headline + counts (deskPipelineTitle, replicated) ----
   const out = board.queue.filter((x) => stageOf(x) === 'published').length;
-  const sched = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x)).length;
-  const buffer = board.queue.filter((x) => stageOf(x) !== 'published' && !isScheduledLocal(x)).length;
+  const awaitingApproval = (q: QueueItem) => live && reviewMode && !approvedIds.has(q.id);
+  const sched = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && !awaitingApproval(x)).length;
+  const buffer = board.queue.filter((x) => stageOf(x) !== 'published' && (!isScheduledLocal(x) || awaitingApproval(x))).length;
   // 2026-09-10 (Ivan): published posts stay out of the pipeline stat. The plate counts only
   // what still needs a decision: pending approval, approved, scheduled.
-  const pendingN = board.queue.filter((x) => stageOf(x) === 'review' && !isScheduledLocal(x)).length;
-  const approvedN = board.queue.filter((x) => stageOf(x) === 'scheduled' && !isScheduledLocal(x)).length;
+  const pendingN = board.queue.filter((x) => awaitingApproval(x) ? ['review', 'scheduled'].includes(stageOf(x)) : stageOf(x) === 'review' && !isScheduledLocal(x)).length;
+  const approvedN = board.queue.filter((x) => stageOf(x) === 'scheduled' && !isScheduledLocal(x) && !awaitingApproval(x)).length;
   const total = sched + buffer;
   // Approval vocabulary only where approval exists: preview boards and review-mode boards.
   const approvals = !live || reviewMode;
@@ -600,8 +601,8 @@ export default function DeskReviewSurface({
     // Approve moves the card, it never vanishes it (2026-09-10, Ivan: "when i select approve
     // nothing happens"): the buffer splits into Pending approval (still 'review') and
     // Approved (stage 'scheduled' with no date yet). bufferRows stays the union for counts.
-    pendingRows = board.queue.filter((q) => stageOf(q) === 'review' && !isScheduledLocal(q));
-    approvedRows = board.queue.filter((q) => stageOf(q) === 'scheduled' && !isScheduledLocal(q));
+    pendingRows = board.queue.filter((q) => (stageOf(q) === 'review' || (awaitingApproval(q) && stageOf(q) === 'scheduled')) && !isScheduledLocal(q));
+    approvedRows = board.queue.filter((q) => stageOf(q) === 'scheduled' && !isScheduledLocal(q) && !awaitingApproval(q));
     bufferRows = [...pendingRows, ...approvedRows];
   } else {
     reviewRows = board.queue.filter((q) => stageOf(q) === 'review').slice().sort(byDate);
@@ -750,7 +751,9 @@ export default function DeskReviewSurface({
     const img = cardImageUrlLocal(q, board);
     const slides = (q.kind === 'carousel' || q.style === 'carousel') ? (q.image_urls || []).filter(Boolean) : [];
     const dateLabel = inBuffer(bucket) ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
-    const chip = bucket === 'approved' ? { label: 'Approved ✓' } : statusChipFor(stage, q, live, todayIso);
+    const chip = live && reviewMode && stage !== 'published' && stage !== 'drafted' && !approvedIds.has(q.id)
+      ? { label: 'Awaiting approval' }
+      : bucket === 'approved' ? { label: 'Approved ✓' } : statusChipFor(stage, q, live, todayIso);
     const provenance = live && reviewMode ? sourceChipLocal(q) : null;
     const perf = bucket === 'published' ? perfFor(board, q) : null;
     const flashed = flashId === q.id;
@@ -1007,7 +1010,9 @@ export default function DeskReviewSurface({
        way through it, so a deck gets the pager (swipe, drag, dots, arrow keys) and everything
        else keeps the flat image. */
     const deck = docPagesOf(q);
-    const chip = bucket === 'published' ? { label: 'published' } : statusChipFor(stageOf(q), q, live, todayIso);
+    const chip = live && reviewMode && bucket !== 'published' && !approvedIds.has(q.id)
+      ? { label: 'Awaiting approval' }
+      : bucket === 'published' ? { label: 'published' } : statusChipFor(stageOf(q), q, live, todayIso);
     const dateLabel = inBuffer(bucket) ? 'no date yet' : (fmtDay(q.publish_date) || (bucket === 'published' ? 'date unknown' : 'date at sign-off'));
     const fName = (board.founder?.name || '').trim() || 'Founder';
     const initials = fName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -1025,7 +1030,8 @@ export default function DeskReviewSurface({
         if (Number.isNaN(d.getTime())) return null;
         const day = d.toLocaleDateString('en-GB', { timeZone: clientTz(), weekday: 'short', day: 'numeric', month: 'short' });
         const time = d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 });
-        return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>Goes out {day}, {time} {boardZone().label}</div>;
+        const awaitingApproval = live && reviewMode && !approvedIds.has(q.id);
+        return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>{awaitingApproval ? 'Awaiting approval · Proposed' : 'Goes out'} {day}, {time} {boardZone().label}</div>;
       })()}
       {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || srcLabelClient(q.source_label)} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
@@ -1189,7 +1195,7 @@ export default function DeskReviewSurface({
   const headline = (
     <>
       {compact && !approvals ? (() => {
-        const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
+        const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && !awaitingApproval(x) && x.publish_date)
           .map((x) => x.publish_date as string).sort().pop();
         return <>
           <b>{sched} {sched === 1 ? 'post' : 'posts'} scheduled</b>{lastDated ? <> through {fmtDay(lastDated)}</> : null}. {out} already out.
@@ -1203,7 +1209,7 @@ export default function DeskReviewSurface({
      Nov. 49 are already out." Approval boards keep their pending / approved / scheduled
      split, said plainly. */
   const nightLine: React.ReactNode = (() => {
-    const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && x.publish_date)
+    const lastDated = board.queue.filter((x) => stageOf(x) !== 'published' && isScheduledLocal(x) && !awaitingApproval(x) && x.publish_date)
       .map((x) => x.publish_date as string).sort().pop();
     // Night v4: the same words; v2's weight on the lead count.
     const schedPart = sched === 0 ? <b>Nothing is scheduled yet.</b>
@@ -1404,7 +1410,7 @@ export default function DeskReviewSurface({
           {/* Block 4: list view, pipeline-first (Up next/Scheduled → In buffer → Published). */}
           {live ? (
             <>
-              {section('Scheduled', fUpNext.length, 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
+              {section(reviewMode ? 'Dated posts' : 'Scheduled', fUpNext.length, reviewMode ? 'Proposed dates stay on hold until approval.' : 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
               {section('In buffer', fBuffer.length, 'written, no date yet', reviewMode ? (
                 <>
                   {subSection('Approved', fApproved.length, 'Approved. Takes the next open slot.', rowsFor(fApproved, 'approved'), 'approved')}

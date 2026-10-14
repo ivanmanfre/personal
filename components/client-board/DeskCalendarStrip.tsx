@@ -486,7 +486,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
           /* Quiet: the same keys in the light strip's own fills. */
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'rgba(17,17,17,0.66)' }}>
             {legendKey('rgba(17,17,17,0.16)', undefined, 'Published')}
-            {legendKey('#FFFFFF', '1.5px solid #111111', 'Scheduled')}
+            {legendKey('#FFFFFF', '1.5px solid #111111', board.review_mode ? 'Dated posts' : 'Scheduled')}
             {approvedShown && legendKey('#111111', undefined, 'Approved')}
             {lmShown && legendKey('var(--cb-mint)', undefined, 'Lead magnets')}
             {legendKey('#FFFFFF', '2px solid var(--cb-accent)', 'Today')}
@@ -495,7 +495,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
           /* Night: v2's legend look (accent scheduled, lit today), v3's words. */
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--nt-fg, 255 255 255) / 0.66)' }}>
             {legendKey('rgb(var(--nt-fg, 255 255 255) / 0.24)', undefined, 'Published')}
-            {legendKey('color-mix(in srgb, var(--cb-accent) 55%, #151515)', '1px solid var(--cb-accent)', 'Scheduled')}
+            {legendKey('color-mix(in srgb, var(--cb-accent) 55%, #151515)', '1px solid var(--cb-accent)', board.review_mode ? 'Dated posts' : 'Scheduled')}
             {approvedShown && legendKey('var(--cb-accent)', undefined, 'Approved')}
             {lmShown && legendKey('var(--cb-mint)', undefined, 'Lead magnets')}
             {legendKey('color-mix(in srgb, var(--pk-acc, #FFC71D) 10%, transparent)', '1.5px solid var(--cb-accent)', 'Today')}
@@ -503,7 +503,7 @@ export default function DeskCalendarStrip({ board, onOpenCal, scheduledIds, onMo
         ) : (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14, alignItems: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>
           {legendKey('var(--cb-ink)', undefined, 'published')}
-          {legendKey('color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))', '1px solid var(--cb-accent)', 'scheduled')}
+          {legendKey('color-mix(in srgb, var(--cb-accent) 42%, var(--cb-paper))', '1px solid var(--cb-accent)', board.review_mode ? 'dated posts' : 'scheduled')}
           {approvedShown && legendKey('var(--cb-accent)', undefined, 'approved')}
           {lmShown && legendKey('var(--cb-mint)', undefined, 'lead magnets')}
           {legendKey('var(--cb-paper-sunk)', '2px solid var(--cb-ink)', 'today')}

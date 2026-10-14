@@ -1337,7 +1337,8 @@ export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false }: {
+  awaitingApproval?: boolean;
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none'; foldSwitch?: boolean;
   /** Caps the image/deck width (height follows) so a tall post stays compact while the caption keeps LinkedIn's size. */
@@ -1372,7 +1373,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <span className="min-w-0">
           <span className="block truncate font-semibold" style={{ fontSize: size === 'lg' ? 13.5 : 12.5, color: '#111' }}>{name}</span>
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11.5 : 10.5, color: '#666' }}>{founder?.headline || `Founder, ${board.company_name}`} · 1st</span>
-          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{live && !isScheduled(item) ? 'Draft · not scheduled yet' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
+          <span className="block truncate" style={{ fontSize: size === 'lg' ? 11 : 10, color: '#999' }}>{awaitingApproval ? (isScheduled(item) ? `Awaiting approval · Proposed ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Awaiting approval') : live && !isScheduled(item) ? 'Draft · not scheduled yet' : live ? `Scheduled · ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : `Scheduled · ${fmtDay(item.publish_date) || 'this week'}`} · 🌐</span>
         </span>
       </div>
       {item.body && (
@@ -3834,13 +3835,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   // Client-appropriate provenance (replaces the internal agent trail): a human status and a
   // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
-  const statusLabel = stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Not scheduled yet') : 'In your review')
+  const awaitingApproval = isLive && reviewMode && !approved && (stage === 'review' || stage === 'scheduled');
+  const statusLabel = awaitingApproval
+    ? (isScheduled(item) ? `Awaiting approval · Proposed ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Awaiting approval')
+    : stage === 'review' ? (isLive ? (isScheduled(item) ? `Scheduled for ${fmtSchedLA(item.scheduled_at, item.publish_date)}` : 'Not scheduled yet') : 'In your review')
     : stage === 'scheduled' ? (isLive && isScheduled(item) ? 'Scheduled' : 'Approved')
     : stage === 'drafted' ? 'Being written'
     : stage === 'published' ? (isLive ? 'Published' : 'Example') : 'Planned';
   // Honest source chip for the modal (call quote included).
   const detailChip = isLive ? sourceChip(item) : null;
-  const nextLine = stage === 'review' ? (isLive
+  const nextLine = awaitingApproval ? 'Approval saves your sign-off. Scheduling is separate. The proposed date stays on hold until you approve it.' : stage === 'review' ? (isLive
       ? (reviewMode
           ? 'Approve it, edit it, or request a change. Approval saves your sign-off. Scheduling is separate.'
           : (isScheduled(item)
@@ -4316,7 +4320,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               )}
               {hideErr && <span role="alert" className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
               <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
+                {awaitingApproval ? 'The proposed date stays on hold until you approve this post.' : isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
               </span>
             </div>
           </div>
@@ -4522,7 +4526,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 
   return (
     <div>
-      <SectionHead eyebrow="The month ahead" title={<>A month, <Accent>topic by topic.</Accent></>} sub="Committed dates only. Every item here is real and sits on the day it publishes." />
+      <SectionHead eyebrow="The month ahead" title={<>A month, <Accent>topic by topic.</Accent></>} sub={board.review_mode ? 'Dates for your posts. Proposed dates stay on hold until approval.' : 'Committed dates only. Every item here is real and sits on the day it publishes.'} />
       <div className="mb-5 flex flex-wrap gap-3">
         {[
           [totals.post + totals.carousel, totals.post + totals.carousel === 1 ? 'post' : 'posts'],
@@ -7861,8 +7865,20 @@ export default function ClientBoardPage() {
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
+  const approvalScope = useRef(slug);
   const sessionApprovalChanges = useRef<Record<string, Stage>>({});
+  const [approvalsLoadedFor, setApprovalsLoadedFor] = useState<string | null>(null);
   useEffect(() => {
+    if (approvalScope.current === slug) return;
+    let cached: Record<string, Stage> = {};
+    try { cached = JSON.parse(localStorage.getItem(approvalsKey) || '{}'); } catch { /* private mode */ }
+    sessionApprovalChanges.current = {};
+    setApprovalsLoadedFor(null);
+    setStageOverride(cached);
+    // Persistence waits for the next render with this slug's loaded cache.
+  }, [slug, approvalsKey]);
+  useEffect(() => {
+    if (approvalScope.current !== slug) { approvalScope.current = slug; return; }
     try { localStorage.setItem(approvalsKey, JSON.stringify(stageOverride)); } catch { /* private mode */ }
   }, [stageOverride, approvalsKey]);
   // Week-home decisions persist the same way: chosen alternate angles + skipped days.
@@ -8280,6 +8296,7 @@ export default function ClientBoardPage() {
                 out.approved!.forEach((id) => { merged[id] = 'scheduled'; });
                 return { ...merged, ...sessionApprovalChanges.current };
               });
+              setApprovalsLoadedFor(slug);
             }
           }
         }
@@ -8291,7 +8308,7 @@ export default function ClientBoardPage() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, mode, slug, token]);
+  }, [state, mode, slug, token, board?.review_mode]);
 
   // History log (live): reads the insert-only client_board_actions audit for one draft.
   const fetchHistory = async (ref: string): Promise<HistoryEntry[]> => {
@@ -8994,6 +9011,10 @@ export default function ClientBoardPage() {
   // post that had actually published kept reading 'scheduled' on the board forever, sat in
   // the Scheduled section with a past date, and never showed its permalink. Server truth
   // wins once the thing is real.
+  // Live sign-off requires a server receipt. Cached preview marks are never approval evidence.
+  const approvalOverrides = approvalScope.current !== slug ? {}
+    : (mode === 'demo' || mode === 'preview' || approvalsLoadedFor === slug)
+      ? stageOverride : sessionApprovalChanges.current;
   const stageOf = (q: QueueItem): Stage => (
     q.generating ? 'drafted'
       : angleSwaps[q.id] ? 'drafted'
@@ -9001,7 +9022,7 @@ export default function ClientBoardPage() {
           // Live boards without review mode have no approvals: a stale local approve tick
           // (left in localStorage while review mode was forced on) must not move a post.
           : (isLive && !reviewMode) ? q.stage
-          : stageOverride[q.id] ?? q.stage
+          : approvalOverrides[q.id] ?? q.stage
   );
   // Display resolution for swapped slots: the chosen angle replaces topic + pillar and
   // clears the stale body/media; the trail restarts honestly from "new angle locked".
@@ -9317,8 +9338,8 @@ export default function ClientBoardPage() {
   const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
   // Feeds the calendars' "Approved" check mark and legend key: none on a live board
   // without review mode (nothing there is approved; its posts are simply scheduled).
-  const scheduledIds = new Set((isLive && !reviewMode) ? [] : viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
-  const approvedIds = new Set<string>((isLive && !reviewMode) ? [] : Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
+  const approvedIds = new Set<string>((isLive && !reviewMode) ? [] : Object.keys(approvalOverrides).filter((id) => approvalOverrides[id] === 'scheduled'));
+  const scheduledIds = new Set((isLive && !reviewMode) ? [] : viewBoard.queue.filter((q) => stageOf(q) === 'scheduled' && (!isLive || approvedIds.has(q.id))).map((q) => q.id));
   // One props object per switched surface: the desk variant and the original take the SAME
   // wiring, so the skin can never change behaviour — only which presentation renders it.
   const weekSurfaceProps = {
@@ -9367,10 +9388,10 @@ export default function ClientBoardPage() {
   );
 
   // Badge = pieces actually awaiting an action: generating, swapped and skipped excluded.
-  const reviewCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id]).length;
+  const reviewCount = viewBoard.queue.filter((q) => (stageOf(q) === 'review' || (isLive && reviewMode && stageOf(q) === 'scheduled')) && !weekSkips[q.id]).length;
   // The WEEK badge counts this week's posts, never the whole queue (desk skin; Ivan 08-03).
   const weekBadge = skin === 'desk' ? weekWindowCount(viewBoard, weekSkips) : reviewCount;
-  const scheduledCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id] && isScheduled(q)).length;
+  const scheduledCount = viewBoard.queue.filter((q) => (stageOf(q) === 'review' || (isLive && reviewMode && stageOf(q) === 'scheduled')) && !weekSkips[q.id] && isScheduled(q) && (!isLive || !reviewMode || approvedIds.has(q.id))).length;
   const bufferCount = reviewCount - scheduledCount;
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => {
@@ -9799,7 +9820,7 @@ export default function ClientBoardPage() {
         {skin === 'desk' && (() => {
           const q = viewBoard.queue;
           const notOut = q.filter((x) => stageOf(x) !== 'published');
-          const dated = notOut.filter((x) => isScheduled(x)).sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+          const dated = notOut.filter((x) => isScheduled(x) && (!isLive || !reviewMode || approvedIds.has(x.id))).sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
           const todayIso = new Date().toLocaleDateString('sv-SE', { timeZone: clientTz() });
           const todays = dated.find((x) => x.publish_date === todayIso);
           const next = todays || dated.find((x) => (x.publish_date || '') > todayIso);

@@ -479,6 +479,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     if (skips[q.id]) return 'removed';
     if (st === 'drafted') return q.generating ? 'being written' : 'in production';
     if (st === 'planned') return 'planned';
+    if (live && board.review_mode && !approvedIds.has(q.id)) return 'awaiting approval';
     if (!isScheduled(q)) return (st === 'scheduled' || approvedIds.has(q.id)) ? 'approved' : 'in buffer';
     if (q.publish_date === today) return 'ships today';
     if (live || st === 'scheduled' || approvedIds.has(q.id)) return 'scheduled';
@@ -510,7 +511,11 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
     if (!d || Number.isNaN(d.getTime())) return '';
     return ` at ${d.toLocaleTimeString('en-US', { timeZone: clientTz(), hour: 'numeric', minute: '2-digit', hour12: boardZone().hour12 })} ${boardZone().label}`;
   })();
-  const headline: React.ReactNode = todayInWindow && todayItems.length > 0 && outToday.length > 0
+  const awaitingWeek = [...todayItems, ...restOfWindow].filter(q => !approvedIds.has(q.id));
+  const scheduledWeek = [...todayItems, ...restOfWindow].filter(q => approvedIds.has(q.id));
+  const headline: React.ReactNode = live && board.review_mode
+    ? <>{outToday.length > 0 ? `${outToday.length} ${outToday.length === 1 ? 'post is' : 'posts are'} out today. ` : ''}{scheduledWeek.length} {scheduledWeek.length === 1 ? 'post' : 'posts'} scheduled this week. {awaitingWeek.length} awaiting approval.</>
+    : todayInWindow && todayItems.length > 0 && outToday.length > 0
     ? (<>{spellOut(outToday.length)} {outToday.length === 1 ? 'post is' : 'posts are'} out today, {todayItems.length === 1 ? `one more goes out${todayTime}` : `${todayItems.length} more go out later today`}. {restClause('first') || 'Nothing else is dated this week.'}</>)
     : todayInWindow && todayItems.length > 0
     ? (<>{todayItems.length === 1 ? `Today's post goes out${todayTime}.` : `${spellOut(todayItems.length)} posts go out today.`} {restClause('more') || 'Nothing else is dated this week.'}</>)
@@ -900,6 +905,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               size="lg"
               cover={selectedItem.generating ? 'render' : 'plate'}
               live={live}
+              awaitingApproval={live && !!board.review_mode && ['review', 'scheduled'].includes(stageOf(selectedItem)) && !approvedIds.has(selectedItem.id)}
               foldSwitch={false}
               mediaMax={380}
             />
@@ -1203,7 +1209,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
             {/* Round 4: this block shows the SELECTED day's post (fallback: up next), and
                 the pills act on the post shown, so every day's post is editable from here. */}
             <Eyebrow on="plate">
-              {stageIsFallback ? 'Up next'
+              {stageItem && live && board.review_mode && !stagePublished && !approvedIds.has(stageItem.id) ? 'Awaiting approval' : stageIsFallback ? 'Up next'
                 : stagePublished ? (selectedDay === today ? 'Out today' : `Out ${weekdayLong(selectedDay)} ${dayNumOf(selectedDay)}`)
                 : selectedDay === today ? 'Ships today'
                 : `On ${weekdayLong(selectedDay)} ${dayNumOf(selectedDay)}`}
@@ -1303,6 +1309,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
                   size="lg"
                   cover={selectedItem.generating ? 'render' : 'plate'}
                   live={live}
+                  awaitingApproval={live && !!board.review_mode && ['review', 'scheduled'].includes(stageOf(selectedItem)) && !approvedIds.has(selectedItem.id)}
                   foldSwitch={false}
                   mediaMax={380}
                 />
