@@ -4408,11 +4408,19 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 }) {
   const cal = board.calendar;
   if (!cal) return null;
+  // A board set up before its first posting date carries calendar.start = null (swishdm-live,
+  // 2026-10-14): `.split` on null crashed the whole board. Anchor the grid on this week's Monday
+  // instead and show no "Posting starts" date, since none has been agreed.
+  const hasStart = typeof cal.start === 'string' && /^\d{4}-\d{2}-\d{2}/.test(cal.start);
+  const calStart: string = hasStart ? cal.start : (() => {
+    const d = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: clientTz() }).format(new Date()) + 'T12:00:00Z');
+    return new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 86400000).toISOString().slice(0, 10);
+  })();
   // Every grid day is a CALENDAR DATE held as UTC midnight and read back with UTC getters,
   // so the viewer's own zone never enters. Local midnight + n * 24h printed one date twice
   // at the viewer's DST change, and toISOString() of a local midnight is the day BEFORE for
   // anyone east of UTC, which put every post one cell late in Europe and Israel.
-  const [sy, sm, sd] = cal.start.split('-').map(Number);
+  const [sy, sm, sd] = calStart.split('-').map(Number);
   const start = new Date(Date.UTC(sy, sm - 1, sd));
   // One source for titles: a chip linked to a queue item always shows that item's hook.
   const labelOf = (it: CalendarItem): string => {
@@ -4492,7 +4500,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
 
   // Span the grid from cal.start through the END of the last scheduled item's month, so a
   // plan that runs into next month renders whole (cal.weeks is only the seeded minimum).
-  const lastIso = [...cal.items, ...queueItems].reduce((m, it) => (it.date > m ? it.date : m), cal.start);
+  const lastIso = [...cal.items, ...queueItems].reduce((m, it) => (it.date > m ? it.date : m), calStart);
   const [ly, lm] = lastIso.split('-').map(Number);
   const endOfSpan = new Date(Date.UTC(ly, lm, 0));
   const spanDays = Math.max(1, Math.round((endOfSpan.getTime() - start.getTime()) / 86400000) + 1);
@@ -4547,9 +4555,11 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
       <div className="rounded-xl bg-white p-3 sm:hidden" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
           <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
-          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
-            Posting starts {fmtDay(cal.start)}
-          </span>
+          {hasStart && (
+            <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
+              Posting starts {fmtDay(calStart)}
+            </span>
+          )}
         </div>
         {agendaDays.map(([iso, dayItems]) => (
           <div key={iso}>
@@ -4585,9 +4595,11 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds, live = fal
         <div className="min-w-[820px]">
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
             <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
-            <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
-              Posting starts {fmtDay(cal.start)}
-            </span>
+            {hasStart && (
+              <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-raise, #fff)', color: DIM }}>
+                Posting starts {fmtDay(calStart)}
+              </span>
+            )}
             {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
             {(() => {
               const n = cal.items.filter((it) => ['post', 'carousel', 'lm', 'newsletter'].includes(it.kind)).length;
