@@ -1,0 +1,78 @@
+import React, { useEffect, useState } from 'react';
+import { FileText, Play } from 'lucide-react';
+import type { QueueItem } from '../ClientBoardPage';
+import PostReviewTags from './PostReviewTags';
+
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(?:[?#]|$)/i.test(url);
+const hasVideo = (item: QueueItem) => item.style === 'video' || !!item.video_url || !!(item.media_url && isVideoUrl(item.media_url));
+function formatOf(item: QueueItem): string {
+  if (hasVideo(item)) return 'Video';
+  if (item.kind === 'lm' || item.lm_launch || item.lm_gate) return 'Lead magnet';
+  if (item.kind === 'carousel' || item.style === 'carousel' || (item.image_urls?.length || 0) > 1) return 'Carousel';
+  return item.image || item.image_urls?.length || (item.media_url && !isVideoUrl(item.media_url)) ? 'Single image' : 'Text post';
+}
+
+function Preview({ item }: { item: QueueItem }) {
+  const src = [...(item.image_urls || []), item.image, item.media_url].find((url): url is string => !!url && !isVideoUrl(url));
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  return (
+    <div className="cb-batch-media">
+      {src && !failed ? <img src={src} alt={`Preview of ${item.title || item.hook || 'post'}`} loading="lazy" onError={() => setFailed(true)} /> : (
+        <div className="cb-batch-fallback">
+          {hasVideo(item) ? <Play size={28} aria-hidden="true" /> : <FileText size={28} aria-hidden="true" />}
+          <p>{hasVideo(item) ? 'Video preview opens in review.' : (item.body || item.hook || 'Open review to see this post.').slice(0, 170)}</p>
+        </div>
+      )}
+      {hasVideo(item) && <span className="cb-batch-video"><Play size={14} aria-hidden="true" /> Video</span>}
+    </div>
+  );
+}
+
+/** The batch shows the mix. The existing full review owns all decisions and writes. */
+export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor }: {
+  items: QueueItem[];
+  onOpen: (item: QueueItem) => void;
+  statusFor: (item: QueueItem) => string;
+  dateFor?: (item: QueueItem) => string | null;
+}) {
+  return (
+    <div data-batch-review-overview className="cb-batch-grid">
+      <style>{`
+        .cb-batch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:18px; margin-top:16px; font-family:var(--cb-body); }
+        .cb-batch-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--cb-line); border-radius:26px; background:var(--cb-paper); color:var(--cb-ink); }
+        .cb-batch-media { position:relative; background:var(--cb-paper-sunk); aspect-ratio:4/3; min-width:0; overflow:hidden; }
+        .cb-batch-media img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
+        .cb-batch-fallback { position:absolute; inset:0; display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:22px; color:var(--cb-ink-mute); }
+        .cb-batch-fallback p { margin:0; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+        .cb-batch-video { position:absolute; bottom:10px; left:12px; display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:var(--cb-paper); color:var(--cb-ink); font-size:12px; font-weight:700; }
+        .cb-batch-info { display:flex; flex:1; flex-direction:column; padding:18px; min-width:0; }
+        .cb-batch-format { font-size:12.5px; color:var(--cb-ink-mute); font-weight:700; }
+        .cb-batch-info h3 { margin:7px 0 4px; font:500 22px/1.25 var(--cb-serif); overflow-wrap:anywhere; }
+        .cb-batch-state { margin-top:auto; padding-top:12px; font-size:13px; font-weight:700; }
+        .cb-batch-date { margin:4px 0 0; color:var(--cb-ink-mute); font-size:12.5px; line-height:1.5; }
+        .cb-batch-open { display:flex; justify-content:center; align-items:center; width:100%; margin-top:14px; padding:10px 16px; border:1px solid var(--cb-line-bold); border-radius:999px; background:var(--cb-paper); color:var(--cb-ink); font:700 14px/1.4 var(--cb-body); cursor:pointer; }
+        .cb-batch-open:hover { background:var(--cb-paper-sunk); }
+        .cb-batch-open:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
+        @media (max-width:600px) { .cb-batch-grid { grid-template-columns:minmax(0,1fr); } .cb-batch-media { aspect-ratio:16/10; } }
+      `}</style>
+      {items.map(item => {
+        const title = (item.title || item.hook || 'Untitled post').replace(/^\[[^\]]*\]\s*/, '');
+        const date = dateFor?.(item);
+        return (
+          <article data-batch-review-card={item.id} key={item.id} className="cb-batch-card">
+            <Preview item={item} />
+            <div className="cb-batch-info">
+              <span className="cb-batch-format">{formatOf(item)}</span>
+              <h3>{title}</h3>
+              <PostReviewTags item={item} />
+              <div className="cb-batch-state">{statusFor(item)}</div>
+              {date && <p className="cb-batch-date">{date}</p>}
+              <button type="button" className="cb-batch-open" style={{ minHeight:44, minWidth:44 }} aria-label={`Open review: ${title}`} onClick={() => onOpen(item)}>Open review <span aria-hidden="true">&nbsp;→</span></button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
