@@ -210,7 +210,8 @@ Deno.serve(async (req) => {
           r = await send(FROM);
         }
         if (!r.ok) console.error("board-magic-link resend_failed", r.status, (await r.text()).slice(0, 200));
-        else console.log("board-magic-link sent", hosted ? "hosted" : "house");
+        // Operator receipt: which sender and which board address the link points at (never the token).
+        else console.log("board-magic-link sent", hosted ? "hosted" : "house", hosted ? hosted.url : `${BOARD_BASE}/${slug}`);
       } else {
         console.error("board-magic-link resend_key_missing");
       }

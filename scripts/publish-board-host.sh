@@ -70,8 +70,10 @@ REL="$WORK/.board-releases/$HOST"; mkdir -p "$REL"
 [ -f "$REL/prev1" ] || ls "$WORK/$DIR/assets" > "$REL/prev1"
 ls dist-board-host/assets > "$REL/new"
 cat "$REL/new" "$REL/prev1" "$REL/prev2" 2>/dev/null | sort -u > "$REL/keep"
-rsync -a --exclude assets dist-board-host/ "$WORK/$DIR/"
-rsync -a dist-board-host/assets/ "$WORK/$DIR/assets/"
+# --checksum: index.html keeps the same size between releases and a fresh clone can share
+# its mtime to the second, so rsync's size+mtime check would skip the new index.
+rsync -a --checksum --exclude assets dist-board-host/ "$WORK/$DIR/"
+rsync -a --checksum dist-board-host/assets/ "$WORK/$DIR/assets/"
 for f in "$WORK/$DIR/assets/"*; do
   grep -qxF "$(basename "$f")" "$REL/keep" || rm -f "$f"
 done
