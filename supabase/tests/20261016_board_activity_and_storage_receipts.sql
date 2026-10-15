@@ -56,7 +56,7 @@ BEGIN
  v_next := public.board_activity('swishdm-live',v_session,p_before_at=>(v_r->>'at')::timestamptz,p_before_id=>(v_r->>'id')::uuid);
  IF EXISTS(SELECT 1 FROM jsonb_array_elements(v_page->'items') a JOIN jsonb_array_elements(v_next->'items') b ON a->>'id'=b->>'id') THEN RAISE EXCEPTION 'cursor repeated entries'; END IF;
  -- Actual deciding member, not generic "board", is retained.
- INSERT INTO public.client_ideas(client_id,source_ref) VALUES('swishdm','audn-rec:activity-fixture');
+ INSERT INTO public.client_ideas(client_id,hook,source_ref) VALUES('swishdm','Activity audit rollback fixture','audn-rec:activity-fixture');
  v_r := public.client_board_audience_decide_v2('swishdm-live',v_session,'audn-rec:activity-fixture','accept','Fixture reason');
  IF v_r->>'ok' IS DISTINCT FROM 'true' OR NOT EXISTS(SELECT 1 FROM public.client_board_actions WHERE board_slug='swishdm-live' AND ref='audn-rec:activity-fixture' AND payload->>'by'=v_by AND payload->'after'->>'decision'='accept') THEN RAISE EXCEPTION 'audience attribution missing'; END IF;
 END $test$;
