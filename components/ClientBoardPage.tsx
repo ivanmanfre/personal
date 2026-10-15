@@ -24,6 +24,7 @@ import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import PostSourceContext from './client-board/PostSourceContext';
+import BoardResourcesSurface, { type BoardResource } from './client-board/BoardResourcesSurface';
 import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
@@ -502,6 +503,7 @@ interface Board {
   ideas?: Idea[];
   lm?: any;
   lead_magnets?: LeadMagnetEntry[];
+  resources?: BoardResource[];
   /** Real captured leads, if any exist yet. Absent/empty on a fresh preview board — the
    *  Captured leads table then shows a clean empty-state, never a staged sample lead. */
   leads?: { email: string; score?: string; weakest_area?: string; when?: string }[];
@@ -7412,6 +7414,7 @@ const TABS = [
   { id: 'leads', label: 'Leads', group: 'Leads' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
+  { id: 'resources', label: 'Resources', group: 'Content' },
   { id: 'team', label: 'Team', group: 'Settings' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
@@ -7479,6 +7482,7 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
       <path d="m15.8 8.2-2 5.6-5.6 2 2-5.6 5.6-2z" />
     </>
   ),
+  resources: <><path d="M4 4h6l2 2h8v14H4z" /><path d="M8 11h8M8 15h6" /></>,
   team: (
     <>
       <circle cx="9" cy="8" r="3.5" />
@@ -9636,6 +9640,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
     </>,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} whiteLabel={isWhiteLabelBoard(slug)} />,
+    resources: <BoardResourcesSurface resources={viewBoard.resources || []} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} token={token} />,
   };
 
@@ -9671,19 +9676,19 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // they stay in `surfaces` and stay addressable, so an old link resolves instead of 404ing
   // to the week. Other skins keep the original nav untouched.
   const visibleTabs = (skin === 'desk'
-    ? TABS.filter((t) => DESK_NAV_TABS.includes(t.id))
+    ? TABS.filter((t) => DESK_NAV_TABS.includes(t.id) || (t.id === 'resources' && !!viewBoard.resources?.length))
     : isLive
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
-  ).filter((t) => t.id !== 'outreach' || outreachAvailable)
+  ).filter((t) => (t.id !== 'outreach' || outreachAvailable) && (t.id !== 'resources' || !!viewBoard.resources?.length))
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
       : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
-    ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
-    : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
+    ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) || (tab === 'resources' && !viewBoard.resources?.length) ? 'week' : tab)
+    : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) || (tab === 'resources' && !viewBoard.resources?.length) ? 'week' : tab);
 
   setBoardViewer(viewer);
   // The identity block names whoever is signed in; the board link (no person) keeps the founder.
