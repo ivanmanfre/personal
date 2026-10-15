@@ -29,3 +29,14 @@ it('requests earlier rows using the server timestamp and UUID cursor', async () 
  const r = render(<BoardActivity slug="swishdm-live" session="fixture" />); open(r); fireEvent.click(await r.findByRole('button', { name: 'Earlier changes' }));
  await waitFor(() => expect(rpc).toHaveBeenLastCalledWith('board_activity', expect.objectContaining({ p_before_at: items[49].at, p_before_id: '49' })));
 });
+
+it('names the affected post and retains the raw ref for unknown legacy targets', async () => {
+ rpc.mockResolvedValue({ data: { ok: true, items: [
+  { id: 'known', action: 'edit_title', ref: 'draft-uuid', title: 'Getting cited is the easy part', at: '2026-10-16T10:00:00Z', by: 'member@example.invalid' },
+  { id: 'legacy', action: 'approve', ref: 'legacy-draft-uuid', title: null, at: '2026-10-16T09:00:00Z', by: 'board link' },
+ ] }, error: null });
+ const r = render(<BoardActivity slug="swishdm-live" session="fixture" />); open(r);
+ await r.findByText('Getting cited is the easy part');
+ expect(r.getByText('legacy-draft-uuid')).toBeTruthy();
+ expect(r.queryByText('draft-uuid')).toBeNull();
+});

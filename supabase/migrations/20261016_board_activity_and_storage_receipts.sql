@@ -87,12 +87,17 @@ CREATE OR REPLACE FUNCTION public.board_activity(
   p_slug text, p_session text DEFAULT NULL, p_token text DEFAULT NULL,
   p_before_at timestamptz DEFAULT NULL, p_before_id uuid DEFAULT NULL
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,extensions AS $$
-DECLARE v_by text := public._board_team_caller(p_slug,p_session,p_token); v_rows jsonb;
+DECLARE v_by text := public._board_team_caller(p_slug,p_session,p_token); v_rows jsonb; v_board jsonb;
 BEGIN
   IF v_by IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_authenticated'); END IF;
-  IF NOT EXISTS(SELECT 1 FROM public.client_boards WHERE slug=p_slug AND (expires_at IS NULL OR expires_at>now())) THEN RETURN jsonb_build_object('ok',false,'error','not_found'); END IF;
+  SELECT board INTO v_board FROM public.client_boards WHERE slug=p_slug AND (expires_at IS NULL OR expires_at>now());
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','not_found'); END IF;
   IF (p_before_at IS NULL) <> (p_before_id IS NULL) THEN RETURN jsonb_build_object('ok',false,'error','bad_cursor'); END IF;
   SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'action',action,'ref',ref,'at',created_at,
+    'title',(SELECT coalesce(nullif(q->>'title',''),nullif(q->>'hook','')) FROM jsonb_array_elements(
+      (CASE WHEN jsonb_typeof(v_board->'queue')='array' THEN v_board->'queue' ELSE '[]'::jsonb END) ||
+      (CASE WHEN jsonb_typeof(v_board->'ideas')='array' THEN v_board->'ideas' ELSE '[]'::jsonb END)
+    ) q WHERE q->>'id'=a.ref LIMIT 1),
     'by',CASE WHEN payload->>'by' ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$' THEN payload->>'by' WHEN payload->>'by'='board link' THEN 'board link' WHEN payload->>'by' IN ('system','Content team / system') THEN 'Content team / system' ELSE 'Unattributed legacy action' END,'event',payload->>'event','field',payload->>'field',
     'phase',payload->>'phase','operation',payload->>'operation','operation_id',payload->>'operation_id',
     'before',CASE WHEN action='classification_proposed' THEN jsonb_strip_nulls(jsonb_build_object(

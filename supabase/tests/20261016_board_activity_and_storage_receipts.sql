@@ -48,6 +48,19 @@ BEGIN
  ('risedtc-com','risedtc','comment','other-board','{"text":"other-client-private","by":"other@example.invalid"}');
  v_page := public.board_activity('swishdm-live',v_session);
  IF v_page->>'ok' IS DISTINCT FROM 'true' OR v_page::text LIKE '%must-not-project%' OR v_page::text LIKE '%other-client-private%' THEN RAISE EXCEPTION 'unsafe activity projection'; END IF;
+ -- Target labels come only from this authenticated board, with an honest unknown-ref fallback.
+ UPDATE public.client_boards SET board=jsonb_set(board,'{queue}',
+   '[{"id":"activity-target","title":"Getting cited is the easy part"}]'::jsonb) WHERE slug='swishdm-live';
+ UPDATE public.client_boards SET board=jsonb_set(board,'{queue}',
+   '[{"id":"foreign-target","title":"private-foreign-target-title"}]'::jsonb) WHERE slug='risedtc-com';
+ INSERT INTO public.client_board_actions(board_slug,client_id,action,ref,payload) VALUES
+ ('swishdm-live','swishdm','edit_title','activity-target','{"by":"system"}'),
+ ('swishdm-live','swishdm','approve','foreign-target','{"by":"system"}');
+ v_page := public.board_activity('swishdm-live',v_session);
+ IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(v_page->'items') e WHERE e->>'ref'='activity-target'
+   AND e->>'title'='Getting cited is the easy part') THEN RAISE EXCEPTION 'affected post title missing'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(v_page->'items') e WHERE e->>'ref'='foreign-target'
+   AND e->'title'='null'::jsonb) OR v_page::text LIKE '%private-foreign-target-title%' THEN RAISE EXCEPTION 'target title crossed board scope'; END IF;
  -- Existing classification history can contain full internal taxonomy. Project metadata only.
  INSERT INTO public.client_board_actions(board_slug,client_id,action,ref,payload) VALUES
  ('swishdm-live','swishdm','classification_proposed','classification-private-fixture',
