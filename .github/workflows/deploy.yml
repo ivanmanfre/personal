@@ -167,6 +167,35 @@ jobs:
           done
           git push origin main
 
+  # SwishDM board host: SwishDM's content board served top-level at
+  # madebyswishdm.com/board (real files in the swishdm-resources repo's site/board/, same
+  # origin, so email sign-in and the ?k= board link work there). A board-only build locked
+  # to slug swishdm-live, no public/ dir, no service worker, only the two public Supabase
+  # values. Same script works by hand: scripts/publish-board-host.sh swishdm --push
+  swishdm-board-mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: swishdm-board-mirror
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the board and push it to madebyswishdm.com
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
+          BOARD_HOST_WORKDIR: /tmp/swishdm-site
+        run: bash scripts/publish-board-host.sh swishdm --push
+
   # Rise scan mirror: white-label the dtc_growth scans onto Rise's own domain,
   # served at resources.risedtc.com/scan/ (real files in the rise-dtc-resources
   # repo — no redirects). Same source, third build with base=/scan/, ONLY

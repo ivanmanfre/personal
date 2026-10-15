@@ -32,6 +32,23 @@ export function useBoardTeam(): BoardTeamValue | null { return useContext(Ctx); 
 
 const OPERATOR_HOSTS = ['ivanmanfredi.com', 'inboundonsteroids.com'];
 
+/** True for an operator sign-in address (the agency's own domains). */
+export function isOperatorEmail(email: string | null | undefined): boolean {
+  const raw = (email || '').trim().toLowerCase();
+  if (!raw.includes('@')) return false;
+  const host = raw.slice(raw.lastIndexOf('@') + 1);
+  return OPERATOR_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+}
+
+/** The name operator actions show under. White-label boards (lib/boardHost) never name the
+ *  agency, so the page sets a neutral label there. Set by the page once per render. */
+let houseLabel = 'InboundOnSteroids';
+let whiteLabelBoard = false;
+export function setBoardHouse(whiteLabel: boolean): void {
+  whiteLabelBoard = whiteLabel;
+  houseLabel = whiteLabel ? 'Content team' : 'InboundOnSteroids';
+}
+
 /** Module-level copy of the viewer's email for the non-hook history resolvers. Set by the
  *  page once per render, like setBoardZone. */
 let viewerEmail = '';
@@ -85,8 +102,9 @@ export function shortWhen(iso: string): string {
 }
 
 /** "Approved by Lyndsay, 14:02". Renders nothing without a server receipt. */
-export function ApprovedBy({ refId, house = 'InboundOnSteroids', style }: { refId: string; house?: string; style?: React.CSSProperties }) {
+export function ApprovedBy({ refId, house: houseProp, style }: { refId: string; house?: string; style?: React.CSSProperties }) {
   const team = useBoardTeam();
+  const house = houseProp ?? houseLabel;
   const meta = team?.approvalMeta[refId];
   if (!meta) return null;
   const by = (meta.by || '').trim();
@@ -100,8 +118,9 @@ export function ApprovedBy({ refId, house = 'InboundOnSteroids', style }: { refI
 }
 
 /** Per-post comment thread: top-level comments with one level of replies. */
-export function PostComments({ refId, house = 'InboundOnSteroids', compact = false }: { refId: string; house?: string; compact?: boolean }) {
+export function PostComments({ refId, house: houseProp, compact = false }: { refId: string; house?: string; compact?: boolean }) {
   const team = useBoardTeam();
+  const house = houseProp ?? houseLabel;
   const [open, setOpen] = useState(!compact);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -145,7 +164,7 @@ export function PostComments({ refId, house = 'InboundOnSteroids', compact = fal
       </button>
       {open && (
         <div style={{ marginTop: 4 }}>
-          {tops.length === 0 && <div style={{ fontSize: 13, color: 'var(--cb-ink-mute)', padding: '4px 0 8px' }}>No comments yet. Your whole team and InboundOnSteroids see what you write here.</div>}
+          {tops.length === 0 && <div style={{ fontSize: 13, color: 'var(--cb-ink-mute)', padding: '4px 0 8px' }}>{whiteLabelBoard ? 'No comments yet. Everyone on this board sees what you write here.' : 'No comments yet. Your whole team and InboundOnSteroids see what you write here.'}</div>}
           {tops.map((c) => (
             <div key={c.id}>
               <Row c={c} />

@@ -29,10 +29,25 @@ const FROM = "InboundOnSteroids <login@inboundonsteroids.com>";
 // working (same SPA, same RPCs) — this only changes where emails point.
 const BOARD_BASE = "https://inboundonsteroids.com/client";
 
+// White-label board hosts (2026-10-15). A sign-in asked for FROM the client's own domain
+// links back to that domain and is sent under the client's name, never the agency's. Each
+// host serves exactly the slugs listed (anything else gets the uniform ok and no email).
+// Keep in sync with lib/boardHost.ts and vite.board-host.config.ts. The /client/<slug>
+// route on our own domains is unchanged.
+const HOSTED: Record<string, { slugs: string[]; url: string; from: string; brand: string }> = {
+  "https://madebyswishdm.com": {
+    slugs: ["swishdm-live"],
+    url: "https://madebyswishdm.com/board/",
+    from: "SwishDM <login@madebyswishdm.com>",
+    brand: "SwishDM",
+  },
+};
+
 const ALLOWED_ORIGINS = new Set([
   "https://ivanmanfredi.com",
   "https://inboundonsteroids.com",
   "http://localhost:5173",
+  ...Object.keys(HOSTED),
 ]);
 
 const CORS = (origin: string | null) => ({
@@ -67,8 +82,11 @@ function escapeHtml(s: string): string {
 
 // Brand-clean, plain HTML. No em dashes anywhere (brand law). Inline styles only
 // (email clients strip <style>). Ink on white, one hairline, one ink button.
-function buildEmail(slug: string, linkToken: string, code: string) {
-  const url = `${BOARD_BASE}/${encodeURIComponent(slug)}#ml=${encodeURIComponent(linkToken)}`;
+function buildEmail(slug: string, linkToken: string, code: string, hosted: { url: string; brand: string } | null) {
+  const url = hosted
+    ? `${hosted.url}#ml=${encodeURIComponent(linkToken)}`
+    : `${BOARD_BASE}/${encodeURIComponent(slug)}#ml=${encodeURIComponent(linkToken)}`;
+  const brand = escapeHtml(hosted ? hosted.brand : "InboundOnSteroids");
   const safeUrl = escapeHtml(url);
   const safeCode = escapeHtml(code);
   const html = `<!doctype html>
@@ -117,7 +135,7 @@ function buildEmail(slug: string, linkToken: string, code: string) {
             </tr>
             <tr>
               <td style="padding-top:26px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#a5a29a;">
-                InboundOnSteroids
+                ${brand}
               </td>
             </tr>
           </table>
@@ -136,7 +154,7 @@ function buildEmail(slug: string, linkToken: string, code: string) {
     "",
     "If you did not ask to sign in, ignore this email. Nothing happens until the link or code is used.",
     "",
-    "InboundOnSteroids",
+    hosted ? hosted.brand : "InboundOnSteroids",
   ].join("\n");
   return { html, text };
 }
@@ -156,6 +174,10 @@ Deno.serve(async (req) => {
   if (!slug || !/^[a-z0-9][a-z0-9-]{0,80}$/.test(slug)) return jsonResponse({ error: "bad_slug" }, 400, origin);
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonResponse({ error: "bad_email" }, 400, origin);
 
+  // A white-label host only signs people in to its own board(s). Uniform ok otherwise.
+  const hosted = HOSTED[origin] ?? null;
+  if (hosted && !hosted.slugs.includes(slug)) return jsonResponse({ ok: true }, 200, origin);
+
   // Mint (service role). request_board_login enforces the manifest allow-list +
   // magic_link flag + hourly rate limit. On any not-allowed / rate-limited /
   // error outcome we STILL return ok:true below (no enumeration oracle).
@@ -165,14 +187,14 @@ Deno.serve(async (req) => {
     if (!error && res?.ok && res.link_token && res.code) {
       const apiKey = await resendKey();
       if (apiKey) {
-        const { html, text } = buildEmail(slug, String(res.link_token), String(res.code));
+        const { html, text } = buildEmail(slug, String(res.link_token), String(res.code), hosted);
         // Best-effort send. A Resend failure does not change the ok:true response
         // (still no oracle) but is logged server-side for the operator.
-        const r = await fetch("https://api.resend.com/emails", {
+        const send = (from: string) => fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
           body: JSON.stringify({
-            from: FROM,
+            from,
             to: [String(res.email || email)],
             subject: "Your board sign-in link",
             html,
@@ -180,7 +202,15 @@ Deno.serve(async (req) => {
             tags: [{ name: "type", value: "board_magic_link" }],
           }),
         });
+        let r = await send(hosted ? hosted.from : FROM);
+        // A white-label sender the key cannot send from must not cost the member their link:
+        // log it and resend from the house sender (the link still points at their domain).
+        if (!r.ok && hosted) {
+          console.error("board-magic-link hosted_sender_failed", r.status, (await r.text()).slice(0, 200));
+          r = await send(FROM);
+        }
         if (!r.ok) console.error("board-magic-link resend_failed", r.status, (await r.text()).slice(0, 200));
+        else console.log("board-magic-link sent", hosted ? "hosted" : "house");
       } else {
         console.error("board-magic-link resend_key_missing");
       }

@@ -2,7 +2,8 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, memberName, setBoardNames, setBoardViewer, type BoardTeamValue } from './team';
+import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, isOperatorEmail, memberName, setBoardHouse, setBoardNames, setBoardViewer, type BoardTeamValue } from './team';
+import { boardShareUrl, isWhiteLabelBoard } from '../../lib/boardHost';
 
 const base = (over: Partial<BoardTeamValue> = {}): BoardTeamValue => ({
   me: 'lyndsay@swishdm.com', comments: [], approvalMeta: {}, canComment: true, canApprove: true,
@@ -55,6 +56,27 @@ describe('board team attribution', () => {
     fireEvent.change(r.getByLabelText('Add a comment'), { target: { value: 'Love it' } });
     fireEvent.click(r.getByRole('button', { name: 'Comment' }));
     await waitFor(() => expect(value.addComment).toHaveBeenCalledWith('p1', 'Love it', null));
+  });
+
+  it('white-label boards name no operator agency', () => {
+    expect(isWhiteLabelBoard('swishdm-live')).toBe(true);
+    expect(isWhiteLabelBoard('risedtc-com')).toBe(false);
+    expect(boardShareUrl('swishdm-live')).toBe('https://madebyswishdm.com/board');
+    expect(boardShareUrl('risedtc-com')).toBe('https://inboundonsteroids.com/client/risedtc-com');
+    expect(isOperatorEmail('im@ivanmanfredi.com')).toBe(true);
+    expect(isOperatorEmail('john@swishdm.com')).toBe(false);
+    setBoardHouse(true);
+    try {
+      const value = base({
+        comments: [{ id: 'c2', ref: 'p1', at: '2026-10-14T10:05:00Z', by: 'im@ivanmanfredi.com', text: 'On it.', parent: null }],
+        approvalMeta: { p1: { by: 'im@ivanmanfredi.com', at: '2026-10-14T13:02:00Z' } },
+      });
+      const r = render(<BoardTeamProvider value={value}><ApprovedBy refId="p1" /><PostComments refId="p1" /><PostComments refId="p9" /></BoardTeamProvider>);
+      const text = r.container.textContent || '';
+      expect(text).toContain('Approved by Content team');
+      expect(text).toContain('Everyone on this board sees what you write here.');
+      expect(text).not.toMatch(/InboundOnSteroids|ivanmanfredi|Ivan/);
+    } finally { setBoardHouse(false); }
   });
 
   it('asks the board-link visitor to sign in before commenting', () => {

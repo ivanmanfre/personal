@@ -8,6 +8,7 @@
     "build": "vite build",
     "prerender": "node scripts/prerender.mjs",
     "build:prerender": "vite build && node scripts/prerender.mjs",
+    "build:board-host": "vite build --config vite.board-host.config.ts",
     "preview": "vite preview",
     "test": "vitest run"
   },

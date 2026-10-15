@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { boardCanonicalUrl, boardShareUrl, isWhiteLabelBoard } from '../lib/boardHost';
 import { isClientLibraryPhoto } from '../lib/clientPhotoLibrary';
 import {
   loadBoardSession,
@@ -46,7 +47,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -5351,9 +5352,11 @@ const PILLAR_JOBS: Record<string, string> = {
   personal: 'The founder behind the work. Keeps the feed human.',
 };
 
-function StrategySurface({ board, accent, mint, isLive, act }: {
+function StrategySurface({ board, accent, mint, isLive, act, whiteLabel = false }: {
   board: Board; accent: string; mint: string;
   isLive: boolean;
+  /** White-label board (lib/boardHost): the operator agency never signs anything. */
+  whiteLabel?: boolean;
   act: (action: 'shift_request', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const strat = board.strategy;
@@ -5635,8 +5638,9 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in.{isLive ? '' : ' We review the weights together every month.'}
         </p>
-        {/* Signed by the operator (Ivan's agency), never by the client's own brand. */}
-        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>{'InboundOnSteroids'}</p>
+        {/* Signed by the operator (Ivan's agency), never by the client's own brand. White-label
+            boards carry no operator name at all. */}
+        {!whiteLabel && <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>{'InboundOnSteroids'}</p>}
       </div>
 
       {/* Your plan: the preview-only deliverables card (a live production tool never shows
@@ -7567,7 +7571,8 @@ function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSess
   // White-label the pre-auth screen: resolve the client's OWN brand by slug (public,
   // non-sensitive) so a live board never prints the operator agency name. Falls back
   // to the product name for demo/unknown boards.
-  const [brandLabel, setBrandLabel] = useState('InboundOnSteroids');
+  // White-label boards (lib/boardHost) never show the product name, not even for a frame.
+  const [brandLabel, setBrandLabel] = useState(isWhiteLabelBoard(slug) ? '' : 'InboundOnSteroids');
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -7722,7 +7727,9 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
   const [selfSent, setSelfSent] = useState(false);
   const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
   // The link a teammate is given. Never the ?k= token: everyone signs in as themselves.
-  const shareUrl = `https://inboundonsteroids.com/client/${slug}`;
+  // White-label boards hand out the client's own address (lib/boardHost).
+  const shareUrl = boardShareUrl(slug);
+  const whiteLabel = isWhiteLabelBoard(slug);
   const auth = { p_session: session?.token || null, p_token: session?.token ? null : (token || null) };
   const isAdmin = myRole === 'admin';
 
@@ -7814,6 +7821,10 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
     try { await supabase.functions.invoke('board-magic-link', { body: { slug, email: selfEmail.trim().toLowerCase() } }); } catch { /* uniform */ }
     setBusy(false); setSelfSent(true);
   };
+
+  // White-label boards keep the operator's own sign-in off the visible list (it still works);
+  // the team sees only their own people.
+  const shownTeam = (team || []).filter((m) => !whiteLabel || !isOperatorEmail(m.email));
 
   const btn = (enabled: boolean): React.CSSProperties => ({ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.5 });
   const field: React.CSSProperties = { fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' };
@@ -7912,9 +7923,9 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
           <div className="mt-5 max-w-[560px] overflow-hidden bg-white" style={{ border: `1px solid ${LINE}` }} data-team-list>
             <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Who has access</span>
-              <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{team?.length ?? 0}/{cap}</span>
+              <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{shownTeam.length}/{cap}</span>
             </div>
-            {(team || []).map((m, i) => {
+            {shownTeam.map((m, i) => {
               const label = (m.name || '').trim();
               const editable = isAdmin && !m.owner && m.email !== me;
               return (
@@ -7969,12 +7980,17 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
 export { FeedPreview, FunnelChip, LmDetailDrawer, UpNextBlock, DetailModal, CalendarSurface, diffLines, fmtDay, inkOn, initialsOf, caWash, caText, STAGE_META, FUNNEL_META, TINT_STEPS };
 export type { Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, OutreachUsage, OutreachLogEntry, OutreachLogMessage, OutreachStatus, OutreachTruth, OutreachTruthBooked, OutreachTruthRepliedPerson, OutreachTruthLead, PipelineLead, HistoryEntry, LeadMagnetEntry, PerfIndicator, PerfPost, PerfNetwork, PerfDemographics, PerfDemoBucket, CalendarItem, AgentStep };
 
-export default function ClientBoardPage() {
-  const { slug } = useParams<{ slug: string }>();
+export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } = {}) {
+  // lockedSlug: the white-label host build (board-host.tsx) serves exactly one board at its
+  // own address (madebyswishdm.com/board), so the slug comes from the build, not the route.
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  const slug = lockedSlug || routeSlug;
   // Point every time formatter at THIS client's zone before anything below renders. Derived
   // purely from the route and idempotent, so a re-render (or StrictMode's double one) cannot
   // land it anywhere else. One board renders per page, so there is nothing to race.
   setBoardZone(slug);
+  // White-label boards name no operator agency (team.tsx house label). Same idempotent pattern.
+  setBoardHouse(isWhiteLabelBoard(slug));
   const [params] = useSearchParams();
   const token = params.get('k') || '';
   // ?intro=1 force-replays the opening choreography (clears the played flag before the fetch).
@@ -9426,7 +9442,7 @@ export default function ClientBoardPage() {
     description: isLive
       ? 'Your content board: drafts in review, calendar, lead magnets, leads, and performance.'
       : `A month of content built for ${ogCompany} to preview: LinkedIn posts, carousels, and a live lead magnet, themed to your brand and ready to approve.`,
-    canonical: slug ? `https://ivanmanfredi.com/client/${slug}` : undefined,
+    canonical: slug ? boardCanonicalUrl(slug) : undefined,
     ogImage,
     noindex: true,
   });
@@ -9611,7 +9627,7 @@ export default function ClientBoardPage() {
       ? <DeskPerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} report={reportCtx} />
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
     </>,
-    strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
+    strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} whiteLabel={isWhiteLabelBoard(slug)} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} token={token} />,
   };
 
@@ -10060,11 +10076,12 @@ export default function ClientBoardPage() {
             <PulseDot color={mint} size={6} />
             {isPreview ? 'Preview · built ahead' : 'Live'}
           </span>
-          <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
+          {/* White-label boards (lib/boardHost) carry no operator mark. */}
+          {!isWhiteLabelBoard(slug) && <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
             <span className="cb-operator-on flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
             {/* The operator is always Ivan's agency — never the client's own brand. */}
             {'OPERATED BY INBOUNDONSTEROIDS'}
-          </span>
+          </span>}
         </div>
 
         {/* Desk sticky action bar: the accent strip that opens every tab with its one live
