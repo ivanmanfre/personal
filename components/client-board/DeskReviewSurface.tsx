@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import PostSourceContext from './PostSourceContext';
+import PostReviewTags from './PostReviewTags';
 import { srcLabelClient } from './clientSourceLabel';
 import ScheduleWeek from './ScheduleWeek';
 
@@ -998,9 +999,10 @@ export default function DeskReviewSurface({
             <div style={{ marginTop: compact ? 5 : 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {!compact && <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
               <Chip>{kickerOfLocal(q)}</Chip>
-              <FunnelChip stage={q.funnel_stage} accent={accent} />
+              {!(q.topic_label || q.creative_style) && <FunnelChip stage={q.funnel_stage} accent={accent} />}
               {q.post_url && <LivePostLink href={q.post_url} />}
             </div>
+            <PostReviewTags item={q} />
           </div>
           {bucket === 'published' ? (
             perf ? (
@@ -1051,6 +1053,7 @@ export default function DeskReviewSurface({
         const awaitingApproval = live && reviewMode && !approvedIds.has(q.id);
         return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>{awaitingApproval ? 'Awaiting approval · Proposed' : 'Goes out'} {day}, {time} {boardZone().label}</div>;
       })()}
+      <PostReviewTags item={q} />
       {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || srcLabelClient(q.source_label)} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
