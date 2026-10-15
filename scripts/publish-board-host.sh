@@ -62,11 +62,27 @@ else
   git clone -q --depth 1 --branch main "$CLONE_URL" "$WORK"
 fi
 
-mkdir -p "$WORK/$DIR"
-rsync -a --delete dist-board-host/ "$WORK/$DIR/"
+mkdir -p "$WORK/$DIR/assets"
+# Pages/CDN caches index.html for ~10 minutes, so a cached index can still ask for the
+# previous release's hashed chunks. Keep the last two releases' assets; prune older ones.
+REL="$WORK/.board-releases/$HOST"; mkdir -p "$REL"
+# First run: whatever is live now counts as the previous release.
+[ -f "$REL/prev1" ] || ls "$WORK/$DIR/assets" > "$REL/prev1"
+ls dist-board-host/assets > "$REL/new"
+cat "$REL/new" "$REL/prev1" "$REL/prev2" 2>/dev/null | sort -u > "$REL/keep"
+rsync -a --exclude assets dist-board-host/ "$WORK/$DIR/"
+rsync -a dist-board-host/assets/ "$WORK/$DIR/assets/"
+for f in "$WORK/$DIR/assets/"*; do
+  grep -qxF "$(basename "$f")" "$REL/keep" || rm -f "$f"
+done
+if ! cmp -s "$REL/new" "$REL/prev1"; then
+  [ -f "$REL/prev1" ] && mv "$REL/prev1" "$REL/prev2"
+  mv "$REL/new" "$REL/prev1"
+fi
+rm -f "$REL/new" "$REL/keep"
 
 cd "$WORK"
-git add -A "$DIR"
+git add -A "$DIR" ".board-releases/$HOST"
 if git diff --cached --quiet; then echo "board host $HOST unchanged"; exit 0; fi
 SRC="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
 git -c user.name="board-host-bot" -c user.email="noreply@ivanmanfredi.com" commit -q -m "board: sync from personal-site ${SRC}"
