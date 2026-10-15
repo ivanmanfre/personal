@@ -48,6 +48,19 @@ BEGIN
  ('risedtc-com','risedtc','comment','other-board','{"text":"other-client-private","by":"other@example.invalid"}');
  v_page := public.board_activity('swishdm-live',v_session);
  IF v_page->>'ok' IS DISTINCT FROM 'true' OR v_page::text LIKE '%must-not-project%' OR v_page::text LIKE '%other-client-private%' THEN RAISE EXCEPTION 'unsafe activity projection'; END IF;
+ -- Existing classification history can contain full internal taxonomy. Project metadata only.
+ INSERT INTO public.client_board_actions(board_slug,client_id,action,ref,payload) VALUES
+ ('swishdm-live','swishdm','classification_proposed','classification-private-fixture',
+  '{"by":"system","before":{"funnel_stage":"trust","funnel_source":"inferred","taxonomy":{"topic_label":"Prior topic","creative_style":"Prior style","pillar":"teardown","held":"private-classification-before","source":"private-source"}},"after":{"funnel_stage":"reach","funnel_source":"inferred","topic_label":"AI shopping","creative_style":"Animated explainer","pillar":"teardown","taxonomy":{"held":"private-classification-after","build_dir":"private-build-path"}}}');
+ v_page := public.board_activity('swishdm-live',v_session);
+ IF v_page::text LIKE '%private-classification-%' OR v_page::text LIKE '%private-source%' OR v_page::text LIKE '%private-build-path%' THEN
+   RAISE EXCEPTION 'classification activity exposed editorial internals';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(v_page->'items') e WHERE e->>'ref'='classification-private-fixture'
+   AND e->'before'='{"funnel_stage":"trust","funnel_source":"inferred","topic_label":"Prior topic","creative_style":"Prior style","pillar":"teardown"}'::jsonb
+   AND e->'after'='{"funnel_stage":"reach","funnel_source":"inferred","topic_label":"AI shopping","creative_style":"Animated explainer","pillar":"teardown"}'::jsonb) THEN
+   RAISE EXCEPTION 'classification metadata was lost or extra fields projected';
+ END IF;
  INSERT INTO public.client_board_actions(board_slug,client_id,action,ref,payload,created_at)
  SELECT 'swishdm-live','swishdm','comment','pagination-fixture',jsonb_build_object('by',v_by,'text','page-'||i,'secret','not-projected'),now()+interval '1 second'+i*interval '1 microsecond' FROM generate_series(1,55) i;
  v_page := public.board_activity('swishdm-live',v_session);

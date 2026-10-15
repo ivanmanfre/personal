@@ -95,7 +95,20 @@ BEGIN
   SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'action',action,'ref',ref,'at',created_at,
     'by',CASE WHEN payload->>'by' ~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$' THEN payload->>'by' WHEN payload->>'by'='board link' THEN 'board link' WHEN payload->>'by' IN ('system','Content team / system') THEN 'Content team / system' ELSE 'Unattributed legacy action' END,'event',payload->>'event','field',payload->>'field',
     'phase',payload->>'phase','operation',payload->>'operation','operation_id',payload->>'operation_id',
-    'before',payload->'before','after',payload->'after',
+    'before',CASE WHEN action='classification_proposed' THEN jsonb_strip_nulls(jsonb_build_object(
+      'funnel_stage',payload->'before'->'funnel_stage',
+      'funnel_source',coalesce(payload->'before'->'funnel_source',payload->'before'->'taxonomy'->'funnel_source'),
+      'topic_label',coalesce(payload->'before'->'topic_label',payload->'before'->'taxonomy'->'topic_label'),
+      'creative_style',coalesce(payload->'before'->'creative_style',payload->'before'->'taxonomy'->'creative_style'),
+      'pillar',coalesce(payload->'before'->'pillar',payload->'before'->'taxonomy'->'pillar')
+    )) ELSE payload->'before' END,
+    'after',CASE WHEN action='classification_proposed' THEN jsonb_strip_nulls(jsonb_build_object(
+      'funnel_stage',payload->'after'->'funnel_stage',
+      'funnel_source',coalesce(payload->'after'->'funnel_source',payload->'after'->'taxonomy'->'funnel_source'),
+      'topic_label',coalesce(payload->'after'->'topic_label',payload->'after'->'taxonomy'->'topic_label'),
+      'creative_style',coalesce(payload->'after'->'creative_style',payload->'after'->'taxonomy'->'creative_style'),
+      'pillar',coalesce(payload->'after'->'pillar',payload->'after'->'taxonomy'->'pillar')
+    )) ELSE payload->'after' END,
     'text',CASE WHEN action='comment' THEN payload->>'text' END,
     'note',CASE WHEN action IN ('request_changes','shift_request') THEN payload->>'note' WHEN action IN ('audn_accept','audn_reject','audn_defer') THEN payload->>'reason' END
   ) ORDER BY created_at DESC,id DESC),'[]') INTO v_rows FROM (
