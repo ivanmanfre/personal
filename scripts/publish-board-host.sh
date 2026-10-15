@@ -69,7 +69,7 @@ REL="$WORK/.board-releases/$HOST"; mkdir -p "$REL"
 # First run: whatever is live now counts as the previous release.
 [ -f "$REL/prev1" ] || ls "$WORK/$DIR/assets" > "$REL/prev1"
 ls dist-board-host/assets > "$REL/new"
-cat "$REL/new" "$REL/prev1" "$REL/prev2" 2>/dev/null | sort -u > "$REL/keep"
+{ cat "$REL/new"; cat "$REL/prev1" "$REL/prev2" 2>/dev/null || true; } | sort -u > "$REL/keep"
 # --checksum: index.html keeps the same size between releases and a fresh clone can share
 # its mtime to the second, so rsync's size+mtime check would skip the new index.
 rsync -a --checksum --exclude assets dist-board-host/ "$WORK/$DIR/"
