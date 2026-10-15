@@ -18,6 +18,8 @@ begin
   end loop;
   answer := public.swishdm_scan_request_admit(jsonb_set(payload, '{brand_url}', '"https://swishdm-probe-16.example/"'));
   if answer <> 'full' then raise exception 'rolling cap: %', answer; end if;
+  answer := public.swishdm_scan_request_admit(payload);
+  if answer <> 'full' then raise exception 'domain leaked at capacity: %', answer; end if;
   if (select count(*) from public.swishdm_scan_requests where brand_domain like 'swishdm-probe-%') <> 15 then
     raise exception 'unexpected queued count';
   end if;

@@ -32,11 +32,11 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('swishdm_scan_request_admit', 0));
   v_domain := pg_catalog.lower(pg_catalog.split_part(pg_catalog.split_part(p_request->>'brand_url', '/', 3), ':', 1));
   v_domain := pg_catalog.regexp_replace(v_domain, '^www\.', '');
-  if exists (select 1 from public.swishdm_scan_requests where brand_domain = v_domain) then
-    return 'duplicate';
-  end if;
   if (select count(*) from public.swishdm_scan_requests where created_at > now() - interval '7 days') >= 15 then
     return 'full';
+  end if;
+  if exists (select 1 from public.swishdm_scan_requests where brand_domain = v_domain) then
+    return 'duplicate';
   end if;
   insert into public.swishdm_scan_requests
     (brand, brand_url, brand_domain, rival, rival_url, product, name, email, linkedin_url, source)
