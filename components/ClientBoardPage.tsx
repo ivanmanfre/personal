@@ -9681,6 +9681,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => (t.id !== 'outreach' || outreachAvailable) && (t.id !== 'resources' || !!viewBoard.resources?.length))
+    // A prepared resource library takes the unused newsletter's navigation space.
+    // Keep newsletters in the menu whenever the board has an actual issue.
+    .filter((t) => t.id !== 'newsletter' || !viewBoard.resources?.length || !!viewBoard.newsletter?.issues?.length)
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
