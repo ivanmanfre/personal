@@ -193,7 +193,7 @@ describe('scheduled post copy editing', () => {
       fireEvent.click(r.getByRole('button', { name: 'Edit copy' }));
       fireEvent.change(r.getByRole('textbox', { name: 'Post copy' }), { target: { value: 'Updated scheduled copy' } });
       fireEvent.click(r.getByRole('button', { name: 'Save edit' }));
-      await waitFor(() => expect(editDraft).toHaveBeenCalledWith(item.id, 'Updated scheduled copy'));
+      await waitFor(() => expect(editDraft).toHaveBeenCalledWith(item.id, 'Updated scheduled copy', 'Original scheduled copy'));
       await waitFor(() => expect(r.queryByRole('textbox', { name: 'Post copy' })).toBeNull());
       expect(item.body).toBe('Updated scheduled copy');
       expect(r.queryByRole('button', { name: 'Approve ✓' })).toBeNull();

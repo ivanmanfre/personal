@@ -25,6 +25,8 @@ import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import PostSourceContext from './client-board/PostSourceContext';
 import PostReviewTags from './client-board/PostReviewTags';
+import BoardActivity from './client-board/BoardActivity';
+import { uploadBoardFile } from '../lib/boardPhotoOperation';
 import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
@@ -1811,7 +1813,8 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
  *  <slug>/voicenotes/ (same anon trust posture as the photo pool), then a note action
  *  tells the operator where it landed. Preview boards keep the whole flow as local
  *  theater: same states, no upload, no RPC (mirrors the other preview actions). */
-function VoiceNoteModal({ accent, slug, live, act, onClose }: {
+function VoiceNoteModal({ accent, slug, live, act, uploadFile, onClose }: {
+  uploadFile?: (path: string, blob: Blob, contentType: string, note?: string) => Promise<{ ok: boolean; error?: string }>;
   accent: string; slug: string; live: boolean;
   act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
   onClose: () => void;
@@ -1901,10 +1904,9 @@ function VoiceNoteModal({ accent, slug, live, act, onClose }: {
     setPhase('sending'); setErr('');
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${slug}/voicenotes/vn-${Date.now()}-${rand}.webm`;
-    const { error } = await supabase.storage
-      .from('client-photos')
-      .upload(path, clip.blob, { upsert: false, contentType: clip.mime || 'audio/webm' });
-    if (error) { setPhase('preview'); setErr(error.message || 'Upload failed. Try again.'); return; }
+    if (!uploadFile) { setPhase('preview'); setErr('Upload is unavailable. Refresh the board.'); return; }
+    const upload = await uploadFile(path, clip.blob, clip.mime || 'audio/webm');
+    if (!upload.ok) { setPhase('preview'); setErr(upload.error || 'Upload failed. Try again.'); return; }
     const r = await act('note', null, { event: 'voice_note', path, duration_s: clip.duration });
     if (!r.ok) { setPhase('preview'); setErr(r.error || 'Could not send that. Try again.'); return; }
     setPhase('sent');
@@ -3621,13 +3623,14 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, slug, fetchHistory, reviewMode = false, approved = false }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, uploadFile, slug, fetchHistory, reviewMode = false, approved = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
   /** Live board: remove an unscheduled buffer post — reversible hide (board_visible=false). */
   onHideBuffer?: (id: string) => Promise<{ ok: boolean; error?: string }>;
+  uploadFile?: (path: string, blob: Blob, contentType: string, note?: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live board: draft history from the insert-only actions audit. */
   fetchHistory?: (ref: string) => Promise<HistoryEntry[]>;
   /** Review mode (board.review_mode): live board gets the Approve/Request-changes bar
@@ -3715,8 +3718,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setUploadBusy(true);
     const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').toLowerCase();
     const path = `${slug}/onepost/${item.id.slice(0, 8)}-${Date.now()}-${safe}`;
-    const { error } = await supabase.storage.from('client-photos').upload(path, file, { upsert: false, contentType: file.type || undefined });
-    if (error) { setUploadBusy(false); setMediaErr(error.message || 'Upload did not go through. Try again.'); return; }
+    if (!uploadFile) { setUploadBusy(false); setMediaErr('Upload is unavailable. Refresh the board.'); return; }
+    const result = await uploadFile(path, file, file.type);
+    if (!result.ok) { setUploadBusy(false); setMediaErr(result.error || 'Upload did not go through. Try again.'); return; }
     const url = supabase.storage.from('client-photos').getPublicUrl(path).data.publicUrl;
     setUploadBusy(false);
     await chooseMedia(url);
@@ -7195,12 +7199,12 @@ export function PerformanceSurface({ board, accent, live = false, showAim = fals
 type PhotoItem = { name: string; url: string; createdAt: string };
 type PhotoUpload = { key: string; name: string; status: 'uploading' | 'done' | 'error'; error?: string };
 
-function PhotosSurface({ board: _board, accent, slug, compact = false, onDeletePhoto, onUploaded }: { board: Board; accent: string; slug: string; compact?: boolean; onDeletePhoto?: (name: string) => Promise<{ ok: boolean; error?: string }>;
+function PhotosSurface({ board: _board, accent, slug, compact = false, onDeletePhoto, onUpload }: { board: Board; accent: string; slug: string; compact?: boolean; onDeletePhoto?: (name: string) => Promise<{ ok: boolean; error?: string }>;
   /** Live: record who uploaded (and, on boards with photo_notes, the note becomes a held idea). */
-  onUploaded?: (path: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
+  onUpload?: (path: string, blob: Blob, contentType: string, note?: string) => Promise<{ ok: boolean; error?: string }> }) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   // Optional "what happened here" note (boards with board.photo_notes): sent with the next upload.
-  const notesOn = !!(_board as any)?.photo_notes && !!onUploaded;
+  const notesOn = !!(_board as any)?.photo_notes && !!onUpload;
   const [note, setNote] = useState('');
   const [noteSaved, setNoteSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -7252,23 +7256,21 @@ function PhotosSurface({ board: _board, accent, slug, compact = false, onDeleteP
     window.clearTimeout(clearTimer.current);
     setBusy(true);
     setUploads(files.map((f, i) => ({ key: `${Date.now()}-${i}`, name: f.name, status: 'uploading' as const })));
+    let allSaved = true;
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').toLowerCase();
       const path = `${slug}/${Date.now()}-${i}-${safe}`;
-      const { error } = await supabase.storage
-        .from('client-photos')
-        .upload(path, file, { upsert: false, contentType: file.type || undefined });
-      setUploads((prev) => prev.map((u, idx) => (idx === i ? { ...u, status: error ? 'error' : 'done', error: error?.message } : u)));
-      // Attribution (+ the note, once, on the first photo of the batch). Best effort: the photo is in.
-      if (!error && onUploaded) { try { await onUploaded(path, notesOn && i === 0 ? note.trim() : ''); } catch { /* photo already saved */ } }
+      const result = onUpload ? await onUpload(path, file, file.type, notesOn && i === 0 ? note.trim() : '') : { ok: false, error: 'Upload is unavailable. Refresh the board.' };
+      if (!result.ok) allSaved = false;
+      setUploads((prev) => prev.map((u, idx) => (idx === i ? { ...u, status: result.ok ? 'done' : 'error', error: result.error } : u)));
     }
-    if (notesOn && note.trim()) { setNote(''); setNoteSaved(true); }
+    if (allSaved && notesOn && note.trim()) { setNote(''); setNoteSaved(true); }
     setBusy(false);
     if (inputRef.current) inputRef.current.value = '';
     await loadPhotos();
     // Clear the per-file chips after a beat once everything settled.
-    clearTimer.current = window.setTimeout(() => setUploads([]), 5000);
+    if (allSaved) clearTimer.current = window.setTimeout(() => setUploads([]), 5000);
   };
 
   const count = photos.length;
@@ -7749,6 +7751,7 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamMember['role']>('approver');
   const [busy, setBusy] = useState(false);
+  const [activityRevision, setActivityRevision] = useState(0);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [added, setAdded] = useState('');
   const [copied, setCopied] = useState(false);
@@ -7803,6 +7806,7 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
       const { data, error } = await supabase.rpc(fn, { p_slug: slug, ...args, ...auth });
       const res = (data as any) || null;
       take(res);
+      if (!error && res?.ok) setActivityRevision(n => n + 1);
       if (res?.error === 'not_authenticated') setTeamState('noauth');
       return { ok: !error && !!res?.ok, res };
     } catch { return { ok: false, res: null as any }; }
@@ -7999,6 +8003,7 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
           </p>
         </>
       )}
+      <BoardActivity slug={slug} session={session?.token} token={token} revision={activityRevision} />
     </div>
   );
 }
@@ -8029,6 +8034,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const approvalsKey = `cb-approvals-${slug || ''}`;
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
+  const [slotError, setSlotError] = useState('');
   const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed' | 'signin'>('loading');
   // Magic-link session (additive path). The ?k= token flow above is unchanged and
   // takes precedence whenever a ?k= is present. Session auth only engages when
@@ -8464,7 +8470,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (mode === 'demo' || mode === 'preview') return false;
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_audience_decide', {
           p_slug: slug, p_token: token, p_ref: ref, p_decision: decision, p_reason: reason });
       } else {
@@ -8578,14 +8584,12 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     }
   };
 
-  // Photo upload receipt (live): who uploaded it, plus an optional note (held idea on boards
-  // with photo_notes). The member's session wins over the board link so it is attributed.
-  const photoAdded = async (path: string, note: string): Promise<{ ok: boolean; error?: string }> => {
-    if (!slug) return { ok: false };
+  const uploadFile = async (path: string, blob: Blob, contentType: string, note = '') => {
+    if (!slug) return { ok: false, error: 'Missing board.' };
     const sess = sessionRef.current;
-    const { data, error } = await supabase.rpc('board_photo_added', { p_slug: slug, p_path: path, p_note: note || null, p_session: sess?.token || null, p_token: sess?.token ? null : (token || null) });
-    const out = data as { ok?: boolean; error?: string } | null;
-    return { ok: !error && !!out?.ok, error: out?.error || error?.message };
+    return uploadBoardFile((name, args) => supabase.rpc(name, args),
+      () => supabase.storage.from('client-photos').upload(path, blob, { upsert: false, contentType: contentType || undefined }),
+      { p_slug: slug, p_path: path, p_note: note, p_session: sess?.token || null, p_token: sess?.token ? null : token || null });
   };
 
   // History log (live): reads the insert-only client_board_actions audit for one draft.
@@ -8798,20 +8802,30 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     // The RPC records sign-off only. Dates remain the scheduling authority.
     return { ok: true };
   };
-  const pickAngle = (id: string, alt: AltAngle) => {
+  const persistSlot = async (events: { ref: string; payload: Record<string, unknown> }[]): Promise<boolean> => {
+    if (!isLiveRef.current) return true;
+    try {
+      const sess = sessionRef.current;
+      const { data, error } = await supabase.rpc('board_slot_notes', { p_slug: slug, p_events: events, p_session: sess?.token || null, p_token: sess?.token ? null : token || null });
+      if (error || !data?.ok) { setSlotError('That change was not saved to Activity. Try again.'); return false; }
+      setSlotError(''); return true;
+    } catch { setSlotError('That change was not saved to Activity. Try again.'); return false; }
+  };
+  const pickAngle = async (id: string, alt: AltAngle) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook } }])) return;
     setAngleSwaps((s) => ({ ...s, [id]: alt }));
     flash(id);
     armUndo(id, 'angle');
     // Live: the swap is a real client action — record it for the operator's log.
-    if (isLiveRef.current) { void act('note', id, { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook }); }
   };
-  const skipDay = (id: string) => {
+  const skipDay = async (id: string) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'post_removed' } }])) return;
     setWeekSkips((s) => ({ ...s, [id]: true as const }));
     armUndo(id, 'skip');
     // Live: "remove this post" — recorded, and undo records the restore below.
-    if (isLiveRef.current) { void act('note', id, { event: 'post_removed' }); }
   };
-  const unskipDay = (id: string) => {
+  const unskipDay = async (id: string) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'post_restored' } }])) return;
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
   };
   // "Put back in the buffer": unschedule the post (clears carousel_drafts.scheduled_at via
@@ -8860,19 +8874,16 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   };
   // "Leave this day empty": deliberate + persistent, no restore nag. Records day_left_empty
   // so it survives reload on any device (slot_state reconstructs it). Distinct from skipDay.
-  const leaveEmpty = (id: string) => {
+  const leaveEmpty = async (id: string) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'day_left_empty' } }])) return;
     setLeftEmpty((s) => ({ ...s, [id]: true as const }));
-    if (isLiveRef.current) { void act('note', id, { event: 'day_left_empty' }); }
   };
   // Reopen a deliberately-empty day (the only path back — never an automatic prompt). Clears
   // BOTH the empty-hold and any removal for this ref, so a held post's day returns to auto.
-  const refillDay = (id: string) => {
+  const refillDay = async (id: string) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'day_refilled' } }, { ref: id, payload: { event: 'post_restored' } }])) return;
     setLeftEmpty((s) => { const { [id]: _drop, ...rest } = s; return rest; });
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
-    if (isLiveRef.current) {
-      void act('note', id, { event: 'day_refilled' });
-      void act('note', id, { event: 'post_restored' });
-    }
   };
   // "Leave this day empty" from a SCHEDULED card: take the post off the day AND hold the day
   // empty so nothing auto-fills it (a human can post there manually). Distinct from "Back to
@@ -8880,44 +8891,35 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // day purely through the insert-only action log (post_removed + day_left_empty, keyed by
   // the draft id) — it NEVER writes carousel_drafts.scheduled_at, so the operator's manual
   // schedule is untouched. Reopening the day restores auto. Survives reload (slot_state).
-  const leaveDayEmpty = (id: string, _date?: string) => {
+  const leaveDayEmpty = async (id: string, _date?: string) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'post_removed' } }, { ref: id, payload: { event: 'day_left_empty' } }])) return;
     setWeekSkips((s) => ({ ...s, [id]: true as const }));
     setLeftEmpty((s) => ({ ...s, [id]: true as const }));
     flash(id);
-    if (isLiveRef.current) {
-      void act('note', id, { event: 'post_removed' });
-      void act('note', id, { event: 'day_left_empty' });
-    }
   };
   // Open-slot: restore the original post. Clears the removal and any replacement, and
   // records both so the log stays the source of truth across refreshes.
-  const restoreSlot = (id: string) => {
+  const restoreSlot = async (id: string) => {
     const wasReplaced = !!slotReplacements[id];
+    if (!await persistSlot([{ ref: id, payload: { event: 'post_restored' } }, ...(wasReplaced ? [{ ref: id, payload: { event: 'slot_replace_undone' } }] : [])])) return;
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
     setSlotReplacements((s) => { const { [id]: _drop, ...rest } = s; return rest; });
-    if (isLiveRef.current) {
-      void act('note', id, { event: 'post_restored' });
-      if (wasReplaced) void act('note', id, { event: 'slot_replace_undone' });
-    }
   };
   // Open-slot: pull a ready draft from the pool into the freed slot. The slot stays flagged
   // removed (the original is vetoed) and now carries the replacement. Logged angle_swap-style.
-  const pickReplacement = (id: string, item: PoolDraft) => {
+  const pickReplacement = async (id: string, item: PoolDraft) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'slot_replaced', draft_id: item.id, title: item.title ?? null, hook: (item.body || '').slice(0, 120) } }])) return;
     setSlotReplacements((s) => ({ ...s, [id]: { draft_id: item.id, title: item.title, body: item.body } }));
     flash(id);
-    if (isLiveRef.current) { void act('note', id, { event: 'slot_replaced', draft_id: item.id, title: item.title ?? null, hook: (item.body || '').slice(0, 120) }); }
   };
   // Open-slot: fill the freed slot with one of the slot's own bench angles. This restores
   // the slot and applies the angle swap (the existing same-slot swap path).
-  const pickReplacementAngle = (id: string, alt: AltAngle) => {
+  const pickReplacementAngle = async (id: string, alt: AltAngle) => {
+    if (!await persistSlot([{ ref: id, payload: { event: 'post_restored' } }, { ref: id, payload: { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook } }])) return;
     setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
     setSlotReplacements((s) => { const { [id]: _drop, ...rest } = s; return rest; });
     setAngleSwaps((s) => ({ ...s, [id]: alt }));
     flash(id);
-    if (isLiveRef.current) {
-      void act('note', id, { event: 'post_restored' });
-      void act('note', id, { event: 'angle_swap', alt_id: alt.id, title: alt.title, hook: alt.hook });
-    }
   };
   const undoApprove = async () => {
     const u = undo;
@@ -8928,8 +8930,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     try {
       if (isLiveRef.current) {
         const event = u.kind === 'approve' ? 'undo_approve' : u.kind === 'skip' ? 'post_restored' : 'angle_swap_undone';
-        const result = await act('note', u.id, { event });
-        if (!result.ok) { setUndoError(true); return; }
+        if (!await persistSlot([{ ref: u.id, payload: { event } }])) { setUndoError(true); return; }
       }
       if (u.kind === 'approve') {
         sessionApprovalChanges.current[u.id] = 'review';
@@ -9643,8 +9644,8 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx?.cfg.outreachOnly ? null : reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
-      : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} />,
+      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
     // it just renders inside a host tab instead of owning one.
@@ -10075,7 +10076,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
               className="mt-2 block text-left text-[11.5px] font-semibold underline"
               style={{ color: INK_MUTE, textUnderlineOffset: 3, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
             >
-              Team access: add a teammate
+              Team access and activity
             </button>
           )}
         </div>
@@ -10212,6 +10213,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
           );
         })()}
         <main className="px-4 pb-[calc(env(safe-area-inset-bottom)+88px)] pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-9">
+          {slotError && <p role="alert" className="mb-4 rounded-lg border p-3 text-[14px]">{slotError}</p>}
           {/* Night: no exit wait on a tab switch (the old fade-out + fade-in cost ~0.4s per tap). */}
           {night ? (
             /* Night: a tab switch swaps the section in place. AnimatePresence kept the old section
@@ -10311,6 +10313,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
           editTitle={viewOnly ? undefined : editTitle}
           setMedia={isLive && !viewOnly ? setMedia : undefined}
           setSchedule={isLive && !viewOnly ? setScheduleRPC : undefined}
+          uploadFile={isLive && !viewOnly ? uploadFile : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
           reviewMode={reviewMode}
@@ -10324,7 +10327,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
         <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
       )}
       {voiceOpen && (
-        <VoiceNoteModal accent={accent} slug={slug || ''} live={isLive} act={act} onClose={() => setVoiceOpen(false)} />
+        <VoiceNoteModal accent={accent} slug={slug || ''} live={isLive} act={act} uploadFile={uploadFile} onClose={() => setVoiceOpen(false)} />
       )}
     </div>
     </MotionConfig>
