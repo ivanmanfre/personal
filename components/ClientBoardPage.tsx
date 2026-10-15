@@ -8390,8 +8390,16 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // that has a report config (RISE, ARCH). Same token/session routing and the same
   // progressive-enhancement posture as the audience read above: until the RPC exists, or on
   // any failure, the report falls back to what the board payload already carries.
-  const reportCfg = reportConfigFor(slug);
+  const reportCfgBase = reportConfigFor(slug);
   const [reportPayload, setReportPayload] = useState<ReportPayload | null>(null);
+  // outreachOnly boards (SwishDM) switch the report on only once someone has been reached,
+  // and count from the payload's own start date.
+  const reportCfg = useMemo(() => {
+    if (!reportCfgBase?.outreachOnly) return reportCfgBase;
+    const start = String(reportPayload?.start_date || '').slice(0, 10);
+    if (!(reportPayload?.people || []).length || !/^\d{4}-\d{2}-\d{2}$/.test(start)) return null;
+    return { ...reportCfgBase, start };
+  }, [reportCfgBase, reportPayload]);
   const [reportPeriodKey, setReportPeriodKey] = useState<string | null>(null);
   useEffect(() => {
     if (state !== 'ready' || !slug || !reportConfigFor(slug)) return;
@@ -9603,9 +9611,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     flashId, modalOpen: !!detail, live: isLive,
   };
   const surfaces: Record<TabId, React.ReactNode> = {
-    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
+    week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx?.cfg.outreachOnly ? null : reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -9669,7 +9677,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable)
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
-    .map((t) => (reportCtx && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
+    .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
       : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
@@ -10114,7 +10122,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
             else if (next) { text = <>Next post {fmtD(next.publish_date)}: {next.hook || next.title || ''}</>; cta = { label: 'Open the post →', go: () => openDetail(next) }; }
             else { text = <>{bufferN} drafts written and waiting in the buffer.</>; cta = { label: 'See the pipeline →', go: () => goTab('review') }; }
           } else if (activeTab === 'review') {
-            text = reportCtx
+            text = reportCtx && !reportCtx.cfg.outreachOnly
               ? (dated.length || !bufferN
                 ? <>{dated.length} posts scheduled{dated.length ? <> through {fmtD([...dated].map((q) => q.publish_date || '').sort().pop())}</> : null}, {outN} already out.</>
                 : <>{bufferN} {bufferN === 1 ? 'post' : 'posts'} in the buffer, {outN} already out.</>)
@@ -10147,7 +10155,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
               || (outreachLog || []).some((e) => (e.messages || []).some((m) => m.direction === 'outbound' && !!m.sent_at))
               || Number((viewBoard as any).outreach_truth?.funnel?.contacted || 0) > 0;
             text = !sendsStarted ? <>Sends have not started yet.</>
-              : st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Invites go out 6am to 6pm PT, every day except Saturday.</>;
+              : st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</>
+              // The send window below is RISE's seat; another seat never reads it (SwishDM 10-15).
+              : slug === 'risedtc-com' ? <>Invites go out 6am to 6pm PT, every day except Saturday.</> : <>No sends out yet today.</>;
           } else if (activeTab === 'performance' && reportCtx) {
             text = <>{reportStripText(reportCtx)}</>;
             cta = { label: 'Your posts →', go: () => { const el = document.getElementById('cb-report-posts'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };

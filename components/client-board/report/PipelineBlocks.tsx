@@ -51,12 +51,17 @@ const ARCH_YES = new Set(['positive', 'soft_yes', 'info_ask', 'booking', 'price_
 const ARCH_HIDDEN = ['15479bc5', '51c6c091', 'be25f6dc', '4f769ffb', 'dffec463', 'de1cd6ad', 'f30ade2e', 'aab68de8', '46841963', '45bab93a'];
 
 export const isArch = (ctx: ReportCtx) => ctx.payload?.client === 'arch';
+/** SwishDM (2026-10-15): his own yes, groups and words; otherwise counted like RISE. */
+export const isSwish = (ctx: ReportCtx) => ctx.payload?.client === 'swishdm';
+/** SwishDM's yes: agreed to the comparison walk-through or a call (positive, soft_yes,
+ *  booking), the same set _client_board_report_payload counts. A question is not yet a yes. */
+const SWISH_YES = new Set(['positive', 'soft_yes', 'booking']);
 /** Interested right now: not booked, the latest classified reply says yes (ARCH: or asks),
  *  and that reply is from the last 14 days. An old yes that went quiet is not "right now"
  *  (30 days read 39 for RISE, most of them long cold; 14 reads 23 on 28 Sep). */
 export function interestedNow(ctx: ReportCtx, p: ReportPerson): boolean {
   if (p.bk) return false;
-  const yes = isArch(ctx) ? ARCH_YES.has(p.li || '') : p.li === 'positive';
+  const yes = isArch(ctx) ? ARCH_YES.has(p.li || '') : isSwish(ctx) ? SWISH_YES.has(p.li || '') : p.li === 'positive';
   return yes && !!p.lr && Date.parse(p.lr) >= Date.now() - 14 * DAY_MS;
 }
 export const wrote = (p: ReportPerson) => (p.w || []).length > 0;
@@ -79,7 +84,7 @@ export function inPeriod(ctx: ReportCtx, p: Period | null | undefined, ts?: stri
 }
 const anyIn = (ctx: ReportCtx, p: Period | null | undefined, arr: string[]) => arr.some((t) => inPeriod(ctx, p, t));
 /** A reply intent that reads as yes (ARCH: yes, or asks for details, price or a time). */
-export const isYes = (ctx: ReportCtx, li?: string | null) => (isArch(ctx) ? ARCH_YES.has(li || '') : li === 'positive');
+export const isYes = (ctx: ReportCtx, li?: string | null) => (isArch(ctx) ? ARCH_YES.has(li || '') : isSwish(ctx) ? SWISH_YES.has(li || '') : li === 'positive');
 export const reachedIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => !narrows(p) || inPeriod(ctx, p, x.out);
 export const connectedIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? inPeriod(ctx, p, x.conn) : !!x.conn);
 export const wroteIn = (ctx: ReportCtx, p: Period | null | undefined, x: ReportPerson) => (narrows(p) ? anyIn(ctx, p, repliesOf(x)) : wrote(x));
@@ -98,7 +103,7 @@ export function lastReplyIn(ctx: ReportCtx, p: Period | null | undefined, x: Rep
   return ws.length ? ws.reduce((a, b) => (a > b ? a : b)) : null;
 }
 
-export type Line = { key: string; title: string; sub: string };
+export type Line = { key: string; title: string; sub: string; /** The group's total row, when lower-casing the title would break a word (CEOs). */ all?: string };
 type Via = { key: string; label: string };
 
 const RISE_LINES: Line[] = [
@@ -122,6 +127,20 @@ const RISE_CAT: Record<string, string> = {
   apparel: 'apparel', apparel_kids: 'apparel', home_cpg: 'home goods', sporting_outdoor: 'sports and outdoor',
   pet: 'pet', jewelry_accessories: 'jewelry and accessories', toys_kids: 'kids and toys', electronics: 'electronics',
   furniture_heavy: 'furniture', digital_services: 'digital services', eyewear: 'eyewear', other: 'other stores',
+};
+
+// SwishDM: his buyer is a founder, CEO or CMO at a US or Canadian ecommerce brand; how we found
+// them follows his three outreach lanes on the board.
+const SWISH_LINES: Line[] = [
+  { key: 'owner', title: 'Founders and CEOs', sub: 'ecommerce founders, co-founders, CEOs and owners', all: 'All founders and CEOs' },
+  { key: 'marketing', title: 'Marketing leads', sub: 'CMOs, heads of marketing, growth and ecommerce' },
+  { key: 'other', title: 'Other roles', sub: 'people whose title is neither of the above' },
+];
+const SWISH_VIA: Record<string, string> = {
+  own: 'People who engaged with your posts or profile',
+  engaged: 'People who engaged with relevant ecommerce and search accounts',
+  signals: 'Stores picked from store and marketing signals',
+  other: 'Other people you reached',
 };
 
 const ARCH_LINES: Line[] = [
@@ -192,6 +211,7 @@ export function lineOf(ctx: ReportCtx, p: ReportPerson): string {
 export function viaOf(ctx: ReportCtx, p: ReportPerson): Via {
   if (isArch(ctx)) { const l = archVia(p); return { key: l, label: l }; }
   const k = p.v || 'other';
+  if (isSwish(ctx)) return { key: k, label: SWISH_VIA[k] || SWISH_VIA.other };
   return { key: k, label: RISE_VIA[k] || RISE_VIA.other };
 }
 
@@ -216,7 +236,7 @@ export function tally(ctx: ReportCtx, ps: ReportPerson[], label: string, noConne
  *  or a month, only the people something happened with inside it. */
 export function linesData(ctx: ReportCtx, period?: Period | null): Array<{ ln: Line; inLine: ReportPerson[]; all: Row; rows: Row[] }> {
   const people = (ctx.payload?.people || []).filter((p) => activeIn(ctx, period, p));
-  const lines = isArch(ctx) ? ARCH_LINES : RISE_LINES;
+  const lines = isArch(ctx) ? ARCH_LINES : isSwish(ctx) ? SWISH_LINES : RISE_LINES;
   return lines.map((ln) => {
     const inLine = people.filter((p) => lineOf(ctx, p) === ln.key);
     const byVia = new Map<string, { label: string; ps: ReportPerson[] }>();
@@ -228,7 +248,7 @@ export function linesData(ctx: ReportCtx, period?: Period | null): Array<{ ln: L
     const rows = [...byVia.entries()]
       .map(([k, g]) => tally(ctx, g.ps, g.label, !isArch(ctx) && k === 'asked', period))
       .sort((a, b) => b.reached - a.reached || b.wrote - a.wrote);
-    return { ln, inLine, all: tally(ctx, inLine, `All ${ln.title.toLowerCase()}`, false, period), rows };
+    return { ln, inLine, all: tally(ctx, inLine, ln.all || `All ${ln.title.toLowerCase()}`, false, period), rows };
   }).filter((x) => x.inLine.length > 0);
 }
 
@@ -263,7 +283,9 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
       <Footnote style={{ marginTop: 6, maxWidth: '78ch' }}>
         {isArch(ctx)
           ? <>Grouped by the kind of company, then by how we found each person. Each number counts what happened {when}, each person once.</>
-          : <>Two groups of people, and where we found them. Each number counts what happened {when}, each person once. Said yes means they said yes to a scan or a chat.</>}
+          : isSwish(ctx)
+            ? <>Grouped by role, then by how we found each person. Each number counts what happened {when}, each person once. Said yes means they said yes to the comparison or a call.</>
+            : <>Two groups of people, and where we found them. Each number counts what happened {when}, each person once. Said yes means they said yes to a scan or a chat.</>}
       </Footnote>
       {!data.length && <Footnote style={{ marginTop: 14 }}>Nothing new {when} yet.</Footnote>}
       {data.map(({ ln, inLine, all, rows }) => {
@@ -305,7 +327,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
                 </div>
               ))}
             </div>
-            {!isArch(ctx) && ln.key === 'owner' && <StoreKinds ps={inLine} isWrote={(p) => wroteIn(ctx, P, p)} isBooked={(p) => bookedIn(ctx, P, p)} />}
+            {!isArch(ctx) && !isSwish(ctx) && ln.key === 'owner' && <StoreKinds ps={inLine} isWrote={(p) => wroteIn(ctx, P, p)} isBooked={(p) => bookedIn(ctx, P, p)} />}
           </div>
         );
       })}
@@ -494,7 +516,7 @@ export function pipelineStripText(ctx: ReportCtx): string {
     const n = (ctx.payload?.people || []).filter((p) => !!p.bk).length;
     return n ? `${n} ${n === 1 ? 'call' : 'calls'} booked since ${dm(ctx.cfg.start)}.` : 'Your conversations, with the real messages.';
   }
-  const who = isArch(ctx) ? (ps.length === 1 ? 'person is' : 'people are') : (ps.length === 1 ? 'founder is' : 'founders are');
+  const who = isArch(ctx) || isSwish(ctx) ? (ps.length === 1 ? 'person is' : 'people are') : (ps.length === 1 ? 'founder is' : 'founders are');
   const newest = ps[0];
   return `${ps.length} ${who} interested right now. Newest: ${newest.n}${newest.c ? `, ${newest.c}` : ''}.`;
 }
@@ -574,7 +596,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
   const arch = isArch(ctx);
   const P = ctx.period;
   const { bookedRows, interested, recent, nBooked, nInterested, nWrote, bookedNames, movedOn } = pipelineData(ctx, log, booked, P);
-  const who = arch ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
+  const who = arch || isSwish(ctx) ? (nInterested === 1 ? 'person is' : 'people are') : (nInterested === 1 ? 'founder is' : 'founders are');
   const when = narrows(P) ? P.phrase : `since ${dm(ctx.cfg.start)}`;
   const night = useNight();
   const quiet = useQuiet();
@@ -618,7 +640,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
 
           <LinesLedger ctx={ctx} />
           <CallsChart ctx={ctx} />
-          <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
+          <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : isSwish(ctx) ? `said yes to the comparison or a call ${when}, not booked yet` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
             {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody {when}.</Footnote>}
             {movedOn > 0 && <Footnote>{movedOn} more said yes {when}, but their latest reply does not. They are under Wrote back.</Footnote>}
           </ListSection>

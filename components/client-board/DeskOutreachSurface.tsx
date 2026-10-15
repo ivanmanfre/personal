@@ -616,6 +616,13 @@ export default function DeskOutreachSurface({
           {(() => {
             const nextIsToday = !!status.next_window_at && new Date(status.next_window_at).toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' }) === new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Los_Angeles' });
             const sendDay = status.todays_sends > 0 || nextIsToday;
+            // No daily cap configured (SwishDM): the count stands alone, never "of null".
+            if (status.daily_cap == null) return (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginTop: 12, flexWrap: 'wrap' }}>
+                <Num size="big" inline>{status.todays_sends}</Num>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>{status.todays_sends === 1 ? 'send' : 'sends'} today</span>
+              </div>
+            );
             return sendDay ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginTop: 12, flexWrap: 'wrap' }}>
@@ -775,11 +782,12 @@ export default function DeskOutreachSurface({
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                   <Num size="big" inline>{usage.connect_sent}</Num>
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>invites sent &middot; cap {usage.connect_cap}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>invites sent &middot; {usage.connect_cap != null ? <>cap {usage.connect_cap}</> : 'no cap set'}</span>
                 </div>
-                <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
+                {/* A seat with no cap configured (SwishDM) gets no bar: a bar needs a ceiling. */}
+                {usage.connect_cap != null && <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
                   <div className="barfill" style={{ height: '100%', width: `${barPct(usage.connect_sent, usage.connect_cap)}%`, borderRadius: 999, background: 'var(--cb-accent)' }} />
-                </div>
+                </div>}
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
@@ -790,14 +798,14 @@ export default function DeskOutreachSurface({
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                   <Num size="big" inline>{usage.inmail_used}</Num>
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>InMails sent &middot; cap {usage.inmail_cap}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink-mute)' }}>InMails sent &middot; {usage.inmail_cap != null ? <>cap {usage.inmail_cap}</> : 'no cap set'}</span>
                 </div>
-                <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
+                {usage.inmail_cap != null && <div className="bar" style={{ marginTop: 9, height: 12, borderRadius: 999, background: 'var(--cb-paper-sunk)', overflow: 'hidden' }}>
                   <div className="barfill" style={{ height: '100%', width: `${barPct(usage.inmail_used, usage.inmail_cap)}%`, borderRadius: 999, background: 'var(--cb-accent)' }} />
-                </div>
+                </div>}
               </div>
             </Cols>
-            <Footnote>{live ? '' : 'The caps are ours, set low on purpose. '}These counters cover {MONTHS_FULL[now.getMonth()]} only and start again on the 1st.</Footnote>
+            <Footnote>{live || usage.connect_cap == null ? '' : 'The caps are ours, set low on purpose. '}These counters cover {MONTHS_FULL[now.getMonth()]} only and start again on the 1st.</Footnote>
           </Drill>
         </Card>
       )}

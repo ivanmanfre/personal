@@ -43,7 +43,7 @@ export type ReportCame = { name?: string | null; company?: string | null; title?
 export type ReportEngaged = { p: string; k: string; at: string; fit: boolean; checked: boolean; new: boolean };
 export type ReportPost = { p: string; at: string; title?: string | null };
 export type ReportPayload = {
-  client: 'risedtc' | 'arch';
+  client: 'risedtc' | 'arch' | 'swishdm';
   start_date: string;
   people: ReportPerson[];
   came: ReportCame[];
@@ -92,6 +92,11 @@ export type ReportConfig = {
   /** The week page opens on the outreach results plate (calls booked this month, who
    *  wrote back, replies week by week) with the period figures folded under it. */
   homeResults?: boolean;
+  /** SwishDM (2026-10-15): the report feeds Outreach and Performance only, and only once the
+   *  payload has someone in it. Until then those tabs keep their honest empty states; This
+   *  week, All content and the tab names never change. The start is the payload's own
+   *  start_date (first send or first post), since no agreed start date is on file. */
+  outreachOnly?: boolean;
 };
 
 export const REPORT_CONFIGS: Record<string, ReportConfig> = {
@@ -117,6 +122,20 @@ export const REPORT_CONFIGS: Record<string, ReportConfig> = {
     postsTitle: 'Your posts, by who they brought',
     postsRank: 'most people who fit your buyer first',
     fitColumn: 'Fit your buyer',
+  },
+  // SwishDM: Mon-Sun weeks and calendar months in the board's own zone (PT); words from his
+  // strategy (US and Canadian ecommerce brands; a founder, CEO or CMO who can buy).
+  'swishdm-live': {
+    slug: 'swishdm-live', kind: 'weekly', start: '', tz: 'America/Los_Angeles',
+    who: ['ecommerce brand', 'ecommerce brands'],
+    fit: ['person who fits your buyer', 'people who fit your buyer'],
+    reach: 'connections',
+    yesLabel: ['person said yes', 'people said yes'],
+    wroteLabel: ['person wrote back', 'people wrote back'],
+    postsTitle: 'Your posts, by who they brought',
+    postsRank: 'most people who fit your buyer first',
+    fitColumn: 'Fit your buyer',
+    outreachOnly: true,
   },
 };
 
