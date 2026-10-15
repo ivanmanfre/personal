@@ -47,7 +47,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -9678,6 +9678,8 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
 
   setBoardViewer(viewer);
+  // The identity block names whoever is signed in; the board link (no person) keeps the founder.
+  const shownName = (isLive && viewerDisplayName()) || founderName;
   const teamValue = isLive ? {
     me: viewer, comments: boardComments, approvalMeta,
     canComment: !!session?.token, addComment,
@@ -9939,7 +9941,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
               <span className="flex h-9 w-9 items-center justify-center" title={isLive ? (scheduledCount > 0 ? `${scheduledCount} scheduled${bufferCount > 0 ? ` · ${bufferCount} in buffer` : ''}` : bufferCount > 0 ? `${bufferCount} in buffer` : 'Live') : 'Engine running'}>
                 <PulseDot color={accent} size={7} />
               </span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" title={founderName} style={{ background: accent, color: inkOn(accent) }}>{initialsOf(founderName)}</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" title={shownName} style={{ background: accent, color: inkOn(accent) }}>{initialsOf(shownName)}</span>
               {skin === 'desk' && isLive && (
                 <button onClick={() => goTab('team')} title="Team access" aria-label="Team access" className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[rgba(26,26,26,0.06)]" style={{ background: 'none', border: 'none', cursor: 'pointer', color: INK_MUTE }}>
                   <NavIcon id="team" size={18} />
@@ -10019,9 +10021,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
             </div>
           )}
           <div className="flex items-center gap-2.5 pt-1.5" style={{ borderTop: `1px solid ${LINE}` }}>
-            <span className="mt-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(founderName)}</span>
+            <span className="mt-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(shownName)}</span>
             <span className="mt-2.5 min-w-0">
-              <span className="block truncate text-[12.5px] font-semibold" style={{ color: INK }}>{founderName}</span>
+              <span className="block truncate text-[12.5px] font-semibold" style={{ color: INK }}>{shownName}</span>
               <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>{isLive ? (board.domain || clientBrand(board)) : 'Run by InboundOnSteroids'}</span>
             </span>
           </div>

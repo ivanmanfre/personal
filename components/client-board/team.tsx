@@ -57,6 +57,14 @@ export function setBoardViewer(email: string): void { viewerEmail = (email || ''
 let memberNames: Record<string, string> = {};
 export function setBoardNames(names: Record<string, string>): void { memberNames = names || {}; }
 export function viewerKnown(): boolean { return !!viewerEmail; }
+/** Full name of the signed-in viewer for their own screen: the name the team gave them,
+ *  else the one read from their email. Null for the board link (no person signed in). */
+export function viewerDisplayName(): string | null {
+  if (!viewerEmail) return null;
+  const given = (memberNames[viewerEmail] || '').trim();
+  if (given) return given;
+  return isOperatorEmail(viewerEmail) ? null : memberName(viewerEmail);
+}
 
 /** A member's display name from their email ("lyndsay.k@swishdm.com" → "Lyndsay K").
  *  Operator addresses and tooling ids return null: the caller keeps its house label. */
