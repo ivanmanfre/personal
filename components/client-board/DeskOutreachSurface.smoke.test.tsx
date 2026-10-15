@@ -153,15 +153,17 @@ describe('DeskOutreachSurface', () => {
     );
 
     expect(html).toContain('Sends have not started');
-    expect(html).toContain('not tracked yet');
-    // the accepted-invite step is always blank (not derivable from the log)
-    expect(html).toContain('Accepted the invite');
+    // 2026-10-15: before the first send, one card names what will appear instead of three
+    // plates of zeros (whole-program funnel, leads, booked calls).
+    expect(html).toContain('What shows here once sends start');
+    expect(html).not.toContain('Everyone contacted so far');
+    expect(html).not.toContain('None yet.');
     expect(html).toContain('Send log: nothing sent yet');
   });
 
   it('renders the booked-calls block with the honest empty state when no booking exists', () => {
     const html = renderToStaticMarkup(
-      <DeskOutreachSurface board={makeBoard({ precall_briefs: [] })} accent="#4f46e5" log={[]} />
+      <DeskOutreachSurface board={makeBoard({ precall_briefs: [] })} accent="#4f46e5" log={[{ prospect_id: 's1', name: 'Sent Once', company: null, lane: 'cold', reply_count: 0, replied: false, last_sent_at: lastMonday.toISOString(), last_reply_at: null, messages: [outbound(lastMonday, 'connection_note', 'linkedin')] }]} />
     );
     // the block itself never disappears — the empty state is the block
     expect(html).toContain('Booked calls');
@@ -175,7 +177,7 @@ describe('DeskOutreachSurface', () => {
 
   it('renders the booked-calls empty state when precall_briefs is missing entirely', () => {
     const html = renderToStaticMarkup(
-      <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={[]} />
+      <DeskOutreachSurface board={makeBoard()} accent="#4f46e5" log={[{ prospect_id: 's1', name: 'Sent Once', company: null, lane: 'cold', reply_count: 0, replied: false, last_sent_at: lastMonday.toISOString(), last_reply_at: null, messages: [outbound(lastMonday, 'connection_note', 'linkedin')] }]} />
     );
     expect(html).toContain('Booked calls');
     expect(html).toContain('None yet.');
@@ -237,7 +239,7 @@ describe('DeskOutreachSurface', () => {
           performance: { outreach_indicators: [{ key: 'accepts', label: 'Accepted connections', value: 31, source: 'warm and cold lanes' }] },
         } as any)}
         accent="#4f46e5"
-        log={[]}
+        log={[{ prospect_id: 's1', name: 'Sent Once', company: null, lane: 'cold', reply_count: 0, replied: false, last_sent_at: lastMonday.toISOString(), last_reply_at: null, messages: [outbound(lastMonday, 'connection_note', 'linkedin')] }]}
       />
     );
     expect(unstamped).toContain('Accepted the invite');

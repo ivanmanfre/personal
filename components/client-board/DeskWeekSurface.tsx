@@ -455,6 +455,8 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
 
   /* ---- day-level write state (add a post to an open day). ---- */
   const [addDay, setAddDay] = useState<string | null>(null);
+  // Phones: a run of open weekdays reads as one line until it is opened (2026-10-15).
+  const [emptyRunOpen, setEmptyRunOpen] = useState(false);
   const [dayErr, setDayErr] = useState<Record<string, string>>({});
   const [dayBusy, setDayBusy] = useState(false);
   const dayWriteLock = useRef(false);
@@ -830,11 +832,12 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 {/* Caption scale, not numeral scale: the kit's blank is sized for a lone
                     em dash, and a six-word caption at that size overflowed its own box. */}
-                <Blank style={{ flex: '1 1 190px', minHeight: 32, maxWidth: 280, padding: '5px 12px', fontSize: 13.5, lineHeight: 1.35, textAlign: 'center' }}>nothing scheduled this day</Blank>
+                <Blank style={{ flex: '1 1 190px', minHeight: 44, maxWidth: 280, padding: '5px 12px', fontSize: 13.5, lineHeight: 1.35, textAlign: 'center' }}>nothing scheduled this day</Blank>
+                {/* 44px tap floor (2026-10-15). */}
                 {onScheduleToDay && day >= today && (
-                  <Pill disabled={dayBusy} active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)}>Add post here</Pill>
+                  <Pill disabled={dayBusy} active={addDay === day} onClick={() => setAddDay(addDay === day ? null : day)} style={{ minHeight: 44 }}>Add post here</Pill>
                 )}
-                {onLeaveEmpty && <Pill onClick={() => onLeaveEmpty(day)}>Leave this day empty</Pill>}
+                {onLeaveEmpty && <Pill onClick={() => onLeaveEmpty(day)} style={{ minHeight: 44 }}>Leave this day empty</Pill>}
               </div>
               {addDay === day && (
                 <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -943,13 +946,47 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
           {/* Weekends carry no row here: the glance rail above already draws them dashed and
               its footnote says so. A "Weekend, not a posting day" line per weekend repeated
               that fact twice a week. */}
-          {days.filter((d) => postsOnDay(d).length > 0 || (!report && !isWeekendDay(d))).map((d, di, rowDays) => {
-            const posts = postsOnDay(d);
-            const last = di === rowDays.length - 1 && beyondWindow.length === 0;
-            // Calm pass: the day rows render at once, no per-row reveal.
-            if (!posts.length) return emptyRow(d, last);
-            return posts.map((q, qi) => postRow(q, d, { last: last && qi === posts.length - 1 }));
-          })}
+          {(() => {
+            const rowDays = days.filter((d) => postsOnDay(d).length > 0 || (!report && !isWeekendDay(d)));
+            // Phones (2026-10-15): two or more open weekdays in a row (no post, no planned slot,
+            // not held empty) fold into one line; opening it shows each day with its controls.
+            // Desktop shows every row as before (CSS below), and night never folds.
+            const plainEmpty = (d: string) => !night && !postsOnDay(d).length && !isWeekendDay(d)
+              && !calOnlyOnDay(d).length && !leftEmpty[d] && !board.queue.some((q) => q.publish_date === d && leftEmpty[q.id]);
+            const out: React.ReactNode[] = [];
+            for (let i = 0; i < rowDays.length;) {
+              let j = i;
+              while (j < rowDays.length && plainEmpty(rowDays[j])) j++;
+              if (j - i >= 2) {
+                const run = rowDays.slice(i, j);
+                const runLast = j === rowDays.length && beyondWindow.length === 0;
+                const first = run[0], lastDay = run[run.length - 1];
+                out.push(
+                  <div key={`run-${first}`} className="cb-empty-run" data-open={emptyRunOpen ? '' : undefined}>
+                    <div className="cb-empty-sum" style={{ gap: 14, alignItems: 'center', flexWrap: 'wrap', padding: '11px 0', borderBottom: runLast && !emptyRunOpen ? undefined : '1px solid var(--cb-line)' }}>
+                      <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-mute)' }}>
+                        <b style={{ color: 'var(--cb-ink)' }}>{weekdayLong(first).slice(0, 3)} {dayNumOf(first)} to {weekdayLong(lastDay).slice(0, 3)} {dayNumOf(lastDay)}</b>: nothing scheduled
+                      </span>
+                      <Pill onClick={() => setEmptyRunOpen(!emptyRunOpen)} aria-pressed={emptyRunOpen} style={{ minHeight: 44 }}>{emptyRunOpen ? 'Hide the days' : 'Show the days'}</Pill>
+                    </div>
+                    {run.map((d, k) => <div key={d} className="cb-empty-day">{emptyRow(d, runLast && k === run.length - 1)}</div>)}
+                  </div>,
+                );
+                i = j;
+                continue;
+              }
+              const d = rowDays[i];
+              const posts = postsOnDay(d);
+              const last = i === rowDays.length - 1 && beyondWindow.length === 0;
+              // Calm pass: the day rows render at once, no per-row reveal.
+              if (!posts.length) out.push(emptyRow(d, last));
+              else out.push(...posts.map((q, qi) => postRow(q, d, { last: last && qi === posts.length - 1 })));
+              i++;
+            }
+            return out;
+          })()}
+          {!night && <style>{`.cb-empty-sum { display: none; }
+@media (max-width: 639px) { .cb-empty-sum { display: flex; } .cb-empty-run:not([data-open]) .cb-empty-day { display: none; } }`}</style>}
 
           {beyondWindow.length > 0 && (night ? (
             /* Night v3: one plain line, "31 more scheduled after this week", that opens the list. */

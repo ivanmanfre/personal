@@ -173,6 +173,14 @@ type LogEntryExt = OutreachLogEntry & { connection_sent_at?: string | null; conn
 
 /** n === 1 ? '' : 's' — the headline sentence prints real counts, so it has to survive a 1. */
 const plural = (n: number) => (n === 1 ? '' : 's');
+/** The not-started card: what the tab counts once the first sends go out. */
+const NOT_STARTED_ITEMS: [string, string][] = [
+  ['People contacted', 'first invite or message, one per person'],
+  ['Accepted', 'people who accepted the invite'],
+  ['Wrote back', 'anyone who replied'],
+  ['Said yes', 'said yes to a resource or a call'],
+  ['Calls booked', 'each one with its pre-call brief'],
+];
 
 function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?: SendKind): number {
   let n = 0;
@@ -441,6 +449,13 @@ export default function DeskOutreachSurface({
   const acceptsStamp = ot?.funnel && typeof ot.funnel.accepted === 'number'
     ? countedAt
     : acceptsInd?.captured_at ? fmtCounted(acceptsInd.captured_at) : '';
+  // Before the first send (SwishDM 10-15): one short card says what will appear, instead of
+  // three plates of zeros under a headline that already says nothing has gone out.
+  // Any source that shows a send (log, counted blob, month counters, today's sends, a stamped
+  // accepts figure) means the program has started.
+  const usageSends = !!usage && (usage.connect_sent + usage.dm_sent + usage.inmail_used) > 0;
+  const notStarted = !programHasSends && !ot && callsBookedCount === 0 && !usageSends
+    && !(status && status.todays_sends > 0) && !(acceptsValue !== null && acceptsValue > 0);
 
   const funnelSteps: FunnelStep[] = [
     { value: contactedCount, label: 'People contacted', note: '· first touch only, one per person, whole program', pct: barPct(contactedCount, contactedCount) },
@@ -562,6 +577,23 @@ export default function DeskOutreachSurface({
       {/* The review page, embedded (Ivan 2026-09-02). The leads waiting on the client live on
           their own shared page; it renders in place so the client reviews without leaving the
           tab. Same origin, so that page's own Submit button works inside the frame. */}
+      {notStarted && (
+        <Card style={{ marginTop: 16, padding: '20px 24px 18px' }}>
+          <div data-outreach-not-started="">
+            <Eyebrow tone="ink">What shows here once sends start</Eyebrow>
+            <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(170px, 100%), 1fr))', gap: '12px 20px' }}>
+              {NOT_STARTED_ITEMS.map(([t, d]) => (
+                <div key={t}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{t}</div>
+                  <div style={{ marginTop: 2, fontSize: 12.5, lineHeight: 1.45, color: 'var(--cb-ink-mute)' }}>{d}</div>
+                </div>
+              ))}
+            </div>
+            <Footnote>Counted week by week from your live send record, each person once.</Footnote>
+          </div>
+        </Card>
+      )}
+
       {reviewNode}
 
       {/* THE TOP OF THE PANEL (ballot winner, Ivan 2026-08-26: layout A with C's hero
@@ -714,7 +746,7 @@ export default function DeskOutreachSurface({
       {/* 2 — everyone contacted so far, whole program. Every step here is cumulative and
           says so, because the weekly report counts accepts inside a window and the two
           figures are supposed to differ. */}
-      {!(ot && ot.counted_at) && (
+      {!(ot && ot.counted_at) && !notStarted && (
       <Plate style={{ marginTop: 22 }} pad="26px 26px 22px">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
           <Eyebrow on="plate">Everyone contacted so far</Eyebrow>
@@ -730,7 +762,7 @@ export default function DeskOutreachSurface({
       )}
 
       {/* 3 — the send allowance, collapsed (the frag demoted it off the top of the tab). */}
-      {usage && (
+      {usage && !notStarted && (
         <Card style={{ marginTop: 12, padding: '4px 26px' }}>
           {/* The month counters reset on the 1st, so early in a month they sit UNDER the week
               total printed above them. Naming the month is what keeps the smaller number from
@@ -775,7 +807,7 @@ export default function DeskOutreachSurface({
           at the top of the panel, with names and stamps, and repeating them here would put
           the same number on the page twice. Boards without the blob keep these blocks
           exactly as they shipped. */}
-      {!ot && (<>
+      {!ot && !notStarted && (<>
       <Eyebrow style={{ marginTop: 28 }}>Leads</Eyebrow>
       <Plate style={{ marginTop: 12 }} pad="28px 26px 24px">
         <JourneyPlate
