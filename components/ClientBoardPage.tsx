@@ -24,7 +24,6 @@ import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import PostSourceContext from './client-board/PostSourceContext';
-import BoardResourcesSurface, { type BoardResource } from './client-board/BoardResourcesSurface';
 import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
@@ -504,7 +503,6 @@ interface Board {
   ideas?: Idea[];
   lm?: any;
   lead_magnets?: LeadMagnetEntry[];
-  resources?: BoardResource[];
   /** Real captured leads, if any exist yet. Absent/empty on a fresh preview board — the
    *  Captured leads table then shows a clean empty-state, never a staged sample lead. */
   leads?: { email: string; score?: string; weakest_area?: string; when?: string }[];
@@ -4805,7 +4803,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
   const onHero = isLiveLm ? inkOn(liveHeaderHex) : `color-mix(in srgb, ${accent} 72%, ${INK})`;
   // Live board: "Live" is reserved for announced-on-the-feed. Up-on-the-domain is the
   // honest state until the launch post runs.
-  const statusLabel = isLiveLm ? (live && onClientDomain(entry.url, board.domain) ? 'On your domain' : 'Live') : entry.status === 'built' ? 'Built' : 'Concept';
+  const statusLabel = isLiveLm ? (live && onClientDomain(entry.url, board.domain) ? 'On your domain' : 'Live') : entry.status === 'drafted' ? 'For review' : entry.status === 'built' ? 'Built' : 'Concept';
   const url = entry.url;
   // A distinct direct-resource URL, if the data carries one (else landing == resource).
   const resourceUrl = (entry as unknown as { resource_url?: string }).resource_url;
@@ -4904,6 +4902,8 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
               ? (live
                 ? (onClientDomain(entry.url, board.domain) ? 'Up on your domain with capture on. It announces on your feed when its launch slot comes up.' : 'Live with capture on. It announces on your feed when its launch slot comes up.')
                 : 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.')
+              : entry.status === 'drafted'
+              ? 'Prepared for review. Confirm launch approval before use.'
               : entry.status === 'built'
               ? 'Built and working. It goes up on your domain when its launch slot comes up.'
               : (live ? 'In build. It goes up on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
@@ -4912,7 +4912,7 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
           {/* Just the links — the landing page and the direct resource. No full embed inside
               the card. Landing and resource are the same page for these assets, so show one
               link (dedup); a distinct resource url would render as a second link. */}
-          {isLiveLm && url && (
+          {(isLiveLm || entry.status === 'drafted') && url && (
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
               {resourceUrl && resourceUrl !== url ? (
                 <>
@@ -4923,6 +4923,13 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
                 <a href={url} target="_blank" rel="noreferrer" className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', color: caText(accent), textDecoration: 'underline', textUnderlineOffset: 3 }}>Landing page &amp; resource →</a>
               )}
             </div>
+          )}
+
+          {entry.status === 'drafted' && entry.promo?.announcement && (
+            <section className="mt-6">
+              <h3 className="text-[15px] font-semibold" style={{ color: INK }}>Draft launch post</h3>
+              <p className="mt-3 whitespace-pre-wrap text-[14px] leading-relaxed" style={{ color: INK }}>{entry.promo.announcement}</p>
+            </section>
           )}
 
           {/* The promo kit: real copy only, nothing invented. Authored templates render as the
@@ -7423,7 +7430,6 @@ const TABS = [
   { id: 'leads', label: 'Leads', group: 'Leads' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
-  { id: 'resources', label: 'Resources', group: 'Content' },
   { id: 'team', label: 'Team', group: 'Settings' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
@@ -7491,7 +7497,6 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
       <path d="m15.8 8.2-2 5.6-5.6 2 2-5.6 5.6-2z" />
     </>
   ),
-  resources: <><path d="M4 4h6l2 2h8v14H4z" /><path d="M8 11h8M8 15h6" /></>,
   team: (
     <>
       <circle cx="9" cy="8" r="3.5" />
@@ -9649,7 +9654,6 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       : <PerformanceSurface board={viewBoard} accent={accent} live={isLive} showAim={false} audience={audience} onAudienceDecide={isLive ? decideAudience : undefined} />}
     </>,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} whiteLabel={isWhiteLabelBoard(slug)} />,
-    resources: <BoardResourcesSurface resources={viewBoard.resources || []} />,
     team: <TeamSurface slug={slug || ''} accent={accent} session={session} token={token} />,
   };
 
@@ -9685,22 +9689,19 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // they stay in `surfaces` and stay addressable, so an old link resolves instead of 404ing
   // to the week. Other skins keep the original nav untouched.
   const visibleTabs = (skin === 'desk'
-    ? TABS.filter((t) => DESK_NAV_TABS.includes(t.id) || (t.id === 'resources' && !!viewBoard.resources?.length))
+    ? TABS.filter((t) => DESK_NAV_TABS.includes(t.id))
     : isLive
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
-  ).filter((t) => (t.id !== 'outreach' || outreachAvailable) && (t.id !== 'resources' || !!viewBoard.resources?.length))
-    // A prepared resource library takes the unused newsletter's navigation space.
-    // Keep newsletters in the menu whenever the board has an actual issue.
-    .filter((t) => t.id !== 'newsletter' || !viewBoard.resources?.length || !!viewBoard.newsletter?.issues?.length)
+  ).filter((t) => t.id !== 'outreach' || outreachAvailable)
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
       : t));
   const navCollapsed = skin === 'desk' && sideNavPref;
   const activeTab: TabId = isLive
-    ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) || (tab === 'resources' && !viewBoard.resources?.length) ? 'week' : tab)
-    : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) || (tab === 'resources' && !viewBoard.resources?.length) ? 'week' : tab);
+    ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
+    : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
 
   setBoardViewer(viewer);
   // The identity block names whoever is signed in; the board link (no person) keeps the founder.

@@ -363,6 +363,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
                   {entry.format && <Chip>{LM_FORMAT_LABEL[entry.format] || entry.format}</Chip>}
                   <Chip>Page drafted</Chip>
                 </div>
+                <button onClick={() => openEntry(entry)} style={{ marginTop: 14, alignSelf: 'flex-start', minHeight: 44, fontWeight: 700, textDecoration: 'underline', color: 'var(--cb-ink)' }}>Review lead magnet →</button>
               </Blank>
             ))}
             {ideas.map((idea) => (
