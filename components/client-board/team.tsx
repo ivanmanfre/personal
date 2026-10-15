@@ -21,6 +21,8 @@ export interface BoardTeamValue {
   approvalMeta: Record<string, ApprovalMeta>;
   /** Posting needs an email session; the board link can read but not comment. */
   canComment: boolean;
+  /** Viewers read and comment; approvers and admins sign off (server enforces it too). */
+  canApprove: boolean;
   addComment: (ref: string, text: string, parent?: string | null) => Promise<{ ok: boolean; error?: string }>;
 }
 
@@ -34,6 +36,9 @@ const OPERATOR_HOSTS = ['ivanmanfredi.com', 'inboundonsteroids.com'];
  *  page once per render, like setBoardZone. */
 let viewerEmail = '';
 export function setBoardViewer(email: string): void { viewerEmail = (email || '').toLowerCase(); }
+/** Names the team gave each member (board_team_list), keyed by lower-case email. */
+let memberNames: Record<string, string> = {};
+export function setBoardNames(names: Record<string, string>): void { memberNames = names || {}; }
 export function viewerKnown(): boolean { return !!viewerEmail; }
 
 /** A member's display name from their email ("lyndsay.k@swishdm.com" → "Lyndsay K").
@@ -43,6 +48,8 @@ export function memberName(by: string | null | undefined): string | null {
   if (!raw.includes('@')) return null;
   const host = raw.slice(raw.lastIndexOf('@') + 1);
   if (OPERATOR_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return null;
+  const given = (memberNames[raw] || '').trim();
+  if (given) return given.split(/\s+/)[0];
   const local = raw.slice(0, raw.indexOf('@')).split('+')[0];
   const words = local.split(/[._\-]+/).filter(Boolean);
   if (!words.length) return null;

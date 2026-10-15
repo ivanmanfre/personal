@@ -2,15 +2,21 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, memberName, setBoardViewer, type BoardTeamValue } from './team';
+import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, memberName, setBoardNames, setBoardViewer, type BoardTeamValue } from './team';
 
 const base = (over: Partial<BoardTeamValue> = {}): BoardTeamValue => ({
-  me: 'lyndsay@swishdm.com', comments: [], approvalMeta: {}, canComment: true,
+  me: 'lyndsay@swishdm.com', comments: [], approvalMeta: {}, canComment: true, canApprove: true,
   addComment: vi.fn().mockResolvedValue({ ok: true }), ...over,
 });
 
 describe('board team attribution', () => {
-  afterEach(() => { cleanup(); setBoardViewer(''); });
+  afterEach(() => { cleanup(); setBoardViewer(''); setBoardNames({}); });
+
+  it('prefers the name the team gave over the one guessed from the email', () => {
+    setBoardNames({ 'zd@swishdm.com': 'Zeke Daldy' });
+    expect(memberName('zd@swishdm.com')).toBe('Zeke');
+    expect(memberName('lyndsay@swishdm.com')).toBe('Lyndsay');
+  });
 
   it('names members from their email and keeps operators unnamed', () => {
     expect(memberName('lyndsay@swishdm.com')).toBe('Lyndsay');

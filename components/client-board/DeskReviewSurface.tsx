@@ -224,6 +224,17 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
     catch { setError(true); }
     finally { setPending(false); }
   };
+  const team = useBoardTeam();
+  if (team && !team.canApprove) {
+    // Viewers read and comment; sign-off belongs to approvers and admins.
+    return (
+      <div data-review-actions data-view-only style={{ padding: '8px 2px 0', fontSize: 13, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>
+        {approved ? <span style={{ fontWeight: 700, color: 'var(--cb-ink)' }}>✓ Approved </span> : null}
+        {approved && approvedRef ? <ApprovedBy refId={approvedRef} /> : null}
+        <div>You can read and comment. Ask an admin on your team for approver access to approve or request changes.</div>
+      </div>
+    );
+  }
   return (
     <div data-review-actions style={{ padding: '8px 2px 0' }}>
       {onFeedback && <div style={{ marginBottom: 8 }}>
@@ -259,7 +270,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
 import {
   FunnelChip, FeedPreview, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, boardZone, clientHistoryAuthor,
 } from '../ClientBoardPage';
-import { actorLabel, memberName, viewerKnown, ApprovedBy, PostComments } from './team';
+import { actorLabel, memberName, viewerKnown, ApprovedBy, PostComments, useBoardTeam } from './team';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
 } from '../ClientBoardPage';

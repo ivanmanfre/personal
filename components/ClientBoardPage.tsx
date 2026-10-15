@@ -46,7 +46,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, actorLabel, memberName, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -3635,6 +3635,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   slug?: string;
 }) {
   const reduce = useReducedMotion();
+  const team = useBoardTeam();
   const [editing, setEditing] = useState(initialEditing);
   const [body, setBody] = useState(item.body || '');
   // The copy this edit started from (2026-10-08). The save sends it, and the server refuses when the
@@ -4262,6 +4263,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           </div>
 
           {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
+          {isLive && team && !team.canApprove && (
+            <div className="text-[13px]" style={{ color: DIM }} data-view-only>You can read and comment. Ask an admin on your team for approver access to approve or request changes.</div>
+          )}
           {isLive && <PostComments refId={item.id} />}
           {isLive && shownHistory.length > 0 && (
             <div className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
@@ -4349,7 +4353,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         )}
         {/* Preview boards + review-mode live boards: approve stays visible while the body
             scrolls. On live, Approve MARKS for the operator — it never schedules or arms. */}
-        {canAct && (!isLive || reviewMode) && (
+        {canAct && (!isLive || reviewMode) && !(isLive && team && !team.canApprove) && (
           <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
               {isLive && approved ? (
@@ -7685,42 +7689,58 @@ function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSess
   );
 }
 
-/** Team tab (live boards with email sign-in). Lists who can sign in to the board and lets a
- *  member add or remove a teammate (board_team_* RPCs: SECURITY DEFINER, authed by the
- *  member's email session OR the ?k= board link, scoped to this board, cap 25).
+/** Team tab (live boards with email sign-in). Lists who can sign in, with their name and role.
+ *  Admins (and the ?k= board link) add, remove and change roles; everyone else sees the list.
+ *  Roles: admin = manage the team + approve; approver = approve / request changes / edit;
+ *  viewer = read and comment. The board owner is always an admin and is never removable.
+ *  Server-enforced (board_team_* RPCs, SECURITY DEFINER, scoped to this board, cap 25).
  *  Adding someone sends NOTHING: the panel hands back the plain board link to share, and the
- *  teammate asks the sign-in screen for their own link. Removing someone ends their sessions.
- *  Visitors with neither a session nor the board link see a sign-in nudge instead. */
+ *  teammate asks the sign-in screen for their own link. Removing someone ends their sessions. */
+type TeamMember = { email: string; name?: string | null; role: 'viewer' | 'approver' | 'admin'; owner?: boolean };
+const ROLE_LABEL: Record<TeamMember['role'], string> = { admin: 'Admin', approver: 'Approver', viewer: 'Viewer' };
+const ROLE_HINT: Record<TeamMember['role'], string> = {
+  admin: 'Adds and removes people, approves posts',
+  approver: 'Approves posts and requests changes',
+  viewer: 'Reads and comments',
+};
 function TeamSurface({ slug, accent, session, token }: { slug: string; accent: string; session: BoardSession | null; token: string }) {
-  const [team, setTeam] = useState<string[] | null>(null);
+  const [team, setTeam] = useState<TeamMember[] | null>(null);
   const [cap, setCap] = useState(25);
   const [me, setMe] = useState('');
-  const canManage = !!session || !!token;
-  const [teamState, setTeamState] = useState<'loading' | 'ready' | 'noauth' | 'unavailable'>(canManage ? 'loading' : 'noauth');
+  const [myRole, setMyRole] = useState('');
+  const signedIn = !!session || !!token;
+  const [teamState, setTeamState] = useState<'loading' | 'ready' | 'noauth' | 'unavailable'>(signedIn ? 'loading' : 'noauth');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteRole, setInviteRole] = useState<TeamMember['role']>('approver');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [added, setAdded] = useState('');
   const [copied, setCopied] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState('');
-  // Visitors with no session and no board link: a compact "email me a sign-in link" form for
-  // THEMSELVES (same edge fn, same no-oracle posture as the sign-in screen).
   const [selfEmail, setSelfEmail] = useState('');
   const [selfSent, setSelfSent] = useState(false);
   const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
   // The link a teammate is given. Never the ?k= token: everyone signs in as themselves.
   const shareUrl = `https://inboundonsteroids.com/client/${slug}`;
-  const auth = { p_session: session?.token || null, p_token: token || null };
+  const auth = { p_session: session?.token || null, p_token: session?.token ? null : (token || null) };
+  const isAdmin = myRole === 'admin';
+
+  const take = (res: any) => {
+    if (Array.isArray(res?.members)) setTeam(res.members as TeamMember[]);
+    else if (Array.isArray(res?.allowed_emails)) setTeam((res.allowed_emails as string[]).map((e) => ({ email: e, role: 'approver' as const })));
+    if (res?.cap) setCap(Number(res.cap));
+  };
 
   useEffect(() => {
-    if (!canManage) { setTeamState('noauth'); return; }
+    if (!signedIn) { setTeamState('noauth'); return; }
     let dead = false;
     (async () => {
       const { data, error } = await supabase.rpc('board_team_list', { p_slug: slug, ...auth });
       if (dead) return;
       const res = (data as any) || null;
-      if (!error && res?.ok && Array.isArray(res.allowed_emails)) {
-        setTeam(res.allowed_emails); setMe(String(res.me || '')); if (res.cap) setCap(Number(res.cap)); setTeamState('ready');
+      if (!error && res?.ok) {
+        take(res); setMe(String(res.me || '')); setMyRole(String(res.my_role || '')); setTeamState('ready');
       } else if (res?.error === 'not_authenticated') {
         setTeamState('noauth');
       } else {
@@ -7731,33 +7751,46 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, session, token]);
 
-  const call = async (fn: 'board_team_add' | 'board_team_remove', email: string) => {
-    const { data, error } = await supabase.rpc(fn, { p_slug: slug, p_email: email, ...auth });
-    const res = (data as any) || null;
-    if (res && Array.isArray(res.allowed_emails)) setTeam(res.allowed_emails);
-    if (res?.error === 'not_authenticated') setTeamState('noauth');
-    return { ok: !error && !!res?.ok, res };
+  const failText = (err?: string) => err === 'admin_only' ? 'Only an admin on your team can do that.'
+    : err === 'list_full' ? `The team list is full (${cap} people). Remove someone first.`
+    : err === 'bad_email' ? 'That email address does not look right. Check it and try again.'
+    : err === 'bad_name' ? 'That name is too long. Keep it under 80 characters.'
+    : err === 'owner' || err === 'owner_is_admin' ? 'The board owner always stays an admin.'
+    : err === 'last_member' ? 'The board needs at least one person with access.'
+    : err === 'cannot_remove_self' ? 'You cannot remove yourself. Ask another admin.'
+    : err === 'cannot_change_self' ? 'You cannot change your own role. Ask another admin.'
+    : 'That did not go through. Try again in a moment.';
+
+  const run = async (fn: string, args: Record<string, unknown>) => {
+    try {
+      const { data, error } = await supabase.rpc(fn, { p_slug: slug, ...args, ...auth });
+      const res = (data as any) || null;
+      take(res);
+      if (res?.error === 'not_authenticated') setTeamState('noauth');
+      return { ok: !error && !!res?.ok, res };
+    } catch { return { ok: false, res: null as any }; }
   };
 
   const invite = async () => {
     const email = inviteEmail.trim().toLowerCase();
     if (!emailOk(email) || busy) return;
     setBusy(true); setNotice(null); setAdded(''); setCopied(false); setConfirmRemove('');
-    try {
-      const { ok, res } = await call('board_team_add', email);
-      if (ok) {
-        setAdded(email); setInviteEmail('');
-        setNotice({ kind: 'ok', text: res.already_member ? `${email} already has access.` : `${email} can now sign in.` });
-      } else if (res?.error === 'list_full') {
-        setNotice({ kind: 'err', text: `The team list is full (${cap} people). Remove someone first.` });
-      } else if (res?.error === 'bad_email') {
-        setNotice({ kind: 'err', text: 'That email address does not look right. Check it and try again.' });
-      } else if (res?.error !== 'not_authenticated') {
-        setNotice({ kind: 'err', text: 'That did not go through. Try again in a moment.' });
-      }
-    } catch {
-      setNotice({ kind: 'err', text: 'That did not go through. Try again in a moment.' });
+    const { ok, res } = await run('board_team_add_v2', { p_email: email, p_name: inviteName.trim() || null, p_role: inviteRole });
+    if (ok) {
+      setAdded(email); setInviteEmail(''); setInviteName(''); setInviteRole('approver');
+      setNotice({ kind: 'ok', text: res.already_member ? `${email} already has access.` : `${email} can now sign in.` });
+    } else if (res?.error !== 'not_authenticated') {
+      setNotice({ kind: 'err', text: failText(res?.error) });
     }
+    setBusy(false);
+  };
+
+  const setRole = async (email: string, role: TeamMember['role']) => {
+    if (busy) return;
+    setBusy(true); setNotice(null); setConfirmRemove('');
+    const { ok, res } = await run('board_team_set_role', { p_email: email, p_role: role });
+    if (ok) setNotice({ kind: 'ok', text: `${email} is now ${ROLE_LABEL[role].toLowerCase()}.` });
+    else if (res?.error !== 'not_authenticated') setNotice({ kind: 'err', text: failText(res?.error) });
     setBusy(false);
   };
 
@@ -7765,21 +7798,9 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
     if (busy) return;
     if (confirmRemove !== email) { setConfirmRemove(email); return; }
     setBusy(true); setNotice(null); setConfirmRemove('');
-    try {
-      const { ok, res } = await call('board_team_remove', email);
-      if (ok) {
-        if (added === email) setAdded('');
-        setNotice({ kind: 'ok', text: `${email} no longer has access.` });
-      } else if (res?.error === 'last_member') {
-        setNotice({ kind: 'err', text: 'The board needs at least one person with access.' });
-      } else if (res?.error === 'cannot_remove_self') {
-        setNotice({ kind: 'err', text: 'You cannot remove yourself. Ask a teammate.' });
-      } else if (res?.error !== 'not_authenticated') {
-        setNotice({ kind: 'err', text: 'That did not go through. Try again in a moment.' });
-      }
-    } catch {
-      setNotice({ kind: 'err', text: 'That did not go through. Try again in a moment.' });
-    }
+    const { ok, res } = await run('board_team_remove', { p_email: email });
+    if (ok) { if (added === email) setAdded(''); setNotice({ kind: 'ok', text: `${email} no longer has access.` }); }
+    else if (res?.error !== 'not_authenticated') setNotice({ kind: 'err', text: failText(res?.error) });
     setBusy(false);
   };
 
@@ -7795,18 +7816,19 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
   };
 
   const btn = (enabled: boolean): React.CSSProperties => ({ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.5 });
+  const field: React.CSSProperties = { fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' };
 
   return (
     <div>
       <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Settings</div>
       <h2 className="mt-2" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, color: 'var(--cb-head, var(--cb-ink))' }}>Team access</h2>
-      <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
-        Everyone on this list can sign in to the board with their own email. No passwords.
+      <p className="mt-2 max-w-[560px] text-[14.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+        Everyone on this list signs in to the board with their own email. No passwords.
       </p>
 
       {teamState === 'noauth' && (
-        <div className="mt-7 max-w-[520px] bg-white p-6" style={{ border: `1px solid ${LINE}` }}>
-          <div className="text-[15px] font-semibold" style={{ fontFamily: BODY, color: INK }}>Sign in to manage your team</div>
+        <div className="mt-7 max-w-[560px] bg-white p-6" style={{ border: `1px solid ${LINE}` }}>
+          <div className="text-[15px] font-semibold" style={{ fontFamily: BODY, color: INK }}>Sign in to see your team</div>
           {selfSent ? (
             <p className="mt-2 text-[13.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
               If <span style={{ color: INK, fontWeight: 600 }}>{selfEmail.trim().toLowerCase()}</span> is on the team list, a sign-in link is on its way. Open it and come back to this tab.
@@ -7817,12 +7839,9 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
                 Enter your email and we'll send you a one-tap sign-in link.
               </p>
               <form onSubmit={(e) => { e.preventDefault(); void sendSelfLink(); }} className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-                <input
-                  type="email" inputMode="email" autoComplete="email" aria-label="Your email"
+                <input type="email" inputMode="email" autoComplete="email" aria-label="Your email"
                   value={selfEmail} onChange={(e) => setSelfEmail(e.target.value)} placeholder="you@company.com"
-                  className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
-                  style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
-                />
+                  className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]" style={field} />
                 <button type="submit" disabled={!emailOk(selfEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase" style={btn(emailOk(selfEmail) && !busy)}>
                   {busy ? 'Sending…' : 'Email me a link'}
                 </button>
@@ -7833,74 +7852,109 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
       )}
 
       {teamState === 'loading' && (
-        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: FAINT }}>Loading your team…</div>
+        <div className="mt-7 max-w-[560px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: FAINT }}>Loading your team…</div>
       )}
 
       {teamState === 'unavailable' && (
-        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: DIM }}>
+        <div className="mt-7 max-w-[560px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: DIM }}>
           Team sign-in isn't switched on for this board yet. Ask your operator.
         </div>
       )}
 
       {teamState === 'ready' && (
         <>
-          <div className="mt-7 max-w-[520px] bg-white p-5" style={{ border: `1px solid ${LINE}` }} data-team-add>
-            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Add a teammate</div>
-            <form onSubmit={(e) => { e.preventDefault(); void invite(); }} className="mt-3 flex flex-col gap-2.5 sm:flex-row">
-              <input
-                type="email" inputMode="email" aria-label="Teammate email"
-                value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setNotice(null); }} placeholder="teammate@company.com"
-                className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
-                style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
-              />
-              <button type="submit" disabled={!emailOk(inviteEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase" style={btn(emailOk(inviteEmail) && !busy)}>
-                {busy ? 'Saving…' : 'Add'}
-              </button>
-            </form>
-            {notice && (
-              <p role="status" className="mt-2.5 text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: notice.kind === 'ok' ? INK : 'var(--cb-danger, #a12622)', fontWeight: 600 }}>{notice.text}</p>
-            )}
-            {added && (
-              <div className="mt-3 p-3.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-sunk, #F5F5F5)' }} data-team-share>
-                <p className="text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
-                  We don't email them. Send them this link; they type their email there and get their own sign-in link.
-                </p>
-                <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <code className="min-w-0 flex-1 break-all text-[12.5px]" style={{ color: INK }}>{shareUrl}</code>
-                  <button type="button" onClick={() => void copyLink()} className="shrink-0 px-4 py-2 uppercase" style={btn(true)}>
-                    {copied ? 'Copied' : 'Copy link'}
+          {isAdmin ? (
+            <div className="mt-7 max-w-[560px] bg-white p-5" style={{ border: `1px solid ${LINE}` }} data-team-add>
+              <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Add a teammate</div>
+              <form onSubmit={(e) => { e.preventDefault(); void invite(); }} className="mt-3 grid gap-2.5">
+                <input type="email" inputMode="email" aria-label="Teammate email"
+                  value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setNotice(null); }} placeholder="teammate@company.com"
+                  className="min-w-0 px-3.5 py-2.5 text-[14px]" style={field} />
+                <div className="flex flex-col gap-2.5 sm:flex-row">
+                  <input type="text" aria-label="Teammate name (optional)" maxLength={80}
+                    value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Name (optional)"
+                    className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]" style={field} />
+                  <select aria-label="Role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as TeamMember['role'])}
+                    className="px-3 py-2.5 text-[14px]" style={field}>
+                    <option value="approver">Approver</option>
+                    <option value="viewer">Viewer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button type="submit" disabled={!emailOk(inviteEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase" style={btn(emailOk(inviteEmail) && !busy)}>
+                    {busy ? 'Saving…' : 'Add'}
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
+                <p className="text-[12px]" style={{ fontFamily: BODY, color: FAINT }}>{ROLE_LABEL[inviteRole]}: {ROLE_HINT[inviteRole].toLowerCase()}.</p>
+              </form>
+              {notice && (
+                <p role="status" className="mt-2.5 text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: notice.kind === 'ok' ? INK : 'var(--cb-danger, #a12622)', fontWeight: 600 }}>{notice.text}</p>
+              )}
+              {added && (
+                <div className="mt-3 p-3.5" style={{ border: `1px solid ${LINE}`, background: 'var(--cb-paper-sunk, #F5F5F5)' }} data-team-share>
+                  <p className="text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+                    We don't email them. Send them this link; they type their email there and get their own sign-in link.
+                  </p>
+                  <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 break-all text-[12.5px]" style={{ color: INK }}>{shareUrl}</code>
+                    <button type="button" onClick={() => void copyLink()} className="shrink-0 px-4 py-2 uppercase" style={btn(true)}>
+                      {copied ? 'Copied' : 'Copy link'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="mt-6 max-w-[560px] text-[13px] leading-relaxed" data-team-readonly style={{ fontFamily: BODY, color: DIM }}>
+              Only an admin on your team can add or remove people. You are {myRole === 'viewer' ? 'a viewer' : 'an approver'}: {ROLE_HINT[(myRole as TeamMember['role']) || 'approver'].toLowerCase()}.
+            </p>
+          )}
 
-          <div className="mt-5 max-w-[520px] overflow-hidden bg-white" style={{ border: `1px solid ${LINE}` }} data-team-list>
+          <div className="mt-5 max-w-[560px] overflow-hidden bg-white" style={{ border: `1px solid ${LINE}` }} data-team-list>
             <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Who has access</span>
               <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{team?.length ?? 0}/{cap}</span>
             </div>
-            {(team || []).map((email, i) => (
-              <div key={email} className="flex min-h-[48px] items-center gap-3 px-5 py-1.5" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: caWash(accent, 16), color: INK }} aria-hidden>
-                  {email.slice(0, 2).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-[13.5px]" title={email} style={{ fontFamily: BODY, color: INK }}>{email}</span>
-                {email === me ? (
-                  <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>you</span>
-                ) : (team || []).length > 1 && (
-                  <button type="button" onClick={() => void remove(email)} disabled={busy}
-                    aria-label={confirmRemove === email ? `Confirm removing ${email}` : `Remove ${email}`}
-                    className="shrink-0 px-2.5 py-1.5 text-[12px] font-semibold underline"
-                    style={{ fontFamily: BODY, color: confirmRemove === email ? 'var(--cb-danger, #a12622)' : INK_MUTE, background: 'none', border: 'none', cursor: busy ? 'default' : 'pointer', textUnderlineOffset: 3 }}>
-                    {confirmRemove === email ? 'Tap again to remove' : 'Remove'}
-                  </button>
-                )}
-              </div>
-            ))}
+            {(team || []).map((m, i) => {
+              const label = (m.name || '').trim();
+              const editable = isAdmin && !m.owner && m.email !== me;
+              return (
+                <div key={m.email} data-member={m.email} className="flex min-h-[56px] flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: caWash(accent, 16), color: INK }} aria-hidden>
+                    {(label || m.email).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1" title={m.email}>
+                    {label && <span className="block truncate text-[13.5px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{label}</span>}
+                    <span className={`block truncate ${label ? 'text-[12px]' : 'text-[13.5px]'}`} style={{ fontFamily: BODY, color: label ? DIM : INK }}>{m.email}</span>
+                  </span>
+                  {m.owner ? (
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>Owner · admin</span>
+                  ) : editable ? (
+                    <select aria-label={`Role for ${m.email}`} value={m.role} disabled={busy} onChange={(e) => void setRole(m.email, e.target.value as TeamMember['role'])}
+                      className="px-2 py-1.5 text-[12.5px]" style={field}>
+                      <option value="admin">Admin</option>
+                      <option value="approver">Approver</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                  ) : (
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>{ROLE_LABEL[m.role] || 'Approver'}{m.email === me ? ' · you' : ''}</span>
+                  )}
+                  {editable && (
+                    <button type="button" onClick={() => void remove(m.email)} disabled={busy}
+                      aria-label={confirmRemove === m.email ? `Confirm removing ${m.email}` : `Remove ${m.email}`}
+                      className="shrink-0 px-2 py-1.5 text-[12px] font-semibold underline"
+                      style={{ fontFamily: BODY, color: confirmRemove === m.email ? 'var(--cb-danger, #a12622)' : INK_MUTE, background: 'none', border: 'none', cursor: busy ? 'default' : 'pointer', textUnderlineOffset: 3 }}>
+                      {confirmRemove === m.email ? 'Tap again to remove' : 'Remove'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <p className="mt-3 max-w-[520px] text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
-            Removing someone signs them out straight away.
+          {!isAdmin && notice && (
+            <p role="status" className="mt-2.5 text-[13px]" style={{ fontFamily: BODY, color: 'var(--cb-danger, #a12622)' }}>{notice.text}</p>
+          )}
+          <p className="mt-3 max-w-[560px] text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
+            Admin: adds and removes people. Approver: approves posts and requests changes. Viewer: reads and comments. Removing someone signs them out straight away.
           </p>
         </>
       )}
@@ -7941,6 +7995,8 @@ export default function ClientBoardPage() {
   const [boardComments, setBoardComments] = useState<BoardComment[]>([]);
   const [approvalMeta, setApprovalMeta] = useState<Record<string, ApprovalMeta>>({});
   const [viewer, setViewer] = useState('');
+  // Board role of the signed-in member ('' until read; the bare board link keeps full rights).
+  const [myRole, setMyRole] = useState('');
   sessionRef.current = session;
   // Company name for the pre-render states (generating / failed): the placeholder row
   // carries it before the full board jsonb exists, so the building screen can name it.
@@ -8438,6 +8494,15 @@ export default function ClientBoardPage() {
     if (!error && out?.ok) {
       setBoardComments(Array.isArray(out.items) ? out.items : []);
       setViewer(String(out.me || ''));
+    }
+    // Names + my role (boards without email sign-in answer not_available: nothing changes).
+    const t = await supabase.rpc('board_team_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
+    const tl = t.data as { ok?: boolean; my_role?: string; members?: { email: string; name?: string | null }[] } | null;
+    if (!t.error && tl?.ok) {
+      const names: Record<string, string> = {};
+      (tl.members || []).forEach((m) => { if (m.name) names[String(m.email).toLowerCase()] = String(m.name); });
+      setBoardNames(names);
+      setMyRole(String(tl.my_role || ''));
     }
   };
   useEffect(() => {
@@ -9333,6 +9398,8 @@ export default function ClientBoardPage() {
   // Live mode = the production tool (not a built-ahead demo). Drives copy stripping, tab
   // removal (Voice + standalone Photos), real RPC actions, and the pricing/pause hide.
   const isLive = !isPreview;
+  // Viewers (role set by a team admin) read and comment only; the server refuses the rest anyway.
+  const viewOnly = isLive && myRole === 'viewer';
   // Reply sources (board metrics block and the per-thread summary) never render on a client
   // panel (Ivan 2026-10-12): the copy is operator-level. They stay on the operator dashboards.
   const renderReplySource = undefined;
@@ -9522,7 +9589,7 @@ export default function ClientBoardPage() {
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive ? swapPost : undefined} onScheduleToDay={isLive ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -9598,6 +9665,7 @@ export default function ClientBoardPage() {
   const teamValue = isLive ? {
     me: viewer, comments: boardComments, approvalMeta,
     canComment: !!session?.token, addComment,
+    canApprove: myRole !== 'viewer',
   } : null;
   return (
     <BoardTeamProvider value={teamValue}>
@@ -10169,13 +10237,13 @@ export default function ClientBoardPage() {
           onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); setDetailScheduling(false); }}
           onApprove={approve}
           onRemove={skipDay}
-          onHideBuffer={isLive ? removeBufferPost : undefined}
+          onHideBuffer={isLive && !viewOnly ? removeBufferPost : undefined}
           isLive={isLive}
           act={act}
-          editDraft={editDraft}
-          editTitle={editTitle}
-          setMedia={isLive ? setMedia : undefined}
-          setSchedule={isLive ? setScheduleRPC : undefined}
+          editDraft={viewOnly ? undefined : editDraft}
+          editTitle={viewOnly ? undefined : editTitle}
+          setMedia={isLive && !viewOnly ? setMedia : undefined}
+          setSchedule={isLive && !viewOnly ? setScheduleRPC : undefined}
           slug={slug || ''}
           fetchHistory={fetchHistory}
           reviewMode={reviewMode}
