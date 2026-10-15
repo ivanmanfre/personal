@@ -148,7 +148,7 @@ export const DeskH2: React.FC<Base> = ({ className, style, children }) => (
     className={cx('cb-display', className)}
     style={{
       fontFamily: SERIF, fontWeight: 300, fontSize: 'clamp(25px, 2.6vw, 30px)',
-      lineHeight: 1.16, letterSpacing: '-0.015em', color: INK, margin: '10px 0 0', ...style,
+      lineHeight: 1.16, letterSpacing: '-0.015em', color: 'var(--cb-head, var(--cb-ink))', margin: '10px 0 0', ...style,
     }}
   >
     {children}

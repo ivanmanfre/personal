@@ -8,10 +8,14 @@
 let boardNight: boolean | null = null;
 export function setBoardNight(v: boolean): void { boardNight = v; }
 
-/** The board page's default: dark unless the URL says `?light`. */
-export function isNightUrl(): boolean {
+/** The board page's default: dark unless the URL says `?light`, or the board itself is set to
+ *  open light (`board.theme = 'light'`, per board). `?night` forces dark either way. */
+export function isNightUrl(boardTheme?: string): boolean {
   if (typeof window === 'undefined') return false;
-  return !new URLSearchParams(window.location.search).has('light');
+  const q = new URLSearchParams(window.location.search);
+  if (q.has('light')) return false;
+  if (q.has('night')) return true;
+  return boardTheme !== 'light';
 }
 
 /** Surfaces rendered outside a board page (tests, previews) only go dark on an explicit flag. */

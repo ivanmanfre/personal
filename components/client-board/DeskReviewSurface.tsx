@@ -1284,7 +1284,7 @@ export default function DeskReviewSurface({
             {plateSegs.map((seg) => (
               /* minWidth keeps a zero segment's label from stacking onto its neighbour
                  (the "0 34 / SCHEDULED IN BUFFER" overlap Ivan screenshotted 2026-09-10). */
-              <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: 118 }}>
+              <div key={seg.label} style={{ flex: `${Math.max(seg.v, 0.6)} 1 0`, minWidth: `min(118px, calc((100% - ${(plateSegs.length - 1) * 6}px) / ${plateSegs.length}))` }}>
                 <div className="bar" style={{ height: 16, background: seg.bg, borderRadius: 6 }} />
                 <div style={{ marginTop: 9 }}><Num size="row" inline tone={seg.tone}>{seg.v}</Num></div>
                 <PlateMute as="div" style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>{seg.label}</PlateMute>
@@ -1335,6 +1335,8 @@ export default function DeskReviewSurface({
         const ROW: React.CSSProperties = { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' };
         const anyFilter = cat !== 'all' || topic !== 'all' || aimSel !== 'all';
         const clearAll = () => { setCatState('all'); setTopicState('all'); setAimState('all'); syncFilterUrl('all', 'all', 'all'); };
+        // Nothing to filter (an empty board): no orphan "Format" label over an empty row.
+        if (!anyFilter && !topics.length && !CATS.some((c) => c.id !== 'all' && catCount(c.id) > 0) && !AIMS.some((a) => aimCount(a) > 0)) return null;
         if (night) return (
           <div className="prs-filters">
             <span className="pk-cap">Format</span>
@@ -1437,6 +1439,9 @@ export default function DeskReviewSurface({
               ], 'published')}
               {(cat !== 'all' || topic !== 'all' || aimSel !== 'all') && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
                 <Footnote style={{ marginTop: 16 }}>Nothing in this category yet.</Footnote>
+              )}
+              {cat === 'all' && topic === 'all' && aimSel === 'all' && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
+                <Footnote style={{ marginTop: 16 }}>No posts yet. New drafts show up here when they are ready for {reviewMode ? 'your review' : 'the buffer'}.</Footnote>
               )}
             </>
           ) : (
