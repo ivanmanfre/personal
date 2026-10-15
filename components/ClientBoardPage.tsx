@@ -9696,6 +9696,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
 
 /* ============ DESK skin composition overrides (scoped) ============ */
 [data-skin="desk"] .cb-stickybar { position: sticky; top: 0; z-index: 15; }
+[data-skin="desk"] .cb-col { margin-inline: auto; }
 @media (max-width: 1023px) { [data-skin="desk"] .cb-stickybar { position: relative; z-index: 1; } }
 /* The drawn content-desk look. Same trick as blackbox: compiled Tailwind radii/shadows and
    inline styles cannot be reached by CSS vars, so structure is enforced here rather than by
@@ -9790,6 +9791,8 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
 [data-quiet] aside { background: #FFFFFF !important; border-color: rgba(17,17,17,0.09) !important; }
 [data-quiet] .cb-stickybar { position: relative; overflow: hidden; margin: 14px 16px 0; border-radius: 22px 8px 8px 8px; background: #FFFFFF !important; border: 1px solid rgba(17,17,17,0.10); }
 @media (min-width: 640px) { [data-quiet] .cb-stickybar { margin: 18px clamp(16px, 3vw, 40px) 0; } }
+/* Wide screens: the strip card is as wide as the reading column under it (main pads 40px a side). */
+@media (min-width: 1024px) { [data-night]:not([data-quiet]) .cb-stickybar, [data-quiet] .cb-stickybar { margin: 18px auto 0; width: min(1040px, calc(100% - 80px)); } }
 [data-quiet] .cb-stickybar-text { color: #111111 !important; }
 [data-quiet] .cb-stickybar button { box-shadow: none !important; }
 [data-quiet] * { text-shadow: none !important; }
@@ -10156,13 +10159,15 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
           // Night: the Results and Posts heroes already say this line in big type; the strip would repeat it.
           if (night && activeTab !== 'week') return null; // night v3: the banner is Home's one action; elsewhere it repeated the page
           return (
-            <div key={night ? activeTab : undefined} className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 34px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-              <div className="cb-stickybar-text" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', overflowWrap: 'break-word' }}>{text}</div>
+            <div key={night ? activeTab : undefined} className="cb-stickybar" style={{ background: accent, padding: '14px clamp(16px, 3vw, 40px)' }}>
+              <div className="cb-col" style={{ maxWidth: 1040, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div className="cb-stickybar-text" style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.3, color: inkOn(accent), maxWidth: '62ch', minWidth: 0, flex: '1 1 320px', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', overflowWrap: 'break-word' }}>{text}</div>
               {cta && (
                 <button onClick={cta.go} style={{ background: 'var(--cb-ink)', color: 'var(--cb-paper)', border: 'none', borderRadius: 999, padding: '11px 22px', fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', cursor: 'pointer' }}>
                   {cta.label}
                 </button>
               )}
+              </div>
             </div>
           );
         })()}
@@ -10173,7 +10178,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
                mounted while the new one entered, which flashed the previous tab for a beat
                (Ivan 2026-09-29). */
             <div key={activeTab}>
-              <div className={`w-full ${navCollapsed ? 'max-w-[1200px]' : 'max-w-[1040px]'}`}>{surfaces[activeTab]}</div>
+              <div className="cb-col w-full max-w-[1040px]">{surfaces[activeTab]}</div>
             </div>
           ) : (
           <AnimatePresence mode="wait" initial={false}>
@@ -10184,8 +10189,11 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
-              {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
-              <div className={`w-full ${skin === 'desk' ? (navCollapsed ? 'max-w-[1200px]' : 'max-w-[1040px]') : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
+              {/* Week + Content get the wider two-column editorial layout; others cap tighter.
+                  Desk (2026-10-15, Ivan: "super wide and hard to read"): one 1040px column on
+                  every tab, centred beside the menu, so a 1920 screen no longer stretches rows
+                  to 1200px with a blank band on the right. */}
+              <div className={`w-full ${skin === 'desk' ? 'cb-col max-w-[1040px]' : activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
             </motion.div>
           </AnimatePresence>
           )}

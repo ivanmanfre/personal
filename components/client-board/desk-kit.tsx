@@ -308,7 +308,9 @@ export const StatStrip: React.FC<Base & { ruled?: boolean }> = ({ ruled = true, 
   <div
     className={className}
     style={{
-      display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))',
+      // auto-fill keeps the empty tracks, so two or three stats sit side by side on the left instead of
+      // spreading across the whole column (2026-10-15).
+      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 100%), 1fr))',
       gap: 16, marginTop: 22, paddingTop: ruled ? 20 : 0,
       borderTop: ruled ? `1px solid ${LINE}` : undefined, ...style,
     }}

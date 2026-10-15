@@ -600,7 +600,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         </div>
         {img && <img src={img} alt="" loading="lazy" onError={hideBroken} style={{ marginTop: 9, width: '100%', maxWidth: 340, height: 'auto', borderRadius: 8, border: '1px solid var(--cb-line)' }} />}
         {hook && <div style={{ marginTop: 9, fontSize: 12.5, fontWeight: 700, color: 'var(--cb-ink)' }}>{noDash(hook)}</div>}
-        {body && <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line' }}>{noDash(body)}</div>}
+        {body && <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.55, color: 'var(--cb-ink-mute)', whiteSpace: 'pre-line', maxWidth: '68ch' }}>{noDash(body)}</div>}
       </div>
     );
     return (
@@ -652,7 +652,7 @@ export function DeskWeekSurface({ board, accent, mint, stageOf, approvedIds, ang
         <div style={{ marginTop: 13 }}>
           <Lbl>The copy</Lbl>
           {q.body ? (
-            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-soft)', marginTop: 5, whiteSpace: 'pre-line' }}>{q.body}</div>
+            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink-soft)', marginTop: 5, whiteSpace: 'pre-line', maxWidth: '68ch' }}>{q.body}</div>
           ) : (
             <Blank style={{ marginTop: 6, height: 44 }}>{q.generating ? 'being written now' : 'no copy written yet'}</Blank>
           )}

@@ -831,7 +831,7 @@ export function DeskPerformanceSurface({
         <div style={{ marginTop: 40 }}>
           <Eyebrow>What we track</Eyebrow>
           {!night && <Footnote>{(!live && perf?.note) || 'Real series appear the day each one goes live.'}</Footnote>}
-          <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
+          <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, calc(50% - 9px)), 1fr))', gap: 18 }}>
             {(() => {
               const cards: { ind: PerfIndicator; expectation?: string }[] = [
                 ...indicators.map((ind) => ({ ind, expectation: expectationFor(ind) })),
