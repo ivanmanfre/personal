@@ -173,6 +173,7 @@ interface QueueItem {
   hook?: string;
   body?: string;
   media_url?: string | null;
+  video_url?: string | null;
   /** Post image(s) as stored on carousel_drafts.image_urls, plumbed by the sync. The board
    *  reads image_urls[0] as the card image so an attached image is always VISIBLE for review
    *  before it publishes (media_url/cover_url are the older single-image fields). */
@@ -1357,6 +1358,10 @@ export function docPagesOf(item: Pick<QueueItem, 'kind' | 'style' | 'image_urls'
     : [];
 }
 
+function videoUrlOf(item: Pick<QueueItem, 'style' | 'media_url' | 'video_url'>): string | undefined {
+  return item.video_url || (item.style === 'video' && /\.(mp4|webm|mov)(?:[?#]|$)/i.test(item.media_url || '') ? item.media_url || undefined : undefined);
+}
+
 /** The true LinkedIn feed preview from the brief: Instrument Sans interior, initials
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
@@ -1388,6 +1393,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   // Live: the drafting placeholder only renders when an image is really being generated.
   const showRender = cover === 'render' && (!live || (!!item.generating && item.style !== 'text'));
   const docPages = docPagesOf(item);
+  const videoUrl = videoUrlOf(item);
   return (
     <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
@@ -1446,6 +1452,8 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
         <div style={mediaMax ? { maxWidth: mediaMax, margin: '0 auto' } : undefined}>
           <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
         </div>
+      ) : videoUrl ? (
+        <video src={videoUrl} poster={item.image_urls?.[0] || item.image || undefined} controls playsInline preload="metadata" style={{ width: '100%', maxHeight: 480, objectFit: 'contain', background: '#000', borderRadius: 6 }} />
       ) : (item.media_url || cardImageUrl(item, board)) ? (
         <>
           <img src={item.media_url || cardImageUrl(item, board)} alt="" loading="lazy" style={{ width: '100%', maxWidth: mediaMax, margin: mediaMax ? '0 auto' : undefined, borderRadius: 6, border: `1px solid ${LINE}`, display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
@@ -4047,7 +4055,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     author={board.founder?.name || board.company_name}
                     headline={board.founder?.headline || ''}
                     avatarUrl={board.founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
-                    mediaUrl={mediaUrl || item.media_url || undefined}
+                    mediaUrl={videoUrlOf(item) ? item.image_urls?.[0] || item.image || undefined : mediaUrl || item.media_url || undefined}
+                    videoUrl={videoUrlOf(item)}
                     stats={{ reactions: 0, comments: 0 }}
                     timeLabel="Preview" /* future/example posts: no "1d · Edited" chrome */
                     showFold={false}
@@ -9681,6 +9690,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => (t.id !== 'outreach' || outreachAvailable) && (t.id !== 'resources' || !!viewBoard.resources?.length))
+    // A prepared resource library takes the unused newsletter's navigation space.
+    // Keep newsletters in the menu whenever the board has an actual issue.
+    .filter((t) => t.id !== 'newsletter' || !viewBoard.resources?.length || !!viewBoard.newsletter?.issues?.length)
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
