@@ -121,7 +121,9 @@ function InlineBody({ text, onSave, style, wrapStyle, statusStyle }: {
 }
 
 /** Approval is confirmed by the parent only after the server accepts it. */
-function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback, initialFeedback, storageKey }: {
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback, initialFeedback, storageKey, approvedRef }: {
+  /** Post id: shows who approved it and when, from the server receipt. */
+  approvedRef?: string;
   initialFeedback?: string;
   storageKey?: string;
   onFeedback?: (note: string) => Promise<{ ok: boolean; error?: string }>;
@@ -243,7 +245,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
       </div>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {approved
-          ? <span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>
+          ? <><span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>{approvedRef && <ApprovedBy refId={approvedRef} />}</>
           : <Pill onClick={approve} disabled={pending} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-primary, var(--cb-ink))', color: 'var(--cb-primary-ink, rgb(var(--nt-fg, 255 255 255)))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
         {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
         {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
@@ -257,6 +259,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
 import {
   FunnelChip, FeedPreview, fmtDay, inkOn, DocCarousel, docPagesOf, clientTz, boardZone, clientHistoryAuthor,
 } from '../ClientBoardPage';
+import { actorLabel, memberName, viewerKnown, ApprovedBy, PostComments } from './team';
 import type {
   Board, QueueItem, Stage, Idea, PoolDraft, AltAngle, SlotReplacement, HistoryEntry,
 } from '../ClientBoardPage';
@@ -413,6 +416,9 @@ function deskLabelOf(board: Pick<Board, 'brand' | 'company_name'>): string {
  *  and the founder filter reads the same verdict. */
 function authorOf(by: string | null | undefined, board: Pick<Board, 'founder' | 'brand' | 'company_name'>, deskLabel: string): { label: string; founder: boolean } {
   const raw = (by || '').trim();
+  // A named member (or "You") is a client author in their own right, founder or not.
+  const member = viewerKnown() ? actorLabel(raw) : null;
+  if (member) return { label: member, founder: true };
   const fullName = (board.founder?.name || '').trim();
   const first = (board.founder?.first_name || '').trim() || fullName.split(/\s+/)[0] || '';
   if (!raw || !first) return { label: deskLabel, founder: false };
@@ -420,6 +426,7 @@ function authorOf(by: string | null | undefined, board: Pick<Board, 'founder' | 
   const local = raw.includes('@') ? raw.slice(0, raw.indexOf('@')) : raw;
   const want = new Set([norm(fullName), norm(first)].filter(Boolean));
   const founder = want.has(norm(raw)) || want.has(norm(local));
+  if (!founder && memberName(raw)) return { label: memberName(raw) as string, founder: true };
   return { label: founder ? first : deskLabel, founder };
 }
 
@@ -1076,7 +1083,7 @@ export default function DeskReviewSurface({
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
       {bucket !== 'published' && (approvals
-        ? <CardReviewActions key={`${feedbackScope || ''}:${q.id}`} storageKey={feedbackScope ? `cb-feedback:${feedbackScope}:${q.id}` : undefined} initialFeedback={entries === null ? undefined : entriesByPost[q.id]?.find(h => h.action === 'request_changes')?.note || ''} approved={approvedIds.has(q.id)} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
+        ? <CardReviewActions key={`${feedbackScope || ''}:${q.id}`} storageKey={feedbackScope ? `cb-feedback:${feedbackScope}:${q.id}` : undefined} initialFeedback={entries === null ? undefined : entriesByPost[q.id]?.find(h => h.action === 'request_changes')?.note || ''} approved={approvedIds.has(q.id)} approvedRef={q.id} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
         : (
           /* Buffer-only board: the normal post tools, no sign-off. Photo and remove live in
              the post drawer these open. */
@@ -1085,6 +1092,7 @@ export default function DeskReviewSurface({
             <Pill style={{ fontSize: 13, minHeight: 44 }} onClick={() => onOpen(q, { scheduling: true })}>{isScheduledLocal(q) ? 'Edit time' : 'Set date & time'}</Pill>
           </div>
         ))}
+        {live && <PostComments refId={q.id} compact />}
       </div>
     );
   };
@@ -1558,7 +1566,7 @@ export default function DeskReviewSurface({
             className={night ? 'prs-fold-h' : undefined}
             style={{ paddingBottom: 7, borderBottom: '1px solid var(--cb-line-bold)', cursor: 'pointer' }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>{night && !keepWords ? 'Photo library' : 'The photo library'}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}><span aria-hidden style={{ display: 'inline-block', width: 13, fontSize: 9 }}>{photosOpen ? '▾' : '▸'}</span>{(board as any).photo_notes ? 'Photos and moments: add a photo with a short note' : night && !keepWords ? 'Photo library' : 'The photo library'}</div>
           </div>
           {photosOpen && <div style={{ marginTop: 12 }}>{foldPhotos}</div>}
         </div>

@@ -45,6 +45,22 @@ export default function DeskNewsletterSurface({ board, accent: _accent, fontStac
   const issues = nl.issues || [];
   const steps = nl.nurture || [];
 
+  // Not started (no sequence, no issues): say so plainly, in both themes. Never a headline
+  // claiming a drafted newsletter that does not exist, and never a nameless "is drafted".
+  if (!issues.length && !steps.length) {
+    return (
+      <div data-surface="newsletter" data-newsletter-empty>
+        <Eyebrow>Newsletter</Eyebrow>
+        <DeskH2>The newsletter starts later. <b>Nothing to review yet.</b></DeskH2>
+        <Card style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--cb-ink)', maxWidth: '60ch' }}>
+            When it starts, each issue shows up here for your review before it sends{nl.from_domain ? <>, from {nl.from_domain}</> : null}. Nothing goes out without your approval.
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // NIGHT MOCKUP (local only): same facts, ARCH-report look. Light desk untouched below.
   if (night) {
     return (

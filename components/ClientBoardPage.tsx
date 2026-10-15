@@ -46,6 +46,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
+import { BoardTeamProvider, setBoardViewer, actorLabel, memberName, viewerKnown, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -445,16 +446,25 @@ export function clientHistoryAuthor(by: string | null | undefined, board: Pick<B
   const raw = (by || '').trim().toLowerCase();
   const team = { label: `${(board.company_name || '').trim() || 'Your'} team`, client: false };
   if (!raw) return team;
+  // Boards with several members: name the person ("You" for a signed-in viewer's own rows).
+  // On the bare board link the viewer is unknown, so the founder keeps reading "You" below.
+  if (viewerKnown()) { const member = actorLabel(raw); if (member) return { label: member, client: true }; }
   const domain = (board.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   if (raw.includes('@')) {
     const host = raw.slice(raw.lastIndexOf('@') + 1);
-    if (domain && (host === domain || host.endsWith(`.${domain}`))) return { label: 'You', client: true };
+    if (domain && (host === domain || host.endsWith(`.${domain}`))) {
+      const local0 = raw.slice(0, raw.indexOf('@')).replace(/[._\-+]+/g, ' ').trim();
+      const f0 = (board.founder?.first_name || (board.founder?.name || '').split(/\s+/)[0] || '').toLowerCase();
+      return { label: !f0 || local0 === f0 || local0 === (board.founder?.name || '').toLowerCase() ? 'You' : (memberName(raw) || 'You'), client: true };
+    }
   }
   const norm = (x: string) => x.toLowerCase().replace(/[._\-+]+/g, ' ').replace(/\s+/g, ' ').trim();
   const full = norm(board.founder?.name || '');
   const first = norm(board.founder?.first_name || '') || full.split(' ')[0] || '';
   const local = norm(raw.includes('@') ? raw.slice(0, raw.indexOf('@')) : raw);
   if (local && (local === full || local === first)) return { label: 'You', client: true };
+  const named = memberName(raw);
+  if (named) return { label: named, client: true };
   return team;
 }
 /** Line-level LCS diff for the history's edit rows: only changed lines are shown. */
@@ -4252,6 +4262,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           </div>
 
           {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
+          {isLive && <PostComments refId={item.id} />}
           {isLive && shownHistory.length > 0 && (
             <div className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
               <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</div>
@@ -4342,9 +4353,12 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
               {isLive && approved ? (
+                <>
                 <span className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 uppercase" style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '0.14em', border: `1px solid ${caText(accent)}`, color: caText(accent), background: caWash(accent, 8) }}>
                   Approved ✓
                 </span>
+                <ApprovedBy refId={item.id} />
+                </>
               ) : (
               <motion.button
                 disabled={approving}
@@ -7143,8 +7157,14 @@ export function PerformanceSurface({ board, accent, live = false, showAim = fals
 type PhotoItem = { name: string; url: string; createdAt: string };
 type PhotoUpload = { key: string; name: string; status: 'uploading' | 'done' | 'error'; error?: string };
 
-function PhotosSurface({ board: _board, accent, slug, compact = false, onDeletePhoto }: { board: Board; accent: string; slug: string; compact?: boolean; onDeletePhoto?: (name: string) => Promise<{ ok: boolean; error?: string }> }) {
+function PhotosSurface({ board: _board, accent, slug, compact = false, onDeletePhoto, onUploaded }: { board: Board; accent: string; slug: string; compact?: boolean; onDeletePhoto?: (name: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Live: record who uploaded (and, on boards with photo_notes, the note becomes a held idea). */
+  onUploaded?: (path: string, note: string) => Promise<{ ok: boolean; error?: string }> }) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  // Optional "what happened here" note (boards with board.photo_notes): sent with the next upload.
+  const notesOn = !!(_board as any)?.photo_notes && !!onUploaded;
+  const [note, setNote] = useState('');
+  const [noteSaved, setNoteSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploads, setUploads] = useState<PhotoUpload[]>([]);
   const [busy, setBusy] = useState(false);
@@ -7202,7 +7222,10 @@ function PhotosSurface({ board: _board, accent, slug, compact = false, onDeleteP
         .from('client-photos')
         .upload(path, file, { upsert: false, contentType: file.type || undefined });
       setUploads((prev) => prev.map((u, idx) => (idx === i ? { ...u, status: error ? 'error' : 'done', error: error?.message } : u)));
+      // Attribution (+ the note, once, on the first photo of the batch). Best effort: the photo is in.
+      if (!error && onUploaded) { try { await onUploaded(path, notesOn && i === 0 ? note.trim() : ''); } catch { /* photo already saved */ } }
     }
+    if (notesOn && note.trim()) { setNote(''); setNoteSaved(true); }
     setBusy(false);
     if (inputRef.current) inputRef.current.value = '';
     await loadPhotos();
@@ -7254,6 +7277,18 @@ function PhotosSurface({ board: _board, accent, slug, compact = false, onDeleteP
             <span className="text-[11px]" style={{ color: FAINT }}>JPG or PNG, any number at once.</span>
           </div>
         </div>
+        {notesOn && (
+          <div className="mt-4" data-photo-note>
+            <label htmlFor="cb-photo-note" className="block text-[13px] font-semibold" style={{ color: INK, fontFamily: BODY }}>A short note with these photos (optional)</label>
+            <textarea id="cb-photo-note" rows={2} maxLength={1000} value={note} onChange={(e) => { setNote(e.target.value); setNoteSaved(false); }}
+              placeholder="Where, who, what happened. For example: Shenzhen, SEO conference, met X, takeaway Y."
+              className="mt-1.5 block w-full px-3 py-2.5 text-[13.5px]"
+              style={{ fontFamily: BODY, color: INK, background: 'var(--cb-paper-raise, #fff)', border: `1px solid ${LINE}`, borderRadius: 10, resize: 'vertical', lineHeight: 1.5 }} />
+            <p className="mt-1.5 text-[12px]" style={{ color: FAINT, fontFamily: BODY }}>
+              {noteSaved ? 'Note saved with your photos. We may turn it into a post; you approve it first.' : 'Write the note first, then upload. We may turn it into a post; you approve it before anything goes out.'}
+            </p>
+          </div>
+        )}
         <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPick} />
 
         {/* Per-file progress chips */}
@@ -7902,6 +7937,10 @@ export default function ClientBoardPage() {
   // fetch effect see it on the very first render.
   const [session, setSession] = useState<BoardSession | null>(() => loadBoardSession(slug));
   const sessionRef = useRef<BoardSession | null>(session);
+  // Who did what (live): per-post comments + "approved by" receipts. Server truth only.
+  const [boardComments, setBoardComments] = useState<BoardComment[]>([]);
+  const [approvalMeta, setApprovalMeta] = useState<Record<string, ApprovalMeta>>({});
+  const [viewer, setViewer] = useState('');
   sessionRef.current = session;
   // Company name for the pre-render states (generating / failed): the placeholder row
   // carries it before the full board jsonb exists, so the building screen can name it.
@@ -8055,7 +8094,8 @@ export default function ClientBoardPage() {
   ): Promise<{ ok: boolean; error?: string }> => {
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
-      if (token) {
+      // A signed-in member acts as themselves (attributed); the bare board link is the fallback.
+      if (token && !sessionRef.current?.token) {
         const { data, error } = await supabase.rpc('client_board_action', {
           p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
         });
@@ -8367,6 +8407,7 @@ export default function ClientBoardPage() {
             setLeftEmpty(empty);
             // Approval-enabled boards: reconstruct approvals from the actions audit so the tick
             // survives any device. Only actions from this mount override the server read.
+            if ((out as any).approved_meta && typeof (out as any).approved_meta === 'object') setApprovalMeta((out as any).approved_meta);
             if (reviewModeRef.current && Array.isArray(out.approved)) {
               setStageOverride(() => {
                 const merged: Record<string, Stage> = {};
@@ -8386,6 +8427,47 @@ export default function ClientBoardPage() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token, board?.review_mode]);
+
+  // Comments (live): one read for the whole board, refreshed after each post. Members read
+  // with their session; the board link reads too (it cannot post: comments need a person).
+  const loadComments = async () => {
+    if (!slug || mode === 'demo' || mode === 'preview') return;
+    const sess = sessionRef.current;
+    const { data, error } = await supabase.rpc('board_comments_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
+    const out = (data as { ok?: boolean; items?: BoardComment[]; me?: string | null } | null);
+    if (!error && out?.ok) {
+      setBoardComments(Array.isArray(out.items) ? out.items : []);
+      setViewer(String(out.me || ''));
+    }
+  };
+  useEffect(() => {
+    if (state !== 'ready') return;
+    void loadComments().catch(() => { /* progressive: the board works without comments */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode, slug, token, session]);
+  const addComment = async (ref: string, text: string, parent?: string | null): Promise<{ ok: boolean; error?: string }> => {
+    const sess = sessionRef.current;
+    if (!slug || !sess?.token) return { ok: false, error: 'not_authenticated' };
+    try {
+      const { data, error } = await supabase.rpc('board_comment_add', { p_slug: slug, p_ref: ref, p_text: text, p_parent: parent || null, p_session: sess.token });
+      const out = data as { ok?: boolean; error?: string; item?: BoardComment } | null;
+      if (error || !out?.ok) return { ok: false, error: out?.error || error?.message };
+      if (out.item) setBoardComments((c) => [...c, out.item as BoardComment]);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
+  // Photo upload receipt (live): who uploaded it, plus an optional note (held idea on boards
+  // with photo_notes). The member's session wins over the board link so it is attributed.
+  const photoAdded = async (path: string, note: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug) return { ok: false };
+    const sess = sessionRef.current;
+    const { data, error } = await supabase.rpc('board_photo_added', { p_slug: slug, p_path: path, p_note: note || null, p_session: sess?.token || null, p_token: sess?.token ? null : (token || null) });
+    const out = data as { ok?: boolean; error?: string } | null;
+    return { ok: !error && !!out?.ok, error: out?.error || error?.message };
+  };
 
   // History log (live): reads the insert-only client_board_actions audit for one draft.
   const fetchHistory = async (ref: string): Promise<HistoryEntry[]> => {
@@ -8591,6 +8673,7 @@ export default function ClientBoardPage() {
     }
     sessionApprovalChanges.current[id] = 'scheduled';
     setStageOverride((s) => ({ ...s, [id]: 'scheduled' }));
+    if (isLiveRef.current) setApprovalMeta((m) => ({ ...m, [id]: { by: sessionRef.current?.email || 'board link', at: new Date().toISOString() } }));
     flash(id);
     armUndo(id, 'approve');
     // The RPC records sign-off only. Dates remain the scheduling authority.
@@ -8732,6 +8815,7 @@ export default function ClientBoardPage() {
       if (u.kind === 'approve') {
         sessionApprovalChanges.current[u.id] = 'review';
         setStageOverride((s) => ({ ...s, [u.id]: 'review' }));
+        setApprovalMeta((m) => { const { [u.id]: _drop, ...rest } = m; return rest; });
       }
       else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
       else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
@@ -9438,8 +9522,8 @@ export default function ClientBoardPage() {
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive ? swapPost : undefined} onScheduleToDay={isLive ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
-      : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} /> : null} />,
+      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx} reviewMode={reviewMode} onFeedback={isLive ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive ? swapPost : undefined} onScheduleToDay={isLive ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUploaded={photoAdded} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
     // it just renders inside a host tab instead of owning one.
@@ -9510,7 +9594,13 @@ export default function ClientBoardPage() {
     ? (tab === 'voice' || tab === 'photos' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab)
     : (tab === 'team' || (tab === 'outreach' && !outreachAvailable) ? 'week' : tab);
 
+  setBoardViewer(viewer);
+  const teamValue = isLive ? {
+    me: viewer, comments: boardComments, approvalMeta,
+    canComment: !!session?.token, addComment,
+  } : null;
   return (
+    <BoardTeamProvider value={teamValue}>
     <MotionConfig reducedMotion="user">
     <style>{`
 @keyframes cb-pulse { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.35; transform:scale(.72) } }
@@ -9945,7 +10035,11 @@ export default function ClientBoardPage() {
             if (lmLive[0]?.url) cta = { label: 'Open the newest →', go: () => window.open(lmLive[lmLive.length - 1].url || lmLive[0].url, '_blank') };
           } else if (activeTab === 'newsletter') {
             const nIss = viewBoard.newsletter?.issues?.length || 0;
-            text = nIss ? <>{nIss} issue{nIss === 1 ? '' : 's'} of {viewBoard.newsletter?.name} out.</> : <>{viewBoard.newsletter?.name || 'The newsletter'} is drafted; opt-ins come from the lead magnets.</>;
+            const nSteps = viewBoard.newsletter?.nurture?.length || 0;
+            const nlName = viewBoard.newsletter?.name || 'the newsletter';
+            text = nIss ? <>{nIss} issue{nIss === 1 ? '' : 's'} of {nlName} out.</>
+              : nSteps ? <>{nlName[0].toUpperCase() + nlName.slice(1)} is drafted; opt-ins come from the lead magnets.</>
+              : <>The newsletter starts later. Nothing to review yet.</>;
             cta = { label: 'See the lead magnets →', go: () => goTab('lm') };
           } else if (activeTab === 'outreach' && reportCtx) {
             text = <>{pipelineStripText(reportCtx)}</>;
@@ -10094,5 +10188,6 @@ export default function ClientBoardPage() {
       )}
     </div>
     </MotionConfig>
+    </BoardTeamProvider>
   );
 }
