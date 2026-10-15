@@ -24,6 +24,7 @@ import { DeskKitStyle } from './client-board/desk-kit';
 import DeskWeekSurface, { weekWindowCount } from './client-board/DeskWeekSurface';
 import DeskReviewSurface from './client-board/DeskReviewSurface';
 import PostSourceContext from './client-board/PostSourceContext';
+import PostReviewTags from './client-board/PostReviewTags';
 import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
@@ -173,6 +174,8 @@ interface QueueItem {
   body?: string;
   media_url?: string | null;
   video_url?: string | null;
+  topic_label?: string;
+  creative_style?: string;
   /** Post image(s) as stored on carousel_drafts.image_urls, plumbed by the sync. The board
    *  reads image_urls[0] as the card image so an attached image is always VISIBLE for review
    *  before it publishes (media_url/cover_url are the older single-image fields). */
@@ -3691,6 +3694,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setMediaBusy('');
     if (!r.ok) { setMediaErr(r.error || 'Could not attach that. Try again.'); return; }
     item.media_url = url || null;
+    refreshHistory();
     setMediaUrlState(url);
     setPoolOpen(false);
   };
@@ -3799,6 +3803,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     const r = await setSchedule(item.id, iso);
     setSchedBusy(false);
     if (!r.ok) { setSchedErr(r.error === 'bad_date' ? 'Pick a date within the next year.' : (r.error || 'Could not save that. Try again.')); return; }
+    refreshHistory();
     item.scheduled_at = iso;
     // The square follows the day the client picked (client tz), never the UTC date slice.
     item.publish_date = boardDayOf(iso) || iso.slice(0, 10);
@@ -3811,6 +3816,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     const r = await setSchedule(item.id, null);
     setSchedBusy(false);
     if (!r.ok) { setSchedErr(r.error || 'Could not clear that. Try again.'); return; }
+    refreshHistory();
     item.scheduled_at = undefined;
     item.publish_date = undefined;
     setSchedLabel('moved to the buffer');
@@ -3819,6 +3825,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   // History (live): every edit / swap / remove this draft has seen, latest first.
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const refreshHistory = () => setHistoryRevision((n) => n + 1);
   const [openDiff, setOpenDiff] = useState<number | null>(null);
   useEffect(() => {
     if (!isLive || !fetchHistory) return;
@@ -3826,7 +3834,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     fetchHistory(item.id).then((items) => { if (!gone) setHistory(items); });
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item.id]);
+  }, [item.id, historyRevision, approved]);
   // Review mode: number the edit chain so the client reads versions, not a log. The RPC
   // returns newest-first; v1 is the original draft, each applied edit produces the next.
   const editRows = (history || []).filter((x) => x.action === 'edit_copy');
@@ -3901,6 +3909,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           : (r.error || 'Could not save that. Try again.'));
         return;
       }
+      refreshHistory();
       baseRef.current = body;
       item.body = body;
       // Deck title rides the same save: only written when it actually changed.
@@ -3909,6 +3918,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         const rt = await editTitle(item.id, trimmed);
         if (!rt.ok) { setBusy(false); setErr(rt.error || 'Copy saved, but the title did not save. Try again.'); return; }
         item.title = trimmed;
+        refreshHistory();
       }
       setBusy(false);
     }
@@ -3921,6 +3931,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
       const r = await act('request_changes', item.id, { note });
       setBusy(false);
       if (!r.ok) { setErr(r.error || 'Could not send that. Try again.'); return; }
+      refreshHistory();
     }
     setSent(true); setChanging(false);
   };
@@ -3954,7 +3965,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         {/* Header */}
         <div className="cb-sheet-head flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           <KindChip q={item} accent={accent} />
-          <FunnelChip stage={item.funnel_stage} accent={accent} source={item.funnel_source} />
+          {!(item.topic_label || item.creative_style) && <FunnelChip stage={item.funnel_stage} accent={accent} source={item.funnel_source} />}
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
           <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start, isLive)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
@@ -3966,6 +3977,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col gap-6">
+          <PostReviewTags item={item} />
           {isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />}
           <LmResourceBlock gate={item.lm_gate} accent={accent} />
           {/* Content preview / edit */}
@@ -8581,7 +8593,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return [];
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_draft_history', { p_slug: slug, p_token: token, p_ref: ref });
       } else {
         const sess = sessionRef.current;
@@ -8601,7 +8613,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_edit_draft', { p_slug: slug, p_token: token, p_draft_id: draftId, p_body: newBody });
       } else {
         const sess = sessionRef.current;
@@ -8626,7 +8638,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_edit_title', { p_slug: slug, p_token: token, p_draft_id: draftId, p_title: newTitle });
       } else {
         const sess = sessionRef.current;
@@ -8651,7 +8663,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_edit_lm_promo', { p_slug: slug, p_token: token, p_lm_id: lmId, p_field: field, p_value: value });
       } else {
         const sess = sessionRef.current;
@@ -8677,7 +8689,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_set_media', { p_slug: slug, p_token: token, p_draft_id: draftId, p_media_url: url });
       } else {
         const sess = sessionRef.current;
@@ -8705,7 +8717,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_set_schedule', { p_slug: slug, p_token: token, p_draft_id: draftId, p_scheduled_at: scheduledAt });
       } else {
         const sess = sessionRef.current;
@@ -8731,7 +8743,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     if (!slug) return { ok: false, error: 'missing slug' };
     try {
       let resp: { data: unknown; error: { message: string } | null };
-      if (token) {
+      if (token && !sessionRef.current?.token) {
         resp = await supabase.rpc('client_board_hide_draft', { p_slug: slug, p_token: token, p_draft_id: draftId });
       } else {
         const sess = sessionRef.current;
@@ -8764,7 +8776,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     const sessTok = sessionRef.current?.token;
     if (!token && !sessTok) return { ok: false, error: 'missing session' };
     try {
-      const auth = token ? { token } : { session: sessTok };
+      const auth = sessTok ? { session: sessTok } : { token };
       const { data, error } = await supabase.functions.invoke('client-photo-delete', { body: { slug, name, ...auth } });
       if (error) return { ok: false, error: error.message };
       const out = data as { ok?: boolean; error?: string } | null;
