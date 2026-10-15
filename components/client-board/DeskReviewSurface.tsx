@@ -1486,7 +1486,7 @@ export default function DeskReviewSurface({
             {entries !== null && entries.length > 0 && (
               <div style={{ display: 'flex', gap: 6, marginLeft: 6 }} onClick={(e) => e.stopPropagation()}>
                 <Pill active={who === 'all'} onClick={() => setWho('all')}>All</Pill>
-                {founderFirst && <Pill active={who === 'founder'} onClick={() => setWho('founder')}>{founderFirst}&rsquo;s</Pill>}
+                {founderFirst && <Pill active={who === 'founder'} onClick={() => setWho('founder')}>{viewerKnown() ? 'Your team’s' : <>{founderFirst}&rsquo;s</>}</Pill>}
               </div>
             )}
           </div>

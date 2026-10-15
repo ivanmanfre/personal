@@ -189,7 +189,7 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
             ...draftedEntries.map((e) => ({ id: e.id, title: e.title, meta: [...(e.format ? [fmtLabel(e.format)] : []), 'Page drafted'].join(' · ') })),
             ...ideas.map((i) => ({ id: i.id, title: i.title, meta: i.status && i.status !== 'idea' ? BUILD_STATUS_LABEL[i.status] || null : null })),
           ]}
-          newsletter={nl ? { name: nl.name } : null}
+          newsletter={nl && nl.name && nurtureSteps.length > 0 ? { name: nl.name } : null}
           totals={{ visitors: anyVisitors ? totalVisitors : undefined, optins: anyCaptured ? totalCaptured : undefined }}
           onOpen={(id) => { const e = liveEntries.find((x) => x.id === id); if (e) openEntry(e); }}
         />
