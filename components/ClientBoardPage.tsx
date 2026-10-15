@@ -10031,7 +10031,7 @@ export default function ClientBoardPage() {
               : <>Pipeline: {dated.length} scheduled, {bufferN} in the buffer, {outN} out.</>;
             cta = { label: 'See the calendar →', go: () => setContentView('calendar') };
           } else if (activeTab === 'lm') {
-            text = <>{lmLive.length} lead magnet{lmLive.length === 1 ? '' : 's'} live on your site.</>;
+            text = lmLive.length ? <>{lmLive.length} lead magnet{lmLive.length === 1 ? '' : 's'} live on your site.</> : (viewBoard.lead_magnets || []).length ? <>No lead magnet is live yet.</> : <>No lead magnets yet.</>;
             if (lmLive[0]?.url) cta = { label: 'Open the newest →', go: () => window.open(lmLive[lmLive.length - 1].url || lmLive[0].url, '_blank') };
           } else if (activeTab === 'newsletter') {
             const nIss = viewBoard.newsletter?.issues?.length || 0;
@@ -10052,7 +10052,12 @@ export default function ClientBoardPage() {
             // Pacific. 13:00Z = 6am PT under PDT. ⚠ Written as a literal, so it reads an hour
             // early once the US falls back to PST in November - revisit or make it derived.
             // Saturday is view-only on this seat, so every other day sends.
-            text = st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Invites go out 6am to 6pm PT, every day except Saturday.</>;
+            // A program that has not started (SwishDM 10-15) must not read RISE's send window.
+            const sendsStarted = !!st?.is_live
+              || (outreachLog || []).some((e) => (e.messages || []).some((m) => m.direction === 'outbound' && !!m.sent_at))
+              || Number((viewBoard as any).outreach_truth?.funnel?.contacted || 0) > 0;
+            text = !sendsStarted ? <>Sends have not started yet.</>
+              : st?.is_live && st.todays_sends > 0 ? <>{st.todays_sends} send{st.todays_sends === 1 ? '' : 's'} out today under your name.</> : <>Invites go out 6am to 6pm PT, every day except Saturday.</>;
           } else if (activeTab === 'performance' && reportCtx) {
             text = <>{reportStripText(reportCtx)}</>;
             cta = { label: 'Your posts →', go: () => { const el = document.getElementById('cb-report-posts'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };

@@ -202,8 +202,10 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
     <div data-surface="lm">
       <Eyebrow>Lead magnets</Eyebrow>
       <DeskH2>
-        {liveN} lead {liveN === 1 ? 'magnet is' : 'magnets are'} <b>live on your site</b>
-        {pipelineN > 0 ? <>, {pipelineN} more drawn up.</> : '.'}
+        {liveN === 0 && pipelineN === 0
+          ? <>No lead magnets yet. <b>New ones show up here for your review.</b></>
+          : <>{liveN} lead {liveN === 1 ? 'magnet is' : 'magnets are'} <b>live on your site</b>
+            {pipelineN > 0 ? <>, {pipelineN} more drawn up.</> : '.'}</>}
       </DeskH2>
 
       <Plate style={{ marginTop: 18 }}>
@@ -385,7 +387,8 @@ export default function DeskLeadMagnetsSurface({ board, accent, mint, fontStack,
 
       {/* The full nurture sequence lives on the Newsletter tab — one pointer here,
           never a second copy of the rail (duplication reads as filler). */}
-      {nl && (
+      {/* Only point at the sequence when one exists: an empty one read "the -step sequence". */}
+      {nl && nurtureSteps.length > 0 && (
         <Card style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <Eyebrow tone="ink">{nl.name}</Eyebrow>
