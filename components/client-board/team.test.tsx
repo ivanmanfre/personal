@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, isOperatorEmail, memberName, setBoardHouse, setBoardNames, setBoardViewer, type BoardTeamValue } from './team';
+import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, authorParts, isOperatorEmail, memberName, setBoardHouse, setBoardNames, setBoardRoles, setBoardViewer, type BoardTeamValue } from './team';
 import { boardShareUrl, isWhiteLabelBoard } from '../../lib/boardHost';
 
 const base = (over: Partial<BoardTeamValue> = {}): BoardTeamValue => ({
@@ -11,7 +11,7 @@ const base = (over: Partial<BoardTeamValue> = {}): BoardTeamValue => ({
 });
 
 describe('board team attribution', () => {
-  afterEach(() => { cleanup(); setBoardViewer(''); setBoardNames({}); });
+  afterEach(() => { cleanup(); setBoardViewer(''); setBoardNames({}); setBoardRoles({}); });
 
   it('prefers the name the team gave over the one guessed from the email', () => {
     setBoardNames({ 'zd@swishdm.com': 'Zeke Daldy' });
@@ -36,7 +36,7 @@ describe('board team attribution', () => {
     </BoardTeamProvider>);
     const labels = r.container.querySelectorAll('[data-approved-by]');
     expect(labels.length).toBe(1);
-    expect(labels[0].textContent).toMatch(/^Approved by Leah, /);
+    expect(labels[0].textContent).toMatch(/^Approved by Leah · /);
   });
 
   it('threads comments per post and posts a new one as the member', async () => {
@@ -76,7 +76,36 @@ describe('board team attribution', () => {
       expect(text).toContain('Approved by Content team');
       expect(text).toContain('Everyone on this board sees what you write here.');
       expect(text).not.toMatch(/InboundOnSteroids|ivanmanfredi|Ivan/);
+      cleanup();
+      // Once the team list names our member, comments and sign-offs carry that person's name.
+      setBoardNames({ 'im@ivanmanfredi.com': 'Ivan Manfredi' });
+      const r2 = render(<BoardTeamProvider value={value}><ApprovedBy refId="p1" /><PostComments refId="p1" /></BoardTeamProvider>);
+      const t2 = r2.container.textContent || '';
+      expect(t2).toMatch(/Approved by Ivan · /);
+      expect(r2.container.querySelector('[data-comment-author]')?.textContent).toBe('Ivan Manfredi');
+      expect(r2.container.querySelector('[data-comment-role]')?.textContent).toBe('Content team');
+      expect(t2).not.toMatch(/InboundOnSteroids|ivanmanfredi\.com/);
     } finally { setBoardHouse(false); }
+  });
+
+  it('names every comment author with their role, and never invents one', () => {
+    setBoardNames({ 'john@swishdm.com': 'Jonathan Kiekbusch' });
+    setBoardRoles({ 'john@swishdm.com': 'admin', 'lyndsay@swishdm.com': 'viewer' });
+    expect(authorParts('john@swishdm.com')).toEqual({ name: 'Jonathan Kiekbusch', tag: 'Admin', email: 'john@swishdm.com' });
+    expect(authorParts('lyndsay@swishdm.com').tag).toBe('Viewer');
+    expect(authorParts(null).name).toBe('Unknown');
+    expect(authorParts('').name).toBe('Unknown');
+    expect(authorParts('board link')).toEqual({ name: 'Board link', tag: 'not signed in', email: null });
+    const value = base({ comments: [
+      { id: 'c1', ref: 'p1', at: '2026-10-14T10:00:00Z', by: 'john@swishdm.com', text: 'Shorter hook?', parent: null },
+      { id: 'c2', ref: 'p1', at: '2026-10-14T10:05:00Z', by: null, text: 'Old note', parent: null },
+    ], approvalMeta: { p1: { by: null, at: '2026-10-14T13:02:00Z' }, p2: { by: 'board link', at: '2026-10-14T13:02:00Z' } } });
+    const r = render(<BoardTeamProvider value={value}><PostComments refId="p1" /><ApprovedBy refId="p1" /><ApprovedBy refId="p2" /></BoardTeamProvider>);
+    const authors = Array.from(r.container.querySelectorAll('[data-comment-author]')).map((n) => n.textContent);
+    expect(authors).toEqual(['Jonathan Kiekbusch', 'Unknown']);
+    const approvals = Array.from(r.container.querySelectorAll('[data-approved-by]')).map((n) => n.textContent || '');
+    expect(approvals[0]).toMatch(/^Approved by Unknown · /);
+    expect(approvals[1]).toMatch(/^Approved via the board link \(not signed in\) · /);
   });
 
   it('asks the board-link visitor to sign in before commenting', () => {
