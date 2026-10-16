@@ -46,9 +46,12 @@ it('renders the actual video poster, format and all editorial tags without treat
 });
 it('keeps filtering, List, Calendar and the review disclosure available', () => {
   const view = render(<Desk />);
-  fireEvent.click(screen.getByRole('button', { name: 'Videos' }));
+  expect(screen.queryByText('FORMAT')).toBeNull();
+  expect(screen.getByRole('group', { name: 'View' }).textContent).toBe('Batch overviewListCalendar');
+  const format = screen.getByRole('combobox', { name: 'Format' });
+  fireEvent.change(format, { target: { value: 'video' } });
   expect(view.container.querySelectorAll('[data-batch-review-card]')).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Videos' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
   expect(view.container.querySelectorAll('[data-batch-review-card]')).toHaveLength(5);
   fireEvent.click(screen.getByRole('button', { name: 'List' }));
   expect(view.container.querySelector('[data-batch-review-card]')).toBeNull();

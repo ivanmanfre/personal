@@ -78,3 +78,22 @@ it('keeps the launch resource and comment keyword available in workspace tools',
  expect(r.getByRole('link', { name: /example.com\/buyer-report/ }).getAttribute('href')).toBe(gate.url);
  expect(r.getByRole('button', { name: 'Approve ✓' })).toBeTruthy();
 });
+
+it('shows the caption as a LinkedIn feed post with the fold, a media still and no second player', () => {
+ const long = 'Hook line that has to land.\n\n' + 'Body sentence that sits under the fold. '.repeat(30) + 'Final closing line.';
+ const r = render(<DetailModal item={{ ...video, body: long }} board={{ ...board, founder: { name: 'Jonathan Kiekbusch', headline: 'Founder, SwishDM' } }} accent="#FC5B06" stage="review" onClose={() => {}} onApprove={async () => ({ ok: true })} isLive reviewMode slug="swishdm-live" editDraft={async () => ({ ok: true })} act={async () => ({ ok: true })} />);
+ const li = r.container.querySelector('[data-review-li-preview]')!;
+ expect(li.textContent).toContain('Jonathan Kiekbusch');
+ expect(li.textContent).toContain('Founder, SwishDM');
+ expect(li.textContent).toContain('Hook line that has to land.');
+ expect(li.querySelector('[data-feed-media-still="video"]')).toBeTruthy();
+ expect(li.querySelector('video')).toBeNull();
+ expect(r.container.querySelectorAll('video')).toHaveLength(1);
+ const more = Array.from(li.querySelectorAll('button')).find(b => /see more/.test(b.textContent || ''))!;
+ expect(li.textContent).not.toContain('Final closing line.');
+ fireEvent.click(more);
+ expect(li.textContent).toContain('Final closing line.');
+ fireEvent.click(r.getByRole('button', { name: 'Edit copy' }));
+ expect(r.getByRole('textbox', { name: 'Post copy' })).toBeTruthy();
+ expect(r.container.querySelector('[data-review-li-preview]')).toBeNull();
+});
