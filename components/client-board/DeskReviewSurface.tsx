@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import PostSourceContext from './PostSourceContext';
+import PostReviewTags from './PostReviewTags';
+import BatchReviewOverview from './BatchReviewOverview';
 import { srcLabelClient } from './clientSourceLabel';
 import ScheduleWeek from './ScheduleWeek';
 
@@ -547,6 +549,8 @@ export default function DeskReviewSurface({
   void onLeaveDayEmpty; void onClearDay; void onEditPromo; void replacements; void pool; void benchFor;
   void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
+  // The selected batch layout belongs to this explicit board scope.
+  const batchReview = live && reviewMode && feedbackScope === 'swishdm-live';
   const todayIso = new Date().toISOString().slice(0, 10);
   // NIGHT MOCKUP (local only): `?night` swaps in the perf-kit look (posts-night.tsx). The
   // light desk below renders exactly as before when the flag is absent.
@@ -709,11 +713,11 @@ export default function DeskReviewSurface({
   /** Per-card body expansion in the 2-up buffer grid. */
   // Report boards open what the client acts on: the dated list, and on a review board the
   // posts waiting for approval (Davorin's job on this tab).
-  const sectionOpen = (key: string) => openSections[key] ?? (compact && (key === 'upnext' || (reviewMode && key === 'buffer')));
+  const sectionOpen = (key: string) => openSections[key] ?? ((batchReview && view === 'feed' && (key === 'buffer' || key === 'upnext')) || (compact && (key === 'upnext' || (reviewMode && key === 'buffer'))));
   // Review boards open on the post cards and feedback controls. A shared List preference
   // from another board must not hide the client's review workspace.
   React.useEffect(() => {
-    if (!compact || !live || !reviewMode) return;
+    if ((!compact && !batchReview) || !live || !reviewMode) return;
     setView('feed');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -998,9 +1002,10 @@ export default function DeskReviewSurface({
             <div style={{ marginTop: compact ? 5 : 7, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {!compact && <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--cb-ink-mute)' }}>{dateLabel}</span>}
               <Chip>{kickerOfLocal(q)}</Chip>
-              <FunnelChip stage={q.funnel_stage} accent={accent} />
+              {!(q.topic_label || q.creative_style) && <FunnelChip stage={q.funnel_stage} accent={accent} />}
               {q.post_url && <LivePostLink href={q.post_url} />}
             </div>
+            <PostReviewTags item={q} />
           </div>
           {bucket === 'published' ? (
             perf ? (
@@ -1051,6 +1056,7 @@ export default function DeskReviewSurface({
         const awaitingApproval = live && reviewMode && !approvedIds.has(q.id);
         return <div data-sched-tag style={{ display: 'block', width: 'fit-content', margin: '0 0 10px', padding: '6px 12px', borderRadius: 999, background: 'var(--cb-accent)', color: inkOn(accent), fontSize: 13, fontWeight: 800 }}>{awaitingApproval ? 'Awaiting approval · Proposed' : 'Goes out'} {day}, {time} {boardZone().label}</div>;
       })()}
+      <PostReviewTags item={q} />
       {live && reviewMode && <PostSourceContext compact detail={q.source_detail} label={src?.label || srcLabelClient(q.source_label)} quote={src?.quote} date={src?.meta} />}
       {/* The post itself is the 08-19 review page's `.post` card, value for value (2026-09-10,
           Ivan: "def looks less realistic than this html, also text"): LinkedIn's own type
@@ -1122,7 +1128,21 @@ export default function DeskReviewSurface({
      Review view, so the client could no longer read what is about to go out). They keep date
      order and carry their date + "scheduled" tag under the post. */
   const rowsFor = (list: QueueItem[], bucket: Bucket): React.ReactNode =>
-    topic === 'personal' || (view === 'feed' && (inBuffer(bucket) || bucket === 'upnext') && approvals)
+    batchReview && view === 'feed' && bucket !== 'published'
+      ? <BatchReviewOverview
+          items={bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))}
+          onOpen={onOpen}
+          statusFor={q => !approvedIds.has(q.id) ? 'Awaiting approval' : isScheduledLocal(q) ? 'Scheduled' : 'Approved'}
+          dateFor={q => {
+            if (!isScheduledLocal(q)) return 'No date yet';
+            const prefix = approvedIds.has(q.id) ? 'Goes out' : 'Proposed';
+            if (!q.scheduled_at) return `${prefix} ${fmtDay(q.publish_date)}`;
+            const date = new Date(q.scheduled_at);
+            if (Number.isNaN(date.getTime())) return `${prefix} ${fmtDay(q.publish_date)}`;
+            return `${prefix} ${date.toLocaleString('en-GB', { timeZone: clientTz(), day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} ${boardZone().label}`;
+          }}
+        />
+      : topic === 'personal' || (view === 'feed' && (inBuffer(bucket) || bucket === 'upnext') && approvals)
       ? <div className="cb-licard-grid">{(bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))).map((q) => renderLiCard(q, bucket))}</div>
       : night ? <RailList>{list.map((q, i) => renderRow(q, bucket, i))}</RailList>
       : list.map((q) => renderRow(q, bucket));
@@ -1251,10 +1271,12 @@ export default function DeskReviewSurface({
   ];
 
   const surface = (
-    <div data-surface="review" data-night-posts={night ? '' : undefined}>
+    <div data-surface="review" data-batch-review={batchReview ? '' : undefined} data-night-posts={night ? '' : undefined}>
       {scheduleError && <p role="alert">{scheduleError.message}</p>}
       {night && <PostsNightStyle />}
       <style>{`
+        [data-batch-review] button, [data-batch-review] [role="button"] { min-height:44px; min-width:44px; }
+        [data-batch-review] button:focus-visible, [data-batch-review] [role="button"]:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
         /* The feed grey and the 555px column of LinkedIn itself (values from the 08-19 review
            page). Two columns only when each can hold a 440px card (the desk column is 804px at
            a 1100px viewport, 984px at 1280, capped at 1040) — one centred column below that,
@@ -1284,7 +1306,13 @@ export default function DeskReviewSurface({
       `}</style>
 
       {/* Block 1: computed headline. */}
-      {night ? (
+      {batchReview && view === 'feed' ? (
+        <div data-batch-review-heading>
+          <h2 style={{ margin: 0, fontFamily: 'var(--cb-serif)', fontSize: 30, lineHeight: 1.2, color: 'var(--cb-ink)' }}>Your content batch</h2>
+          <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>{pendingN} awaiting approval · {approvedN + sched} approved · {out} published</p>
+          <p style={{ margin: '5px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>Open a post to review its media, copy and sources.</p>
+        </div>
+      ) : night ? (
         <PostsSummary line={nightLine} />
       ) : <>
       <Eyebrow>All content</Eyebrow>
@@ -1336,11 +1364,11 @@ export default function DeskReviewSurface({
       {/* Block 3: view toggle. */}
       {night ? (
         <div className="prs-tools">
-          <SlideGroup segmented group="view" label="View" value={view} onPick={(v) => setView(v as 'list' | 'feed' | 'calendar')} items={[...(reviewMode ? [{ id: 'feed', label: 'Review' }] : []), { id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
+          <SlideGroup segmented group="view" label="View" value={view} onPick={(v) => setView(v as 'list' | 'feed' | 'calendar')} items={[...(reviewMode ? [{ id: 'feed', label: batchReview ? 'Batch overview' : 'Review' }] : []), { id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
         </div>
       ) : (
       <div style={{ marginTop: 18, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        {reviewMode && <Pill active={view === 'feed'} onClick={() => setView('feed')}>Review</Pill>}
+        {reviewMode && <Pill active={view === 'feed'} onClick={() => setView('feed')}>{batchReview ? 'Batch overview' : 'Review'}</Pill>}
         <Pill active={view === 'list'} onClick={() => setView('list')}>List</Pill>
         <Pill active={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</Pill>
       </div>
@@ -1439,7 +1467,7 @@ export default function DeskReviewSurface({
                 </>
               ) : rowsFor(fBuffer, 'buffer'), 'buffer', reviewMode ? (
                 <>
-                  {view === 'feed' && <Footnote>Full posts · source notes above each</Footnote>}
+                  {view === 'feed' && !batchReview && <Footnote>Full posts · source notes above each</Footnote>}
                 </>
               ) : undefined)}
               {section('Drafting', fDrafted.length, reviewMode ? 'Being written now. They move to your review when ready.' : 'Being written now. They land in the buffer when ready.', fDrafted.map(renderDraftedRow), 'drafted')}
