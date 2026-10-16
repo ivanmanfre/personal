@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { boardCanonicalUrl, boardShareUrl, isWhiteLabelBoard } from '../lib/boardHost';
+import { boardCanonicalUrl, boardShareUrl, commentsCarryChanges, isWhiteLabelBoard } from '../lib/boardHost';
 import { isClientLibraryPhoto } from '../lib/clientPhotoLibrary';
 import {
   loadBoardSession,
@@ -3803,7 +3803,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setUploadBusy(false);
     await chooseMedia(url);
   };
-  const [changing, setChanging] = useState(initialChanging);
+  // Comment-only boards (lib/boardHost): no Request changes input; Comments carry it.
+  const commentsOnly = isLive && commentsCarryChanges(slug);
+  const [changing, setChanging] = useState(initialChanging && !commentsOnly);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -3970,7 +3972,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const detailChip = isLive ? sourceChip(item) : null;
   const nextLine = awaitingApproval ? 'Approval saves your sign-off. Scheduling is separate. The proposed date stays on hold until you approve it.' : stage === 'review' ? (isLive
       ? (reviewMode
-          ? 'Approve it, edit it, or request a change. Approval saves your sign-off. Scheduling is separate.'
+          ? (commentsOnly
+            ? 'Approve it, edit it, or leave a comment below with what to change. Approval saves your sign-off. Scheduling is separate.'
+            : 'Approve it, edit it, or request a change. Approval saves your sign-off. Scheduling is separate.')
           : (isScheduled(item)
             ? 'It publishes on its slot. Edit it, swap the idea, or remove it any time before then. Every change you make lands in the log.'
             : 'Ready in the buffer. Give it a date and time to schedule it, edit it, or remove it. Every change you make lands in the log.'))
@@ -4524,7 +4528,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
           {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
           {isLive && team && !team.canApprove && (
-            <div className="text-[13px]" style={{ color: DIM }} data-view-only>You can read and comment. Ask an admin on your team for approver access to approve or request changes.</div>
+            <div className="text-[13px]" style={{ color: DIM }} data-view-only>{commentsOnly ? 'You can read and comment. Ask an admin on your team for approver access to approve posts.' : 'You can read and comment. Ask an admin on your team for approver access to approve or request changes.'}</div>
           )}
           {isLive && <PostComments refId={item.id} />}
           {isLive && shownHistory.length > 0 && (
@@ -4600,17 +4604,18 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 {approving ? 'Approving…' : 'Approve ✓'}
               </motion.button>
               )}
-              <button
+              {/* Comment-only boards (lib/boardHost): Comments carry change requests. */}
+              {!commentsOnly && <button
                 onClick={() => setChanging(!changing)}
                 className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
                 style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
               >
                 Request changes
-              </button>
+              </button>}
               {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent.</span>}
             </div>
             {approvalError && <div role="alert" style={{ fontSize: 14, marginTop: 8, color: 'var(--cb-danger, #a12622)' }}>Approval did not save. Try Approve again.</div>}
-            {changing && !sent && (
+            {changing && !sent && !commentsOnly && (
               <div className="mt-3">
                 <textarea
                   value={note}
@@ -9885,7 +9890,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx?.cfg.outreachOnly ? null : reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface onReviewOrder={(ids) => { reviewOrderRef.current = ids; }} feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface onReviewOrder={(ids) => { reviewOrderRef.current = ids; }} feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} commentsOnly={isLive && commentsCarryChanges(slug)} onFeedback={isLive && !viewOnly && !commentsCarryChanges(slug) ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
