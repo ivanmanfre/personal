@@ -50,7 +50,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, setBoardNames, setBoardRoles, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, setBoardRoles, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, boardHouseLabel, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -8145,17 +8145,23 @@ function TeamSurface({ slug, accent, session, token }: { slug: string; accent: s
             </div>
             {shownTeam.map((m, i) => {
               const label = (m.name || '').trim();
-              const editable = isAdmin && !m.owner && m.email !== me;
+              // Our side (operator address) is the board's content-team owner: labelled, never removable here.
+              const ours = isOperatorEmail(m.email);
+              const editable = isAdmin && !m.owner && !ours && m.email !== me;
+              // One person, two logins (e.g. a work and a personal address): the later row says so.
+              const secondEmail = !!label && shownTeam.slice(0, i).some((o) => (o.name || '').trim().toLowerCase() === label.toLowerCase());
               return (
                 <div key={m.email} data-member={m.email} className="flex min-h-[56px] flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: caWash(accent, 16), color: INK }} aria-hidden>
                     {(label || m.email).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1" title={m.email}>
-                    {label && <span className="block truncate text-[13.5px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{label}</span>}
-                    <span className={`block truncate ${label ? 'text-[12px]' : 'text-[13.5px]'}`} style={{ fontFamily: BODY, color: label ? DIM : INK }}>{m.email}</span>
+                    {label && <span className="block truncate text-[13.5px] font-semibold" style={{ fontFamily: BODY, color: INK }}>{label}{secondEmail && <span data-second-email className="font-normal" style={{ color: DIM }}> · second email</span>}</span>}
+                    <span className={`block truncate ${label ? 'text-[12.5px]' : 'text-[13.5px]'}`} style={{ fontFamily: BODY, color: label ? INK : INK }}>{m.email}</span>
                   </span>
-                  {m.owner ? (
+                  {ours ? (
+                    <span data-member-ours className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>{boardHouseLabel()} · owner · {(ROLE_LABEL[m.role] || 'Approver').toLowerCase()}{m.email === me ? ' · you' : ''}</span>
+                  ) : m.owner ? (
                     <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>Owner · admin</span>
                   ) : editable ? (
                     <select aria-label={`Role for ${m.email}`} value={m.role} disabled={busy} onChange={(e) => void setRole(m.email, e.target.value as TeamMember['role'])}

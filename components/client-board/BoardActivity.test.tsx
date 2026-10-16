@@ -50,4 +50,19 @@ it('distinguishes operator buffer placement from client approval and names prove
  await r.findByText('Sent a draft to client review');
  expect(r.getByText('Verified a post source')).toBeTruthy();
  expect(r.queryByText('Approved a post')).toBeNull();
+ const actors = Array.from(r.container.querySelectorAll('[data-activity-by]')).map((n) => n.textContent);
+ expect(actors[1]).toBe('Automatic source check');
+ expect(r.container.textContent).not.toContain('Content team / system');
+});
+
+it('names automatic steps, unknown legacy rows and the board link without inventing a person', async () => {
+ rpc.mockResolvedValue({ data: { ok: true, items: [
+  { id: 'a', action: 'classification_proposed', at: '2026-10-16T10:00:00Z', by: 'Content team / system' },
+  { id: 'b', action: 'invite', at: '2026-10-16T09:00:00Z', by: 'Unattributed legacy action' },
+  { id: 'c', action: 'approve', at: '2026-10-16T08:00:00Z', by: 'board link' },
+ ] }, error: null });
+ const r = render(<BoardActivity slug="swishdm-live" token="shared" />); open(r);
+ await r.findByText('Automatic tagging');
+ const actors = Array.from(r.container.querySelectorAll('[data-activity-by]')).map((n) => n.textContent);
+ expect(actors).toEqual(['Automatic tagging', 'Unknown', 'Board link']);
 });
