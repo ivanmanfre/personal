@@ -68,3 +68,13 @@ it('keeps the workspace read-only for viewers', () => {
  expect(r.queryByRole('button', { name: 'Edit copy' })).toBeNull();
  expect(r.container.querySelector('[data-view-only]')).toBeTruthy();
 });
+
+it('keeps the launch resource and comment keyword available in workspace tools', () => {
+ const gate = { title: 'AI buyer report', url: 'https://example.com/buyer-report', keyword: 'BUYER' };
+ const r = setup({ ...video, lm_gate: gate });
+ fireEvent.click(r.getByText('Post tools and schedule'));
+ expect(r.getByText(gate.title)).toBeTruthy();
+ expect(r.getByText('comment BUYER')).toBeTruthy();
+ expect(r.getByRole('link', { name: /example.com\/buyer-report/ }).getAttribute('href')).toBe(gate.url);
+ expect(r.getByRole('button', { name: 'Approve ✓' })).toBeTruthy();
+});

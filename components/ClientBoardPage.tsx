@@ -4244,6 +4244,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           <ToolsTag className={workspace ? 'cb-review-tools rounded-xl border p-4' : 'contents'} open={workspace && (schedOpen || poolOpen) ? true : undefined} style={workspace ? { borderColor: LINE } : undefined}>
             {workspace && <summary className="min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold">Post tools and schedule</summary>}
             {workspace && postActions}
+            {workspace && <LmResourceBlock gate={item.lm_gate} accent={accent} />}
           {/* Instagram cut of an over-cap deck: visible in preview AND edit mode so an
               over-10 carousel can be eyeballed for IG right where the post is reviewed. */}
           <IgVersionStrip item={item} />
