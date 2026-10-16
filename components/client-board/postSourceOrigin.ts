@@ -19,7 +19,7 @@ export function postSourceOrigin(item: Pick<QueueItem, 'source_detail' | 'source
   if (kind === 'strategy') return { label: 'Source pending' };
   const labels = [detail?.source, detail?.label, item.source_label].map(srcLabelClient).filter(Boolean);
   const evidence = [kind, ...labels].join(' ').toLowerCase();
-  const contentBrain = /\bcontent\s*brain\b/.test(evidence);
+  const contentBrain = /\bcontent[\s-]*brain\b/.test(evidence);
   const youtube = host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com') || /\byoutube\b/.test(evidence);
   const instagram = host === 'instagram.com' || host.endsWith('.instagram.com') || /\binstagram\b/.test(evidence);
   if (kind === 'call' || /\b(?:client|sales|discovery) call\b|from your calls?\b/.test(evidence)) return { label: 'Client call', href };

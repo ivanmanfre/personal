@@ -25,3 +25,7 @@ it('keeps missing and unsafe sources honest and preserves the input provenance',
  const item = { source_detail: { kind: 'winner_replica', source_url: 'https://instagram.com/p/fixture/', note: 'Internal editorial note' } };
  const before = JSON.stringify(item); postSourceOrigin(item); expect(JSON.stringify(item)).toBe(before);
 });
+
+it('accepts the canonical hyphenated Content-Brain source label', () => {
+ expect(postSourceOrigin({ source_detail: { kind: 'youtube_outlier', source: 'Content-Brain', source_url: 'https://youtube.com/watch?v=fixture' } }).label).toBe('YouTube outlier · ContentBrain');
+});

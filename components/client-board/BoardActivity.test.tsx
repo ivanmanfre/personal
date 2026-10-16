@@ -40,3 +40,14 @@ it('names the affected post and retains the raw ref for unknown legacy targets',
  expect(r.getByText('legacy-draft-uuid')).toBeTruthy();
  expect(r.queryByText('draft-uuid')).toBeNull();
 });
+
+it('distinguishes operator buffer placement from client approval and names provenance repairs', async () => {
+ rpc.mockResolvedValue({ data: { ok: true, items: [
+  { id: 'buffer', action: 'operator_buffer_approve', at: '2026-10-16T10:00:00Z', by: 'operator@example.invalid' },
+  { id: 'source', action: 'source_provenance_verified', at: '2026-10-16T09:00:00Z', by: 'Content team / system' },
+ ] }, error: null });
+ const r = render(<BoardActivity slug="swishdm-live" session="fixture" />); open(r);
+ await r.findByText('Sent a draft to client review');
+ expect(r.getByText('Verified a post source')).toBeTruthy();
+ expect(r.queryByText('Approved a post')).toBeNull();
+});
