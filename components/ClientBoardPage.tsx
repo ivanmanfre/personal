@@ -460,6 +460,8 @@ export function clientHistoryAuthor(by: string | null | undefined, board: Pick<B
   const raw = (by || '').trim().toLowerCase();
   const team = { label: `${(board.company_name || '').trim() || 'Your'} team`, client: false };
   if (!raw) return team;
+  // Automatic steps (tagging, source checks) are no person: name the step, never the team (2026-10-16).
+  if (raw === 'system' || raw === 'content team / system') return { label: 'Automatic step', client: false };
   // The ?k= board link has no person behind it: say so instead of crediting the team (2026-10-16).
   if (raw === 'board link') return { label: 'Board link (not signed in)', client: true };
   // Boards with several members: name the person ("You" for a signed-in viewer's own rows).
@@ -3930,6 +3932,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     if (h.action === 'hide_draft') return 'Removed from the buffer';
     if (h.action === 'approve') return 'Approved';
     if (h.action === 'request_changes') return 'Change requested';
+    if (h.action === 'classification_proposed') return 'Post tags proposed';
+    if (h.action === 'source_provenance_verified') return 'Post source verified';
+    if (h.action === 'comment') return 'Comment';
     if (h.action === 'note') {
       switch (h.event) {
         case 'angle_swap': return 'Idea swapped';

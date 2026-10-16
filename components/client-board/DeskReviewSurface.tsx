@@ -431,6 +431,7 @@ function authorOf(by: string | null | undefined, board: Pick<Board, 'founder' | 
   const raw = (by || '').trim();
   // The ?k= board link has no person behind it: say so instead of crediting the desk (2026-10-16).
   if (raw.toLowerCase() === 'board link') return { label: 'Board link (not signed in)', founder: true };
+  if (raw.toLowerCase() === 'system' || raw.toLowerCase() === 'content team / system') return { label: 'Automatic step', founder: false };
   // A named member (or "You") is a client author in their own right, founder or not.
   const member = viewerKnown() ? actorLabel(raw) : null;
   if (member) return { label: member, founder: true };
