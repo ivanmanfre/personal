@@ -1178,14 +1178,14 @@ export default function DeskReviewSurface({
   const section = (label: string, count: number, blurb: string, rows: React.ReactNode, key: string, aside?: React.ReactNode) => count > 0 ? (night ? (
     <NightSection key={key} label={keepWords ? label : (NIGHT_LABEL[label] || label)} blurb={keepWords ? blurb : undefined} glyph={keepWords} count={count} open={sectionOpen(key)} onToggle={() => toggleSection(key)} aside={aside}>{rows}</NightSection>
   ) : (
-    <div key={key} style={{ marginTop: 20 }}>
+    <div key={key} style={{ marginTop: batchReview ? 16 : 20 }}>
       <div
         role="button"
         tabIndex={0}
         aria-expanded={sectionOpen(key)}
         onClick={() => toggleSection(key)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection(key); } }}
-        style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '2px solid var(--cb-ink)', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: batchReview ? 'center' : 'baseline', gap: 12, flexWrap: 'wrap', paddingBottom: batchReview ? 0 : 12, borderBottom: '2px solid var(--cb-ink)', cursor: 'pointer' }}
       >
         <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--cb-ink)', flex: '1 1 auto' }}>
           <span aria-hidden style={{ display: 'inline-block', width: 14, fontSize: 10, transform: sectionOpen(key) ? 'none' : 'translateY(-1px)' }}>{sectionOpen(key) ? '▾' : '▸'}</span>
@@ -1277,6 +1277,30 @@ export default function DeskReviewSurface({
       <style>{`
         [data-batch-review] button, [data-batch-review] [role="button"] { min-height:44px; min-width:44px; }
         [data-batch-review] button:focus-visible, [data-batch-review] [role="button"]:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
+        /* Compact batch header (2026-10-16, Ivan: "nothing is compact and easily reviewable"):
+           title + counts + view switch on one row, the three filter axes as one row of small
+           dropdowns. 36px controls on a pointer screen, 44px on a phone. */
+        .cb-bhead { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px; }
+        .cb-bhead h2 { margin:0; font:500 24px/1.2 var(--cb-serif); color:var(--cb-ink); }
+        .cb-bhead p { margin:2px 0 0; font-size:13.5px; line-height:1.45; color:var(--cb-ink-mute); }
+        .cb-seg { display:inline-flex; padding:3px; gap:2px; border:1px solid var(--cb-line-bold); border-radius:999px; background:var(--cb-paper); }
+        [data-batch-review] .cb-seg button { min-height:34px; min-width:0; padding:0 14px; border:0; border-radius:999px; background:transparent; color:var(--cb-ink-mute); font:700 13px/1 var(--cb-body); cursor:pointer; white-space:nowrap; }
+        [data-batch-review] .cb-seg button[aria-pressed="true"] { background:var(--cb-ink); color:var(--cb-paper); }
+        .cb-fbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
+        .cb-fsel { position:relative; display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 30px 0 12px; border:1px solid var(--cb-line-bold); border-radius:999px; background:var(--cb-paper); color:var(--cb-ink); font:600 13px/1 var(--cb-body); cursor:pointer; }
+        .cb-fsel > span:first-child { font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--cb-ink-mute); }
+        .cb-fsel select { appearance:none; -webkit-appearance:none; border:0; background:transparent; color:inherit; font:inherit; padding:0; margin:0; cursor:pointer; max-width:180px; text-overflow:ellipsis; }
+        .cb-fsel select:focus { outline:none; }
+        .cb-fsel:focus-within { outline:3px solid var(--cb-ink); outline-offset:2px; }
+        .cb-fsel > [aria-hidden] { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--cb-ink-mute); pointer-events:none; }
+        .cb-fsel[data-active] { border-color:var(--cb-ink); background:color-mix(in oklab, var(--cb-accent) 12%, var(--cb-paper)); }
+        [data-batch-review] .cb-fclear { min-height:36px; padding:0 6px; border:0; background:none; cursor:pointer; font:700 12.5px/1 var(--cb-body); color:var(--cb-ink-mute); text-decoration:underline; text-underline-offset:3px; }
+        @media (max-width:600px) {
+          .cb-seg { width:100%; }
+          [data-batch-review] .cb-seg button { flex:1; min-height:40px; padding:0 8px; }
+          .cb-fsel { height:44px; }
+          [data-batch-review] .cb-fclear { min-height:44px; }
+        }
         /* The feed grey and the 555px column of LinkedIn itself (values from the 08-19 review
            page). Two columns only when each can hold a 440px card (the desk column is 804px at
            a 1100px viewport, 984px at 1280, capped at 1040) — one centred column below that,
@@ -1306,11 +1330,17 @@ export default function DeskReviewSurface({
       `}</style>
 
       {/* Block 1: computed headline. */}
-      {batchReview && view === 'feed' ? (
-        <div data-batch-review-heading>
-          <h2 style={{ margin: 0, fontFamily: 'var(--cb-serif)', fontSize: 30, lineHeight: 1.2, color: 'var(--cb-ink)' }}>Your content batch</h2>
-          <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>{pendingN} awaiting approval · {approvedN + sched} approved · {out} published</p>
-          <p style={{ margin: '5px 0 0', fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>Open a post to review its media, copy and sources.</p>
+      {batchReview ? (
+        <div data-batch-review-heading className="cb-bhead">
+          <div style={{ minWidth: 0 }}>
+            <h2>Your content batch</h2>
+            <p>{pendingN} awaiting approval · {approvedN + sched} approved · {out} published</p>
+          </div>
+          <div className="cb-seg" role="group" aria-label="View">
+            {([['feed', 'Batch overview'], ['list', 'List'], ['calendar', 'Calendar']] as const).map(([id, label]) => (
+              <button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
+            ))}
+          </div>
         </div>
       ) : night ? (
         <PostsSummary line={nightLine} />
@@ -1361,8 +1391,8 @@ export default function DeskReviewSurface({
         <ScheduleWeek queue={board.queue} ready={swapCandidates} onOpen={onOpen} onAdd={onScheduleToDay} coverFor={q => cardImageUrlLocal(q, board)} recentlyCleared={recentlyCleared} />
       )}
 
-      {/* Block 3: view toggle. */}
-      {night ? (
+      {/* Block 3: view toggle (the batch board carries it in its header row). */}
+      {batchReview ? null : night ? (
         <div className="prs-tools">
           <SlideGroup segmented group="view" label="View" value={view} onPick={(v) => setView(v as 'list' | 'feed' | 'calendar')} items={[...(reviewMode ? [{ id: 'feed', label: batchReview ? 'Batch overview' : 'Review' }] : []), { id: 'list', label: 'List' }, { id: 'calendar', label: 'Calendar' }]} />
         </div>
@@ -1384,6 +1414,27 @@ export default function DeskReviewSurface({
         const clearAll = () => { setCatState('all'); setTopicState('all'); setAimState('all'); syncFilterUrl('all', 'all', 'all'); };
         // Nothing to filter (an empty board): no orphan "Format" label over an empty row.
         if (!anyFilter && !topics.length && !CATS.some((c) => c.id !== 'all' && catCount(c.id) > 0) && !AIMS.some((a) => aimCount(a) > 0)) return null;
+        if (batchReview) {
+          const fsel = (axis: string, label: string, value: string, onPick: (v: string) => void, options: { id: string; label: string; n: number }[]) => (
+            <label className="cb-fsel" data-active={value !== 'all' ? '' : undefined}>
+              <span>{label}</span>
+              <select aria-label={label} value={value} data-cb-filter={axis} onChange={(e) => onPick(e.target.value)}>
+                <option value="all">All</option>
+                {options.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.n})</option>)}
+                {value !== 'all' && !options.some((o) => o.id === value) && <option value={value}>{value}</option>}
+              </select>
+              <span aria-hidden>▾</span>
+            </label>
+          );
+          return (
+            <div className="cb-fbar" role="group" aria-label="Filters">
+              {fsel('format', 'Format', cat, (v) => setCat(v as Cat), CATS.filter((c) => c.id !== 'all' && catCount(c.id) > 0).map((c) => ({ id: c.id, label: c.label, n: catCount(c.id) })))}
+              {topics.length > 0 && fsel('topic', 'Topic', topic, setTopic, topics.map((t) => ({ id: t, label: topicLabel(t), n: topicCounts[t] || 0 })))}
+              {AIMS.some((a) => aimCount(a) > 0) && fsel('aim', 'Aim', aimSel, setAim, AIMS.filter((a) => aimCount(a) > 0).map((a) => ({ id: a, label: a[0].toUpperCase() + a.slice(1), n: aimCount(a) })))}
+              {anyFilter && <button type="button" className="cb-fclear" onClick={clearAll}>Clear filters</button>}
+            </div>
+          );
+        }
         if (night) return (
           <div className="prs-filters">
             <span className="pk-cap">Format</span>
@@ -1460,8 +1511,14 @@ export default function DeskReviewSurface({
           {live ? (
             <>
               {section(reviewMode ? 'Dated posts' : 'Scheduled', fUpNext.length, reviewMode ? 'Proposed dates stay on hold until approval.' : 'posts, dated and queued', rowsFor(fUpNext, 'upnext'), 'upnext')}
-              {section('In buffer', fBuffer.length, 'written, no date yet', reviewMode ? (
-                <>
+              {section('In buffer', fBuffer.length, batchReview
+                ? [fPending.length ? `${fPending.length} pending approval` : '', fApproved.length ? `${fApproved.length} approved` : '', 'no date yet'].filter(Boolean).join(' · ')
+                : 'written, no date yet', reviewMode ? (
+                /* Batch board: the buffer header already names the split, so a lone group
+                   needs no second header; both groups present keep their labels. */
+                batchReview && (!fApproved.length || !fPending.length) ? (
+                  <div data-buffer-group={fPending.length ? 'pending' : 'approved'}>{fPending.length ? rowsFor(fPending, 'buffer') : rowsFor(fApproved, 'approved')}</div>
+                ) : <>
                   {subSection('Approved', fApproved.length, 'Approved. Takes the next open slot.', rowsFor(fApproved, 'approved'), 'approved')}
                   {subSection('Pending approval', fPending.length, 'Waiting for your approval.', rowsFor(fPending, 'buffer'), 'pending')}
                 </>

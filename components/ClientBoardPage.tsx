@@ -1372,12 +1372,35 @@ function videoUrlOf(item: Pick<QueueItem, 'style' | 'media_url' | 'video_url'>):
   return item.video_url || (item.style === 'video' && /\.(mp4|webm|mov)(?:[?#]|$)/i.test(item.media_url || '') ? item.media_url || undefined : undefined);
 }
 
+/** A still of a post's video or document for the review workspace's feed card. */
+function FeedMediaStill({ src, kind, pages, title }: { src?: string; kind: 'video' | 'deck'; pages: number; title?: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div data-feed-media-still={kind} className="relative overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${LINE}`, background: kind === 'video' ? '#111' : '#f3f2ef' }}>
+      {src && !failed
+        ? <img src={src} alt={title ? `${kind === 'video' ? 'Video cover' : 'Document page 1'}: ${title}` : ''} loading="lazy" onError={() => setFailed(true)} style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'contain', margin: '0 auto' }} />
+        : <div style={{ aspectRatio: kind === 'video' ? '16/9' : '4/5', maxHeight: 420 }} />}
+      {kind === 'video' ? (
+        <span aria-hidden className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full" style={{ width: 56, height: 56, transform: 'translate(-50%,-50%)', background: 'rgba(0,0,0,.6)', border: '2px solid #fff' }}>
+          <svg width="20" height="22" viewBox="0 0 20 22"><path d="M2 1.5v19L19 11z" fill="#fff" /></svg>
+        </span>
+      ) : (
+        <span className="absolute bottom-2 left-2 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: 'rgba(0,0,0,.66)', color: '#fff' }}>1 / {pages}</span>
+      )}
+    </div>
+  );
+}
+
 /** The true LinkedIn feed preview from the brief: Instrument Sans interior, initials
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false, mediaThumb = false }: {
   awaitingApproval?: boolean;
+  /** Review workspace: the full player / deck already sits in the media column, so the feed
+   *  card shows a still of it (video poster with a play mark, deck page 1 with its page
+   *  count) where LinkedIn puts the media, without a second player. */
+  mediaThumb?: boolean;
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none'; foldSwitch?: boolean;
   /** Caps the image/deck width (height follows) so a tall post stays compact while the caption keeps LinkedIn's size. */
@@ -1458,7 +1481,9 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           )}
         </div>
       )}
-      {docPages.length >= 2 ? (
+      {mediaThumb && (docPages.length >= 2 || videoUrl) ? (
+        <FeedMediaStill src={docPages.length >= 2 ? docPages[0] : item.image_urls?.[0] || item.image || undefined} kind={docPages.length >= 2 ? 'deck' : 'video'} pages={docPages.length} title={item.title || item.hook} />
+      ) : docPages.length >= 2 ? (
         <div style={mediaMax ? { maxWidth: mediaMax, margin: '0 auto' } : undefined}>
           <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
         </div>
@@ -4199,10 +4224,27 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                 {err && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
               </div>
             ) : (
-              <div className="cb-linkedin-preview">
+              <div className={workspace ? undefined : 'cb-linkedin-preview'}>
                 {workspace ? <div>
                   <h3 className="mb-3 text-[15px] font-semibold">Caption</h3>
-                  <div className="whitespace-pre-wrap break-words text-[16px] leading-relaxed" style={{ color: INK, maxWidth: '68ch' }}>{body || item.body || 'No copy has been added yet.'}</div>
+                  {/* The caption as the feed shows it: author row, LinkedIn's own fold with
+                      "…see more", the media under the text, the reaction row. */}
+                  {(body || item.body) ? <div data-review-li-preview className="w-full max-w-[555px]">
+                    {/* The inline "…see more" sits in the caption's line box: the workspace's
+                        44px button floor would push the third line down. */}
+                    <style>{'[data-review-li-preview] button{min-height:0}'}</style>
+                    <FeedPreview
+                      key={body || item.body}
+                      item={{ ...item, body: body || item.body }}
+                      board={board}
+                      accent={accent}
+                      fontStack={board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif'}
+                      live
+                      foldSwitch={false}
+                      awaitingApproval={awaitingApproval}
+                      mediaThumb
+                    />
+                  </div> : <div className="text-[16px]" style={{ color: INK }}>No copy has been added yet.</div>}
                 </div> : item.body ? (
                   <LinkedInPostPreview
                     text={body || item.body || ''}
