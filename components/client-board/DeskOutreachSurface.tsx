@@ -194,6 +194,43 @@ function countInWindow(msgs: OutreachLogMessage[], start: Date, end: Date, kind?
   return n;
 }
 
+function ResourceCard({ r }: { r: NonNullable<NonNullable<Board['outreach']>['resource']> }) {
+  const [msgsOpen, setMsgsOpen] = useState(false);
+  const btn: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink)', background: 'transparent', border: '1px solid var(--cb-line-bold)', borderRadius: 999, padding: '7px 14px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-block' };
+  return (
+    <Card style={{ marginTop: 16, padding: '20px 24px 18px' }}>
+      <div data-outreach-resource="">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Eyebrow tone="ink">{r.label || 'What we send'}</Eyebrow>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <a href={r.url} target="_blank" rel="noreferrer" style={{ ...btn, background: 'var(--cb-ink)', color: 'var(--cb-paper, #fff)', borderColor: 'var(--cb-ink)' }}>Open the example</a>
+            {r.messages && r.messages.length > 0 && (
+              <button type="button" onClick={() => setMsgsOpen((v) => !v)} style={btn}>{msgsOpen ? 'Hide messages' : 'The messages'}</button>
+            )}
+          </span>
+        </div>
+        <div style={{ marginTop: 10, fontSize: 19, fontWeight: 700, lineHeight: 1.25, color: 'var(--cb-ink)' }}>{r.title}</div>
+        {r.note && <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>{r.note}</div>}
+        {r.findings && r.findings.length > 0 && (
+          <ul style={{ margin: '12px 0 0', paddingLeft: 18, fontSize: 14, lineHeight: 1.5, color: 'var(--cb-ink)' }}>
+            {r.findings.map((f) => <li key={f} style={{ marginBottom: 4 }}>{f}</li>)}
+          </ul>
+        )}
+        {msgsOpen && r.messages && (
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: 12 }}>
+            {r.messages.map((m) => (
+              <div key={m.when} style={{ border: '1px solid var(--cb-line)', borderRadius: 12, padding: '12px 14px' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cb-ink-mute)' }}>{m.when}</div>
+                <div style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.5, color: 'var(--cb-ink)', whiteSpace: 'pre-wrap' }}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function DeskOutreachSurface({
   board, accent, usage = null, log = null, status = null, foldLeads = null, signals, report = null, live = false, renderReplySource,
 }: {
@@ -539,6 +576,7 @@ export default function DeskOutreachSurface({
   if (report) {
     return (
       <div className="pb-16" data-surface="desk-outreach">
+        {o.resource && <ResourceCard r={o.resource} />}
         <ReportPipeline
           ctx={report}
           renderReplySource={renderReplySource}
@@ -593,6 +631,8 @@ export default function DeskOutreachSurface({
           </div>
         </Card>
       )}
+
+      {o.resource && <ResourceCard r={o.resource} />}
 
       {reviewNode}
 

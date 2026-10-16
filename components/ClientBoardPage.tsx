@@ -409,6 +409,13 @@ interface OutreachSpec {
       steps: { label: string; when?: string; text: string; flag?: string }[];
     }[];
   };
+  /** The resource each prospect is offered in outreach (SwishDM 2026-10-16: the client could
+   *  not find it anywhere on the board). Rendered as the first card of the Outreach tab. */
+  resource?: {
+    title: string; url: string; label?: string; note?: string;
+    findings?: string[];
+    messages?: { when: string; text: string }[];
+  };
   /** Real people pulled from the client's orbit scans, honest one-liners + caveats.
    *  Nothing queued or sent — surfaced for the client's yes/no before any lane arms. */
   orbit_finds?: {
