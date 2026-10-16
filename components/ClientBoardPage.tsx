@@ -1376,35 +1376,12 @@ function videoUrlOf(item: Pick<QueueItem, 'style' | 'media_url' | 'video_url'>):
   return item.video_url || (item.style === 'video' && /\.(mp4|webm|mov)(?:[?#]|$)/i.test(item.media_url || '') ? item.media_url || undefined : undefined);
 }
 
-/** A still of a post's video or document for the review workspace's feed card. */
-function FeedMediaStill({ src, kind, pages, title }: { src?: string; kind: 'video' | 'deck'; pages: number; title?: string }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <div data-feed-media-still={kind} className="relative overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${LINE}`, background: kind === 'video' ? '#111' : '#f3f2ef' }}>
-      {src && !failed
-        ? <img src={src} alt={title ? `${kind === 'video' ? 'Video cover' : 'Document page 1'}: ${title}` : ''} loading="lazy" onError={() => setFailed(true)} style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'contain', margin: '0 auto' }} />
-        : <div style={{ aspectRatio: kind === 'video' ? '16/9' : '4/5', maxHeight: 420 }} />}
-      {kind === 'video' ? (
-        <span aria-hidden className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-full" style={{ width: 56, height: 56, transform: 'translate(-50%,-50%)', background: 'rgba(0,0,0,.6)', border: '2px solid #fff' }}>
-          <svg width="20" height="22" viewBox="0 0 20 22"><path d="M2 1.5v19L19 11z" fill="#fff" /></svg>
-        </span>
-      ) : (
-        <span className="absolute bottom-2 left-2 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: 'rgba(0,0,0,.66)', color: '#fff' }}>1 / {pages}</span>
-      )}
-    </div>
-  );
-}
-
 /** The true LinkedIn feed preview from the brief: Instrument Sans interior, initials
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false, mediaThumb = false }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false }: {
   awaitingApproval?: boolean;
-  /** Review workspace: the full player / deck already sits in the media column, so the feed
-   *  card shows a still of it (video poster with a play mark, deck page 1 with its page
-   *  count) where LinkedIn puts the media, without a second player. */
-  mediaThumb?: boolean;
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none'; foldSwitch?: boolean;
   /** Caps the image/deck width (height follows) so a tall post stays compact while the caption keeps LinkedIn's size. */
@@ -1485,9 +1462,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           )}
         </div>
       )}
-      {mediaThumb && (docPages.length >= 2 || videoUrl) ? (
-        <FeedMediaStill src={docPages.length >= 2 ? docPages[0] : item.image_urls?.[0] || item.image || undefined} kind={docPages.length >= 2 ? 'deck' : 'video'} pages={docPages.length} title={item.title || item.hook} />
-      ) : docPages.length >= 2 ? (
+      {docPages.length >= 2 ? (
         <div style={mediaMax ? { maxWidth: mediaMax, margin: '0 auto' } : undefined}>
           <DocCarousel slides={docPages} title={item.title || item.hook} accent={accent} />
         </div>
@@ -3712,17 +3687,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   const [mediaUrl, setMediaUrlState] = useState(item.media_url || (item.kind === 'post' && item.image_urls?.[0]) || '');
   // The approved wider review applies only to SwishDM's live, review-first posts.
   const workspace = isLive && reviewMode && slug === 'swishdm-live' && (item.kind === 'post' || item.kind === 'carousel');
-  const reviewSlides = docPagesOf(item);
-  const reviewVideo = videoUrlOf(item);
-  const reviewImage = reviewVideo ? undefined : mediaUrl || item.image_urls?.[0] || item.image || undefined;
-  const hasReviewMedia = !!(reviewVideo || reviewSlides.length || reviewImage);
-  const [reviewPanel, setReviewPanel] = useState<'media' | 'copy'>(initialEditing || !hasReviewMedia ? 'copy' : 'media');
+  const reviewImage = videoUrlOf(item) ? undefined : mediaUrl || item.image || undefined;
+  const [reviewPanel, setReviewPanel] = useState<'preview' | 'activity'>('preview');
   const reviewDialog = useRef<HTMLDivElement>(null);
   const copyEditor = useRef<HTMLTextAreaElement>(null);
   const ToolsTag = workspace ? 'details' : 'div';
   const HistoryTag = workspace ? 'details' : 'div';
   const HistoryHeading = workspace ? 'summary' : 'div';
-  useEffect(() => { if (workspace && editing) setReviewPanel('copy'); }, [workspace, editing]);
+  const ActivityTag = workspace ? 'aside' : 'div';
+  useEffect(() => { if (workspace && editing) setReviewPanel('preview'); }, [workspace, editing]);
   useEffect(() => {
     if (!workspace || !editing || !copyEditor.current) return;
     copyEditor.current.style.height = 'auto';
@@ -3910,12 +3883,14 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // History (live): every edit / swap / remove this draft has seen, latest first.
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyRevision, setHistoryRevision] = useState(0);
+  const [historyError, setHistoryError] = useState(false);
   const refreshHistory = () => setHistoryRevision((n) => n + 1);
   const [openDiff, setOpenDiff] = useState<number | null>(null);
   useEffect(() => {
     if (!isLive || !fetchHistory) return;
     let gone = false;
-    fetchHistory(item.id).then((items) => { if (!gone) setHistory(items); });
+    setHistoryError(false);
+    fetchHistory(item.id).then((items) => { if (!gone) setHistory(items); }).catch(() => { if (!gone) setHistoryError(true); });
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id, historyRevision, approved]);
@@ -4043,7 +4018,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     const h = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute('role') === 'tab')) return;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|VIDEO|AUDIO)$/.test(t.tagName) || t.getAttribute('role') === 'tab')) return;
       if (editing || changing) return;
       const k = e.key;
       const dir = k === 'ArrowLeft' || k === 'k' || k === 'K' ? -1 : k === 'ArrowRight' || k === 'j' || k === 'J' ? 1 : 0;
@@ -4105,22 +4080,66 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
   ) : null;
 
+  const discussion = (<>
+          {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
+          {isLive && team && !team.canApprove && (
+            <div className="text-[13px]" style={{ color: DIM }} data-view-only>{commentsOnly ? 'You can read and comment. Ask an admin on your team for approver access to approve posts.' : 'You can read and comment. Ask an admin on your team for approver access to approve or request changes.'}</div>
+          )}
+          {isLive && <PostComments refId={item.id} />}
+          {isLive && (workspace || shownHistory.length > 0) && (
+            <HistoryTag data-review-history open={workspace ? true : undefined} className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+              <HistoryHeading className={workspace ? 'min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold' : 'uppercase'} style={workspace ? undefined : { fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{workspace ? 'Edit history' : 'History'}</HistoryHeading>
+              {workspace && historyError && <p role="alert" className="text-[13px]">Could not load history. <button type="button" className="underline" onClick={refreshHistory}>Try again</button></p>}
+              {workspace && !historyError && history === null && fetchHistory && <p role="status" className="text-[13px]">Loading history…</p>}
+              {workspace && !historyError && (history !== null || !fetchHistory) && shownHistory.length === 0 && <p className="text-[13px]" style={{ color: DIM }}>No edits recorded yet.</p>}
+              <div className="mt-2.5 flex flex-col">
+                {shownHistory.map((h, i) => { const author = clientHistoryAuthor(h.by, board); return (
+                  <div key={i} className="cb-history-row flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                    <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}<span style={{ fontWeight: 400, color: DIM }}> · {author.label}</span></span>
+                      {h.note && author.client && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
+                      {h.action === 'edit_copy' && h.after && (h.before ? (
+                        openDiff === i ? (
+                          <span className="block mt-1">
+                            {diffLines(h.before, h.after).map((d, k) => (
+                              <span key={k} className="block text-[12px]" style={{ fontFamily: BODY, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: d.t === '+' ? INK : FAINT, textDecoration: d.t === '-' ? 'line-through' : 'none' }}>
+                                {d.t === '+' ? '＋ ' : '－ '}{d.s}
+                              </span>
+                            ))}
+                            <button type="button" className="mt-1 underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(null)}>hide changes</button>
+                          </span>
+                        ) : (
+                          <button type="button" className="block underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(i)}>see what changed</button>
+                        )
+                      ) : (
+                        <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>
+                      ))}
+                      {h.action === 'set_schedule' && h.after && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: {fmtSchedLA(h.after)}</span>}
+                    </span>
+                  </div>
+                ); })}
+              </div>
+            </HistoryTag>
+          )}
+  </>);
+
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={workspace ? `review-title-${item.id}` : undefined} data-review-workspace={workspace ? '' : undefined}>
       {workspace && <style>{`
         .cb-review-workspace{inset:24px;max-width:1440px;margin:auto;border-radius:18px;overflow:hidden}
-        .cb-review-main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:32px;align-items:start}
-        .cb-review-main[data-has-media="false"]{grid-template-columns:minmax(0,1fr)}
-        .cb-review-main[data-has-media="false"] .cb-review-copy{max-width:760px;margin-inline:auto;width:100%}
-        .cb-review-media,.cb-review-copy{min-width:0}
-        .cb-review-media video,.cb-review-media>img{width:100%;max-height:calc(100dvh - 280px);object-fit:contain;display:block;background:#F5F5F3;border-radius:10px}
-        /* 376px = header + tags + page row + the sticky Approve bar (~76px), so the page dots clear the bar. */
-        .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 376px);max-height:640px;min-height:280px;aspect-ratio:auto!important}
-        .cb-review-media [aria-label^="Document preview"] button{min-width:44px;min-height:44px}
-        .cb-review-media [aria-label^="Document preview"]>div:last-child{flex-wrap:wrap}
-        .cb-review-media [aria-label^="Document preview"]>div:last-child>span:last-child{flex-wrap:wrap}
-        .cb-review-media [aria-label^="Document preview"] button[aria-label^="Page "]{background:transparent!important;border-radius:6px;position:relative}
-        .cb-review-media [aria-label^="Document preview"] button[aria-label^="Page "]:after{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:block;margin:auto}
+        .cb-review-main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr);gap:32px;align-items:start;max-width:1120px;margin-inline:auto;width:100%}
+        .cb-review-copy,.cb-review-activity{min-width:0}
+        .cb-review-activity{display:flex;flex-direction:column;gap:16px;overflow-wrap:anywhere}
+        .cb-review-activity [data-post-comments]{margin-top:0!important;padding:16px;border:1px solid var(--cb-line,#ddd);border-radius:12px}
+        .cb-review-copy [data-review-li-preview]{margin-inline:auto}
+        .cb-review-copy video{display:block}
+        .cb-review-copy [aria-label^="Document preview"] button{min-width:44px;min-height:44px}
+        .cb-review-copy [aria-label^="Document preview"] button[aria-label^="Page "]{background:transparent!important;border-radius:6px;position:relative}
+        .cb-review-copy [aria-label^="Document preview"] button[aria-label^="Page "]:after{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:block;margin:auto}
+        .cb-review-copy [aria-label^="Document preview"]>div:last-child,.cb-review-copy [aria-label^="Document preview"]>div:last-child>span:last-child{flex-wrap:wrap}
+        .cb-review-activity [data-review-history] .cb-history-row{flex-wrap:wrap;gap:4px 12px}
+        .cb-review-activity [data-review-history] .cb-history-row>span:last-child{flex-basis:100%;overflow-wrap:anywhere}
         .cb-review-workspace button{min-height:44px}
         .cb-review-tabs{display:none}
         .cb-review-tools .max-h-64{max-height:none;overflow-y:visible}
@@ -4130,13 +4149,13 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           .cb-review-main{display:block}
           .cb-review-tabs{display:flex;gap:8px;position:sticky;top:0;background:white;z-index:2;padding:0 0 12px}
           .cb-review-tabs button{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--cb-line,#ddd);font-weight:700}
-          .cb-review-main[data-mobile-panel="media"] .cb-review-copy{display:none}
-          .cb-review-main[data-mobile-panel="copy"] .cb-review-media{display:none}
-          .cb-review-main[data-has-media="false"] .cb-review-copy{display:block}
-          .cb-review-media video,.cb-review-media>img{max-height:calc(100dvh - 250px)}
-          .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 390px);min-height:240px}
-          .cb-review-workspace .cb-review-heading{gap:8px;padding:10px 16px;flex-wrap:wrap}
-          .cb-review-workspace .cb-review-heading>h2{order:3;flex-basis:100%;font-size:20px}
+          .cb-review-main[data-mobile-panel="activity"] .cb-review-copy{display:none}
+          .cb-review-main[data-mobile-panel="preview"] .cb-review-activity{display:none}
+          .cb-review-workspace .cb-review-heading{display:grid;grid-template-columns:auto minmax(0,1fr) 44px;gap:4px 8px;padding:10px 16px}
+          .cb-review-workspace .cb-review-heading>[data-review-nav]{grid-column:2;grid-row:1;font-size:12px}
+          .cb-review-workspace .cb-review-heading>button:last-child{grid-column:3;grid-row:1;margin-left:0}
+          .cb-review-workspace .cb-review-heading>span.uppercase{grid-column:1/-1;grid-row:2;overflow-wrap:anywhere}
+          .cb-review-workspace .cb-review-heading>h2{grid-column:1/-1;grid-row:3;font-size:20px}
         }
       `}</style>}
       <motion.div className="cb-scrim fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce || skipEnter ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
@@ -4178,19 +4197,14 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           <PostReviewTags item={item} />
           {!workspace && isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />}
           {!workspace && <LmResourceBlock gate={item.lm_gate} accent={accent} />}
-          {workspace && hasReviewMedia && <div className="cb-review-tabs" role="tablist" aria-label="Review view">
-            {(['media','copy'] as const).map(panel => <button key={panel} type="button" role="tab" id={`review-${panel}-tab-${item.id}`} aria-selected={reviewPanel === panel} aria-controls={`review-${panel}-${item.id}`} tabIndex={reviewPanel === panel ? 0 : -1}
-              onClick={() => setReviewPanel(panel)} onKeyDown={e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const next = panel === 'media' ? 'copy' : 'media'; setReviewPanel(next); document.getElementById(`review-${next}-tab-${item.id}`)?.focus(); } }}
-              style={{ color: reviewPanel === panel ? INK : DIM, background: reviewPanel === panel ? caWash(accent,10) : 'white' }}>{panel === 'media' ? 'Media' : 'Copy'}</button>)}
+          {workspace && <div className="cb-review-tabs" role="tablist" aria-label="Review view">
+            {(['preview','activity'] as const).map(panel => <button key={panel} type="button" role="tab" id={`review-${panel}-tab-${item.id}`} aria-selected={reviewPanel === panel} aria-controls={`review-${panel}-${item.id}`} tabIndex={reviewPanel === panel ? 0 : -1}
+              onClick={() => setReviewPanel(panel)} onKeyDown={e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const next = panel === 'preview' ? 'activity' : 'preview'; setReviewPanel(next); document.getElementById(`review-${next}-tab-${item.id}`)?.focus(); } }}
+              style={{ color: reviewPanel === panel ? INK : DIM, background: reviewPanel === panel ? caWash(accent,10) : 'white' }}>{panel === 'preview' ? 'Preview' : 'Comments & history'}</button>)}
           </div>}
           {/* The caption has no independent scrollbar. The workspace body owns scrolling. */}
-          <div className={workspace ? 'cb-review-main' : undefined} data-has-media={hasReviewMedia} data-mobile-panel={reviewPanel}>
-            {workspace && hasReviewMedia && <section className="cb-review-media" id={`review-media-${item.id}`} role="tabpanel" aria-labelledby={`review-media-tab-${item.id}`}>
-              {reviewSlides.length >= 2 ? <DocCarousel slides={reviewSlides} title={item.title || item.hook} accent={accent} /> : reviewVideo ? <video src={reviewVideo} poster={item.image_urls?.[0] || item.image || undefined} controls playsInline preload="metadata" /> : <img src={reviewImage} alt={item.title || 'Post artwork'} />}
-              {reviewImage && reviewSlides.length < 2 && <a href={reviewImage} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size image</a>}
-              {item.pdf_url && <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size document</a>}
-            </section>}
-          <div className={workspace ? 'cb-review-copy min-w-0' : 'min-w-0'} data-review-copy={workspace ? '' : undefined} id={workspace ? `review-copy-${item.id}` : undefined} role={workspace && hasReviewMedia ? 'tabpanel' : undefined} aria-labelledby={workspace && hasReviewMedia ? `review-copy-tab-${item.id}` : undefined}>
+          <div className={workspace ? 'cb-review-main' : undefined} data-mobile-panel={reviewPanel}>
+          <div className={workspace ? 'cb-review-copy min-w-0' : 'min-w-0'} data-review-copy={workspace ? '' : undefined} id={workspace ? `review-preview-${item.id}` : undefined} role={workspace ? 'tabpanel' : undefined} aria-labelledby={workspace ? `review-preview-tab-${item.id}` : undefined}>
 
             {item.kind === 'newsletter' && item.body ? (
               /* Newsletter issues read as email, not as a LinkedIn post. */
@@ -4271,25 +4285,27 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             ) : (
               <div className={workspace ? undefined : 'cb-linkedin-preview'}>
                 {workspace ? <div>
-                  <h3 className="mb-3 text-[15px] font-semibold">Caption</h3>
+                  <h3 className="mb-3 text-[15px] font-semibold">Post preview</h3>
                   {/* The caption as the feed shows it: author row, LinkedIn's own fold with
                       "…see more", the media under the text, the reaction row. */}
-                  {(body || item.body) ? <div data-review-li-preview className="w-full max-w-[555px]">
+                  <div data-review-li-preview className="w-full max-w-[555px]">
                     {/* The inline "…see more" sits in the caption's line box: the workspace's
                         44px button floor would push the third line down. */}
-                    <style>{'[data-review-li-preview] button{min-height:0}'}</style>
+                    <style>{'[data-review-li-preview] .cb-linkedin-preview>div:nth-child(2) button{min-height:0}'}</style>
                     <FeedPreview
                       key={body || item.body}
-                      item={{ ...item, body: body || item.body }}
+                      item={{ ...item, body: body || item.body, media_url: mediaUrl || null }}
                       board={board}
                       accent={accent}
                       fontStack={board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif'}
                       live
                       foldSwitch={false}
                       awaitingApproval={awaitingApproval}
-                      mediaThumb
                     />
-                  </div> : <div className="text-[16px]" style={{ color: INK }}>No copy has been added yet.</div>}
+                  </div>
+                  {!body && !item.body && <p className="mt-3 text-[14px]" style={{ color: DIM }}>No copy has been added yet.</p>}
+                  {reviewImage && <a href={reviewImage} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size image</a>}
+                  {item.pdf_url && <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size document</a>}
                 </div> : item.body ? (
                   <LinkedInPostPreview
                     text={body || item.body || ''}
@@ -4330,7 +4346,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             )}
           </div>
 
-          </div>
+          <ActivityTag className={workspace ? 'cb-review-activity' : 'contents'} data-review-activity={workspace ? '' : undefined} id={workspace ? `review-activity-${item.id}` : undefined} role={workspace ? 'tabpanel' : undefined} aria-labelledby={workspace ? `review-activity-tab-${item.id}` : undefined}>
+          {workspace && discussion}
           {workspace && isLive && reviewMode && item.source_detail?.kind !== 'strategy' && (item.source_detail || detailChip?.label || item.source_label) && <details data-review-source className="rounded-xl border px-4" style={{ borderColor: LINE }}>
             <summary className="min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold">Source and context</summary>
             <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />
@@ -4435,7 +4452,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             </div>
           )}
 
-          <PostAssets gate={null} pdfUrl={item.pdf_url} accent={accent} slides={docPagesOf(item)} title={item.title || item.hook} />
+          {!workspace && <PostAssets gate={null} pdfUrl={item.pdf_url} accent={accent} slides={docPagesOf(item)} title={item.title || item.hook} />}
 
           {/* Provenance (client-appropriate): status, its date, and what happens next.
               No agent steps, scores, prompts, or model names. */}
@@ -4526,44 +4543,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
 
           </ToolsTag>
 
-          {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
-          {isLive && team && !team.canApprove && (
-            <div className="text-[13px]" style={{ color: DIM }} data-view-only>{commentsOnly ? 'You can read and comment. Ask an admin on your team for approver access to approve posts.' : 'You can read and comment. Ask an admin on your team for approver access to approve or request changes.'}</div>
-          )}
-          {isLive && <PostComments refId={item.id} />}
-          {isLive && shownHistory.length > 0 && (
-            <HistoryTag className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-              <HistoryHeading className={workspace ? 'min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold' : 'uppercase'} style={workspace ? undefined : { fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</HistoryHeading>
-              <div className="mt-2.5 flex flex-col">
-                {shownHistory.map((h, i) => { const author = clientHistoryAuthor(h.by, board); return (
-                  <div key={i} className="flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
-                    <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}<span style={{ fontWeight: 400, color: DIM }}> · {author.label}</span></span>
-                      {h.note && author.client && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
-                      {h.action === 'edit_copy' && h.after && (h.before ? (
-                        openDiff === i ? (
-                          <span className="block mt-1">
-                            {diffLines(h.before, h.after).map((d, k) => (
-                              <span key={k} className="block text-[12px]" style={{ fontFamily: BODY, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: d.t === '+' ? INK : FAINT, textDecoration: d.t === '-' ? 'line-through' : 'none' }}>
-                                {d.t === '+' ? '＋ ' : '－ '}{d.s}
-                              </span>
-                            ))}
-                            <button type="button" className="mt-1 underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(null)}>hide changes</button>
-                          </span>
-                        ) : (
-                          <button type="button" className="block underline text-[11.5px]" style={{ color: DIM, textUnderlineOffset: 2 }} onClick={() => setOpenDiff(i)}>see what changed</button>
-                        )
-                      ) : (
-                        <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: “{h.after}”</span>
-                      ))}
-                      {h.action === 'set_schedule' && h.after && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>now: {fmtSchedLA(h.after)}</span>}
-                    </span>
-                  </div>
-                ); })}
-              </div>
-            </HistoryTag>
-          )}
+          {!workspace && discussion}
+          </ActivityTag>
+          </div>
         </div>
         </div>
 
