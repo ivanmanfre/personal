@@ -99,3 +99,22 @@ it('keeps proposed dated posts, approved dated posts and approved buffer posts d
   expect(buffer.textContent).toContain('Approved');
   expect(buffer.textContent).toContain('No date yet');
 });
+
+it('keeps the source visible on every card and links the recorded original without opening review', () => {
+  const onOpen = vi.fn();
+  const items = [
+    { ...posts[0], source_detail: { kind: 'winner_replica', source_url: 'https://instagram.com/p/source/', note: 'Private editorial note' } },
+    { ...posts[1], source_detail: { kind: 'call', call_title: 'Client recording' } },
+    ...posts.slice(2),
+  ];
+  const view = render(<BatchReviewOverview items={items} onOpen={onOpen} statusFor={statusFor} />);
+  expect(view.container.querySelectorAll('[data-post-source-origin]')).toHaveLength(5);
+  expect(view.container.textContent).toContain('Source: Instagram');
+  expect(view.container.textContent).toContain('Source: Client call');
+  expect(view.container.textContent).toContain('Source pending');
+  expect(view.container.textContent).not.toContain('Private editorial note');
+  const source = screen.getByRole('link', { name: 'Open source' });
+  expect(source.getAttribute('href')).toBe('https://instagram.com/p/source/');
+  expect(source.style.minHeight).toBe('44px');
+  fireEvent.click(source); expect(onOpen).not.toHaveBeenCalled();
+});
