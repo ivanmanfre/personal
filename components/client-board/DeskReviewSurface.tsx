@@ -123,7 +123,9 @@ function InlineBody({ text, onSave, style, wrapStyle, statusStyle }: {
 }
 
 /** Approval is confirmed by the parent only after the server accepts it. */
-function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback, initialFeedback, storageKey, approvedRef }: {
+function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule, scheduled, onFeedback, initialFeedback, storageKey, approvedRef, commentsOnly = false }: {
+  /** Comment-only board (lib/boardHost): Comments carry change requests, so no Request changes. */
+  commentsOnly?: boolean;
   /** Post id: shows who approved it and when, from the server receipt. */
   approvedRef?: string;
   initialFeedback?: string;
@@ -233,7 +235,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
       <div data-review-actions data-view-only style={{ padding: '8px 2px 0', fontSize: 13, lineHeight: 1.5, color: 'var(--cb-ink-mute)' }}>
         {approved ? <span style={{ fontWeight: 700, color: 'var(--cb-ink)' }}>✓ Approved </span> : null}
         {approved && approvedRef ? <ApprovedBy refId={approvedRef} /> : null}
-        <div>You can read and comment. Ask an admin on your team for approver access to approve or request changes.</div>
+        <div>{commentsOnly ? 'You can read and comment. Ask an admin on your team for approver access to approve posts.' : 'You can read and comment. Ask an admin on your team for approver access to approve or request changes.'}</div>
       </div>
     );
   }
@@ -260,7 +262,7 @@ function CardReviewActions({ approved, onApprove, onChanges, onEdit, onSchedule,
         {approved
           ? <><span role="status" style={{ fontSize: 14, fontWeight: 700, minHeight: 44, display: 'inline-flex', alignItems: 'center', gap: 6 }}>✓ Approved</span>{approvedRef && <ApprovedBy refId={approvedRef} />}</>
           : <Pill onClick={approve} disabled={pending} style={{ fontSize: 13, minHeight: 44, background: 'var(--cb-primary, var(--cb-ink))', color: 'var(--cb-primary-ink, rgb(var(--nt-fg, 255 255 255)))', opacity: pending ? .65 : 1 }}>{pending ? 'Approving…' : 'Approve post'}</Pill>}
-        {!onFeedback && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
+        {!onFeedback && !commentsOnly && <Pill onClick={onChanges} disabled={pending} style={{ fontSize: 13, minHeight: 44 }}>Request changes</Pill>}
         {onEdit && <button onClick={onEdit} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer' }}>Edit copy</button>}
         <button onClick={onSchedule} disabled={pending} style={{ font: 'inherit', fontSize: 13, minHeight: 44, padding: '8px 4px', border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 'auto' }}>{scheduled ? 'Edit time' : 'Schedule'}</button>
       </div>
@@ -495,8 +497,10 @@ export default function DeskReviewSurface({
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onSwapPost, onScheduleToDay, recentlyCleared, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
-  reviewMode = false, compact = false, feedbackScope, onReviewOrder,
+  reviewMode = false, compact = false, feedbackScope, onReviewOrder, commentsOnly = false,
 }: {
+  /** Comment-only board (lib/boardHost): post cards carry no Request changes / feedback input. */
+  commentsOnly?: boolean;
   /** Live board: the post ids in the order this surface shows them (dated, then buffer), so
    *  the review popup can step through the batch. Reports [] when the surface unmounts. */
   onReviewOrder?: (ids: string[]) => void;
@@ -1106,7 +1110,7 @@ export default function DeskReviewSurface({
         {q.post_url && <LivePostLink href={q.post_url} />}
       </div>
       {bucket !== 'published' && (approvals
-        ? <CardReviewActions key={`${feedbackScope || ''}:${q.id}`} storageKey={feedbackScope ? `cb-feedback:${feedbackScope}:${q.id}` : undefined} initialFeedback={entries === null ? undefined : entriesByPost[q.id]?.find(h => h.action === 'request_changes')?.note || ''} approved={approvedIds.has(q.id)} approvedRef={q.id} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
+        ? <CardReviewActions key={`${feedbackScope || ''}:${q.id}`} storageKey={feedbackScope ? `cb-feedback:${feedbackScope}:${q.id}` : undefined} initialFeedback={entries === null ? undefined : entriesByPost[q.id]?.find(h => h.action === 'request_changes')?.note || ''} approved={approvedIds.has(q.id)} approvedRef={q.id} commentsOnly={commentsOnly} onApprove={() => onApprove(q.id)} onFeedback={onFeedback ? note => onFeedback(q.id, note) : undefined} onChanges={() => onOpen(q, { changing: true })} onEdit={(live && onEditBody) ? undefined : () => onOpen(q, { editing: true })} onSchedule={() => onOpen(q, { scheduling: true })} scheduled={isScheduledLocal(q)} />
         : (
           /* Buffer-only board: the normal post tools, no sign-off. Photo and remove live in
              the post drawer these open. */
