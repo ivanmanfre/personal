@@ -50,7 +50,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, setBoardNames, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, setBoardRoles, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -460,6 +460,8 @@ export function clientHistoryAuthor(by: string | null | undefined, board: Pick<B
   const raw = (by || '').trim().toLowerCase();
   const team = { label: `${(board.company_name || '').trim() || 'Your'} team`, client: false };
   if (!raw) return team;
+  // The ?k= board link has no person behind it: say so instead of crediting the team (2026-10-16).
+  if (raw === 'board link') return { label: 'Board link (not signed in)', client: true };
   // Boards with several members: name the person ("You" for a signed-in viewer's own rows).
   // On the bare board link the viewer is unknown, so the founder keeps reading "You" below.
   if (viewerKnown()) { const member = actorLabel(raw); if (member) return { label: member, client: true }; }
@@ -8744,11 +8746,17 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     }
     // Names + my role (boards without email sign-in answer not_available: nothing changes).
     const t = await supabase.rpc('board_team_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
-    const tl = t.data as { ok?: boolean; my_role?: string; members?: { email: string; name?: string | null }[] } | null;
+    const tl = t.data as { ok?: boolean; my_role?: string; members?: { email: string; name?: string | null; role?: string | null }[] } | null;
     if (!t.error && tl?.ok) {
       const names: Record<string, string> = {};
-      (tl.members || []).forEach((m) => { if (m.name) names[String(m.email).toLowerCase()] = String(m.name); });
+      const roles: Record<string, string> = {};
+      (tl.members || []).forEach((m) => {
+        const key = String(m.email).toLowerCase();
+        if (m.name) names[key] = String(m.name);
+        if (m.role) roles[key] = String(m.role);
+      });
       setBoardNames(names);
+      setBoardRoles(roles);
       setMyRole(String(tl.my_role || ''));
     }
   };

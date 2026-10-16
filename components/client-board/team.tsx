@@ -88,15 +88,36 @@ export function actorLabel(by: string | null | undefined): string | null {
   return memberName(raw);
 }
 
-function isOperator(by: string | null | undefined): boolean {
+/** Board role per member (board_team_list), keyed by lower-case email. */
+let memberRoles: Record<string, string> = {};
+export function setBoardRoles(roles: Record<string, string>): void { memberRoles = roles || {}; }
+const ROLE_LABEL: Record<string, string> = { admin: 'Admin', approver: 'Approver', viewer: 'Viewer' };
+
+/** Who wrote a comment or signed off, for THIS viewer's screen (2026-10-16). Every row carries
+ *  the server-stamped `by` (the signed-in email); this never invents a person:
+ *  - no `by` stored (old rows)      → "Unknown"
+ *  - the ?k= board link (no sign-in) → "Board link" + "not signed in"
+ *  - our side (operator address)     → the name the team list gives it + the house tag
+ *                                      ("Ivan Manfredi · Content team"); house label alone if unnamed
+ *  - a member                        → their name (or "You") + their board role */
+export function authorParts(by: string | null | undefined, house: string = houseLabel, full = true): { name: string; tag: string | null; email: string | null } {
   const raw = (by || '').trim().toLowerCase();
-  return raw.includes('@') && memberName(raw) === null;
+  if (!raw) return { name: 'Unknown', tag: null, email: null };
+  if (raw === 'board link') return { name: 'Board link', tag: 'not signed in', email: null };
+  if (!raw.includes('@')) return { name: house, tag: null, email: null };
+  const given = (memberNames[raw] || '').trim();
+  const me = !!viewerEmail && raw === viewerEmail;
+  if (isOperatorEmail(raw)) {
+    if (!given) return { name: me ? 'You' : house, tag: me ? house : null, email: null };
+    return { name: me ? 'You' : (full ? given : given.split(/\s+/)[0]), tag: house, email: null };
+  }
+  const name = me ? 'You' : ((full && given) || memberName(raw) || raw);
+  const role = memberRoles[raw];
+  return { name, tag: role ? (ROLE_LABEL[role] || null) : null, email: raw };
 }
 
 function whoLabel(by: string | null | undefined, house: string): string {
-  if ((by || '').trim().toLowerCase() === 'board link') return 'board link';
-  if (isOperator(by)) return house;
-  return actorLabel(by) || house;
+  return authorParts(by, house, false).name;
 }
 
 /** "14:02" today, "14 Oct, 14:02" otherwise, in the client's zone. */
@@ -116,11 +137,11 @@ export function ApprovedBy({ refId, house: houseProp, style }: { refId: string; 
   const meta = team?.approvalMeta[refId];
   if (!meta) return null;
   const by = (meta.by || '').trim();
-  const who = by ? whoLabel(by, house) : '';
+  const who = whoLabel(by, house);
   const when = shortWhen(meta.at);
   return (
     <span data-approved-by title={by.includes('@') ? by : undefined} style={{ fontSize: 12.5, color: 'var(--cb-ink-mute)', ...style }}>
-      {who ? `Approved by ${who}` : 'Approved'}{when ? `, ${when}` : ''}
+      {by.toLowerCase() === 'board link' ? 'Approved via the board link (not signed in)' : `Approved by ${who || 'Unknown'}`}{when ? ` · ${when}` : ''}
     </span>
   );
 }
@@ -154,16 +175,17 @@ export function PostComments({ refId, house: houseProp, compact = false }: { ref
   const btn: React.CSSProperties = { font: 'inherit', fontSize: 13, fontWeight: 700, minHeight: 40, padding: '8px 16px', border: 0, borderRadius: 999, background: 'var(--cb-ink)', color: 'var(--cb-paper, #fff)', cursor: 'pointer' };
   const link: React.CSSProperties = { font: 'inherit', fontSize: 12.5, fontWeight: 700, padding: '6px 2px', minHeight: 32, border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' };
 
-  const Row = ({ c, reply }: { c: BoardComment; reply?: boolean }) => (
+  const Row = ({ c, reply }: { c: BoardComment; reply?: boolean }) => { const author = authorParts(c.by, house); return (
     <div style={{ padding: '9px 0 9px', borderTop: reply ? 'none' : '1px solid var(--cb-line)', marginLeft: reply ? 18 : 0, paddingLeft: reply ? 12 : 0, borderLeft: reply ? '2px solid var(--cb-line)' : 'none' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <b style={{ fontSize: 13, color: 'var(--cb-ink)' }}>{whoLabel(c.by, house)}</b>
-        {c.by && c.by.includes('@') && !isOperator(c.by) && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', overflowWrap: 'anywhere' }}>{c.by}</span>}
+        <b data-comment-author style={{ fontSize: 13, color: 'var(--cb-ink)' }}>{author.name}</b>
+        {author.tag && <span data-comment-role style={{ fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-soft, var(--cb-ink-mute))' }}>{author.tag}</span>}
+        {author.email && author.name !== author.email && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', overflowWrap: 'anywhere' }}>{author.email}</span>}
         <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)' }}>{shortWhen(c.at)}</span>
       </div>
       <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', marginTop: 3 }}>{c.text}</div>
     </div>
-  );
+  ); };
 
   return (
     <div data-post-comments style={{ marginTop: 12 }}>
