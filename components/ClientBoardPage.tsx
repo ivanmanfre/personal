@@ -3655,8 +3655,15 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, uploadFile, slug, fetchHistory, reviewMode = false, approved = false }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove, onHideBuffer, initialChanging = false, initialEditing = false, initialSchedOpen = false, isLive, act, editDraft, editTitle, setMedia, setSchedule, uploadFile, slug, fetchHistory, reviewMode = false, approved = false, nav, onNav, onApproveNext, skipEnter = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
+  /** Review popup position in the batch order (2026-10-16): "‹ 2 / 5 ›" + arrow keys / J K. */
+  nav?: { index: number; total: number };
+  onNav?: (dir: -1 | 1) => void;
+  /** After a successful approve: open the next pending post. Returns false when none is left. */
+  onApproveNext?: (id: string) => boolean;
+  /** Moved here from the previous post: the popup is already open, so no enter animation. */
+  skipEnter?: boolean;
   onClose: () => void; onApprove: (id: string) => Promise<{ ok: boolean; error?: string }> | void; initialChanging?: boolean; initialEditing?: boolean; initialSchedOpen?: boolean;
   /** Live board: "remove this post" veto (recorded). */
   onRemove?: (id: string) => void;
@@ -4019,6 +4026,25 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [editing, changing, onClose]);
+  // Previous / next post in the batch: ArrowLeft/ArrowRight and K/J. Typing never moves.
+  useEffect(() => {
+    if (!workspace || !onNav || !nav) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute('role') === 'tab')) return;
+      if (editing || changing) return;
+      const k = e.key;
+      const dir = k === 'ArrowLeft' || k === 'k' || k === 'K' ? -1 : k === 'ArrowRight' || k === 'j' || k === 'J' ? 1 : 0;
+      if (!dir) return;
+      const target = nav.index + dir;
+      if (target < 0 || target >= nav.total) return;
+      e.preventDefault();
+      onNav(dir);
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [workspace, onNav, nav, editing, changing]);
 
   const postActions = canEdit && isLive && (!workspace || !team || team.canApprove) ? (
           <div className={workspace ? 'mb-4 border-b pb-4' : 'sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6'} style={{ borderColor: LINE }}>
@@ -4077,7 +4103,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         .cb-review-main[data-has-media="false"] .cb-review-copy{max-width:760px;margin-inline:auto;width:100%}
         .cb-review-media,.cb-review-copy{min-width:0}
         .cb-review-media video,.cb-review-media>img{width:100%;max-height:calc(100dvh - 280px);object-fit:contain;display:block;background:#F5F5F3;border-radius:10px}
-        .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 300px);max-height:640px;min-height:280px;aspect-ratio:auto!important}
+        /* 376px = header + tags + page row + the sticky Approve bar (~76px), so the page dots clear the bar. */
+        .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 376px);max-height:640px;min-height:280px;aspect-ratio:auto!important}
         .cb-review-media [aria-label^="Document preview"] button{min-width:44px;min-height:44px}
         .cb-review-media [aria-label^="Document preview"]>div:last-child{flex-wrap:wrap}
         .cb-review-media [aria-label^="Document preview"]>div:last-child>span:last-child{flex-wrap:wrap}
@@ -4101,14 +4128,14 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           .cb-review-workspace .cb-review-heading>h2{order:3;flex-basis:100%;font-size:20px}
         }
       `}</style>}
-      <motion.div className="cb-scrim fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+      <motion.div className="cb-scrim fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce || skipEnter ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
       {/* Right-anchored sheet (Studio grammar): slides in from the right; scrim, Esc and X
           all close it, and the list behind stays mounted. Internal scroll pins the footer. */}
       <motion.div
         ref={reviewDialog}
         className={workspace ? "cb-review-workspace fixed flex flex-col bg-white" : "cb-sheet fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"}
         style={{ boxShadow: '-24px 0 80px rgba(2,32,32,.28)' }}
-        initial={reduce ? false : workspace ? { opacity: 0, y: 12 } : { x: '100%' }}
+        initial={reduce || skipEnter ? false : workspace ? { opacity: 0, y: 12 } : { x: '100%' }}
         animate={workspace ? { opacity: 1, y: 0 } : { x: 0 }}
         exit={reduce ? undefined : workspace ? { opacity: 0, y: 12 } : { x: '100%' }}
         transition={{ type: 'tween', duration: 0.3, ease: EASE }}
@@ -4116,6 +4143,13 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         {/* Header */}
         <div className={`${workspace ? 'cb-review-heading' : 'cb-sheet-head'} flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6`} style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           {workspace && <button type="button" onClick={onClose} aria-label="Back to batch" className="min-h-[44px] shrink-0 text-[14px] font-semibold underline underline-offset-4">← Back to batch</button>}
+          {workspace && nav && onNav && nav.total > 1 && (
+            <span className="inline-flex shrink-0 items-center" data-review-nav style={{ fontFamily: MONO, fontSize: 13, color: INK }}>
+              <button type="button" onClick={() => onNav(-1)} disabled={editing || changing || nav.index <= 0} aria-label="Previous post" title="Previous post (←)" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[20px] leading-none hover:bg-[rgba(2,49,47,0.05)] disabled:opacity-30 disabled:hover:bg-transparent">‹</button>
+              <span className="tabular-nums" aria-live="polite">{nav.index + 1} / {nav.total}</span>
+              <button type="button" onClick={() => onNav(1)} disabled={editing || changing || nav.index >= nav.total - 1} aria-label="Next post" title="Next post (→)" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[20px] leading-none hover:bg-[rgba(2,49,47,0.05)] disabled:opacity-30 disabled:hover:bg-transparent">›</button>
+            </span>
+          )}
           {workspace && <h2 id={`review-title-${item.id}`} className="min-w-0 flex-1 text-[24px] font-semibold leading-tight" style={{ fontFamily: 'Oswald, sans-serif', color: INK }}>{item.title || item.hook || 'Review post'}</h2>}
           {!workspace && <KindChip q={item} accent={accent} />}
           {!(item.topic_label || item.creative_style) && <FunnelChip stage={item.funnel_stage} accent={accent} source={item.funnel_source} />}
@@ -4545,7 +4579,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   try {
                     const result = await onApprove(item.id);
                     if (result && !result.ok) setApprovalError(true);
-                    else onClose();
+                    else if (!(workspace && onApproveNext?.(item.id))) onClose();
                   } catch { setApprovalError(true); }
                   finally { setApproving(false); }
                 }}
@@ -8224,6 +8258,11 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const [detailChanging, setDetailChanging] = useState(false);
   const [detailEditing, setDetailEditing] = useState(false);
   const [detailScheduling, setDetailScheduling] = useState(false);
+  // Review popup batch stepping (2026-10-16): the All content surface reports its row order;
+  // opening a post snapshots it so "2 / 5" and next/previous stay stable while the popup is open.
+  const reviewOrderRef = useRef<string[]>([]);
+  const [navOrder, setNavOrder] = useState<string[] | null>(null);
+  const [detailNavigated, setDetailNavigated] = useState(false);
   // Ideas are not approvable yet — they open a lightweight preview, kept separate from the
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
@@ -9705,6 +9744,20 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     });
   };
 
+  // Shared link landing (2026-10-16): a review board with posts awaiting approval opens on All
+  // content, unless the URL names a section (#hash) or a filter. Decided once, after the
+  // approval marks load, so an approved post never counts as waiting.
+  const landingDecided = useRef(false);
+  useEffect(() => {
+    if (landingDecided.current || state !== 'ready' || !viewBoard || !isLive || !reviewMode) return;
+    if (approvalsLoadedFor !== slug) return;
+    landingDecided.current = true;
+    if (window.location.hash.replace(/^#/, '') || params.get('cat') || params.get('topic') || params.get('aim')) return;
+    if (tab !== 'week') return;
+    const waiting = viewBoard.queue.some((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && approvalOverrides[q.id] !== 'scheduled' && !weekSkips[q.id]);
+    if (waiting) setTab('review');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, viewBoard, isLive, reviewMode, approvalsLoadedFor, slug]);
   if (state === 'loading') {
     return <BoardSkeleton />;
   }
@@ -9772,7 +9825,28 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   }
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
-  const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
+  const openDetail = (q: QueueItem, opts?: { changing?: boolean; editing?: boolean; scheduling?: boolean }) => { setNavOrder(reviewOrderRef.current.includes(q.id) ? [...reviewOrderRef.current] : null); setDetailNavigated(false); setDetail(q); setDetailChanging(!!opts?.changing); setDetailEditing(!!opts?.editing); setDetailScheduling(!!opts?.scheduling); };
+  const navTo = (id: string): boolean => {
+    const q = viewBoard.queue.find((x) => x.id === id);
+    if (!q) return false;
+    setDetail(q); setDetailChanging(false); setDetailEditing(false); setDetailScheduling(false); setDetailNavigated(true);
+    return true;
+  };
+  const detailNavIndex = detail && navOrder ? navOrder.indexOf(detail.id) : -1;
+  const detailNav = navOrder && detailNavIndex >= 0 ? { index: detailNavIndex, total: navOrder.length } : undefined;
+  const stepDetail = (dir: -1 | 1) => { if (navOrder && detailNavIndex >= 0 && navOrder[detailNavIndex + dir]) navTo(navOrder[detailNavIndex + dir]); };
+  // Approve then open the next post still awaiting approval (after this one, then wrapping).
+  const approveNext = (id: string): boolean => {
+    if (!navOrder) return false;
+    const i = navOrder.indexOf(id);
+    if (i < 0) return false;
+    const next = [...navOrder.slice(i + 1), ...navOrder.slice(0, i)].find((x) => {
+      if (x === id || approvedIds.has(x)) return false;
+      const q = viewBoard.queue.find((y) => y.id === x);
+      return !!q && stageOf(q) !== 'published' && stageOf(q) !== 'drafted';
+    });
+    return next ? navTo(next) : false;
+  };
   // Feeds the calendars' "Approved" check mark and legend key: none on a live board
   // without review mode (nothing there is approved; its posts are simply scheduled).
   const approvedIds = new Set<string>((isLive && !reviewMode) ? [] : Object.keys(approvalOverrides).filter((id) => approvalOverrides[id] === 'scheduled'));
@@ -9792,7 +9866,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx?.cfg.outreachOnly ? null : reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface onReviewOrder={(ids) => { reviewOrderRef.current = ids; }} feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} onFeedback={isLive && !viewOnly ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,
@@ -10444,6 +10518,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
 
       {detail && (
         <DetailModal
+          key={detail.id}
           item={detail}
           board={board}
           accent={accent}
@@ -10451,8 +10526,12 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
           initialChanging={detailChanging}
           initialEditing={detailEditing}
           initialSchedOpen={detailScheduling}
-          onClose={() => { setDetail(null); setDetailChanging(false); setDetailEditing(false); setDetailScheduling(false); }}
+          onClose={() => { setDetail(null); setNavOrder(null); setDetailNavigated(false); setDetailChanging(false); setDetailEditing(false); setDetailScheduling(false); }}
           onApprove={approve}
+          nav={detailNav}
+          onNav={stepDetail}
+          onApproveNext={approveNext}
+          skipEnter={detailNavigated}
           onRemove={skipDay}
           onHideBuffer={isLive && !viewOnly ? removeBufferPost : undefined}
           isLive={isLive}

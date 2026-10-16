@@ -492,8 +492,11 @@ export default function DeskReviewSurface({
   leftEmpty = {}, onLeaveEmpty, onRefillDay, onBackToBuffer, onLeaveDayEmpty, onClearDay, onSwapPost, onScheduleToDay, recentlyCleared, onEditPromo,
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
-  reviewMode = false, compact = false, feedbackScope,
+  reviewMode = false, compact = false, feedbackScope, onReviewOrder,
 }: {
+  /** Live board: the post ids in the order this surface shows them (dated, then buffer), so
+   *  the review popup can step through the batch. Reports [] when the surface unmounts. */
+  onReviewOrder?: (ids: string[]) => void;
   board: Board; accent: string; mint: string;
   /** Report boards (stage 3, 28 Sep): headline by date, no aim mix, Scheduled open, tighter
    *  rows led by the day (weekday + big day number, the old board's date), no footer repeat. */
@@ -713,7 +716,7 @@ export default function DeskReviewSurface({
   /** Per-card body expansion in the 2-up buffer grid. */
   // Report boards open what the client acts on: the dated list, and on a review board the
   // posts waiting for approval (Davorin's job on this tab).
-  const sectionOpen = (key: string) => openSections[key] ?? ((batchReview && view === 'feed' && (key === 'buffer' || key === 'upnext')) || (compact && (key === 'upnext' || (reviewMode && key === 'buffer'))));
+  const sectionOpen = (key: string) => openSections[key] ?? ((batchReview && (view === 'feed' || view === 'list') && (key === 'buffer' || key === 'upnext')) || (compact && (key === 'upnext' || (reviewMode && key === 'buffer'))));
   // Review boards open on the post cards and feedback controls. A shared List preference
   // from another board must not hide the client's review workspace.
   React.useEffect(() => {
@@ -1146,6 +1149,20 @@ export default function DeskReviewSurface({
       ? <div className="cb-licard-grid">{(bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))).map((q) => renderLiCard(q, bucket))}</div>
       : night ? <RailList>{list.map((q, i) => renderRow(q, bucket, i))}</RailList>
       : list.map((q) => renderRow(q, bucket));
+
+  // Popup step order (2026-10-16): the same order the rows above render in.
+  const feedSorted = (list: QueueItem[]) => (topic === 'personal' || (view === 'feed' && (batchReview || approvals))) ? [...list].sort((a, b) => formatRank(a) - formatRank(b)) : list;
+  const reviewOrder: string[] = (!live || view === 'calendar') ? [] : [
+    ...fUpNext,
+    ...(reviewMode
+      ? (batchReview && (!fApproved.length || !fPending.length)
+        ? feedSorted(fPending.length ? fPending : fApproved)
+        : [...feedSorted(fApproved), ...feedSorted(fPending)])
+      : feedSorted(fBuffer)),
+  ].map((q) => q.id);
+  const reviewOrderKey = reviewOrder.join(',');
+  useEffect(() => { onReviewOrder?.(reviewOrder); }, [reviewOrderKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { onReviewOrder?.([]); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderDraftedRow = (q: QueueItem) => (
     <div key={q.id} style={{ padding: '18px 14px 12px', borderBottom: '1px solid var(--cb-line)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
