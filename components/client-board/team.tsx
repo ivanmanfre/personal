@@ -9,7 +9,7 @@
  * (preview/demo boards, tests): every component here renders nothing.
  */
 import React, { createContext, useContext, useState } from 'react';
-import { clientTz } from '../ClientBoardPage';
+import { clientTz, boardZone } from '../ClientBoardPage';
 
 export interface BoardComment { id: string; ref: string; at: string; by: string | null; text: string; parent: string | null }
 export interface ApprovalMeta { by: string | null; at: string }
@@ -44,6 +44,7 @@ export function isOperatorEmail(email: string | null | undefined): boolean {
  *  agency, so the page sets a neutral label there. Set by the page once per render. */
 let houseLabel = 'InboundOnSteroids';
 let whiteLabelBoard = false;
+export function boardHouseLabel(): string { return houseLabel; }
 export function setBoardHouse(whiteLabel: boolean): void {
   whiteLabelBoard = whiteLabel;
   houseLabel = whiteLabel ? 'Content team' : 'InboundOnSteroids';
@@ -120,14 +121,20 @@ function whoLabel(by: string | null | undefined, house: string): string {
   return authorParts(by, house, false).name;
 }
 
-/** "14:02" today, "14 Oct, 14:02" otherwise, in the client's zone. */
+/** "2:02 AM PT" today, "14 Oct, 2:02 AM PT" otherwise, in the client's zone, written the
+ *  same way as every scheduled time on the board (2026-10-16: a bare "02:37" read as the
+ *  viewer's own clock). */
 export function shortWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const tz = clientTz();
+  const zone = boardZone();
   const day = (x: Date) => x.toLocaleDateString('en-GB', { timeZone: tz, day: 'numeric', month: 'short' });
-  const time = d.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
-  return day(d) === day(new Date()) ? time : `${day(d)}, ${time}`;
+  const time = zone.hour12
+    ? d.toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true })
+    : d.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+  const stamp = `${time} ${zone.label}`;
+  return day(d) === day(new Date()) ? stamp : `${day(d)}, ${stamp}`;
 }
 
 /** "Approved by Lyndsay, 14:02". Renders nothing without a server receipt. */
