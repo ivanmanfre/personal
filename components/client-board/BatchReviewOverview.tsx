@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FileText, Play } from 'lucide-react';
 import type { QueueItem } from '../ClientBoardPage';
 import PostReviewTags from './PostReviewTags';
+import { postSourceOrigin } from './postSourceOrigin';
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(?:[?#]|$)/i.test(url);
 const hasVideo = (item: QueueItem) => item.style === 'video' || !!item.video_url || !!(item.media_url && isVideoUrl(item.media_url));
@@ -53,12 +54,13 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
         .cb-batch-date { margin:4px 0 0; color:var(--cb-ink-mute); font-size:12.5px; line-height:1.5; }
         .cb-batch-open { display:flex; justify-content:center; align-items:center; width:100%; margin-top:14px; padding:10px 16px; border:1px solid var(--cb-line-bold); border-radius:999px; background:var(--cb-paper); color:var(--cb-ink); font:700 14px/1.4 var(--cb-body); cursor:pointer; }
         .cb-batch-open:hover { background:var(--cb-paper-sunk); }
-        .cb-batch-open:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
+        .cb-batch-open:focus-visible, [data-post-source-origin] a:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
         @media (max-width:600px) { .cb-batch-grid { grid-template-columns:minmax(0,1fr); } .cb-batch-media { aspect-ratio:16/10; } }
       `}</style>
       {items.map(item => {
         const title = (item.title || item.hook || 'Untitled post').replace(/^\[[^\]]*\]\s*/, '');
         const date = dateFor?.(item);
+        const origin = postSourceOrigin(item);
         return (
           <article data-batch-review-card={item.id} key={item.id} className="cb-batch-card">
             <Preview item={item} />
@@ -66,6 +68,10 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
               <span className="cb-batch-format">{formatOf(item)}</span>
               <h3>{title}</h3>
               <PostReviewTags item={item} />
+              <div data-post-source-origin style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:'0 12px', marginTop:4, fontSize:12.5, lineHeight:1.5, overflowWrap:'anywhere' }}>
+                <span><span style={{ color:'var(--cb-ink-mute)' }}>{origin.label === 'Source pending' ? '' : 'Source: '}</span>{origin.label}</span>
+                {origin.href && <a href={origin.href} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', minHeight:44, color:'inherit', textDecoration:'underline', textUnderlineOffset:3 }}>Open source</a>}
+              </div>
               <div className="cb-batch-state">{statusFor(item)}</div>
               {date && <p className="cb-batch-date">{date}</p>}
               <button type="button" className="cb-batch-open" style={{ minHeight:44, minWidth:44 }} aria-label={`Open review: ${title}`} onClick={() => onOpen(item)}>Open review <span aria-hidden="true">&nbsp;→</span></button>

@@ -3667,6 +3667,40 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Most queue rows carry their photo in image_urls with media_url unset (only the
   // set_media RPC writes media_url), so the current photo falls back to image_urls[0].
   const [mediaUrl, setMediaUrlState] = useState(item.media_url || (item.kind === 'post' && item.image_urls?.[0]) || '');
+  // The approved wider review applies only to SwishDM's live, review-first posts.
+  const workspace = isLive && reviewMode && slug === 'swishdm-live' && (item.kind === 'post' || item.kind === 'carousel');
+  const reviewSlides = docPagesOf(item);
+  const reviewVideo = videoUrlOf(item);
+  const reviewImage = reviewVideo ? undefined : mediaUrl || item.image_urls?.[0] || item.image || undefined;
+  const hasReviewMedia = !!(reviewVideo || reviewSlides.length || reviewImage);
+  const [reviewPanel, setReviewPanel] = useState<'media' | 'copy'>(initialEditing || !hasReviewMedia ? 'copy' : 'media');
+  const reviewDialog = useRef<HTMLDivElement>(null);
+  const copyEditor = useRef<HTMLTextAreaElement>(null);
+  const ToolsTag = workspace ? 'details' : 'div';
+  const HistoryTag = workspace ? 'details' : 'div';
+  const HistoryHeading = workspace ? 'summary' : 'div';
+  useEffect(() => { if (workspace && editing) setReviewPanel('copy'); }, [workspace, editing]);
+  useEffect(() => {
+    if (!workspace || !editing || !copyEditor.current) return;
+    copyEditor.current.style.height = 'auto';
+    copyEditor.current.style.height = `${Math.max(240, copyEditor.current.scrollHeight)}px`;
+  }, [workspace, editing, body, reviewPanel]);
+  useEffect(() => {
+    if (!workspace) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    reviewDialog.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = Array.from(reviewDialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input,textarea,summary,[tabindex="0"]') || []).filter(el => el.getClientRects().length > 0);
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener('keydown', trap);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', trap); previous?.focus(); };
+  }, [workspace]);
   const [poolOpen, setPoolOpen] = useState(false);
   const [pool, setPool] = useState<PhotoItem[]>([]);
   const [poolLoading, setPoolLoading] = useState(false);
@@ -3697,6 +3731,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     setMediaBusy('');
     if (!r.ok) { setMediaErr(r.error || 'Could not attach that. Try again.'); return; }
     item.media_url = url || null;
+    if (workspace) { item.image = url || null; item.image_urls = url ? [url] : []; item.no_photo = !url; }
     refreshHistory();
     setMediaUrlState(url);
     setPoolOpen(false);
@@ -3953,39 +3988,133 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     return () => window.removeEventListener('keydown', h);
   }, [editing, changing, onClose]);
 
+  const postActions = canEdit && isLive && (!workspace || !team || team.canApprove) ? (
+          <div className={workspace ? 'mb-4 border-b pb-4' : 'sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6'} style={{ borderColor: LINE }}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={() => { setEditSaved(false); setEditing(true); }}
+                className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 text-[14px] font-semibold"
+                style={{ background: INK, color: PAPER }}
+              >
+                Edit
+              </button>
+              {isScheduled(item) && setSchedule && (
+                <button
+                  onClick={async () => {
+                    if (hideBusy) return;
+                    setHideBusy(true); setHideErr('');
+                    try {
+                      const result = await setSchedule(item.id, null);
+                      if (!result.ok) { setHideErr(result.error || 'Could not clear this day. Try again.'); return; }
+                      item.scheduled_at = undefined; item.publish_date = undefined; onClose();
+                    } catch { setHideErr('Could not clear this day. Try again.'); }
+                    finally { setHideBusy(false); }
+                  }}
+                  disabled={hideBusy}
+                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
+                >
+                  Clear day
+                </button>
+              )}
+              {!isScheduled(item) && onHideBuffer && (
+                <button
+                  onClick={async () => { setHideBusy(true); const r = await onHideBuffer(item.id); if (r.ok) { onClose(); } else { setHideBusy(false); setHideErr(r.error || 'Could not remove that. Try again.'); } }}
+                  disabled={hideBusy}
+                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
+                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', opacity: hideBusy ? 0.6 : 1 }}
+                >
+                  {hideBusy ? 'Removing…' : 'Remove'}
+                </button>
+              )}
+              {hideErr && <span role="alert" className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
+              <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
+                {workspace ? 'Every saved edit, schedule change and removal is recorded.' : awaitingApproval ? 'The proposed date stays on hold until you approve this post.' : isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
+              </span>
+            </div>
+          </div>
+
+  ) : null;
+
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={workspace ? `review-title-${item.id}` : undefined} data-review-workspace={workspace ? '' : undefined}>
+      {workspace && <style>{`
+        .cb-review-workspace{inset:24px;max-width:1440px;margin:auto;border-radius:18px;overflow:hidden}
+        .cb-review-main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:32px;align-items:start}
+        .cb-review-main[data-has-media="false"]{grid-template-columns:minmax(0,1fr)}
+        .cb-review-main[data-has-media="false"] .cb-review-copy{max-width:760px;margin-inline:auto;width:100%}
+        .cb-review-media,.cb-review-copy{min-width:0}
+        .cb-review-media video,.cb-review-media>img{width:100%;max-height:calc(100dvh - 280px);object-fit:contain;display:block;background:#F5F5F3;border-radius:10px}
+        .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 300px);max-height:640px;min-height:280px;aspect-ratio:auto!important}
+        .cb-review-media [aria-label^="Document preview"] button{min-width:44px;min-height:44px}
+        .cb-review-media [aria-label^="Document preview"]>div:last-child{flex-wrap:wrap}
+        .cb-review-media [aria-label^="Document preview"]>div:last-child>span:last-child{flex-wrap:wrap}
+        .cb-review-media [aria-label^="Document preview"] button[aria-label^="Page "]{background:transparent!important;border-radius:6px;position:relative}
+        .cb-review-media [aria-label^="Document preview"] button[aria-label^="Page "]:after{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:block;margin:auto}
+        .cb-review-workspace button{min-height:44px}
+        .cb-review-tabs{display:none}
+        .cb-review-tools .max-h-64{max-height:none;overflow-y:visible}
+        .cb-review-workspace summary,.cb-review-workspace button:focus-visible,.cb-review-workspace a:focus-visible{outline-color:var(--cb-accent,#0668FC)}
+        @media(max-width:959px){
+          .cb-review-workspace{inset:0;border-radius:0}
+          .cb-review-main{display:block}
+          .cb-review-tabs{display:flex;gap:8px;position:sticky;top:0;background:white;z-index:2;padding:0 0 12px}
+          .cb-review-tabs button{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--cb-line,#ddd);font-weight:700}
+          .cb-review-main[data-mobile-panel="media"] .cb-review-copy{display:none}
+          .cb-review-main[data-mobile-panel="copy"] .cb-review-media{display:none}
+          .cb-review-main[data-has-media="false"] .cb-review-copy{display:block}
+          .cb-review-media video,.cb-review-media>img{max-height:calc(100dvh - 250px)}
+          .cb-review-media [aria-label^="Document preview"]>.relative{height:calc(100dvh - 390px);min-height:240px}
+          .cb-review-workspace .cb-review-heading{gap:8px;padding:10px 16px;flex-wrap:wrap}
+          .cb-review-workspace .cb-review-heading>h2{order:3;flex-basis:100%;font-size:20px}
+        }
+      `}</style>}
       <motion.div className="cb-scrim fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
       {/* Right-anchored sheet (Studio grammar): slides in from the right; scrim, Esc and X
           all close it, and the list behind stays mounted. Internal scroll pins the footer. */}
       <motion.div
-        className="cb-sheet fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"
+        ref={reviewDialog}
+        className={workspace ? "cb-review-workspace fixed flex flex-col bg-white" : "cb-sheet fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"}
         style={{ boxShadow: '-24px 0 80px rgba(2,32,32,.28)' }}
-        initial={reduce ? false : { x: '100%' }}
-        animate={{ x: 0 }}
-        exit={reduce ? undefined : { x: '100%' }}
+        initial={reduce ? false : workspace ? { opacity: 0, y: 12 } : { x: '100%' }}
+        animate={workspace ? { opacity: 1, y: 0 } : { x: 0 }}
+        exit={reduce ? undefined : workspace ? { opacity: 0, y: 12 } : { x: '100%' }}
         transition={{ type: 'tween', duration: 0.3, ease: EASE }}
       >
         {/* Header */}
-        <div className="cb-sheet-head flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
-          <KindChip q={item} accent={accent} />
+        <div className={`${workspace ? 'cb-review-heading' : 'cb-sheet-head'} flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6`} style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+          {workspace && <button type="button" onClick={onClose} aria-label="Back to batch" className="min-h-[44px] shrink-0 text-[14px] font-semibold underline underline-offset-4">← Back to batch</button>}
+          {workspace && <h2 id={`review-title-${item.id}`} className="min-w-0 flex-1 text-[24px] font-semibold leading-tight" style={{ fontFamily: 'Oswald, sans-serif', color: INK }}>{item.title || item.hook || 'Review post'}</h2>}
+          {!workspace && <KindChip q={item} accent={accent} />}
           {!(item.topic_label || item.creative_style) && <FunnelChip stage={item.funnel_stage} accent={accent} source={item.funnel_source} />}
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
-          <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start, isLive)}</span>
-          <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+          {!workspace && <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start, isLive)}</span>}
+          <button onClick={onClose} aria-label="Close" className={`ml-2 flex shrink-0 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)] ${workspace ? 'h-11 w-11' : 'h-9 w-9'}`}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
-        <div className="flex flex-col gap-6">
+        <div data-review-scroll={workspace ? '' : undefined} className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6" style={workspace ? { overscrollBehavior: 'contain' } : undefined}>
+        <div className={`flex flex-col ${workspace ? 'gap-4' : 'gap-6'}`}>
           <PostReviewTags item={item} />
-          {isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />}
-          <LmResourceBlock gate={item.lm_gate} accent={accent} />
-          {/* Content preview / edit */}
-          <div className="min-w-0">
+          {!workspace && isLive && reviewMode && <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />}
+          {!workspace && <LmResourceBlock gate={item.lm_gate} accent={accent} />}
+          {workspace && hasReviewMedia && <div className="cb-review-tabs" role="tablist" aria-label="Review view">
+            {(['media','copy'] as const).map(panel => <button key={panel} type="button" role="tab" id={`review-${panel}-tab-${item.id}`} aria-selected={reviewPanel === panel} aria-controls={`review-${panel}-${item.id}`} tabIndex={reviewPanel === panel ? 0 : -1}
+              onClick={() => setReviewPanel(panel)} onKeyDown={e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const next = panel === 'media' ? 'copy' : 'media'; setReviewPanel(next); document.getElementById(`review-${next}-tab-${item.id}`)?.focus(); } }}
+              style={{ color: reviewPanel === panel ? INK : DIM, background: reviewPanel === panel ? caWash(accent,10) : 'white' }}>{panel === 'media' ? 'Media' : 'Copy'}</button>)}
+          </div>}
+          {/* The caption has no independent scrollbar. The workspace body owns scrolling. */}
+          <div className={workspace ? 'cb-review-main' : undefined} data-has-media={hasReviewMedia} data-mobile-panel={reviewPanel}>
+            {workspace && hasReviewMedia && <section className="cb-review-media" id={`review-media-${item.id}`} role="tabpanel" aria-labelledby={`review-media-tab-${item.id}`}>
+              {reviewSlides.length >= 2 ? <DocCarousel slides={reviewSlides} title={item.title || item.hook} accent={accent} /> : reviewVideo ? <video src={reviewVideo} poster={item.image_urls?.[0] || item.image || undefined} controls playsInline preload="metadata" /> : <img src={reviewImage} alt={item.title || 'Post artwork'} />}
+              {reviewImage && reviewSlides.length < 2 && <a href={reviewImage} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size image</a>}
+              {item.pdf_url && <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-4">Open full-size document</a>}
+            </section>}
+          <div className={workspace ? 'cb-review-copy min-w-0' : 'min-w-0'} data-review-copy={workspace ? '' : undefined} id={workspace ? `review-copy-${item.id}` : undefined} role={workspace && hasReviewMedia ? 'tabpanel' : undefined} aria-labelledby={workspace && hasReviewMedia ? `review-copy-tab-${item.id}` : undefined}>
+
             {item.kind === 'newsletter' && item.body ? (
               /* Newsletter issues read as email, not as a LinkedIn post. */
               <div className="cb-light overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
@@ -4038,12 +4167,13 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </div>
                 )}
                 <textarea
+                  ref={copyEditor}
                   aria-label="Post copy"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={Math.min(18, Math.max(8, body.split('\n').length + 2))}
                   className="w-full rounded-lg p-4 text-[14px] leading-relaxed outline-none"
-                  style={{ border: `1.5px solid ${accent}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
+                  style={{ border: `1.5px solid ${accent}`, color: INK, background: 'rgba(2,49,47,0.02)', ...(workspace ? { overflow: 'hidden', resize: 'none' as const } : {}) }}
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
@@ -4063,7 +4193,10 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
               </div>
             ) : (
               <div className="cb-linkedin-preview">
-                {item.body ? (
+                {workspace ? <div>
+                  <h3 className="mb-3 text-[15px] font-semibold">Caption</h3>
+                  <div className="whitespace-pre-wrap break-words text-[16px] leading-relaxed" style={{ color: INK, maxWidth: '68ch' }}>{body || item.body || 'No copy has been added yet.'}</div>
+                </div> : item.body ? (
                   <LinkedInPostPreview
                     text={body || item.body || ''}
                     author={board.founder?.name || board.company_name}
@@ -4087,7 +4220,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     </p>
                   </div>
                 )}
-                {canEdit && item.body && (
+                {canEdit && item.body && (!workspace || !team || team.canApprove) && (
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => { setEditSaved(false); setEditing(true); }}
@@ -4103,6 +4236,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             )}
           </div>
 
+          </div>
+          {workspace && isLive && reviewMode && item.source_detail?.kind !== 'strategy' && (item.source_detail || detailChip?.label || item.source_label) && <details data-review-source className="rounded-xl border px-4" style={{ borderColor: LINE }}>
+            <summary className="min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold">Source and context</summary>
+            <PostSourceContext detail={item.source_detail} label={detailChip?.label || srcLabelClient(item.source_label)} quote={detailChip?.quote} date={detailChip?.meta} />
+          </details>}
+          <ToolsTag className={workspace ? 'cb-review-tools rounded-xl border p-4' : 'contents'} open={workspace && (schedOpen || poolOpen) ? true : undefined} style={workspace ? { borderColor: LINE } : undefined}>
+            {workspace && <summary className="min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold">Post tools and schedule</summary>}
+            {workspace && postActions}
+            {workspace && <LmResourceBlock gate={item.lm_gate} accent={accent} />}
           {/* Instagram cut of an over-cap deck: visible in preview AND edit mode so an
               over-10 carousel can be eyeballed for IG right where the post is reviewed. */}
           <IgVersionStrip item={item} />
@@ -4288,14 +4430,16 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
             <p className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}`, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{nextLine}</p>
           </div>
 
+          </ToolsTag>
+
           {/* History (live): the draft's audit trail, quiet. Every client action lands here. */}
           {isLive && team && !team.canApprove && (
             <div className="text-[13px]" style={{ color: DIM }} data-view-only>You can read and comment. Ask an admin on your team for approver access to approve or request changes.</div>
           )}
           {isLive && <PostComments refId={item.id} />}
           {isLive && shownHistory.length > 0 && (
-            <div className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-              <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</div>
+            <HistoryTag className="rounded-xl p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+              <HistoryHeading className={workspace ? 'min-h-[44px] cursor-pointer py-3 text-[14px] font-semibold' : 'uppercase'} style={workspace ? undefined : { fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>History</HistoryHeading>
               <div className="mt-2.5 flex flex-col">
                 {shownHistory.map((h, i) => { const author = clientHistoryAuthor(h.by, board); return (
                   <div key={i} className="flex items-baseline gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
@@ -4324,59 +4468,14 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                   </div>
                 ); })}
               </div>
-            </div>
+            </HistoryTag>
           )}
         </div>
         </div>
 
         {/* Sticky action footer. Live: the client powers (edit / remove) — publishing is
             not gated, so there is no approve. Preview keeps the approve flow. */}
-        {canEdit && isLive && (
-          <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={() => { setEditSaved(false); setEditing(true); }}
-                className="inline-flex min-h-[44px] items-center rounded-[7px] px-6 text-[14px] font-semibold"
-                style={{ background: INK, color: PAPER }}
-              >
-                Edit
-              </button>
-              {isScheduled(item) && setSchedule && (
-                <button
-                  onClick={async () => {
-                    if (hideBusy) return;
-                    setHideBusy(true); setHideErr('');
-                    try {
-                      const result = await setSchedule(item.id, null);
-                      if (!result.ok) { setHideErr(result.error || 'Could not clear this day. Try again.'); return; }
-                      item.scheduled_at = undefined; item.publish_date = undefined; onClose();
-                    } catch { setHideErr('Could not clear this day. Try again.'); }
-                    finally { setHideBusy(false); }
-                  }}
-                  disabled={hideBusy}
-                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)' }}
-                >
-                  Clear day
-                </button>
-              )}
-              {!isScheduled(item) && onHideBuffer && (
-                <button
-                  onClick={async () => { setHideBusy(true); const r = await onHideBuffer(item.id); if (r.ok) { onClose(); } else { setHideBusy(false); setHideErr(r.error || 'Could not remove that. Try again.'); } }}
-                  disabled={hideBusy}
-                  className="inline-flex min-h-[44px] items-center rounded-[7px] px-5 text-[14px] font-medium"
-                  style={{ border: `1px solid ${LINE}`, color: DIM, background: 'var(--cb-paper-raise, #fff)', opacity: hideBusy ? 0.6 : 1 }}
-                >
-                  {hideBusy ? 'Removing…' : 'Remove'}
-                </button>
-              )}
-              {hideErr && <span role="alert" className="text-[12px]" style={{ color: '#c0392b' }}>{hideErr}</span>}
-              <span className="ml-auto hidden text-[12px] sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
-                {awaitingApproval ? 'The proposed date stays on hold until you approve this post.' : isScheduled(item) ? `Publishes ${fmtSchedLA(item.scheduled_at, item.publish_date)} unless you change it. Change date & time above to move it, or Clear day.` : 'Add it to a day with Change date & time above, or Remove it from the board.'}
-              </span>
-            </div>
-          </div>
-        )}
+        {!workspace && postActions}
         {/* Preview boards + review-mode live boards: approve stays visible while the body
             scrolls. On live, Approve MARKS for the operator — it never schedules or arms. */}
         {canAct && (!isLive || reviewMode) && !(isLive && team && !team.canApprove) && (
