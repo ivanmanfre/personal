@@ -50,7 +50,7 @@ import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import { wallToUtcISO } from '../lib/clientSlot';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { BoardTeamProvider, setBoardViewer, setBoardNames, setBoardRoles, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, boardHouseLabel, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type ApprovalMeta } from './client-board/team';
+import { BoardTeamProvider, setBoardViewer, setBoardNames, setBoardRoles, useBoardTeam, actorLabel, memberName, isOperatorEmail, setBoardHouse, boardHouseLabel, viewerKnown, viewerDisplayName, ApprovedBy, PostComments, type BoardComment, type BoardMember, type BoardMention, type ApprovalMeta } from './client-board/team';
 
 /**
  * /client/:slug — the per-client content board (demo mode).
@@ -8227,6 +8227,12 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const sessionRef = useRef<BoardSession | null>(session);
   // Who did what (live): per-post comments + "approved by" receipts. Server truth only.
   const [boardComments, setBoardComments] = useState<BoardComment[]>([]);
+  const [boardMembers,setBoardMembers] = useState<BoardMember[]>([]);
+  const [memberScope,setMemberScope] = useState('');
+  const [commentScope,setCommentScope] = useState('');
+  const commentScopeRef = useRef(slug);
+  commentScopeRef.current = slug;
+  const commentWriteRevision = useRef(0);
   const [approvalMeta, setApprovalMeta] = useState<Record<string, ApprovalMeta>>({});
   const [viewer, setViewer] = useState('');
   // Board role of the signed-in member ('' until read; the bare board link keeps full rights).
@@ -8736,16 +8742,22 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const loadComments = async () => {
     if (!slug || mode === 'demo' || mode === 'preview') return;
     const sess = sessionRef.current;
-    const { data, error } = await supabase.rpc('board_comments_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
+    const revision = commentWriteRevision.current;
+    const { data, error } = await supabase.rpc(slug==='swishdm-live'?'board_comments_list_v2':'board_comments_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
     const out = (data as { ok?: boolean; items?: BoardComment[]; me?: string | null } | null);
-    if (!error && out?.ok) {
+    if (commentScopeRef.current!==slug) return;
+    if (!error && out?.ok && revision===commentWriteRevision.current) {
+      setCommentScope(slug);
       setBoardComments(Array.isArray(out.items) ? out.items : []);
       setViewer(String(out.me || ''));
     }
     // Names + my role (boards without email sign-in answer not_available: nothing changes).
     const t = await supabase.rpc('board_team_list', { p_slug: slug, p_session: sess?.token || null, p_token: token || null });
     const tl = t.data as { ok?: boolean; my_role?: string; members?: { email: string; name?: string | null; role?: string | null }[] } | null;
+    if (commentScopeRef.current!==slug) return;
     if (!t.error && tl?.ok) {
+      setBoardMembers(tl.members || []);
+      setMemberScope(slug);
       const names: Record<string, string> = {};
       const roles: Record<string, string> = {};
       (tl.members || []).forEach((m) => {
@@ -8760,21 +8772,46 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   };
   useEffect(() => {
     if (state !== 'ready') return;
-    void loadComments().catch(() => { /* progressive: the board works without comments */ });
+    const refresh = () => { if (document.visibilityState!=='hidden') void loadComments().catch(() => { /* the board stays usable */ }); };
+    refresh();
+    if (slug!=='swishdm-live') return;
+    const timer = window.setInterval(refresh,30000);
+    window.addEventListener('focus',refresh);
+    document.addEventListener('visibilitychange',refresh);
+    return () => {window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode, slug, token, session]);
-  const addComment = async (ref: string, text: string, parent?: string | null): Promise<{ ok: boolean; error?: string }> => {
+  const addComment = async (ref: string, text: string, parent?: string | null, mentions: BoardMention[] = []): Promise<{ ok: boolean; error?: string }> => {
     const sess = sessionRef.current;
     if (!slug || !sess?.token) return { ok: false, error: 'not_authenticated' };
     try {
-      const { data, error } = await supabase.rpc('board_comment_add', { p_slug: slug, p_ref: ref, p_text: text, p_parent: parent || null, p_session: sess.token });
-      const out = data as { ok?: boolean; error?: string; item?: BoardComment } | null;
+      const { data, error } = await supabase.rpc(slug==='swishdm-live'?'board_comment_add_v2':'board_comment_add', { p_slug: slug, p_ref: ref, p_text: text, p_parent: parent || null, p_session: sess.token, ...(slug==='swishdm-live'?{p_mentions:mentions.map(m=>m.email)}:{}) });
+      const out = data as { ok?: boolean; error?: string; item?: BoardComment; reopened_thread?: string | null } | null;
       if (error || !out?.ok) return { ok: false, error: out?.error || error?.message };
-      if (out.item) setBoardComments((c) => [...c, out.item as BoardComment]);
+      if (out.item && commentScopeRef.current===slug) {
+        commentWriteRevision.current++;
+        setCommentScope(slug);
+        setBoardComments(c => [...c.filter(row=>row.id!==out.item!.id).map(row=>row.id===out.reopened_thread?{...row,resolved_at:null,resolved_by:null}:row),out.item as BoardComment]);
+      }
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
+  };
+
+  const resolveComment = async (id: string, resolved: boolean): Promise<{ok:boolean;error?:string}> => {
+    const sess = sessionRef.current;
+    if (!slug || !sess?.token) return {ok:false,error:'not_authenticated'};
+    try {
+      const {data,error} = await supabase.rpc('board_comment_resolve',{p_slug:slug,p_comment_id:id,p_resolved:resolved,p_session:sess.token});
+      const out = data as {ok?:boolean;error?:string;item?:BoardComment}|null;
+      if (error || !out?.ok || !out.item) return {ok:false,error:out?.error || error?.message};
+      if (commentScopeRef.current===slug) {
+        commentWriteRevision.current++;
+        setBoardComments(rows=>rows.map(row=>row.id===out.item!.id?out.item!:row));
+      }
+      return {ok:true};
+    } catch {return {ok:false,error:'Could not update this thread.'};}
   };
 
   const uploadFile = async (path: string, blob: Blob, contentType: string, note = '') => {
@@ -9948,7 +9985,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // The identity block names whoever is signed in; the board link (no person) keeps the founder.
   const shownName = (isLive && viewerDisplayName()) || founderName;
   const teamValue = isLive ? {
-    me: viewer, comments: boardComments, approvalMeta,
+    me: viewer, comments: commentScope===slug?boardComments:[], approvalMeta,
+    members: slug==='swishdm-live'?(memberScope===slug?boardMembers:[]):undefined,
+    resolveComment: slug==='swishdm-live'?resolveComment:undefined,
     canComment: !!session?.token, addComment,
     canApprove: myRole !== 'viewer',
   } : null;
