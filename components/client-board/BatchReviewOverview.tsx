@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Play } from 'lucide-react';
+import { FileText, Play, MessageCircle, AtSign } from 'lucide-react';
+import { useBoardTeam } from './team';
+import { openCommentThreads } from './commentMentions';
 import type { QueueItem } from '../ClientBoardPage';
 import PostReviewTags from './PostReviewTags';
 import { postSourceOrigin } from './postSourceOrigin';
@@ -37,7 +39,18 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
   statusFor: (item: QueueItem) => string;
   dateFor?: (item: QueueItem) => string | null;
 }) {
-  return (
+  const team = useBoardTeam();
+  const [feedbackFilter,setFeedbackFilter] = useState<'all'|'open'|'mentioned'>('all');
+  const collaborative = !!team?.resolveComment;
+  const feedback = (item: QueueItem) => openCommentThreads(team?.comments || [],item.id,team?.me || '');
+  const shown = collaborative ? items.filter(item => feedbackFilter==='all' || (feedbackFilter==='open' ? feedback(item).open>0 : feedback(item).mentioned>0)) : items;
+  const mentionedPosts = items.filter(item => feedback(item).mentioned>0).length;
+  return (<>
+    {collaborative && <div role="group" aria-label="Feedback filters" style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:16}}>
+      {([['all','All posts'],['open','Open feedback'],['mentioned',`Mentioned you${mentionedPosts?` (${mentionedPosts})`:''}`]] as const).map(([key,label])=><button key={key} type="button" aria-pressed={feedbackFilter===key} onClick={()=>setFeedbackFilter(key)}
+        style={{minHeight:44,padding:'8px 14px',border:'1px solid var(--cb-line-bold)',borderRadius:999,background:feedbackFilter===key?'var(--cb-ink)':'var(--cb-paper)',color:feedbackFilter===key?'var(--cb-paper)':'var(--cb-ink)',font:'inherit',fontSize:13,fontWeight:600,cursor:'pointer'}}>{label}</button>)}
+    </div>}
+    {collaborative && shown.length===0 && <p role="status" style={{fontSize:14,color:'var(--cb-ink-mute)',marginTop:16}}>{feedbackFilter==='mentioned'?'No open threads mention you in this batch.':'No open feedback in this batch.'}</p>}
     <div data-batch-review-overview className="cb-batch-grid">
       <style>{`
         .cb-batch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:18px; margin-top:16px; font-family:var(--cb-body); }
@@ -57,7 +70,7 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
         .cb-batch-open:focus-visible, [data-post-source-origin] a:focus-visible { outline:3px solid var(--cb-ink); outline-offset:3px; }
         @media (max-width:600px) { .cb-batch-grid { grid-template-columns:minmax(0,1fr); } .cb-batch-media { aspect-ratio:16/10; } }
       `}</style>
-      {items.map(item => {
+      {shown.map(item => {
         const title = (item.title || item.hook || 'Untitled post').replace(/^\[[^\]]*\]\s*/, '');
         const date = dateFor?.(item);
         const origin = postSourceOrigin(item);
@@ -72,6 +85,10 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
                 <span><span style={{ color:'var(--cb-ink-mute)' }}>{origin.label === 'Source pending' ? '' : 'Source: '}</span>{origin.label}</span>
                 {origin.href && <a href={origin.href} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', minHeight:44, color:'inherit', textDecoration:'underline', textUnderlineOffset:3 }}>Open source</a>}
               </div>
+              {collaborative && feedback(item).open>0 && <div data-batch-feedback style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',fontSize:12.5,fontWeight:600,marginTop:12}}>
+                <span style={{display:'inline-flex',alignItems:'center',gap:5}}><MessageCircle size={14} aria-hidden="true"/>{feedback(item).open} open thread{feedback(item).open===1?'':'s'}</span>
+                {feedback(item).mentioned>0 && <span style={{display:'inline-flex',alignItems:'center',gap:5}}><AtSign size={14} aria-hidden="true"/>Mentioned you</span>}
+              </div>}
               <div className="cb-batch-state">{statusFor(item)}</div>
               {date && <p className="cb-batch-date">{date}</p>}
               <button type="button" className="cb-batch-open" style={{ minHeight:44, minWidth:44 }} aria-label={`Open review: ${title}`} onClick={() => onOpen(item)}>Open review <span aria-hidden="true">&nbsp;→</span></button>
@@ -80,5 +97,5 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
         );
       })}
     </div>
-  );
+  </>);
 }

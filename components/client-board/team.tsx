@@ -10,8 +10,12 @@
  */
 import React, { createContext, useContext, useState } from 'react';
 import { clientTz, boardZone } from '../ClientBoardPage';
+import CommentComposer, { type CommentDraft } from './CommentComposer';
+import { mentionParts } from './commentMentions';
 
-export interface BoardComment { id: string; ref: string; at: string; by: string | null; text: string; parent: string | null }
+export interface BoardMention { email: string; label: string }
+export interface BoardMember { email: string; name?: string | null; role?: string | null }
+export interface BoardComment { id: string; ref: string; at: string; by: string | null; text: string; parent: string | null; mentions?: BoardMention[]; resolved_at?: string | null; resolved_by?: string | null }
 export interface ApprovalMeta { by: string | null; at: string }
 
 export interface BoardTeamValue {
@@ -23,7 +27,9 @@ export interface BoardTeamValue {
   canComment: boolean;
   /** Viewers read and comment; approvers and admins sign off (server enforces it too). */
   canApprove: boolean;
-  addComment: (ref: string, text: string, parent?: string | null) => Promise<{ ok: boolean; error?: string }>;
+  members?: BoardMember[];
+  resolveComment?: (id: string, resolved: boolean) => Promise<{ ok: boolean; error?: string }>;
+  addComment: (ref: string, text: string, parent?: string | null, mentions?: BoardMention[]) => Promise<{ ok: boolean; error?: string }>;
 }
 
 const Ctx = createContext<BoardTeamValue | null>(null);
@@ -158,78 +164,83 @@ export function PostComments({ refId, house: houseProp, compact = false }: { ref
   const team = useBoardTeam();
   const house = houseProp ?? houseLabel;
   const [open, setOpen] = useState(!compact);
-  const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
+  const [drafts,setDrafts] = useState<Record<string,CommentDraft>>({});
+  const saveDraft = (key: string, draft: CommentDraft) => setDrafts(prev=>({...prev,[key]:draft}));
   const [busy, setBusy] = useState(false);
+  const [resolving, setResolving] = useState<string | null>(null);
   const [err, setErr] = useState('');
+  const [status, setStatus] = useState('');
   if (!team) return null;
-  const mine = team.comments.filter((c) => c.ref === refId);
-  const tops = mine.filter((c) => !c.parent);
-  const repliesOf = (id: string) => mine.filter((c) => c.parent === id);
-
-  const send = async (body: string, parent: string | null) => {
-    const t = body.trim();
-    if (!t || busy) return false;
-    setBusy(true); setErr('');
-    const r = await team.addComment(refId, t, parent);
-    setBusy(false);
-    if (!r.ok) { setErr(r.error === 'rate_limited' ? 'Too many comments in a short time. Try again in a few minutes.' : 'Your comment did not save. Your text is kept. Try again.'); return false; }
-    return true;
+  const collaborative = !!team.resolveComment;
+  const mine = team.comments.filter(c => c.ref === refId);
+  const tops = mine.filter(c => !c.parent);
+  const pending = tops.filter(c => !c.resolved_at), resolved = tops.filter(c => c.resolved_at);
+  const repliesOf = (id: string) => mine.filter(c => c.parent === id);
+  const send = async (body: string, parent: string | null, mentions: BoardMention[]) => {
+    if (!body.trim() || busy || resolving) return false;
+    setBusy(true); setErr(''); setStatus('');
+    try {
+      const r = team.members ? await team.addComment(refId,body.trim(),parent,mentions) : await team.addComment(refId,body.trim(),parent);
+      if (!r.ok) {
+        setErr(r.error === 'rate_limited' ? 'Too many comments in a short time. Try again in a few minutes.' : r.error === 'bad_mentions' ? 'A tagged teammate could not be found. Select their name again. Your text is kept.' : 'Your comment did not save. Your text is kept. Try again.');
+        return false;
+      }
+      setStatus('Comment saved');return true;
+    } catch { setErr('Your comment did not save. Your text is kept. Try again.');return false; }
+    finally {setBusy(false);}
   };
-
-  const field: React.CSSProperties = { display: 'block', width: '100%', boxSizing: 'border-box', minHeight: 44, resize: 'vertical', padding: 10, fontFamily: 'inherit', fontSize: 13.5, lineHeight: 1.5, border: '1px solid var(--cb-line-bold, #c9c6bf)', borderRadius: 10, background: 'var(--cb-paper-raise, #fff)', color: 'var(--cb-ink)' };
-  const btn: React.CSSProperties = { font: 'inherit', fontSize: 13, fontWeight: 700, minHeight: 40, padding: '8px 16px', border: 0, borderRadius: 999, background: 'var(--cb-ink)', color: 'var(--cb-paper, #fff)', cursor: 'pointer' };
-  const link: React.CSSProperties = { font: 'inherit', fontSize: 12.5, fontWeight: 700, padding: '6px 2px', minHeight: 32, border: 0, background: 'none', color: 'var(--cb-ink)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' };
-
-  const Row = ({ c, reply }: { c: BoardComment; reply?: boolean }) => { const author = authorParts(c.by, house); return (
-    <div style={{ padding: '9px 0 9px', borderTop: reply ? 'none' : '1px solid var(--cb-line)', marginLeft: reply ? 18 : 0, paddingLeft: reply ? 12 : 0, borderLeft: reply ? '2px solid var(--cb-line)' : 'none' }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <b data-comment-author style={{ fontSize: 13, color: 'var(--cb-ink)' }}>{author.name}</b>
-        {author.tag && <span data-comment-role style={{ fontSize: 12, fontWeight: 600, color: 'var(--cb-ink-soft, var(--cb-ink-mute))' }}>{author.tag}</span>}
-        {author.email && author.name !== author.email && <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)', overflowWrap: 'anywhere' }}>{author.email}</span>}
-        <span style={{ fontSize: 12, color: 'var(--cb-ink-mute)' }}>{shortWhen(c.at)}</span>
+  const resolve = async (c: BoardComment, next: boolean) => {
+    if (!team.resolveComment || busy || resolving) return;
+    setResolving(c.id);setErr('');setStatus('');
+    try {
+      const r = await team.resolveComment(c.id,next);
+      if (!r.ok) {setErr('This thread could not be updated. Try again.');return;}
+      setStatus(next ? 'Thread resolved' : 'Thread reopened');
+    } catch {setErr('This thread could not be updated. Try again.');}
+    finally {setResolving(null);}
+  };
+  const link: React.CSSProperties = {font:'inherit',fontSize:12.5,fontWeight:700,padding:'6px 2px',minHeight:44,border:0,background:'none',color:'var(--cb-ink)',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'};
+  const row = (c: BoardComment, reply = false) => {
+    const author = authorParts(c.by,house);
+    return <div style={{padding:'9px 0',borderTop:reply?'none':'1px solid var(--cb-line)',marginLeft:reply?18:0,paddingLeft:reply?12:0,borderLeft:reply?'2px solid var(--cb-line)':'none'}}>
+      <div style={{display:'flex',gap:8,alignItems:'baseline',flexWrap:'wrap'}}>
+        <b data-comment-author style={{fontSize:13,color:'var(--cb-ink)'}}>{author.name}</b>
+        {author.tag && <span data-comment-role style={{fontSize:12,fontWeight:600,color:'var(--cb-ink-soft,var(--cb-ink-mute))'}}>{author.tag}</span>}
+        {author.email && author.name!==author.email && <span style={{fontSize:12,color:'var(--cb-ink-mute)',overflowWrap:'anywhere'}}>{author.email}</span>}
+        <span style={{fontSize:12,color:'var(--cb-ink-mute)'}}>{shortWhen(c.at)}</span>
       </div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--cb-ink)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', marginTop: 3 }}>{c.text}</div>
-    </div>
-  ); };
-
-  return (
-    <div data-post-comments style={{ marginTop: 12 }}>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} style={{ ...link, textDecoration: 'none', fontSize: 13 }}>
-        {mine.length ? `Comments (${mine.length})` : 'Comments'} {open ? '▾' : '▸'}
-      </button>
-      {open && (
-        <div style={{ marginTop: 4 }}>
-          {tops.length === 0 && <div style={{ fontSize: 13, color: 'var(--cb-ink-mute)', padding: '4px 0 8px' }}>{whiteLabelBoard ? 'No comments yet. Everyone on this board sees what you write here.' : 'No comments yet. Your whole team and InboundOnSteroids see what you write here.'}</div>}
-          {tops.map((c) => (
-            <div key={c.id}>
-              <Row c={c} />
-              {repliesOf(c.id).map((r) => <Row key={r.id} c={r} reply />)}
-              {team.canComment && (replyTo === c.id ? (
-                <form onSubmit={async (e) => { e.preventDefault(); if (await send(replyText, c.id)) { setReplyText(''); setReplyTo(null); } }} style={{ marginLeft: 18, marginTop: 4, display: 'grid', gap: 6 }}>
-                  <textarea aria-label="Reply" rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} maxLength={2000} style={field} autoFocus />
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="submit" disabled={busy || !replyText.trim()} style={{ ...btn, opacity: busy || !replyText.trim() ? 0.5 : 1 }}>{busy ? 'Saving…' : 'Reply'}</button>
-                    <button type="button" onClick={() => setReplyTo(null)} style={link}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <button type="button" onClick={() => { setReplyTo(c.id); setReplyText(''); }} style={{ ...link, marginLeft: 18 }}>Reply</button>
-              ))}
-            </div>
-          ))}
-          {team.canComment ? (
-            <form onSubmit={async (e) => { e.preventDefault(); if (await send(text, null)) setText(''); }} style={{ marginTop: 8, display: 'grid', gap: 6 }}>
-              <textarea aria-label="Add a comment" rows={2} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder="Add a comment for your team" style={field} />
-              <div><button type="submit" disabled={busy || !text.trim()} style={{ ...btn, opacity: busy || !text.trim() ? 0.5 : 1 }}>{busy ? 'Saving…' : 'Comment'}</button></div>
-            </form>
-          ) : (
-            <div style={{ fontSize: 12.5, color: 'var(--cb-ink-mute)', marginTop: 6 }}>Sign in with your email to comment, so your team sees who wrote it.</div>
-          )}
-          {err && <div role="alert" style={{ fontSize: 13, color: 'var(--cb-danger, #a12622)', marginTop: 6 }}>{err}</div>}
-        </div>
-      )}
-    </div>
-  );
+      <div style={{fontSize:13.5,lineHeight:1.55,color:'var(--cb-ink)',whiteSpace:'pre-wrap',overflowWrap:'anywhere',marginTop:3}}>
+        {mentionParts(c.text,c.mentions).map((part,i)=>part.mention ? <mark key={i} data-comment-mention title={part.mention.email} style={{background:'var(--cb-paper-sunk,#f3f2ef)',color:'var(--cb-ink)',fontWeight:700,borderRadius:3,padding:'1px 2px'}}>{part.text}</mark> : part.text)}
+      </div>
+    </div>;
+  };
+  const thread = (c: BoardComment) => {
+    const replies = repliesOf(c.id);
+    const mentioned = team.me && [c,...replies].some(x=>x.mentions?.some(m=>m.email.toLowerCase()===team.me.toLowerCase()));
+    const canResolve = collaborative && team.canComment && (team.canApprove || c.by?.toLowerCase()===team.me.toLowerCase());
+    return <div key={c.id} data-comment-thread={c.id}>
+      {row(c)}
+      {mentioned && <span style={{display:'inline-block',fontSize:12,fontWeight:700,color:'var(--cb-ink-mute)',marginBottom:5}}>Mentioned you</span>}
+      {replies.map(r=><React.Fragment key={r.id}>{row(r,true)}</React.Fragment>)}
+      <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
+        {team.canComment && <button type="button" onClick={()=>setReplyTo(replyTo===c.id?null:c.id)} style={{...link,marginLeft:18}}>Reply</button>}
+        {canResolve && <button type="button" disabled={!!resolving || busy} aria-label={c.resolved_at?'Reopen thread':'Resolve thread'} onClick={()=>void resolve(c,!c.resolved_at)} style={{...link,marginLeft:'auto',opacity:resolving ? .5 : 1}}>{resolving===c.id?'Saving…':c.resolved_at?'Reopen':'Resolve'}</button>}
+        {c.resolved_at && <span style={{fontSize:12,color:'var(--cb-ink-mute)'}}>Resolved by {authorParts(c.resolved_by,house).name} · {shortWhen(c.resolved_at)}</span>}
+      </div>
+      {replyTo===c.id && team.canComment && <div style={{marginLeft:18}}><CommentComposer label="Reply" draft={drafts[c.id]} onDraftChange={draft=>saveDraft(c.id,draft)} members={team.members} disabled={busy || !!resolving} submitLabel="Reply" onCancel={()=>{setReplyTo(null);saveDraft(c.id,{text:'',mentions:[]});}} onSend={async(text,mentions)=>{const ok=await send(text,c.id,mentions);if(ok)setReplyTo(null);return ok;}} /></div>}
+    </div>;
+  };
+  return <div data-post-comments style={{marginTop:12}}>
+    <button type="button" onClick={()=>setOpen(!open)} aria-expanded={open} style={{...link,textDecoration:'none',fontSize:13}}>{mine.length?`Comments (${mine.length})`:'Comments'} {open?'▾':'▸'}</button>
+    {collaborative && <span style={{fontSize:12,color:'var(--cb-ink-mute)',marginLeft:10}}>{pending.length} open</span>}
+    {open && <div style={{marginTop:4}}>
+      {(collaborative?pending:tops).length===0 && <div style={{fontSize:13,color:'var(--cb-ink-mute)',padding:'4px 0 8px'}}>{tops.length?'No open feedback.':whiteLabelBoard?'No comments yet. Everyone on this board sees what you write here.':'No comments yet. Your whole team and InboundOnSteroids see what you write here.'}</div>}
+      {(collaborative?pending:tops).map(thread)}
+      {collaborative && resolved.length>0 && <details style={{marginTop:8,borderTop:'1px solid var(--cb-line)'}}><summary style={{minHeight:44,display:'list-item',paddingTop:12,fontSize:13,fontWeight:600,cursor:'pointer'}}>{resolved.length} resolved thread{resolved.length===1?'':'s'}</summary>{resolved.map(thread)}</details>}
+      {team.canComment ? <CommentComposer label="Add a comment" draft={drafts.new} onDraftChange={draft=>saveDraft('new',draft)} members={team.members} disabled={busy || !!resolving} onSend={(text,mentions)=>send(text,null,mentions)} /> : <div style={{fontSize:12.5,color:'var(--cb-ink-mute)',marginTop:6}}>Sign in with your email to comment, so your team sees who wrote it.</div>}
+      {status && <div role="status" style={{fontSize:13,color:'var(--cb-ink-mute)',marginTop:6}}>{status}</div>}
+      {err && <div role="alert" style={{fontSize:13,color:'var(--cb-danger,#a12622)',marginTop:6}}>{err}</div>}
+    </div>}
+  </div>;
 }
