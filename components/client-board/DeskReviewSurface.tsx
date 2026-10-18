@@ -560,7 +560,7 @@ export default function DeskReviewSurface({
   void onRestore; void onPickReplacement; void onPickReplacementAngle; void skips; void mint;
 
   // The selected batch layout belongs to this explicit board scope.
-  const batchReview = live && reviewMode && feedbackScope === 'swishdm-live';
+  const batchReview = live && reviewMode && !onFeedback && (feedbackScope === 'swishdm-live' || feedbackScope === 'arch-agency');
   const todayIso = new Date().toISOString().slice(0, 10);
   // NIGHT MOCKUP (local only): `?night` swaps in the perf-kit look (posts-night.tsx). The
   // light desk below renders exactly as before when the flag is absent.
@@ -1142,7 +1142,7 @@ export default function DeskReviewSurface({
       ? <BatchReviewOverview
           items={bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))}
           onOpen={onOpen}
-          statusFor={q => !approvedIds.has(q.id) ? 'Awaiting approval' : isScheduledLocal(q) ? 'Scheduled' : 'Approved'}
+          statusFor={q => !approvedIds.has(q.id) ? 'Awaiting approval' : isScheduledLocal(q) ? (feedbackScope === 'arch-agency' ? 'Approved · Scheduled' : 'Scheduled') : 'Approved'}
           dateFor={q => {
             if (!isScheduledLocal(q)) return 'No date yet';
             const prefix = approvedIds.has(q.id) ? 'Goes out' : 'Proposed';

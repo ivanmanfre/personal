@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import BatchReviewOverview from './BatchReviewOverview';
 import DeskReviewSurface from './DeskReviewSurface';
+import { BoardTeamProvider } from './team';
 import type { Board, QueueItem } from '../ClientBoardPage';
 
 const posts: QueueItem[] = [
@@ -120,4 +121,26 @@ it('keeps the source visible on every card and links the recorded original witho
   expect(source.getAttribute('href')).toBe('https://instagram.com/p/source/');
   expect(source.style.minHeight).toBe('44px');
   fireEvent.click(source); expect(onOpen).not.toHaveBeenCalled();
+});
+
+it('shows ARCH original approved posts and pending drafts in the compact overview', () => {
+ const original = { ...posts[1], body: 'Original approved copy.', stage: 'scheduled' as const, publish_date: '2026-11-03', scheduled_at: '2026-11-03T15:00:00Z' };
+ const pending = { ...posts[0], publish_date: '2026-11-02' };
+ const onOpen = vi.fn();
+ const view = render(<Desk scope="arch-agency" data={{ ...board, queue: [original, pending] }} approvedIds={new Set(['cited'])} onOpen={onOpen} />);
+ expect(view.container.querySelectorAll('[data-batch-review-card]')).toHaveLength(2);
+ expect(screen.getByRole('button', { name: 'Batch overview' })).toBeTruthy();
+ expect(screen.getByText('1 awaiting approval · 1 approved · 0 published')).toBeTruthy();
+ expect(view.container.querySelector('[data-batch-review-card="cited"]')?.textContent).toContain('Approved · Scheduled');
+ expect(view.container.querySelector('[data-batch-review-card="shopping"]')?.textContent).toContain('Awaiting approval');
+ fireEvent.click(screen.getByRole('button', { name: `Open review: ${original.title}` }));
+ expect(onOpen).toHaveBeenCalledWith(original);
+ expect(original.body).toBe('Original approved copy.');
+});
+
+it('shows existing ARCH comments on overview cards when thread resolution is unavailable', () => {
+ const comments = [{ id: 'comment-1', ref: 'cited', at: '2026-10-19T08:00:00Z', by: 'davor@example.invalid', text: 'Keep this copy.', parent: null }];
+ const view = render(<BoardTeamProvider value={{ me: '', comments, approvalMeta: {}, canComment: false, canApprove: true, addComment: async () => ({ ok: false }) }}><BatchReviewOverview items={[posts[1]]} onOpen={() => {}} statusFor={() => 'Approved'} /></BoardTeamProvider>);
+ expect(view.getByText('1 comment')).toBeTruthy();
+ expect(view.queryByRole('button', { name: 'Open feedback' })).toBeNull();
 });

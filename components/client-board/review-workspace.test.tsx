@@ -39,7 +39,7 @@ it('retains carousel paging and text-only review without a redundant media tab',
  const t = setup({ ...video, style: 'text', media_url: null, image_urls: [] }); expect(t.queryByRole('tab', { name: 'Media' })).toBeNull(); expect(t.container.querySelector('[data-review-copy]')?.textContent).toContain('Complete caption.');
 });
 it('leaves other client drawers unchanged', () => {
- const r = setup(video, { slug: 'arch-agency' }); expect(r.container.querySelector('[data-review-workspace]')).toBeNull(); expect(r.queryByRole('tab', { name: 'Media' })).toBeNull(); expect(r.container.querySelector('.cb-sheet')).toBeTruthy();
+ const r = setup(video, { slug: 'risedtc-com' }); expect(r.container.querySelector('[data-review-workspace]')).toBeNull(); expect(r.queryByRole('tab', { name: 'Media' })).toBeNull(); expect(r.container.querySelector('.cb-sheet')).toBeTruthy();
 });
 it('retains the conflict guard and leaves the edit visible on a failed save', async () => {
  const r = setup(video, { initialEditing: true, editDraft: async () => ({ ok: false, error: 'changed_meanwhile' }) });
@@ -115,4 +115,16 @@ it('leaves video seeking keys with the player instead of changing posts', () => 
  const onNav = vi.fn(); const r = setup(video, { nav: { index: 1, total: 3 }, onNav });
  fireEvent.keyDown(r.container.querySelector('video')!, { key: 'ArrowRight' });
  expect(onNav).not.toHaveBeenCalled();
+});
+
+it('opens ARCH approved copy beside its comments without duplicate change controls', () => {
+ const editDraft = vi.fn();
+ const r = setup({ ...video, body: 'Original approved ARCH copy.' }, { slug: 'arch-agency', stage: 'scheduled', approved: true, editDraft });
+ expect(r.container.querySelector('[data-review-workspace]')).toBeTruthy();
+ expect(r.container.querySelector('[data-review-copy]')?.textContent).toContain('Original approved ARCH copy.');
+ expect(r.container.querySelector('[data-review-activity] [data-post-comments]')).toBeTruthy();
+ expect(r.queryByRole('button', { name: 'Request changes' })).toBeNull();
+ expect(r.queryByRole('textbox', { name: /What would you change/ })).toBeNull();
+ expect(r.container.textContent).toContain('Approved');
+ expect(editDraft).not.toHaveBeenCalled();
 });

@@ -3686,8 +3686,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
   // Most queue rows carry their photo in image_urls with media_url unset (only the
   // set_media RPC writes media_url), so the current photo falls back to image_urls[0].
   const [mediaUrl, setMediaUrlState] = useState(item.media_url || (item.kind === 'post' && item.image_urls?.[0]) || '');
-  // The approved wider review applies only to SwishDM's live, review-first posts.
-  const workspace = isLive && reviewMode && slug === 'swishdm-live' && (item.kind === 'post' || item.kind === 'carousel');
+  // Comment-only review boards share the wider preview and activity workspace.
+  const workspace = isLive && reviewMode && commentsCarryChanges(slug) && (item.kind === 'post' || item.kind === 'carousel');
   const reviewImage = videoUrlOf(item) ? undefined : mediaUrl || item.image || undefined;
   const [reviewPanel, setReviewPanel] = useState<'preview' | 'activity'>('preview');
   const reviewDialog = useRef<HTMLDivElement>(null);
