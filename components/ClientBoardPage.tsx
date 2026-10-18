@@ -675,6 +675,7 @@ export type BoardZone = { tz: string; label: string; hour12: boolean };
 const DEFAULT_ZONE: BoardZone = { tz: 'America/Los_Angeles', label: 'PT', hour12: true };
 const BOARD_ZONES: Record<string, BoardZone> = {
   'arch-agency': { tz: 'Europe/Zagreb', label: 'Zagreb', hour12: false },
+  'swishdm-live': { tz: 'Europe/Warsaw', label: 'Warsaw', hour12: false },
 };
 /** The zone the formatters below read. A board page renders exactly ONE board, and this is
  *  set from the route slug before anything renders, so a module-level value is honest here
