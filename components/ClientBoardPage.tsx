@@ -4099,7 +4099,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                     <span className="shrink-0 tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: FAINT }}>{historyWhen(h.at)}</span>
                     <span className="min-w-0">
                       <span className="block text-[13px] font-semibold" style={{ color: INK }}>{reviewMode && h.action === 'edit_copy' && versionOf(h) ? `v${versionOf(h)} · Edited` : historyLabel(h)}<span style={{ fontWeight: 400, color: DIM }}> · {author.label}</span></span>
-                      {h.note && author.client && <span className="block truncate text-[12.5px]" style={{ color: DIM }}>“{h.note}”</span>}
+                      {h.note && (author.client || (workspace && h.action === 'request_changes')) && <span className={`block text-[12.5px] ${workspace && h.action === 'request_changes' ? 'whitespace-pre-wrap break-words' : 'truncate'}`} style={{ color: DIM }}>“{h.note}”</span>}
                       {h.action === 'edit_copy' && h.after && (h.before ? (
                         openDiff === i ? (
                           <span className="block mt-1">
