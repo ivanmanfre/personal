@@ -16,6 +16,7 @@ const queue = [
   { id: 'unsigned', kind: 'post', stage: 'scheduled', title: 'Unsigned draft', hook: 'Unsigned draft', body: 'Unsigned copy.', scheduled_at: '2026-10-21T08:00:00Z', publish_date: '2026-10-21' },
   { id: 'signed', kind: 'post', stage: 'review', title: 'Signed draft', hook: 'Signed draft', body: 'Signed copy.', scheduled_at: '2026-10-22T08:00:00Z', publish_date: '2026-10-22' },
 ];
+const approvedMarks = (container: HTMLElement) => Array.from(container.querySelectorAll('.cb-batch-state, [data-review-actions] span[role="status"]')).filter(el => el.textContent?.includes('Approved'));
 const board = { company_name: 'ARCH', domain: 'arch.agency', skin: 'desk', review_mode: true,
   founder: { name: 'Davorin Šmit', first_name: 'Davorin' }, queue, calendar: { start: '2026-10-19', weeks: 2, items: [] } };
 
@@ -46,11 +47,11 @@ describe('live client approval confirmation', () => {
       return { data: { ok: true, items: [], log: [] }, error: null };
     });
     const { container } = mount();
-    await waitFor(() => expect(container.querySelectorAll('[data-review-actions]')).toHaveLength(2));
-    expect(container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(0);
+    await waitFor(() => expect(container.querySelectorAll('[data-batch-review-card]')).toHaveLength(2));
+    expect(approvedMarks(container)).toHaveLength(0);
     expect(container.textContent).not.toContain('Goes out');
     await act(async () => { finish({ data: null, error: { message: 'Approval check failed' } }); await pending; });
-    expect(container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(0);
+    expect(approvedMarks(container)).toHaveLength(0);
   });
 
   it('shows only server-confirmed sign-offs and holds dated unsigned cards', async () => {
@@ -61,14 +62,14 @@ describe('live client approval confirmation', () => {
       return { data: { ok: true, items: [], log: [] }, error: null };
     });
     const { container } = mount();
-    await waitFor(() => expect(container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(1));
-    const unsigned = Array.from(container.querySelectorAll('.cb-licard')).find(c => c.textContent?.includes('Unsigned copy.'));
-    const signed = Array.from(container.querySelectorAll('.cb-licard')).find(c => c.textContent?.includes('Signed copy.'));
+    await waitFor(() => expect(approvedMarks(container)).toHaveLength(1));
+    const unsigned = Array.from(container.querySelectorAll('[data-batch-review-card]')).find(c => c.textContent?.includes('Unsigned copy.'));
+    const signed = Array.from(container.querySelectorAll('[data-batch-review-card]')).find(c => c.textContent?.includes('Signed copy.'));
     expect(unsigned?.textContent).toContain('Awaiting approval');
     expect(unsigned?.textContent).not.toContain('Goes out');
     expect(signed?.textContent).toContain('Goes out');
-    expect(container.textContent).toContain('1 is pending approval');
-    expect(container.textContent).toContain('1 post is scheduled');
+    expect(container.textContent).toContain('1 awaiting approval · 1 approved');
+    expect(signed?.textContent).toContain('Approved · Scheduled');
   });
   it('waits for a successful approval write even when the initial read failed', async () => {
     let saveOk = false;
@@ -80,13 +81,14 @@ describe('live client approval confirmation', () => {
       return { data: { ok: true, items: [], log: [] }, error: null };
     });
     const r = mount();
-    const approve = await r.findAllByRole('button', { name: 'Approve post' });
-    fireEvent.click(approve[0]);
-    await r.findByText('Approval did not save. Try Approve post again.');
-    expect(r.container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(0);
+    fireEvent.click(await r.findByRole('button', { name: 'Open review: Signed draft' }));
+    const approve = await r.findByRole('button', { name: 'Approve ✓' });
+    fireEvent.click(approve);
+    await r.findByText(/Approval did not save/);
+    expect(approvedMarks(r.container)).toHaveLength(0);
     saveOk = true;
-    fireEvent.click(approve[0]);
-    await waitFor(() => expect(r.container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(1));
+    fireEvent.click(approve);
+    await waitFor(() => expect(approvedMarks(r.container)).toHaveLength(1));
   });
 
   it('keeps approval state separate when navigating between clients', async () => {
@@ -97,9 +99,9 @@ describe('live client approval confirmation', () => {
       return { data: { ok: true, items: [], log: [] }, error: null };
     });
     const r = mount();
-    await waitFor(() => expect(r.container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(2));
+    await waitFor(() => expect(approvedMarks(r.container)).toHaveLength(2));
     fireEvent.click(r.getByRole('button', { name: 'Switch client' }));
-    await waitFor(() => expect(r.container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(0));
+    await waitFor(() => expect(approvedMarks(r.container)).toHaveLength(0));
     expect(JSON.parse(localStorage.getItem('cb-approvals-other') || '{}')).toEqual({});
     expect(JSON.parse(localStorage.getItem('cb-approvals-arch-agency') || '{}')).toEqual({ unsigned: 'scheduled', signed: 'scheduled' });
   });
@@ -127,7 +129,7 @@ describe('live client approval confirmation', () => {
     await act(async () => { finish({data:{mode:'live',board},error:null}); await pending; });
     const dated = await r.findByRole('button', {name:/Dated posts/i});
     if (dated.getAttribute('aria-expanded') === 'false') fireEvent.click(dated);
-    await waitFor(() => expect(r.container.querySelectorAll('[data-review-actions] span[role="status"]')).toHaveLength(1));
+    await waitFor(() => expect(approvedMarks(r.container)).toHaveLength(1));
   });
 
 });

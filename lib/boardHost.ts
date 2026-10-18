@@ -34,7 +34,7 @@ export function boardCanonicalUrl(slug: string): string {
  * Ivan: "there is no need for Request changes, we already have the comment"). On these boards
  * the review popup and post cards drop their Request changes / feedback inputs. Comments stay.
  */
-const COMMENT_ONLY_CHANGE_BOARDS = new Set(['swishdm-live']);
+const COMMENT_ONLY_CHANGE_BOARDS = new Set(['swishdm-live', 'arch-agency']);
 
 /** True when change requests on this board go through Comments only. */
 export function commentsCarryChanges(slug: string | null | undefined): boolean {

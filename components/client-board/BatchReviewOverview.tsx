@@ -73,6 +73,7 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
       {shown.map(item => {
         const title = (item.title || item.hook || 'Untitled post').replace(/^\[[^\]]*\]\s*/, '');
         const date = dateFor?.(item);
+        const commentCount = team?.comments.filter(comment => comment.ref === item.id).length || 0;
         const origin = postSourceOrigin(item);
         return (
           <article data-batch-review-card={item.id} key={item.id} className="cb-batch-card">
@@ -88,6 +89,9 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
               {collaborative && feedback(item).open>0 && <div data-batch-feedback style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',fontSize:12.5,fontWeight:600,marginTop:12}}>
                 <span style={{display:'inline-flex',alignItems:'center',gap:5}}><MessageCircle size={14} aria-hidden="true"/>{feedback(item).open} open thread{feedback(item).open===1?'':'s'}</span>
                 {feedback(item).mentioned>0 && <span style={{display:'inline-flex',alignItems:'center',gap:5}}><AtSign size={14} aria-hidden="true"/>Mentioned you</span>}
+              </div>}
+              {!collaborative && commentCount > 0 && <div data-batch-feedback style={{ display:'flex', gap:5, alignItems:'center', fontSize:12.5, fontWeight:600, marginTop:12 }}>
+                <MessageCircle size={14} aria-hidden="true" />{commentCount} {commentCount === 1 ? 'comment' : 'comments'}
               </div>}
               <div className="cb-batch-state">{statusFor(item)}</div>
               {date && <p className="cb-batch-date">{date}</p>}

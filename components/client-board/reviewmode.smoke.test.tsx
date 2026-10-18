@@ -42,23 +42,25 @@ function render(props: { isLive: boolean; reviewMode?: boolean; approved?: boole
 }
 
 describe('DetailModal review mode', () => {
-  it('keeps source context above the post and renders metadata without a label', () => {
+  it('keeps ARCH source context available in the comments workspace', () => {
     const item = { ...ITEM, body: 'The complete post body.', source_detail: {
       kind: 'source_commentary', source_url: 'https://example.com/original',
       explanation: 'Why this matters to the buyer.', claim_boundary: 'The figure is self-reported.',
     } } as QueueItem;
     const html = renderToStaticMarkup(<DetailModal item={item} board={BOARD} accent="#3562FF" stage="review"
       onClose={() => {}} onApprove={() => {}} isLive reviewMode act={noopAct} slug="arch-agency" />);
-    expect(html.indexOf('data-post-source')).toBeLessThan(html.indexOf('The complete post body.'));
+    expect(html).toContain('data-review-workspace');
+    expect(html).toContain('data-post-source');
+    expect(html).toContain('The complete post body.');
     expect(html).toContain('href="https://example.com/original"');
     // Explanation and claim boundary are internal review notes: never on the client panel.
     expect(html).not.toContain('Why this matters to the buyer.');
     expect(html).not.toContain('The figure is self-reported.');
   });
-  it('live + review_mode: approve bar and request-changes render', () => {
+  it('ARCH live review keeps approval and uses comments for changes', () => {
     const html = render({ isLive: true, reviewMode: true });
     expect(html).toContain('Approve ✓');
-    expect(html).toContain('Request changes');
+    expect(html).not.toContain('Request changes');
     // The copy tells the truth about what approve does: marks, never schedules.
     expect(html).toContain('Approval saves your sign-off. Scheduling is separate.');
   });
@@ -67,7 +69,7 @@ describe('DetailModal review mode', () => {
     const html = render({ isLive: true, reviewMode: true, approved: true });
     expect(html).toContain('Approved ✓');
     expect(html).not.toContain('>Approve ✓<');
-    expect(html).toContain('Request changes');
+    expect(html).not.toContain('Request changes');
   });
 
   it('live WITHOUT the flag (RISE posture): no approve bar at all — regression gate', () => {
