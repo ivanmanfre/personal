@@ -128,3 +128,9 @@ it('opens ARCH approved copy beside its comments without duplicate change contro
  expect(r.container.textContent).toContain('Approved');
  expect(editDraft).not.toHaveBeenCalled();
 });
+
+it('preserves earlier ARCH feedback saved before author identities were recorded', async () => {
+ const note = "Discuss execution on our call before promising this.";
+ const r = setup(video, { slug: 'arch-agency', fetchHistory: async () => [{ action: 'request_changes', at: '2026-10-06T19:30:00Z', by: null, note }] });
+ await waitFor(() => expect(r.container.querySelector('[data-review-activity]')?.textContent).toContain(note));
+});
