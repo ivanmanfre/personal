@@ -30,6 +30,7 @@ import { uploadBoardFile } from '../lib/boardPhotoOperation';
 import { srcLabelClient } from './client-board/clientSourceLabel';
 import DeskLeadMagnetsSurface from './client-board/DeskLeadMagnetsSurface';
 import DeskOutreachSurface from './client-board/DeskOutreachSurface';
+import RiseScanRequests from './client-board/RiseScanRequests';
 import OutreachTopOfPanel, {
   sendLogAnchorId, scrubVendor, laneName,
   liveLanes, positiveReplierLog, hasReplyIntents,
@@ -9978,9 +9979,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       : <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    outreach: skin === 'desk'
+    outreach: <>{slug === 'risedtc-com' && isLive && session?.token ? <RiseScanRequests slug={slug} session={session.token} /> : null}{skin === 'desk'
       ? <DeskOutreachSurface renderReplySource={renderReplySource} live={isLive} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} report={outreachReportCtx} foldLeads={<LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />} />
-      : <OutreachSurface renderReplySource={renderReplySource} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />,
+      : <OutreachSurface renderReplySource={renderReplySource} board={viewBoard} accent={accent} usage={outreachUsage} log={outreachLog} status={outreachStatus} signals={funnelSignals} foldLeads={null} />}</>,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} usage={outreachUsage} log={outreachLog} />,
     performance: <>
       {skin === 'desk'
