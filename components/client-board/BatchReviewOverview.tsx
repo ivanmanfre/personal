@@ -33,24 +33,29 @@ function Preview({ item }: { item: QueueItem }) {
 }
 
 /** The batch shows the mix. The existing full review owns all decisions and writes. */
-export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor }: {
+export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor, cardAction, hideFilters = false }: {
   items: QueueItem[];
   onOpen: (item: QueueItem) => void;
   statusFor: (item: QueueItem) => string;
   dateFor?: (item: QueueItem) => string | null;
+  /** Extra control under Open review (board Archive / Restore). Returns null for cards that get none. */
+  cardAction?: (item: QueueItem) => React.ReactNode;
+  /** The Archive grid reuses this card; it has no feedback filter row of its own. */
+  hideFilters?: boolean;
 }) {
   const team = useBoardTeam();
   const [feedbackFilter,setFeedbackFilter] = useState<'all'|'open'|'mentioned'>('all');
   const collaborative = !!team?.resolveComment;
+  const filtering = collaborative && !hideFilters;
   const feedback = (item: QueueItem) => openCommentThreads(team?.comments || [],item.id,team?.me || '');
-  const shown = collaborative ? items.filter(item => feedbackFilter==='all' || (feedbackFilter==='open' ? feedback(item).open>0 : feedback(item).mentioned>0)) : items;
+  const shown = filtering ? items.filter(item => feedbackFilter==='all' || (feedbackFilter==='open' ? feedback(item).open>0 : feedback(item).mentioned>0)) : items;
   const mentionedPosts = items.filter(item => feedback(item).mentioned>0).length;
   return (<>
-    {collaborative && <div role="group" aria-label="Feedback filters" style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:16}}>
+    {filtering && <div role="group" aria-label="Feedback filters" style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:16}}>
       {([['all','All posts'],['open','Open feedback'],['mentioned',`Mentioned you${mentionedPosts?` (${mentionedPosts})`:''}`]] as const).map(([key,label])=><button key={key} type="button" aria-pressed={feedbackFilter===key} onClick={()=>setFeedbackFilter(key)}
         style={{minHeight:44,padding:'8px 14px',border:'1px solid var(--cb-line-bold)',borderRadius:999,background:feedbackFilter===key?'var(--cb-ink)':'var(--cb-paper)',color:feedbackFilter===key?'var(--cb-paper)':'var(--cb-ink)',font:'inherit',fontSize:13,fontWeight:600,cursor:'pointer'}}>{label}</button>)}
     </div>}
-    {collaborative && shown.length===0 && <p role="status" style={{fontSize:14,color:'var(--cb-ink-mute)',marginTop:16}}>{feedbackFilter==='mentioned'?'No open threads mention you in this batch.':'No open feedback in this batch.'}</p>}
+    {filtering && shown.length===0 && <p role="status" style={{fontSize:14,color:'var(--cb-ink-mute)',marginTop:16}}>{feedbackFilter==='mentioned'?'No open threads mention you in this batch.':'No open feedback in this batch.'}</p>}
     <div data-batch-review-overview className="cb-batch-grid">
       <style>{`
         .cb-batch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:18px; margin-top:16px; font-family:var(--cb-body); }
@@ -96,6 +101,7 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor 
               <div className="cb-batch-state">{statusFor(item)}</div>
               {date && <p className="cb-batch-date">{date}</p>}
               <button type="button" className="cb-batch-open" style={{ minHeight:44, minWidth:44 }} aria-label={`Open review: ${title}`} onClick={() => onOpen(item)}>Open review <span aria-hidden="true">&nbsp;→</span></button>
+              {cardAction?.(item)}
             </div>
           </article>
         );
