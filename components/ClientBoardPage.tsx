@@ -170,6 +170,10 @@ interface SourceDetail {
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
+  /** Set when a teammate moved the post to the board Archive (client_board_archive_draft). The
+   *  post leaves every active list and shows only in the collapsed Archive section. */
+  archived_at?: string | null;
+  archived_by?: string | null;
   stage: Stage;
   pillar?: string;
   hook?: string;
@@ -3908,6 +3912,8 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
     if (h.action === 'set_schedule') return h.after ? 'Rescheduled' : 'Taken off the calendar';
     if (h.action === 'set_media') return h.after ? 'Photo changed' : 'Photo removed';
     if (h.action === 'hide_draft') return 'Removed from the buffer';
+    if (h.action === 'archive_draft') return 'Archived';
+    if (h.action === 'unarchive_draft') return 'Restored from the archive';
     if (h.action === 'approve') return 'Approved';
     if (h.action === 'request_changes') return 'Change requested';
     if (h.action === 'classification_proposed') return 'Post tags proposed';
@@ -9003,6 +9009,44 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     return r;
   };
 
+  // Archive / restore a post (live). The draft and its queue item stay; the server stamps
+  // archived_at on both. Optimistic: the card moves at once and moves back if the write fails.
+  const archiveDraftRPC = async (draftId: string, archived: boolean): Promise<{ ok: boolean; error?: string; archived_at?: string | null }> => {
+    if (!slug) return { ok: false, error: 'missing slug' };
+    try {
+      let resp: { data: unknown; error: { message: string } | null };
+      if (token && !sessionRef.current?.token) {
+        resp = await supabase.rpc('client_board_archive_draft', { p_slug: slug, p_token: token, p_draft_id: draftId, p_archived: archived });
+      } else {
+        const sess = sessionRef.current;
+        if (!sess?.token) return { ok: false, error: 'missing session' };
+        resp = await supabase.rpc('client_board_archive_draft_v2', { p_slug: slug, p_session: sess.token, p_draft_id: draftId, p_archived: archived });
+      }
+      if (resp.error) return { ok: false, error: resp.error.message };
+      return (resp.data as { ok: boolean; error?: string; archived_at?: string | null }) ?? { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+  const ARCHIVE_ERRORS: Record<string, string> = {
+    unschedule_first: 'This post has a date. Clear the date first, then archive it.',
+    already_published: 'This post is already live, so it cannot be archived.',
+    view_only: 'Your role can read and comment only.',
+  };
+  const archivePost = async (id: string, archived: boolean): Promise<{ ok: boolean; error?: string }> => {
+    const before = board?.queue.find((q) => q.id === id);
+    if (!before) return { ok: false, error: 'Post not found.' };
+    const at = archived ? new Date().toISOString() : null;
+    setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === id ? { ...q, archived_at: at } : q) } : b);
+    const r = await archiveDraftRPC(id, archived);
+    if (!r.ok) {
+      setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === id ? { ...q, archived_at: before.archived_at ?? null, archived_by: before.archived_by ?? null } : q) } : b);
+      return { ok: false, error: (r.error && ARCHIVE_ERRORS[r.error]) || 'Could not save that. Try again.' };
+    }
+    if (archived && r.archived_at) setBoard((b) => b ? { ...b, queue: b.queue.map((q) => q.id === id ? { ...q, archived_at: r.archived_at } : q) } : b);
+    return { ok: true };
+  };
+
   // Remove one photo from the client's lifestyle library (live). storage.objects has a
   // protect_delete() trigger, so the delete runs in the client-photo-delete edge fn under
   // the service role, gated by the same token/session as every other board write.
@@ -9619,10 +9663,21 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
     }
     return map;
   }, [board, photoPool]);
+  // Archived posts (board Archive, 2026-10-19) leave the working board: every list, count,
+  // calendar and the review popup read viewBoard, so they drop out everywhere at once. They
+  // render only in the Archive section, from archivedItems.
+  // A dated or live post never hides in the archive (the server clears the mark when a post is
+  // scheduled; this guards a queue item that still carries the old stamp).
+  const isArchivedItem = (q: QueueItem) => !!q.archived_at && q.stage === 'review' && !q.scheduled_at && !q.post_url;
   const viewBoard = useMemo(
-    () => (board ? { ...board, queue: board.queue.map((q) => resolveItem(withSchedule(q))).map((q) => (!q.media_url && autoPhoto[q.id]) ? { ...q, media_url: autoPhoto[q.id] } : q) } : null),
+    () => (board ? { ...board, queue: board.queue.filter((q) => !isArchivedItem(q)).map((q) => resolveItem(withSchedule(q))).map((q) => (!q.media_url && autoPhoto[q.id]) ? { ...q, media_url: autoPhoto[q.id] } : q) } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [board, angleSwaps, schedule, autoPhoto],
+  );
+  const archivedItems = useMemo(
+    () => (board ? board.queue.filter(isArchivedItem).map((q) => resolveItem(q)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [board, angleSwaps],
   );
   const reportToday = reportCfg ? (dayKey(new Date().toISOString(), reportCfg.tz) as string) : '';
   const reportPeriodList = useMemo(() => (reportCfg ? reportPeriods(reportCfg, reportToday) : []), [reportCfg, reportToday]);
@@ -9910,7 +9965,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   const surfaces: Record<TabId, React.ReactNode> = {
     week: skin === 'desk' ? <DeskWeekSurface {...weekSurfaceProps} reviewMode={reviewMode} report={reportCtx?.cfg.outreachOnly ? null : reportCtx} onGoOutreach={viewBoard.outreach ? () => goTab('outreach') : undefined} /> : <WeekSurface {...weekSurfaceProps} />,
     review: skin === 'desk'
-      ? <DeskReviewSurface onReviewOrder={(ids) => { reviewOrderRef.current = ids; }} feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} commentsOnly={isLive && commentsCarryChanges(slug)} onFeedback={isLive && !viewOnly && !commentsCarryChanges(slug) ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
+      ? <DeskReviewSurface onReviewOrder={(ids) => { reviewOrderRef.current = ids; }} archived={isLive ? archivedItems : undefined} onArchive={isLive && !viewOnly ? archivePost : undefined} feedbackScope={slug} compact={!!reportCtx && !reportCtx.cfg.outreachOnly} reviewMode={reviewMode} commentsOnly={isLive && commentsCarryChanges(slug)} onFeedback={isLive && !viewOnly && !commentsCarryChanges(slug) ? (id, note) => act('request_changes', id, { note }) : undefined} onEditBody={reviewMode && !viewOnly ? editDraft : undefined} approvedIds={approvedIds} board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onSwapPost={isLive && !viewOnly ? swapPost : undefined} onScheduleToDay={isLive && !viewOnly ? scheduleToDay : undefined} recentlyCleared={recentlyCleared} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={<DeskCalendarStrip board={viewBoard} onOpenCal={openCalendarItem} scheduledIds={scheduledIds} onMoveItem={isLive && !viewOnly ? scheduleToDay : undefined} />} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} fetchHistory={isLive ? fetchHistory : undefined} />
       : <ReviewSurface board={viewBoard} accent={accent} mint={mint} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} onRemove={skipDay} leftEmpty={leftEmpty} onLeaveEmpty={leaveEmpty} onRefillDay={refillDay} onBackToBuffer={backToBuffer} onLeaveDayEmpty={leaveDayEmpty} onClearDay={clearDay} onEditPromo={editLmPromo} flashId={flashId} view={contentView} setView={setContentView} foldCalendar={skin === 'desk' ? <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} /> : null} skips={weekSkips} replacements={slotReplacements} pool={replacementPool} benchFor={benchFor} onRestore={restoreSlot} onPickReplacement={pickReplacement} onPickReplacementAngle={pickReplacementAngle} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact onDeletePhoto={deletePhoto} onUpload={uploadFile} /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} live={isLive} />,
     // desk folds — same node-prop idiom as foldPhotos: the surface keeps its own wiring,

@@ -24,6 +24,26 @@ function LivePostLink({ href }: { href: string }) {
   );
 }
 
+/** Board Archive (Ivan 2026-10-19): set a post aside, or put an archived one back in review.
+ *  The parent owns the optimistic move; this only shows busy and the error. */
+function ArchiveControl({ archived, onToggle, title }: { archived: boolean; onToggle: () => Promise<{ ok: boolean; error?: string }>; title: string }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  return (
+    <div data-archive-control={archived ? 'restore' : 'archive'} style={{ marginTop: 8 }}>
+      <button
+        type="button" disabled={busy}
+        aria-label={archived ? `Restore from archive: ${title}` : `Archive: ${title}`}
+        onClick={async (e) => { e.stopPropagation(); setBusy(true); setErr(''); const r = await onToggle(); setBusy(false); if (!r.ok) setErr(r.error || 'Could not save that. Try again.'); }}
+        style={{ minHeight: 44, width: '100%', padding: '8px 14px', border: 'none', borderRadius: 999, background: 'none', color: 'var(--cb-ink-mute)', font: 'inherit', fontSize: 13, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3, cursor: busy ? 'default' : 'pointer' }}
+      >
+        {busy ? 'Saving…' : archived ? 'Restore to review' : 'Move to archive'}
+      </button>
+      {err && <p role="alert" style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--cb-ink)', textAlign: 'center' }}>{err}</p>}
+    </div>
+  );
+}
+
 /** Full, selectable copy for review. Editing stays on the explicit Edit copy control. */
 /** LinkedIn's own stack — the simulation never wears the desk's body face. */
 const LI_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -403,6 +423,8 @@ function historyLabelLocal(h: HistoryEntry): string {
   if (h.action === 'reschedule' || h.action === 'schedule_change' || h.action === 'resched'
     || h.action === 'set_schedule' || h.action === 'schedule') return 'Rescheduled';
   if (h.action === 'image_change' || h.action === 'media_change' || h.action === 'set_media') return 'Image changed';
+  if (h.action === 'archive_draft') return 'Archived';
+  if (h.action === 'unarchive_draft') return 'Restored from the archive';
   if (h.action === 'note') {
     switch (h.event) {
       case 'angle_swap': return 'Idea swapped';
@@ -498,7 +520,13 @@ export default function DeskReviewSurface({
   replacements = {}, pool = [], benchFor, onRestore, onPickReplacement, onPickReplacementAngle,
   foldPhotos, foldCalendar, live = false, fetchHistory, approvedIds = new Set(), onFeedback, onEditBody,
   reviewMode = false, compact = false, feedbackScope, onReviewOrder, commentsOnly = false,
+  archived = [], onArchive,
 }: {
+  /** Board Archive: posts set aside (archived_at). They are already out of board.queue and
+   *  render only in the collapsed Archive section at the foot of the list. */
+  archived?: QueueItem[];
+  /** Live, non-viewer boards: archive (true) or restore (false) one post. */
+  onArchive?: (id: string, archived: boolean) => Promise<{ ok: boolean; error?: string }>;
   /** Comment-only board (lib/boardHost): post cards carry no Request changes / feedback input. */
   commentsOnly?: boolean;
   /** Live board: the post ids in the order this surface shows them (dated, then buffer), so
@@ -561,6 +589,11 @@ export default function DeskReviewSurface({
 
   // The selected batch layout belongs to this explicit board scope.
   const batchReview = live && reviewMode && !onFeedback && (feedbackScope === 'swishdm-live' || feedbackScope === 'arch-agency');
+  // Only an undated post still in review can be archived; a dated one is cleared first, a live one never.
+  const canArchive = (q: QueueItem) => !!onArchive && live && stageOf(q) === 'review' && !isScheduledLocal(q) && !q.generating;
+  const archiveFor = (q: QueueItem, isArchived = false) => (onArchive && (isArchived || canArchive(q)))
+    ? <ArchiveControl key={`arch-${q.id}`} archived={isArchived} title={stripBrand(q.title || q.hook) || 'post'} onToggle={() => onArchive(q.id, !isArchived)} />
+    : null;
   const todayIso = new Date().toISOString().slice(0, 10);
   // NIGHT MOCKUP (local only): `?night` swaps in the perf-kit look (posts-night.tsx). The
   // light desk below renders exactly as before when the flag is absent.
@@ -899,6 +932,7 @@ export default function DeskReviewSurface({
             </Drill>
           </div>
         )}
+        {bucket !== 'published' && archiveFor(q)}
       </>
     );
     if (night) {
@@ -1120,6 +1154,7 @@ export default function DeskReviewSurface({
           </div>
         ))}
         {live && <PostComments refId={q.id} compact />}
+        {bucket !== 'published' && archiveFor(q)}
       </div>
     );
   };
@@ -1142,6 +1177,7 @@ export default function DeskReviewSurface({
       ? <BatchReviewOverview
           items={bucket === 'upnext' ? list : [...list].sort((a, b) => formatRank(a) - formatRank(b))}
           onOpen={onOpen}
+          cardAction={(q) => archiveFor(q)}
           statusFor={q => !approvedIds.has(q.id) ? 'Awaiting approval' : isScheduledLocal(q) ? (feedbackScope === 'arch-agency' ? 'Approved · Scheduled' : 'Scheduled') : 'Approved'}
           dateFor={q => {
             if (!isScheduledLocal(q)) return 'No date yet';
@@ -1565,6 +1601,16 @@ export default function DeskReviewSurface({
                   </Drill>
                 ) : null,
               ], 'published')}
+              {section('Archive', archived.length, 'Set aside. Restore puts a post back in review.', batchReview
+                ? <BatchReviewOverview items={archived} onOpen={onOpen} hideFilters statusFor={() => 'Archived'}
+                    dateFor={(q) => q.archived_at ? `Archived ${new Date(q.archived_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : null}
+                    cardAction={(q) => archiveFor(q, true)} />
+                : <div data-archive-list>{archived.map((q) => (
+                    <div key={q.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '12px 2px', borderBottom: '1px solid var(--cb-line)' }}>
+                      <button type="button" onClick={() => onOpen(q)} style={{ flex: '1 1 220px', minWidth: 0, minHeight: 44, textAlign: 'left', fontSize: 14.5, fontWeight: 700, color: 'var(--cb-ink)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>{stripBrand(q.title || q.hook) || 'Untitled'}</button>
+                      <div style={{ flex: '0 0 200px' }}>{archiveFor(q, true)}</div>
+                    </div>
+                  ))}</div>, 'archive')}
               {(cat !== 'all' || topic !== 'all' || aimSel !== 'all') && fUpNext.length + fBuffer.length + fDrafted.length + fPublished.length === 0 && (
                 <Footnote style={{ marginTop: 16 }}>Nothing in this category yet.</Footnote>
               )}
