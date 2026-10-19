@@ -58,7 +58,7 @@ export default function BatchReviewOverview({ items, onOpen, statusFor, dateFor,
     {filtering && shown.length===0 && <p role="status" style={{fontSize:14,color:'var(--cb-ink-mute)',marginTop:16}}>{feedbackFilter==='mentioned'?'No open threads mention you in this batch.':'No open feedback in this batch.'}</p>}
     <div data-batch-review-overview className="cb-batch-grid">
       <style>{`
-        .cb-batch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:18px; margin-top:16px; font-family:var(--cb-body); }
+        .cb-batch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr)); gap:18px; margin-top:16px; font-family:var(--cb-body); }
         .cb-batch-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--cb-line); border-radius:26px; background:var(--cb-paper); color:var(--cb-ink); }
         .cb-batch-media { position:relative; background:var(--cb-paper-sunk); aspect-ratio:4/3; min-width:0; overflow:hidden; }
         .cb-batch-media img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
