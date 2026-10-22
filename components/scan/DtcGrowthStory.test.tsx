@@ -19,6 +19,25 @@ const story = () => structuredClone({ status: 'present', tests, journeys: [{ ad_
 const page = (data: any) => <DtcInsightStory companyName="Tvati" domain="tvati.com" data={data} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />;
 
 describe('per-finding evidence images', () => {
+  it('keeps a long reviewed plan in the disclosure and a short recommendation in the page', () => {
+    const data = story();
+    const opening = 'Keep the same page and offer. Replace the opening line with the customer quote.';
+    const setup = ' Give each version its own tracking tag so orders can be matched to the ad. Run both versions at equal spend. Keep the rest of the ad unchanged. Check refund requests alongside purchases before deciding which version to keep. Use separate tracking links for each version. Keep the audience unchanged while the comparison runs.';
+    data.tests[0].test = opening + setup;
+    data.presentation.sections[0].action = data.tests[0].test;
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(page(data));
+    const finding = container.querySelector('#finding-0')!;
+    expect(finding.querySelector('.ris-takeaway')!.textContent).toContain(data.tests[0].title);
+    expect(finding.querySelector('.ris-takeaway')!.textContent).not.toContain('tracking tag');
+    expect(finding.querySelector('.ris-takeaway strong')).toBeNull();
+    const details = finding.querySelector('details.ris-evidence')!;
+    expect(details.hasAttribute('open')).toBe(false);
+    expect(details.textContent).toContain(data.tests[0].test);
+    expect(details.querySelector('summary')!.textContent).toContain('Full test plan');
+    expect(canShowStory(data)).toBe(true);
+  });
+
   it('shows each finding its own ad image and marked page capture', () => {
     expect(canShowStory(story())).toBe(true);
     const html = renderToStaticMarkup(page(story()));

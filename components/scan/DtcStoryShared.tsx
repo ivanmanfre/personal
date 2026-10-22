@@ -2,9 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 const words = (value: string) => value.replace(/[—–]/g, ',');
 
-export function Evidence({ test, verbatim = false }: { test: DtcCommercialEvidence['tests'][number]; verbatim?: boolean }) {
+export function Evidence({ test, verbatim = false, fullPlan = false }: { test: DtcCommercialEvidence['tests'][number]; verbatim?: boolean; fullPlan?: boolean }) {
   const text = verbatim ? (value: string) => value : words;
-  return <details className="ris-evidence"><summary>Sources &amp; how to check the result <span aria-hidden="true">+</span></summary><div><p><strong>What to measure</strong><br />{text(test.measure)}</p><p>{text(test.test)}</p>{test.evidence.map((e, i) => <blockquote key={i}><p>“{e.quote}”</p><a href={e.source_url} target="_blank" rel="noopener noreferrer">{e.kind === 'ad' ? 'View the public ad' : 'Open source page'} ↗</a></blockquote>)}</div></details>;
+  return <details className="ris-evidence"><summary>{fullPlan ? 'Full test plan & sources' : 'Sources & how to check the result'} <span aria-hidden="true">+</span></summary><div>{fullPlan ? <p><strong>What we saw</strong><br />{text(test.observation)}</p> : null}<p><strong>What to measure</strong><br />{text(test.measure)}</p><p>{fullPlan ? <><strong>Test setup</strong><br /></> : null}{text(test.test)}</p>{test.evidence.map((e, i) => <blockquote key={i}><p>“{e.quote}”</p><a href={e.source_url} target="_blank" rel="noopener noreferrer">{e.kind === 'ad' ? 'View the public ad' : 'Open source page'} ↗</a></blockquote>)}</div></details>;
 }
 
 
