@@ -25,3 +25,7 @@
 .ris-standard .ris-takeaway{display:grid;grid-template-columns:100px minmax(0,1fr);gap:32px;padding-block:24px}
 .ris-standard .ris-takeaway>p{margin:0;max-width:65ch;font:500 clamp(18px,1.5vw,22px)/1.6 Manrope,sans-serif}
 @media(max-width:600px){.ris-standard .ris-body{font-size:18px}.ris-standard .ris-takeaway{grid-template-columns:minmax(0,1fr);gap:10px}.ris-standard .ris-takeaway>span{padding-top:0}}
+
+.ris-standard .ris-standard-grid{align-items:start}
+.ris-standard .ris-standard-finding h2{font-size:clamp(30px,3.1vw,46px);line-height:1.15;max-width:20ch}
+.ris-standard .ris-observation .ris-body + .ris-body{margin-top:14px}
