@@ -40,6 +40,8 @@ const headlineName = (name: string) => { const short = name.split(/\s+[-–|:]\s
 
 function PlanHero({fixture}: {fixture: JourneyFixture}) {
  const result = assessAudience(fixture), reduced = useReducedMotion(), reach = reachFrom(fixture);
+ // The buyers the audit named from their own headlines: the specific finding, never just a count.
+ const named = (fixture.audience?.named ?? []).filter(n => (n?.name || '').trim()).slice(0, 3);
  return <section className="sp-hero audit-opening" data-assessment={result.state}>
   <div className="sp-hero-copy">
    <span className="made-for"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/>Made for {fixture.founder.name}{fixture.founder.company ? ` · ${fixture.founder.company}` : ''}</span>
@@ -62,6 +64,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <div className="audit-number">{result.state === 'buyers' ? <strong><NumberTicker value={result.buyers!}/><span> / <NumberTicker value={result.people!}/></span></strong> : result.state === 'network' ? <strong><NumberTicker value={result.networkCount!}/><span> / {result.networkSample}</span></strong> : result.people !== null ? <strong><NumberTicker value={result.people!}/><span> engagers</span></strong> : null}</div>
    <b className="sp-audit-heading">{result.heading}</b>
    <p>{result.receipt}</p>
+   {result.state === 'buyers' && named.length > 0 && <ul className="sp-audit-names" aria-label="Buyers who engaged with your posts">{named.map(n => <li key={n.name}><span className="sp-audit-face" aria-hidden="true">{n.name.split(/\s+/).map(w => w[0]).slice(0, 2).join('')}</span><span><b>{n.name}</b>{n.headline && <small>{n.headline}</small>}</span></li>)}</ul>}
    {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">~{reach.readers} readers per post at ~15 per engager, 4 posts a week, 0.5% leave their email.</span></>}
    {result.state === 'buyers' && (() => { const per = Math.max(1, Math.ceil(result.people! / 60)), dots = Math.ceil(result.people! / per), lit = Math.max(1, Math.round(result.buyers! / per)); return <><div className="audience-dots" aria-hidden="true">{Array.from({length: dots}, (_, i) => <i key={i} className={i < lit ? 'is-buyer' : ''}/>)}</div>{per > 1 && <small className="sp-dots-key">Each dot is about {per} people.</small>}</>; })()}
    <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}</footer>
@@ -173,8 +176,8 @@ export function StudioPlan({fixture, kind}: {fixture: JourneyFixture; kind: Stor
  return <div className="connected-journey sample-story revenue-story story-plan">
   <PlanHero fixture={fixture}/>
   <StepNav/>
-  <div id="diagnosis" style={{scrollMarginTop:110}}><DiagnosisArtifacts fixture={fixture}/></div>
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
+  <div id="diagnosis" style={{scrollMarginTop:110}}><DiagnosisArtifacts fixture={fixture}/></div>
   <Chapter headerVisual={plan.topicMap && <StudioBrain map={plan.topicMap} name={fixture.founder.name}/>} id="content" n={1} label="Content" title={plan.contentHeading} why={rationale?.content ?? plan.contentWhy}
    cols={3} samples={[
     {key: 'carousel', render: () => <ProspectPost fixture={fixture} kind={kind}/>},
