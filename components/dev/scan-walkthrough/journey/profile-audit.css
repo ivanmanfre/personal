@@ -6,3 +6,7 @@
 .revenue-story .profile-finding-fix{margin:auto 0 0;padding-top:12px;border-top:1px solid #eee9e1;font-size:15px;line-height:1.55;color:#191919}
 .profile-finding-fix>b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#be3823;margin-bottom:4px}
 @media(max-width:760px){.profile-findings{grid-template-columns:1fr;gap:14px}.profile-finding{padding:18px}.profile-finding blockquote{font-size:17px}}
+.profile-audit-images{position:relative;margin:0 0 24px;max-width:760px}
+.profile-audit-banner{display:block;width:100%;height:auto;aspect-ratio:4/1;object-fit:cover;border-radius:14px;border:1px solid #e2ded7}
+.profile-audit-avatar{display:block;width:88px;height:88px;object-fit:cover;border-radius:50%;border:4px solid #f5f1e9;margin:-44px 0 0 22px;position:relative;background:#fff}
+.profile-audit-images:not(:has(.profile-audit-banner)) .profile-audit-avatar{margin:0}

@@ -26,7 +26,7 @@ export interface JourneyFixture {
   profileAudit?: ProfileAudit;
 }
 export interface ProfileFinding { area: string; label: string; state: string; today: string; quote: string; fix: string }
-export interface ProfileAudit { findings: ProfileFinding[] }
+export interface ProfileAudit { findings: ProfileFinding[]; avatarUrl?: string; bannerUrl?: string }
 export const fixture = original as JourneyFixture;
 
 export interface JourneyReceipt { key: string; label: string; value: number; prefix?: string; suffix?: string; decimals?: number; cap: string; mark?: boolean }

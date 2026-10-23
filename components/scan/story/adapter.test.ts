@@ -24,5 +24,11 @@ describe('actual saved scan rows',()=>{
   expect(toStoryFixture(row({version:2,findings:[finding('headline'),finding('about')]})).profileAudit).toBeUndefined();
   expect(toStoryFixture(row({version:1,findings:[finding('headline'),{area:'about',label:'About'},null,finding('banner')]})).profileAudit?.findings.map(f=>f.area)).toEqual(['headline','banner']);
  });
+ it('carries only hosted profile pictures into the audit',()=>{
+  const finding=(area:string)=>({area,label:area,state:'present',today:'Read from LinkedIn',quote:'',fix:'Change this.'});
+  const row=(banner_url:string)=>({company_slug:'piotr',report_json:{content_system:{founder:{name:'Piotr',avatar_url:'https://assets.example/piotr.jpg'},profile_audit:{version:1,banner_url,findings:[finding('headline'),finding('banner')]}}}});
+  expect(toStoryFixture(row('https://assets.example/banner.jpg')).profileAudit).toMatchObject({avatarUrl:'https://assets.example/piotr.jpg',bannerUrl:'https://assets.example/banner.jpg'});
+  expect(toStoryFixture(row('javascript:alert(1)')).profileAudit?.bannerUrl).toBeUndefined();
+ });
  it('normalizes malformed posts and nameless audience entries safely',()=>{const f=toStoryFixture({company_slug:'bad',report_json:{content_system:{founder:null,audience:{named:[null,{}, {name:'Alex',headline:null}]},sample_output:{posts:[null,{}],lm:null}}}});expect(f.samples.posts).toEqual([]);expect(f.audience?.named).toEqual([{name:'Alex',headline:''}])});
 });
