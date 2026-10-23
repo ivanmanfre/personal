@@ -19,7 +19,41 @@ const story = () => structuredClone({ status: 'present', tests, journeys: [{ ad_
 const page = (data: any) => <DtcInsightStory companyName="Tvati" domain="tvati.com" data={data} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />;
 
 describe('per-finding evidence images', () => {
-  it('keeps a long reviewed plan in the disclosure and a short recommendation in the page', () => {
+  it('introduces the brand and honest finding count, keeping tactical titles in the findings', () => {
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(page(story()));
+    expect(container.querySelector('h1')!.textContent).toBe('Tvati');
+    expect(container.querySelector('.ris-hero')!.textContent).toContain('2 findings');
+    expect(container.querySelector('#finding-0 h2')!.textContent).toBe(tests[0].title);
+    expect(container.querySelector('.ris-chapters a strong')!.textContent).toBe(tests[0].title);
+    expect(container.querySelector('.ris-chapters a small')!.textContent).toBe('Paid ads');
+    expect(container.querySelector('#rise-conversation h2')!.textContent).toBe('Let’s RISE Tvati');
+    expect(container.querySelector('#rise-conversation')!.textContent).toContain('product margins');
+    expect(container.querySelector('#rise-conversation img')!.getAttribute('src')).toContain('mattan.jpg');
+    expect(container.querySelector('a[data-cta="close"]')!.getAttribute('href')).toBe('https://example.com/meeting');
+  });
+
+  it('pairs the page evidence beneath the explanation and compact ad evidence', () => {
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(page(story()));
+    const finding = container.querySelector('#finding-0')!;
+    expect(finding.querySelectorAll('.ris-standard-grid .ris-ad-shot')).toHaveLength(1);
+    expect(finding.querySelectorAll('.ris-standard-grid .ris-evidence-shot:not(.ris-ad-shot)')).toHaveLength(0);
+    expect(finding.querySelectorAll('.ris-page-gallery .ris-evidence-shot')).toHaveLength(1);
+    expect(container.querySelectorAll('#finding-1 .ris-standard-grid .ris-evidence-shot')).toHaveLength(1);
+  });
+
+  it('never invents a brand by splitting a domain, and handles a single finding', () => {
+    const data = story();
+    data.tests = data.tests.slice(0, 1); data.presentation.sections = data.presentation.sections.slice(0, 1);
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(<DtcInsightStory companyName="tvati.com" domain="tvati.com" data={data} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(container.querySelector('h1')!.textContent).toBe('Your growth review');
+    expect(container.querySelector('.ris-hero')!.textContent).toContain('1 finding');
+    expect(container.querySelector('#rise-conversation h2')!.textContent).toBe('Let’s plan your next paid test');
+  });
+
+  it('keeps the entire reviewed action readable below the paid evidence row', () => {
     const data = story();
     const opening = 'Keep the same page and offer. Replace the opening line with the customer quote.';
     const setup = ' Give each version its own tracking tag so orders can be matched to the ad. Run both versions at equal spend. Keep the rest of the ad unchanged. Check refund requests alongside purchases before deciding which version to keep. Use separate tracking links for each version. Keep the audience unchanged while the comparison runs.';
@@ -28,8 +62,9 @@ describe('per-finding evidence images', () => {
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(page(data));
     const finding = container.querySelector('#finding-0')!;
-    expect(finding.querySelector('.ris-takeaway')!.textContent).toContain(data.tests[0].title);
-    expect(finding.querySelector('.ris-takeaway')!.textContent).not.toContain('tracking tag');
+    expect(finding.querySelector('.ris-takeaway p')!.textContent).toBe(data.tests[0].test);
+    expect(finding.querySelector('.ris-standard-grid .ris-takeaway')).toBeNull();
+    expect(finding.querySelector('.ris-standard-grid')!.nextElementSibling).toBe(finding.querySelector('.ris-takeaway'));
     expect(finding.querySelector('.ris-takeaway strong')).toBeNull();
     const details = finding.querySelector('details.ris-evidence')!;
     expect(details.hasAttribute('open')).toBe(false);

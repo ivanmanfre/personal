@@ -13,7 +13,7 @@ describe('source-backed story', () => {
     expect(canShowStory(standard)).toBe(true);
     const html = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
     expect(html).toContain('01 / Proposed paid test');
-    expect(html).toContain('New paid test');
+    expect(html).toContain('Proposed paid test');
     expect(html).not.toContain('From your public ad');
     const unreviewed = structuredClone(standard); delete unreviewed.tests[0].proposal_type;
     expect(canShowStory(unreviewed)).toBe(false);
@@ -29,7 +29,7 @@ describe('source-backed story', () => {
     const moved = structuredClone(standard); moved.presentation.requested_domain = 'old-refill.com';
     expect(canShowStory(moved, undefined, 'old-refill.com')).toBe(true);
     const html = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{ meta: { status: 'blocked' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
-    expect(html).toContain('Ready to grow Refill Co with paid ads?');
+    expect(html).toContain('Let’s RISE Refill Co');
     expect(html).toContain('Public ad records');
     expect(html).not.toContain('all Yananails fiber-gel colours');
     expect(html).not.toContain('Add Primer + Bonder');
@@ -90,7 +90,7 @@ describe('source-backed story', () => {
     expect(video.querySelector('track')!.getAttribute('kind')).toBe('captions');
     expect(video.closest('details')!.open).toBe(false);
     expect(html).toContain('Meta and Google campaigns');
-    expect(html).toContain('Ready to grow Yananails with paid ads?');
+    expect(html).toContain('Let’s RISE Yananails');
     expect(doc.querySelector('.ris-booking')!.getAttribute('href')).toBe('https://example.com/meeting');
     expect(html).not.toMatch(/performance-only|no retainers|only get paid|guaranteed/i);
   });
