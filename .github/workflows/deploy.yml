@@ -259,9 +259,9 @@ jobs:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
         run: |
           git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/rise-dtc-resources.git" /tmp/rise-site
-          # White-label: keep Ivan-branded standalone pages + orphan assets OUT of Rise's
-          # scan dir (rsync --delete would otherwise drag the whole vite dist across).
-          rsync -a --delete --exclude CNAME \
+          # Preserve reports published after this build selected its routes, including their app assets.
+          # Keep Ivan-branded standalone pages out of Rise's scan directory.
+          rsync -a --exclude CNAME \
             --exclude 'effektify-flow-diagram' --exclude 'share' --exclude 'content-system' \
             --exclude 'content-system-walkthrough.md' --exclude 'cases' --exclude 'film' \
             --exclude 'ivan-*' --exclude 'profile.jpg' --exclude 'og-scorecard.png' --exclude 'callbrief-*' \
