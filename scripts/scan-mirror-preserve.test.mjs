@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-test('a stale scan mirror preserves a newly published route and its deployed assets', () => {
+for (const mirror of ['product-site', 'rise-site']) test(`a stale ${mirror} scan mirror preserves a newly published route and its deployed assets`, () => {
   const workflow = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-  const match = workflow.match(/rsync ([^\n]+) dist\/ \/tmp\/product-site\/scan\//);
+  const match = workflow.match(new RegExp('rsync ((?:[^\\n]*\\\\\\n)*[^\\n]*) dist/ /tmp/' + mirror + '/scan/'));
   assert.ok(match, 'scan mirror sync command exists');
   const root = mkdtempSync(join(tmpdir(), 'scan-mirror-'));
   try {
@@ -20,7 +20,7 @@ test('a stale scan mirror preserves a newly published route and its deployed ass
     writeFileSync(join(target, 'alvin/index.html'), '<script src="/scan/assets/live.js"></script>');
     writeFileSync(join(target, 'assets/live.js'), 'app used by the quick-published scan');
     writeFileSync(join(target, 'CNAME'), 'preserved');
-    const run = spawnSync('rsync', [...match[1].trim().split(/\s+/), source + '/', target + '/'], { encoding: 'utf8' });
+    const run = spawnSync('bash', ['-c', `rsync ${match[1]} "$1/" "$2/"`, 'mirror', source, target], { encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
     assert.ok(existsSync(join(target, 'alvin/index.html')), 'quick-published route survived');
     assert.ok(existsSync(join(target, 'assets/live.js')), 'referenced app asset survived');
