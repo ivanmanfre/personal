@@ -5312,10 +5312,12 @@ const ScanReportPage: React.FC = () => {
   }
 
   const report = scan.report_json;
+  // Route by offer before formatting the name: DTC reports use the saved brand spelling.
+  const offer = report.matched_offer ?? scan.matched_offer;
   const rawName = scan.company_name ?? scan.domain;
   // Apollo sometimes returns names in ALL CAPS — normalize to title case so the H1 doesn't shout.
-  // Conservative: only adjusts when the name is entirely uppercase. Preserves intentional caps like "BNP Paribas".
-  const companyName = (rawName === rawName.toUpperCase() && rawName.length > 2)
+  // Legacy offers keep this behavior; DTC brands preserve the exact source-backed name.
+  const companyName = (offer !== 'dtc_growth' && rawName === rawName.toUpperCase() && rawName.length > 2)
     ? rawName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
     : rawName;
 
@@ -5323,8 +5325,6 @@ const ScanReportPage: React.FC = () => {
   // doesn't carry matched_offer (pipeline-built scans set the column, not the json field) —
   // otherwise a content_system scan falls through to the audit layout and crashes on a
   // missing automation_grade.
-  const offer = report.matched_offer ?? scan.matched_offer;
-
   // Call-intelligence prospects get a dedicated, cut-down pitch page (no automation
   // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
   if (offer === 'call_intelligence' && report.call_intel) {
