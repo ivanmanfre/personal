@@ -33,6 +33,21 @@ describe('per-finding evidence images', () => {
     expect(container.querySelector('a[data-cta="close"]')!.getAttribute('href')).toBe('https://example.com/meeting');
   });
 
+  it('keeps four reviewed findings visible before the call close', () => {
+    const data = story();
+    for (const title of ['Clarify the formula choice', 'Explain the free-item offer']) {
+      const index = data.tests.length;
+      data.tests.push({ ...data.tests[1], title });
+      data.presentation.sections.push({ ...data.presentation.sections[1], test_index: index, headline: title });
+    }
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(page(data));
+    expect(container.querySelector('.ris-hero')!.textContent).toContain('4 findings');
+    expect(container.querySelectorAll('.ris-chapters a')).toHaveLength(4);
+    for (const index of [2, 3]) expect(container.querySelector(`#finding-${index}`)!.closest('details')).toBeNull();
+    expect(container.querySelector('#finding-3')!.compareDocumentPosition(container.querySelector('#rise-conversation')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('pairs the page evidence beneath the explanation and compact ad evidence', () => {
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(page(story()));

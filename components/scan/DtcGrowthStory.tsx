@@ -93,7 +93,7 @@ function EvidenceShot({ capture, alt, hero = false }: { capture: Capture; alt: s
 export function DtcGrowthStory({ companyName, domain, data, ads, bookingUrl, logo, cases = [] }: { companyName: string; domain: string; data: DtcCommercialEvidence; ads: any; bookingUrl: string; logo: string; cases?: { name: string; url: string; headline?: string; image?: string }[] }) {
   const s = data.presentation as DtcStandardPresentation;
   const { root, wrapper, content, navigate } = useRiseStoryMotion();
-  const primary = s.sections.slice(0, 2), secondary = s.sections.slice(2);
+  const primary = s.sections.slice(0, 4), secondary = s.sections.slice(4);
   const brandName = displayBrandName(companyName);
   const finding = (section: Section, i: number) => {
     const captures = section.captures?.length ? section.captures : section.capture ? [section.capture] : [];
