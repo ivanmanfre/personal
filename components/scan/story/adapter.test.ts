@@ -4,6 +4,7 @@ import {toStoryFixture} from './adapter';
 import {reviewDraft} from './reviewDrafts';
 import {validateEdition} from './validate';
 import {assessAudience} from './assessment';
+const stored=(key:string)=>`https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/${key}`;
 describe('actual saved scan rows',()=>{
  for(const row of rows)it(`preserves identity and evidence for ${row.company_slug}`,()=>{
   const f=toStoryFixture(row),draft=reviewDraft(f),a=assessAudience(f);
@@ -18,17 +19,29 @@ describe('actual saved scan rows',()=>{
  it('never inserts another company or today’s date into missing data',()=>{const f=toStoryFixture({company_slug:'empty',report_json:{}});expect(f.source.capturedOn).toBe('');expect(f.founder.name).toBe('Your team');expect(f.audience).toBeUndefined();expect(reviewDraft(f)).toBeNull()});
  it('carries the profile audit only when the report has one with two complete findings',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Your headline reads:',quote:'q',fix:'Do one thing.'});
-  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A',avatar_url:'https://assets.example/a.jpg'},...(pa===undefined?{}:{profile_audit:pa})}}});
+  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-a.jpg')},...(pa===undefined?{}:{profile_audit:pa})}}});
   expect('profileAudit' in toStoryFixture(row())).toBe(false);
   expect(toStoryFixture(row({version:1,findings:[finding('headline')]})).profileAudit).toBeUndefined();
   expect(toStoryFixture(row({version:2,findings:[finding('headline'),finding('about')]})).profileAudit).toBeUndefined();
-  expect(toStoryFixture(row({version:1,findings:[finding('headline'),{area:'about',label:'About'},null,finding('banner')]})).profileAudit?.findings.map(f=>f.area)).toEqual(['headline','banner']);
+  expect(toStoryFixture(row({version:1,findings:[finding('headline'),{area:'about',label:'About'},null,{...finding('banner'),state:'absent'}]})).profileAudit?.findings.map(f=>f.area)).toEqual(['headline','banner']);
  });
  it('carries only hosted profile pictures into the audit',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Read from LinkedIn',quote:'',fix:'Change this.'});
-  const row=(banner_url:string)=>({company_slug:'piotr',report_json:{content_system:{founder:{name:'Piotr',avatar_url:'https://assets.example/piotr.jpg'},profile_audit:{version:1,banner_url,findings:[finding('headline'),finding('banner')]}}}});
-  expect(toStoryFixture(row('https://assets.example/banner.jpg')).profileAudit).toMatchObject({avatarUrl:'https://assets.example/piotr.jpg',bannerUrl:'https://assets.example/banner.jpg'});
+  const row=(banner_url:string)=>({company_slug:'piotr',report_json:{content_system:{founder:{name:'Piotr',avatar_url:stored('avatar-piotr.jpg')},profile_audit:{version:1,banner_url,findings:[finding('headline'),finding('banner')]}}}});
+  expect(toStoryFixture(row(stored('profile-banner-piotr.jpg'))).profileAudit).toMatchObject({avatarUrl:stored('avatar-piotr.jpg'),bannerUrl:stored('profile-banner-piotr.jpg')});
   expect(toStoryFixture(row('javascript:alert(1)')).profileAudit?.bannerUrl).toBeUndefined();
+ });
+ it('does not reuse a temporary founder photo for a legacy audit',()=>{
+  const finding=(area:string,state='present')=>({area,label:area,state,today:'Read from LinkedIn',quote:'',fix:'Change this.'});
+  const row={company_slug:'old',report_json:{content_system:{founder:{name:'A',avatar_url:'https://media.licdn.com/expired.jpg'},profile_audit:{version:1,findings:[finding('headline'),finding('about')]}}}};
+  expect(toStoryFixture(row).profileAudit).toBeUndefined();
+ });
+ it('does not show an old custom-banner audit without its captured banner',()=>{
+  const finding=(area:string,state='present')=>({area,label:area,state,today:'Read from LinkedIn',quote:'',fix:'Change this.'});
+  const row={company_slug:'old',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-a.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('banner')]}}}};
+  expect(toStoryFixture(row).profileAudit).toBeUndefined();
+  row.report_json.content_system.profile_audit.findings[1].state='absent';
+  expect(toStoryFixture(row).profileAudit?.avatarUrl).toBe(stored('avatar-a.jpg'));
  });
  it('omits a text-only profile audit when neither source image was saved',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Read from LinkedIn',quote:'',fix:'Change this.'});
