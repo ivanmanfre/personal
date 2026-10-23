@@ -19,7 +19,7 @@ describe('actual saved scan rows',()=>{
  it('never inserts another company or today’s date into missing data',()=>{const f=toStoryFixture({company_slug:'empty',report_json:{}});expect(f.source.capturedOn).toBe('');expect(f.founder.name).toBe('Your team');expect(f.audience).toBeUndefined();expect(reviewDraft(f)).toBeNull()});
  it('carries the profile audit only when the report has one with two complete findings',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Your headline reads:',quote:'q',fix:'Do one thing.'});
-  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-a.jpg')},...(pa===undefined?{}:{profile_audit:pa})}}});
+  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-pa.jpg')},...(pa===undefined?{}:{profile_audit:pa})}}});
   expect('profileAudit' in toStoryFixture(row())).toBe(false);
   expect(toStoryFixture(row({version:1,findings:[finding('headline')]})).profileAudit).toBeUndefined();
   expect(toStoryFixture(row({version:2,findings:[finding('headline'),finding('about')]})).profileAudit).toBeUndefined();
@@ -38,10 +38,17 @@ describe('actual saved scan rows',()=>{
  });
  it('does not show an old custom-banner audit without its captured banner',()=>{
   const finding=(area:string,state='present')=>({area,label:area,state,today:'Read from LinkedIn',quote:'',fix:'Change this.'});
-  const row={company_slug:'old',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-a.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('banner')]}}}};
+  const row={company_slug:'old',report_json:{content_system:{founder:{name:'A',avatar_url:stored('avatar-old.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('banner')]}}}};
   expect(toStoryFixture(row).profileAudit).toBeUndefined();
   row.report_json.content_system.profile_audit.findings[1].state='absent';
-  expect(toStoryFixture(row).profileAudit?.avatarUrl).toBe(stored('avatar-a.jpg'));
+  expect(toStoryFixture(row).profileAudit?.avatarUrl).toBe(stored('avatar-old.jpg'));
+ });
+ it('rejects another prospect’s stored photo and banner',()=>{
+  const finding=(area:string,state='present')=>({area,label:area,state,today:'Read from LinkedIn',quote:'',fix:'Change this.'});
+  const row={company_slug:'piotr-zaniewicz-5f',report_json:{content_system:{founder:{name:'Piotr',avatar_url:stored('avatar-andrew-hayes-94.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('about')]}}}};
+  expect(toStoryFixture(row).profileAudit).toBeUndefined();
+  const withBanner={...row,report_json:{content_system:{...row.report_json.content_system,profile_audit:{version:1,banner_url:stored('profile-banner-andrew-hayes-94.jpg'),findings:[finding('headline'),finding('banner')]}}}};
+  expect(toStoryFixture(withBanner).profileAudit).toBeUndefined();
  });
  it('omits a text-only profile audit when neither source image was saved',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Read from LinkedIn',quote:'',fix:'Change this.'});
