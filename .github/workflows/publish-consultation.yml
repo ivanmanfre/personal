@@ -1,0 +1,67 @@
+name: Publish standalone consultation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that the existing site source is unchanged
+        run: |
+          git fetch --depth=1 origin 00aecef372ab02407fc817ea340a0e2ae03e7f57
+          python3 - <<'PY'
+          import subprocess
+          baseline = '00aecef372ab02407fc817ea340a0e2ae03e7f57'
+          allowed = {'public/share/comert-review-7a3d962c/index.html', '.github/workflows/publish-consultation.yml'}
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only', baseline, 'HEAD'], text=True).splitlines())
+          assert changed <= allowed, 'Other site changes require the regular full build: ' + str(changed - allowed)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 39948868719
+          github-token: ${{ github.token }}
+          path: previous-site
+      - name: Add only the standalone consultation entry
+        run: |
+          mkdir site
+          tar -xf previous-site/artifact.tar -C site
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, shutil
+          root = Path('site')
+          def inventory():
+              return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()}
+          before = inventory()
+          target = 'share/comert-review-7a3d962c/index.html'
+          out = root / target
+          out.parent.mkdir(parents=True, exist_ok=True)
+          shutil.copyfile('public/' + target, out)
+          after = inventory()
+          changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+          assert changed == {target}, changed
+          print('Verified unchanged site files:', len(before))
+          print('Only changed file:', target)
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
