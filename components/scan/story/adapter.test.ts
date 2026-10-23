@@ -18,7 +18,7 @@ describe('actual saved scan rows',()=>{
  it('never inserts another company or today’s date into missing data',()=>{const f=toStoryFixture({company_slug:'empty',report_json:{}});expect(f.source.capturedOn).toBe('');expect(f.founder.name).toBe('Your team');expect(f.audience).toBeUndefined();expect(reviewDraft(f)).toBeNull()});
  it('carries the profile audit only when the report has one with two complete findings',()=>{
   const finding=(area:string)=>({area,label:area,state:'present',today:'Your headline reads:',quote:'q',fix:'Do one thing.'});
-  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A'},...(pa===undefined?{}:{profile_audit:pa})}}});
+  const row=(pa?:unknown)=>({company_slug:'pa',report_json:{content_system:{founder:{name:'A',avatar_url:'https://assets.example/a.jpg'},...(pa===undefined?{}:{profile_audit:pa})}}});
   expect('profileAudit' in toStoryFixture(row())).toBe(false);
   expect(toStoryFixture(row({version:1,findings:[finding('headline')]})).profileAudit).toBeUndefined();
   expect(toStoryFixture(row({version:2,findings:[finding('headline'),finding('about')]})).profileAudit).toBeUndefined();
@@ -29,6 +29,11 @@ describe('actual saved scan rows',()=>{
   const row=(banner_url:string)=>({company_slug:'piotr',report_json:{content_system:{founder:{name:'Piotr',avatar_url:'https://assets.example/piotr.jpg'},profile_audit:{version:1,banner_url,findings:[finding('headline'),finding('banner')]}}}});
   expect(toStoryFixture(row('https://assets.example/banner.jpg')).profileAudit).toMatchObject({avatarUrl:'https://assets.example/piotr.jpg',bannerUrl:'https://assets.example/banner.jpg'});
   expect(toStoryFixture(row('javascript:alert(1)')).profileAudit?.bannerUrl).toBeUndefined();
+ });
+ it('omits a text-only profile audit when neither source image was saved',()=>{
+  const finding=(area:string)=>({area,label:area,state:'present',today:'Read from LinkedIn',quote:'',fix:'Change this.'});
+  const row={company_slug:'empty',report_json:{content_system:{founder:{name:'A'},profile_audit:{version:1,findings:[finding('headline'),finding('about')]}}}};
+  expect(toStoryFixture(row).profileAudit).toBeUndefined();
  });
  it('normalizes malformed posts and nameless audience entries safely',()=>{const f=toStoryFixture({company_slug:'bad',report_json:{content_system:{founder:null,audience:{named:[null,{}, {name:'Alex',headline:null}]},sample_output:{posts:[null,{}],lm:null}}}});expect(f.samples.posts).toEqual([]);expect(f.audience?.named).toEqual([{name:'Alex',headline:''}])});
 });
