@@ -2,7 +2,7 @@
 .profile-audit-layout.is-text-only{grid-template-columns:minmax(0,1fr)}
 .profile-audit-head{position:sticky;top:96px}
 .scan-journey .revenue-story .profile-audit-head h2{font-size:30px;line-height:1.05;letter-spacing:-.8px;margin:0}
-.revenue-story .profile-audit-head>p{font-size:15px;line-height:1.5;color:#625d56;margin:12px 0 0;max-width:34ch}
+.revenue-story .profile-audit-head>p{font-size:15px;line-height:1.5;color:#625d56;margin:12px 0 0;max-width:38ch}
 .profile-audit-images{position:relative;margin:22px 0 0}
 .profile-audit-banner{display:block;width:100%;height:auto;aspect-ratio:4/1;object-fit:cover;border-radius:10px;border:1px solid #e2ded7}
 .profile-audit-avatar{display:block;width:56px;height:56px;object-fit:cover;border-radius:50%;border:3px solid #f3efe6;margin:-28px 0 0 14px;position:relative;background:#fff}

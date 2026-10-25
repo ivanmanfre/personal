@@ -17,8 +17,8 @@ export function ProfileAuditSection({ audit }: { audit: ProfileAudit }) {
   return <section className="story-scene profile-audit" id="profile" aria-label="Your LinkedIn profile">
     <div className={`profile-audit-layout${hasImages ? '' : ' is-text-only'}`}>
       <header className="profile-audit-head">
-        <h2>When a buyer clicks your name</h2>
-        <p>Your profile sits between a post and a call. One change for each part they check.</p>
+        <h2>What a buyer sees on your profile</h2>
+        <p>Before someone books a call with you, they open your LinkedIn profile to check who you are and what you do. This is what they find on yours today, and what to change so they book.</p>
         {hasImages && <div className="profile-audit-images">
           {audit.bannerUrl && <img className="profile-audit-banner" src={audit.bannerUrl} alt="Banner from the audited LinkedIn profile" loading="lazy" />}
           {audit.avatarUrl && <img className="profile-audit-avatar" src={audit.avatarUrl} alt="Photo from the audited LinkedIn profile" loading="lazy" />}
