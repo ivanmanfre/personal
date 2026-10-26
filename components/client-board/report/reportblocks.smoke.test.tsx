@@ -41,8 +41,8 @@ describe('report blocks', () => {
       people: [{ n: 'Ofir Bello', bk: '2026-09-27T19:44:02Z' }, { n: 'Gustav Pastucha', bk: '2026-09-24T13:52:02Z' }] };
     const ctx: ReportCtx = { cfg, periods, period: periods[0], onPeriod: () => {}, payload: archPayload, board: { queue: [] }, audience: null, today: '2026-09-28' };
     const html = renderToStaticMarkup(<ReportHome ctx={ctx} />);
-    expect(html).toContain('2 calls booked</b> since 31 Aug, with Ofir Bello and Gustav Pastucha.');
-    expect(html).toContain('Nothing new yet this week; figures above are since 31 Aug.');
+    expect(html).toContain('2 calls booked</b> since 18 Sept, with Ofir Bello and Gustav Pastucha.');
+    expect(html).toContain('Nothing new yet this week; figures above are since 18 Sept.');
     expect(html.match(/none yet/gi) || []).toHaveLength(0);
     expect(html).not.toMatch(/>0<\/span>/);
   });

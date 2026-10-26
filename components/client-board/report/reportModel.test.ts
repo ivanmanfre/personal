@@ -30,14 +30,31 @@ describe('report periods', () => {
     expect(reportPeriods(RISE, '2026-10-16')[0].start).toBe('2026-09-17');
     expect(reportPeriods(RISE, '2026-10-17')[0].start).toBe('2026-10-17');
   });
-  it('ARCH: Mon-Sun weeks from Mon 31 Aug, September reaching back to the start, then since the start', () => {
+  it('ARCH: Mon-Sun weeks from Mon 31 Aug, then billing months on the 18th reaching back to the start, then since the start', () => {
     const ps = reportPeriods(ARCH, '2026-09-28');
     const weeks = ps.filter((p) => p.kind === 'week');
     expect(weeks.map((w) => w.start)).toEqual(['2026-09-28', '2026-09-21', '2026-09-14', '2026-09-07', '2026-08-31']);
     const months = ps.filter((p) => p.kind === 'month');
-    expect(months.map((m) => [m.start, m.label])).toEqual([['2026-08-31', 'This month (September)']]);
+    expect(months.map((m) => [m.start, m.end])).toEqual([['2026-09-18', '2026-10-18'], ['2026-08-31', '2026-09-18']]);
     expect(weeks[0].month?.key).toBe(months[0].key);
     expect(ps[ps.length - 1].label).toBe('Since the start (31 Aug)');
+  });
+  it('ARCH: billing month runs 18th to 18th, the board still opens on this week (26 Oct)', () => {
+    const today = '2026-10-26';
+    const ps = reportPeriods(ARCH, today);
+    expect(ps[0]).toMatchObject({ kind: 'week', start: '2026-10-26', current: true });
+    const months = ps.filter((p) => p.kind === 'month');
+    expect(months.map((m) => [m.start, m.end])).toEqual([
+      ['2026-10-18', '2026-11-18'], ['2026-09-18', '2026-10-18'], ['2026-08-31', '2026-09-18'],
+    ]);
+    expect(months[0]).toMatchObject({ current: true, phrase: 'since 18 Oct' });
+    expect(months[1].phrase).toBe('between 18 Sept and 18 Oct');
+    expect(ps[0].month?.phrase).toBe('since 18 Oct');
+    const all = ps.find((p) => p.kind === 'all')!;
+    expect(slices(ARCH, all, ps, today).map((r) => r.label)).toEqual(['31 Aug to 18 Sept', '18 Sept to 18 Oct', '18 Oct to today']);
+    expect(series(ARCH, ps, null, emptyBoard, 'calls').points.map((pt) => pt.label)).toEqual(['31 Aug', '18 Sept', '18 Oct']);
+    expect(reportPeriods(ARCH, '2026-11-17')[0].month?.start).toBe('2026-10-18');
+    expect(reportPeriods(ARCH, '2026-11-18')[0].month?.start).toBe('2026-11-18');
   });
 });
 
@@ -92,7 +109,7 @@ describe('figures', () => {
   });
   it('the zero rule: a short week falls back to the month, a month 0 is hidden', () => {
     const [week] = reportPeriods(ARCH, '2026-09-28');
-    expect(shown(0, 2, week)).toEqual({ value: 2, scope: 'since 31 Aug', weekZero: true });
+    expect(shown(0, 2, week)).toEqual({ value: 2, scope: 'since 18 Sept', weekZero: true });
     expect(shown(0, 0, week)).toBeNull();
     const month = reportPeriods(RISE, '2026-09-27')[0];
     expect(shown(0, null, month)).toBeNull();
