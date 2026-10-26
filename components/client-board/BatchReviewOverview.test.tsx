@@ -71,7 +71,10 @@ it('preserves legacy clients and gives missing or failed media a readable fallba
   cleanup();
   const fallback: QueueItem = { id: 'old', title: 'Old text post', kind: 'post', stage: 'review', body: 'The original text still opens for review.' };
   const view = render(<BatchReviewOverview items={[fallback, posts[0]]} onOpen={() => {}} statusFor={statusFor} />);
-  expect(screen.getByText(fallback.body!)).toBeTruthy();
+  expect(screen.getByText(fallback.title!)).toBeTruthy();
+  // A text post gets no media box, so its body is not repeated on the card.
+  expect(screen.queryByText(fallback.body!)).toBeNull();
+  expect(view.container.querySelector('[data-batch-review-card="old"] .cb-batch-media')).toBeNull();
   expect(view.container.querySelector('[data-batch-review-card="old"] [data-post-review-tags]')).toBeNull();
   fireEvent.error(screen.getByRole('img'));
   expect(screen.getByText('Video preview opens in review.')).toBeTruthy();

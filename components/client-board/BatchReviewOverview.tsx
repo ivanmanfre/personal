@@ -19,12 +19,15 @@ function Preview({ item }: { item: QueueItem }) {
   const src = [...(item.image_urls || []), item.image, item.media_url].find((url): url is string => !!url && !isVideoUrl(url));
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
+  // A text post has no media, so it gets no media box: the card's title and the review
+  // already carry the copy, and a box of body text only repeated it.
+  if (!src && !hasVideo(item)) return null;
   return (
     <div className="cb-batch-media">
       {src && !failed ? <img src={src} alt={`Preview of ${item.title || item.hook || 'post'}`} loading="lazy" onError={() => setFailed(true)} /> : (
         <div className="cb-batch-fallback">
           {hasVideo(item) ? <Play size={28} aria-hidden="true" /> : <FileText size={28} aria-hidden="true" />}
-          <p>{hasVideo(item) ? 'Video preview opens in review.' : (item.body || item.hook || 'Open review to see this post.').slice(0, 170)}</p>
+          <p>{hasVideo(item) ? 'Video preview opens in review.' : 'Image preview opens in review.'}</p>
         </div>
       )}
       {hasVideo(item) && <span className="cb-batch-video"><Play size={14} aria-hidden="true" /> Video</span>}

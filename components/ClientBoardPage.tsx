@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { ThumbsUp, MessageSquare, Repeat2, Send } from 'lucide-react';
 import { boardCanonicalUrl, boardShareUrl, commentsCarryChanges, isWhiteLabelBoard } from '../lib/boardHost';
 import { isClientLibraryPhoto } from '../lib/clientPhotoLibrary';
 import {
@@ -1385,8 +1386,10 @@ function videoUrlOf(item: Pick<QueueItem, 'style' | 'media_url' | 'video_url'>):
  *  avatar in the accent, a typographic cover plate (client heading font on accent), and
  *  the Like/Comment/Share row. Cover plate is the ONE place the guest font appears in a
  *  surface — never in shell chrome. `cover`='render' shows the drafting placeholder. */
-function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false }: {
+function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'plate', live = false, foldSwitch = true, mediaMax, awaitingApproval = false, startExpanded = false }: {
   awaitingApproval?: boolean;
+  /** Review workspace: open on the whole post, the way the client reads it to sign off. */
+  startExpanded?: boolean;
   item: QueueItem; board: Board; accent: string; fontStack: string;
   size?: 'lg' | 'sm'; cover?: 'plate' | 'render' | 'none'; foldSwitch?: boolean;
   /** Caps the image/deck width (height follows) so a tall post stays compact while the caption keeps LinkedIn's size. */
@@ -1397,7 +1400,8 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
 }) {
   // The body always folds where LinkedIn folds it, so the hook a client signs off on is
   // the hook the feed will actually show. "…see more" opens the rest in place.
-  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [bodyExpanded, setBodyExpanded] = useState(startExpanded);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   // On a phone the preview opens on the phone fold: the desktop fold drawn at 555px and
   // shrunk to a 300px card set the caption near 7px.
   const [onPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 600px)').matches);
@@ -1416,9 +1420,13 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   return (
     <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
-        <span className="flex shrink-0 items-center justify-center rounded-full" style={{ width: av, height: av, background: accent, color: inkOn(accent), fontFamily: fontStack, fontWeight: 700, fontSize: size === 'lg' ? 17 : 14 }} aria-hidden>
-          {initialsOf(name)}
-        </span>
+        {founder?.avatar_url && !avatarFailed ? (
+          <img src={founder.avatar_url} alt="" className="shrink-0 rounded-full object-cover" style={{ width: av, height: av, background: '#e9e5df' }} onError={() => setAvatarFailed(true)} />
+        ) : (
+          <span className="flex shrink-0 items-center justify-center rounded-full" style={{ width: av, height: av, background: accent, color: inkOn(accent), fontFamily: fontStack, fontWeight: 700, fontSize: size === 'lg' ? 17 : 14 }} aria-hidden>
+            {initialsOf(name)}
+          </span>
+        )}
         <span className="min-w-0">
           <span className="block truncate font-semibold" style={{ fontSize: size === 'lg' ? 13.5 : 12.5, color: '#111' }}>{name}</span>
           <span className="block truncate" style={{ fontSize: size === 'lg' ? 11.5 : 10.5, color: '#666' }}>{founder?.headline || `Founder, ${board.company_name}`} · 1st</span>
@@ -1489,8 +1497,10 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           <div style={{ fontFamily: fontStack, fontWeight: 500, fontSize: size === 'lg' ? 12 : 10.5, color: 'rgba(255,255,255,.75)', marginTop: 9 }}>{wordmark}. / field notes</div>
         </div>
       ) : null}
-      <div className="flex gap-5" style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #eee', fontSize: size === 'lg' ? 12 : 11, color: '#888' }}>
-        <span>👍 Like</span><span>💬 Comment</span><span>↗ Share</span>
+      <div className="flex items-center justify-around" style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid #eee', fontSize: size === 'lg' ? 12.5 : 11, fontWeight: 600, color: '#666' }} aria-hidden>
+        {([[ThumbsUp, 'Like'], [MessageSquare, 'Comment'], [Repeat2, 'Repost'], [Send, 'Send']] as const).map(([Icon, label]) => (
+          <span key={label} className="inline-flex items-center gap-1.5 py-1"><Icon size={size === 'lg' ? 17 : 15} strokeWidth={1.9} />{label}</span>
+        ))}
       </div>
     </div>
   );
@@ -4154,7 +4164,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
         @media(max-width:959px){
           .cb-review-workspace{inset:0;border-radius:0}
           .cb-review-main{display:block}
-          .cb-review-tabs{display:flex;gap:8px;position:sticky;top:0;background:white;z-index:2;padding:0 0 12px}
+          .cb-review-tabs{display:flex;gap:8px;position:sticky;top:0;background:var(--cb-paper,#fff);z-index:2;padding:0 0 12px}
           .cb-review-tabs button{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--cb-line,#ddd);font-weight:700}
           .cb-review-main[data-mobile-panel="activity"] .cb-review-copy{display:none}
           .cb-review-main[data-mobile-panel="preview"] .cb-review-activity{display:none}
@@ -4207,7 +4217,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
           {workspace && <div className="cb-review-tabs" role="tablist" aria-label="Review view">
             {(['preview','activity'] as const).map(panel => <button key={panel} type="button" role="tab" id={`review-${panel}-tab-${item.id}`} aria-selected={reviewPanel === panel} aria-controls={`review-${panel}-${item.id}`} tabIndex={reviewPanel === panel ? 0 : -1}
               onClick={() => setReviewPanel(panel)} onKeyDown={e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); const next = panel === 'preview' ? 'activity' : 'preview'; setReviewPanel(next); document.getElementById(`review-${next}-tab-${item.id}`)?.focus(); } }}
-              style={{ color: reviewPanel === panel ? INK : DIM, background: reviewPanel === panel ? caWash(accent,10) : 'white' }}>{panel === 'preview' ? 'Preview' : 'Comments & history'}</button>)}
+              style={{ color: reviewPanel === panel ? INK : DIM, background: reviewPanel === panel ? caWash(accent,10) : 'var(--cb-paper-raise, #fff)' }}>{panel === 'preview' ? 'Preview' : 'Comments & history'}</button>)}
           </div>}
           {/* The caption has no independent scrollbar. The workspace body owns scrolling. */}
           <div className={workspace ? 'cb-review-main' : undefined} data-mobile-panel={reviewPanel}>
@@ -4308,6 +4318,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, onRemove,
                       live
                       foldSwitch={false}
                       awaitingApproval={awaitingApproval}
+                      startExpanded
                     />
                   </div>
                   {!body && !item.body && <p className="mt-3 text-[14px]" style={{ color: DIM }}>No copy has been added yet.</p>}
