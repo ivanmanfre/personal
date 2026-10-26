@@ -73,6 +73,10 @@ export type ReportAudienceSlice = {
 export type ReportConfig = {
   slug: string;
   kind: 'month17' | 'weekly';
+  /** Day of the month the report months start on (RISE 17, the default for month17). Set on a
+   *  weekly board, its months run day to day instead of by calendar month (ARCH: Stripe
+   *  billing day 18, moved from the 11th on 2026-08-31). */
+  monthDay?: number;
   /** First day that counts (YYYY-MM-DD, the client's zone). */
   start: string;
   tz: string;
@@ -113,7 +117,7 @@ export const REPORT_CONFIGS: Record<string, ReportConfig> = {
     homeResults: true,
   },
   'arch-agency': {
-    slug: 'arch-agency', kind: 'weekly', start: '2026-08-31', tz: 'Europe/Zagreb',
+    slug: 'arch-agency', kind: 'weekly', monthDay: 18, start: '2026-08-31', tz: 'Europe/Zagreb',
     who: ['game and app team', 'game and app teams'],
     fit: ['person who fits your buyer', 'people who fit your buyer'],
     reach: 'reached',
@@ -231,9 +235,10 @@ export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
     label: `Since the start (${dm(start)})`, eyebrow: `Since the start · ${dm(start)}`,
     phrase: `since ${dm(start)}`, current: true,
   };
-  if (cfg.kind === 'month17') {
+  if (cfg.kind === 'month17' || cfg.monthDay) {
+    const day = cfg.monthDay ?? 17;
     const [ty, tm, td] = parts(today);
-    let s = td >= 17 ? mk(ty, tm, 17) : mk(ty, tm - 1, 17);
+    let s = td >= day ? mk(ty, tm, day) : mk(ty, tm - 1, day);
     let e = addMonths(s, 1);
     let first = true;
     while (e > start) {
@@ -247,12 +252,15 @@ export function reportPeriods(cfg: ReportConfig, today: string): Period[] {
     }
     // Weeks too (2026-10-12), after the months so the board still opens on its report month.
     const monthFor = (k: string) => out.find((p) => k >= p.start && k < p.end);
-    out.push(...weekPeriods(start, today, monthFor));
+    const weeks = weekPeriods(start, today, monthFor);
+    // A weekly board (ARCH) still opens on its current week, its billing months after the weeks.
+    if (cfg.kind === 'weekly') return [...weeks, ...out, all];
+    out.push(...weeks);
     out.push(all);
     return out;
   }
-  // weekly: Mon-Sun weeks from the start, then calendar months from the first full month
-  // (the first month reaches back to the start day: ARCH's September opens on Mon 31 Aug).
+  // weekly (SwishDM): Mon-Sun weeks from the start, then calendar months from the first full
+  // month (the first month reaches back to the start day).
   const [sy, sm, sd] = parts(start);
   let mStart = sd === 1 ? start : mk(sy, sm + 1, 1);
   const monthsAsc: Period[] = [];
@@ -464,7 +472,7 @@ export function series(cfg: ReportConfig, periods: Period[], report: ReportPaylo
   const points = buckets.map((p) => {
     const f = computeFigures(cfg, p, report, board, null);
     const value = which === 'calls' ? f.calls.n : which === 'wrote' ? (f.wrote ?? 0) : (f.came?.n ?? 0);
-    const label = p.kind === 'week' ? dm(p.start) : cfg.kind === 'month17' ? dm(p.start) : monthShort(p.start === cfg.start ? addDays(p.start, 1) : p.start);
+    const label = p.kind === 'week' ? dm(p.start) : cfg.kind === 'month17' || cfg.monthDay ? dm(p.start) : monthShort(p.start === cfg.start ? addDays(p.start, 1) : p.start);
     return { key: p.key, label, value, current: p.current };
   });
   return { unit: useWeeks ? 'week' : 'month', points };
@@ -478,7 +486,7 @@ export function slices(cfg: ReportConfig, p: Period, periods: Period[], today: s
     ...x,
     label: x.kind === 'week'
       ? (x.current ? 'This week' : `Week of ${dm(x.start)}`)
-      : cfg.kind === 'month17' ? (x.current ? `${dm(x.start)} to today` : `${dm(x.start)} to ${dm(x.end)}`) : x.label.replace(/^This month \((.*)\)$/, '$1'),
+      : cfg.kind === 'month17' || cfg.monthDay ? (x.current ? `${dm(x.start)} to today` : `${dm(x.start)} to ${dm(x.end)}`) : x.label.replace(/^This month \((.*)\)$/, '$1'),
   });
   if (p.kind === 'all') {
     const months = periods.filter((x) => x.kind === 'month').slice().reverse();
