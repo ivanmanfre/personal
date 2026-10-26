@@ -82,20 +82,22 @@ it('keeps the launch resource and comment keyword available in workspace tools',
  expect(r.getByRole('button', { name: 'Approve ✓' })).toBeTruthy();
 });
 
-it('plays video inside the single LinkedIn preview while preserving the caption fold', () => {
+it('plays video inside the single LinkedIn preview and opens on the whole caption', () => {
  const long = 'Hook line that has to land.\n\n' + 'Body sentence that sits under the fold. '.repeat(30) + 'Final closing line.';
- const r = render(<DetailModal item={{ ...video, body: long }} board={{ ...board, founder: { name: 'Jonathan Kiekbusch', headline: 'Founder, SwishDM' } }} accent="#FC5B06" stage="review" onClose={() => {}} onApprove={async () => ({ ok: true })} isLive reviewMode slug="swishdm-live" editDraft={async () => ({ ok: true })} act={async () => ({ ok: true })} />);
+ const r = render(<DetailModal item={{ ...video, body: long }} board={{ ...board, founder: { name: 'Jonathan Kiekbusch', headline: 'Founder, SwishDM', avatar_url: 'https://example.com/jonathan.jpg' } }} accent="#FC5B06" stage="review" onClose={() => {}} onApprove={async () => ({ ok: true })} isLive reviewMode slug="swishdm-live" editDraft={async () => ({ ok: true })} act={async () => ({ ok: true })} />);
  const li = r.container.querySelector('[data-review-li-preview]')!;
  expect(li.textContent).toContain('Jonathan Kiekbusch');
  expect(li.textContent).toContain('Founder, SwishDM');
+ // The founder's real photo, not initials, when the board has one.
+ expect(li.querySelector('img[src="https://example.com/jonathan.jpg"]')).toBeTruthy();
+ expect(li.textContent).toContain('Repost');
  expect(li.textContent).toContain('Hook line that has to land.');
  expect(li.querySelector('video')?.getAttribute('src')).toBe(video.media_url);
  expect(li.querySelector('video')?.hasAttribute('controls')).toBe(true);
  expect(r.container.querySelector('.cb-review-media')).toBeNull();
  expect(r.container.querySelectorAll('video')).toHaveLength(1);
- const more = Array.from(li.querySelectorAll('button')).find(b => /see more/.test(b.textContent || ''))!;
- expect(li.textContent).not.toContain('Final closing line.');
- fireEvent.click(more);
+ // The review opens on the whole post, not the feed fold.
+ expect(Array.from(li.querySelectorAll('button')).some(b => /see more/.test(b.textContent || ''))).toBe(false);
  expect(li.textContent).toContain('Final closing line.');
  fireEvent.click(r.getByRole('button', { name: 'Edit copy' }));
  expect(r.getByRole('textbox', { name: 'Post copy' })).toBeTruthy();
