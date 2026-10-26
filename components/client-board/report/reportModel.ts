@@ -222,9 +222,18 @@ function weekPeriods(start: string, today: string, monthFor: (k: string) => Peri
 }
 
 /** The period the Outreach tab opens on: the current week (Ivan 2026-10-12: the panel shows
- *  time periods, never the all-time pile by default). Falls back to the board's default. */
-export function outreachDefaultPeriod(periods: Period[]): Period {
-  return periods.find((p) => p.kind === 'week' && p.current) || periods[0];
+ *  time periods, never the all-time pile by default). When nobody has written back, said yes or
+ *  booked in the current week yet, it opens on last week instead: on a Monday morning the
+ *  current week read 0 / 0 / 0 under a strip saying 7 people were interested (SwishDM 26 Oct).
+ *  Falls back to the board's default. */
+export function outreachDefaultPeriod(periods: Period[], hasResult?: (p: Period) => boolean): Period {
+  const weeks = periods.filter((p) => p.kind === 'week');
+  const current = weeks.find((p) => p.current);
+  if (current && hasResult && !hasResult(current)) {
+    const last = weeks[weeks.indexOf(current) + 1];
+    if (last && hasResult(last)) return last;
+  }
+  return current || periods[0];
 }
 
 export function reportPeriods(cfg: ReportConfig, today: string): Period[] {

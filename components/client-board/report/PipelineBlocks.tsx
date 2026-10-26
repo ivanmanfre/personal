@@ -300,10 +300,11 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
               style={{ marginTop: 10 }}
               columns={[{ label: 'How we found them' }, ...['Reached', 'Connected', 'Wrote back', interestedLabel, 'Calls booked'].map((l) => ({ label: l, align: 'right' as const, width: '1%' }))]}
             >
-              <LedgerRow tone="group">
+              {/* One source only: its row is the total, so the total row would print the same numbers twice. */}
+              {rows.length !== 1 && <LedgerRow tone="group">
                 <LedgerCell valign="middle"><span style={{ fontSize: 14.5, fontWeight: 800 }}>{all.label}</span></LedgerCell>
                 {cells(all).map((v, i) => <LedgerCell key={i} num align="right" valign="middle">{fmt(v)}</LedgerCell>)}
-              </LedgerRow>
+              </LedgerRow>}
               {rows.map((r) => (
                 <LedgerRow key={r.label}>
                   <LedgerCell valign="middle"><span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cb-ink-soft)' }}>{r.label}</span></LedgerCell>
@@ -316,7 +317,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
               ))}
             </Ledger>
             <div className="cb-pipe-stack" style={{ marginTop: 8 }}>
-              {[all, ...rows].map((r, ri) => (
+              {(rows.length === 1 ? rows : [all, ...rows]).map((r, ri) => (
                 <div key={r.label} style={{ padding: '10px 0', borderTop: `1px solid ${ri === 1 ? 'var(--cb-line-bold)' : 'var(--cb-line)'}` }}>
                   <div style={{ fontSize: 14, fontWeight: ri === 0 ? 800 : 600, color: ri === 0 ? 'var(--cb-ink)' : 'var(--cb-ink-soft)' }}>{r.label}</div>
                   <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '2px 12px', fontSize: 13, color: MUTE }}>
@@ -633,13 +634,17 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
       {view === 'queue' && queue ? queue : (
         <>
           <DeskH2 style={{ maxWidth: '40ch', textWrap: 'balance' } as React.CSSProperties}>
-            {nBooked > 0 ? <><b>{nBooked} {nBooked === 1 ? 'call' : 'calls'} booked</b> {when}{bookedNames.length && arch ? `, with ${bookedNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}.</> : <>No calls booked {when}.</>}
-            {nInterested > 0 ? <> {nInterested} {nBooked > 0 ? 'more ' : ''}{who} interested {when}.</> : null}
+            {nBooked > 0 ? <>
+              <b>{nBooked} {nBooked === 1 ? 'call' : 'calls'} booked</b> {when}{bookedNames.length && arch ? `, with ${bookedNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}.
+              {nInterested > 0 ? <> {nInterested} more {who} interested {when}.</> : null}
+            </> : nInterested > 0 ? (
+              // No call yet: lead with who said yes, never with the zero (SwishDM 26 Oct).
+              <><b>{nInterested} {arch || isSwish(ctx) ? (nInterested === 1 ? 'person' : 'people') : (nInterested === 1 ? 'founder' : 'founders')} said yes{arch ? ' or asked for details' : ''}</b> {when}. No calls booked {when}{P.current ? ' yet' : ''}.</>
+            ) : <>No calls booked {when}.</>}
           </DeskH2>
           <ReportFigures figs={figs} />
 
-          <LinesLedger ctx={ctx} />
-          <CallsChart ctx={ctx} />
+          {/* The people first, then the breakdown and the history (Ivan 26 Oct: "hard to follow"). */}
           <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : isSwish(ctx) ? `said yes to the comparison or a call ${when}, not booked yet` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
             {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody {when}.</Footnote>}
             {movedOn > 0 && <Footnote>{movedOn} more said yes {when}, but their latest reply does not. They are under Wrote back.</Footnote>}
@@ -650,6 +655,9 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
           <ListSection title="Wrote back" count={recent.length} note={`everyone else who replied ${when}, including people who said no`} open={false}>
             {recent.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={recent} accent={accent} /> : <Footnote>Nobody else {when}.</Footnote>}
           </ListSection>
+
+          <LinesLedger ctx={ctx} />
+          <CallsChart ctx={ctx} />
 
         </>
       )}

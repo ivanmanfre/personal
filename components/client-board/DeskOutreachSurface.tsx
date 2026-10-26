@@ -576,7 +576,6 @@ export default function DeskOutreachSurface({
   if (report) {
     return (
       <div className="pb-16" data-surface="desk-outreach">
-        {o.resource && <ResourceCard r={o.resource} />}
         <ReportPipeline
           ctx={report}
           renderReplySource={renderReplySource}
@@ -585,6 +584,8 @@ export default function DeskOutreachSurface({
           booked={board.outreach_truth?.booked || []}
           queue={reviewNode || undefined}
         />
+        {/* What every prospect is offered: reference, so it sits under the results. */}
+        {o.resource && <div style={{ marginTop: 36 }}><ResourceCard r={o.resource} /></div>}
       </div>
     );
   }

@@ -294,7 +294,10 @@ function plateToggle(active: boolean): React.CSSProperties {
 }
 
 export function CallsChart({ ctx }: { ctx: ReportCtx }) {
-  const [which, setWhich] = React.useState<SeriesKey>('calls');
+  // Until the first call is booked the calls chart is a row of zeros; open on who wrote back.
+  const [which, setWhich] = React.useState<SeriesKey>(() => (
+    ctx.payload && !series(ctx.cfg, ctx.periods, ctx.payload, ctx.board, 'calls').points.some((pt) => pt.value > 0) ? 'wrote' : 'calls'
+  ));
   const opts: Array<{ k: SeriesKey; label: string }> = [
     { k: 'calls', label: 'Calls booked' },
     ...(ctx.payload ? [{ k: 'wrote' as SeriesKey, label: 'Wrote back' }, { k: 'came' as SeriesKey, label: 'Came to you' }] : []),

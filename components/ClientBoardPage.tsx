@@ -39,8 +39,8 @@ import { DeskPerformanceSurface } from './client-board/DeskPerformanceSurface';
 import { expectationFor } from './client-board/expectation';
 import { AudienceSection } from './client-board/AudienceSection';
 import type { AudiencePayload, DecideFn } from './client-board/AudienceSection';
-import { reportConfigFor, reportPeriods, outreachDefaultPeriod, dayKey, type ReportPayload } from './client-board/report/reportModel';
-import { pipelineStripText } from './client-board/report/PipelineBlocks';
+import { reportConfigFor, reportPeriods, outreachDefaultPeriod, dayKey, type ReportPayload, type Period } from './client-board/report/reportModel';
+import { pipelineStripText, wroteIn, yesIn, bookedIn } from './client-board/report/PipelineBlocks';
 import { reportStripText, type ReportCtx } from './client-board/report/ReportBlocks';
 import DeskNewsletterSurface from './client-board/DeskNewsletterSurface';
 import DeskCalendarStrip from './client-board/DeskCalendarStrip';
@@ -9693,7 +9693,9 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // by default). The chosen period is shared, so a pick on either tab carries to the other.
   const outreachReportCtx: ReportCtx | null = useMemo(() => {
     if (!reportCtx || reportPeriodKey) return reportCtx;
-    return { ...reportCtx, period: outreachDefaultPeriod(reportCtx.periods) };
+    const people = reportCtx.payload?.people || [];
+    const hasResult = (p: Period) => people.some((x) => wroteIn(reportCtx, p, x) || yesIn(reportCtx, p, x) || bookedIn(reportCtx, p, x));
+    return { ...reportCtx, period: outreachDefaultPeriod(reportCtx.periods, hasResult) };
   }, [reportCtx, reportPeriodKey]);
   // Deep-link: /client/:slug?token=...&post=<draft-id> (or #post-<id>) opens that post's
   // detail. The week-1 brief links each scheduled post this way. Harmless on any board:
