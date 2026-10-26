@@ -2,9 +2,9 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ReportPipeline, linesData, isYes, funnelStages } from './PipelineBlocks';
+import { ReportPipeline, linesData, isYes, funnelStages, wroteIn, yesIn, bookedIn } from './PipelineBlocks';
 import type { ReportCtx } from './ReportBlocks';
-import { reportPeriods, REPORT_CONFIGS, type ReportPayload } from './reportModel';
+import { reportPeriods, outreachDefaultPeriod, REPORT_CONFIGS, type ReportPayload, type Period } from './reportModel';
 
 /** Test-only fabrication shaped like the swishdm client_board_report payload (2026-10-15). */
 const payload: ReportPayload = {
@@ -49,5 +49,19 @@ describe('SwishDM report', () => {
     expect(html).toContain('said yes to the comparison or a call');
     expect(html).not.toMatch(/Store owners|a scan or a chat|founders are|What kinds of stores/);
     expect(funnelStages(ctx()).map((s) => s.v)).toEqual([3, 1, 2, 1, 0]);
+  });
+
+  it('opens on last week while nobody has written back this week, and leads with the yes', () => {
+    // Monday 26 Oct: every reply landed last week.
+    const cfg = { ...REPORT_CONFIGS['swishdm-live'], start: '2026-10-19' };
+    const periods = reportPeriods(cfg, '2026-10-26');
+    const base: ReportCtx = { cfg, periods, period: periods[0], onPeriod: () => {}, payload, board: { queue: [] }, audience: null, today: '2026-10-26' };
+    const hasResult = (p: Period) => payload.people.some((x) => wroteIn(base, p, x) || yesIn(base, p, x) || bookedIn(base, p, x));
+    const open = outreachDefaultPeriod(periods, hasResult);
+    expect(open.key).toBe('w:2026-10-19');
+    expect(outreachDefaultPeriod(periods).key).toBe('w:2026-10-26');
+    const text = renderToStaticMarkup(<ReportPipeline ctx={{ ...base, period: open }} accent="#FC5B06" log={[]} booked={[]} />).replace(/<[^>]+>/g, '');
+    expect(text).toContain('1 person said yes last week. No calls booked last week.');
+    expect(text.indexOf('Interested')).toBeLessThan(text.indexOf('Who we reach'));
   });
 });
