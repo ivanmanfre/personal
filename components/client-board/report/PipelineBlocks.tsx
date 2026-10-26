@@ -284,7 +284,7 @@ function LinesLedger({ ctx }: { ctx: ReportCtx }) {
         {isArch(ctx)
           ? <>Grouped by the kind of company, then by how we found each person. Each number counts what happened {when}, each person once.</>
           : isSwish(ctx)
-            ? <>Grouped by role, then by how we found each person. Each number counts what happened {when}, each person once. Said yes means they said yes to the comparison or a call.</>
+            ? <>Grouped by role, then by how we found each person. Each number counts what happened {when}, each person once. Said yes means they said yes to the resource or asked for a call.</>
             : <>Two groups of people, and where we found them. Each number counts what happened {when}, each person once. Said yes means they said yes to a scan or a chat.</>}
       </Footnote>
       {!data.length && <Footnote style={{ marginTop: 14 }}>Nothing new {when} yet.</Footnote>}
@@ -613,7 +613,7 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
 
   const figs = [
     { key: 'calls', strong: true, value: nBooked, caption: `${nBooked === 1 ? 'call' : 'calls'} booked ${when}` },
-    { key: 'interested', strong: true, value: nInterested, caption: arch ? `interested ${when}: said yes or asked for details, and their latest reply still does` : `interested ${when}: said yes, not booked yet` },
+    { key: 'interested', strong: true, value: nInterested, caption: arch ? `interested ${when}: said yes or asked for details, and their latest reply still does` : isSwish(ctx) ? `interested ${when}: said yes to the resource, not booked yet` : `interested ${when}: said yes, not booked yet` },
     { key: 'wrote', value: nWrote, caption: `${nWrote === 1 ? 'person' : 'people'} wrote back ${when}` },
   ];
 
@@ -639,13 +639,13 @@ export function ReportPipeline({ ctx, accent, log, booked = [], queue, queueCoun
               {nInterested > 0 ? <> {nInterested} more {who} interested {when}.</> : null}
             </> : nInterested > 0 ? (
               // No call yet: lead with who said yes, never with the zero (SwishDM 26 Oct).
-              <><b>{nInterested} {arch || isSwish(ctx) ? (nInterested === 1 ? 'person' : 'people') : (nInterested === 1 ? 'founder' : 'founders')} said yes{arch ? ' or asked for details' : ''}</b> {when}. No calls booked {when}{P.current ? ' yet' : ''}.</>
+              <><b>{nInterested} {arch || isSwish(ctx) ? (nInterested === 1 ? 'person' : 'people') : (nInterested === 1 ? 'founder' : 'founders')} said yes{arch ? ' or asked for details' : isSwish(ctx) ? ' to the resource' : ''}</b> {when}. No calls booked {when}{P.current ? ' yet' : ''}.</>
             ) : <>No calls booked {when}.</>}
           </DeskH2>
           <ReportFigures figs={figs} />
 
           {/* The people first, then the breakdown and the history (Ivan 26 Oct: "hard to follow"). */}
-          <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : isSwish(ctx) ? `said yes to the comparison or a call ${when}, not booked yet` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
+          <ListSection id="cb-pipe-interested" title="Interested" count={interested.length} note={arch ? `said yes or asked for details ${when}, and their latest reply still does` : isSwish(ctx) ? `said yes to the resource or asked for a call ${when}, not booked yet` : `said yes to a scan or a chat ${when}, not booked yet`} open={interested.length > 0}>
             {interested.length ? <PersonRows renderReplySource={renderReplySource} ctx={ctx} rows={interested} accent={accent} hideYes /> : <Footnote>Nobody {when}.</Footnote>}
             {movedOn > 0 && <Footnote>{movedOn} more said yes {when}, but their latest reply does not. They are under Wrote back.</Footnote>}
           </ListSection>

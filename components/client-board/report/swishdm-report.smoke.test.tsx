@@ -46,7 +46,7 @@ describe('SwishDM report', () => {
     expect(data.map((d) => d.ln.title)).toEqual(['Founders and CEOs', 'Marketing leads', 'Other roles']);
     expect(data[0].rows[0].label).toBe('People who engaged with your posts or profile');
     const html = renderToStaticMarkup(<ReportPipeline ctx={ctx()} accent="#FC5B06" log={[]} booked={[]} />);
-    expect(html).toContain('said yes to the comparison or a call');
+    expect(html).toContain('said yes to the resource or asked for a call');
     expect(html).not.toMatch(/Store owners|a scan or a chat|founders are|What kinds of stores/);
     expect(funnelStages(ctx()).map((s) => s.v)).toEqual([3, 1, 2, 1, 0]);
   });
@@ -61,7 +61,7 @@ describe('SwishDM report', () => {
     expect(open.key).toBe('w:2026-10-19');
     expect(outreachDefaultPeriod(periods).key).toBe('w:2026-10-26');
     const text = renderToStaticMarkup(<ReportPipeline ctx={{ ...base, period: open }} accent="#FC5B06" log={[]} booked={[]} />).replace(/<[^>]+>/g, '');
-    expect(text).toContain('1 person said yes last week. No calls booked last week.');
+    expect(text).toContain('1 person said yes to the resource last week. No calls booked last week.');
     expect(text.indexOf('Interested')).toBeLessThan(text.indexOf('Who we reach'));
   });
 });

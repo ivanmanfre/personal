@@ -10020,6 +10020,10 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
   // hides the tab exactly as before. No behaviour change for live boards, which already
   // required the package.
   const outreachAvailable = !!viewBoard.outreach;
+  // Live boards keep Newsletter off the nav until it has an entry (Ivan 26 Oct). The surface
+  // stays addressable by #newsletter; preview boards still show the plan.
+  const newsletterAvailable = !isLive || (viewBoard.newsletter?.issues?.length || 0) > 0
+    || viewBoard.queue.some((q) => q.kind === 'newsletter');
   // Desk nav: six tabs, in the order the client reads them. A board with no outreach
   // package still hides that tab, exactly as before. The folded surfaces are NOT removed —
   // they stay in `surfaces` and stay addressable, so an old link resolves instead of 404ing
@@ -10030,6 +10034,7 @@ export default function ClientBoardPage({ lockedSlug }: { lockedSlug?: string } 
       ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
       : TABS.filter((t) => t.id !== 'team')
   ).filter((t) => t.id !== 'outreach' || outreachAvailable)
+    .filter((t) => t.id !== 'newsletter' || newsletterAvailable)
     // A board with a report period opens on Home. Tabs read Outreach and Performance (Ivan 2026-09-29).
     .map((t) => (reportCtx && !reportCtx.cfg.outreachOnly && skin === 'desk' && (t.id === 'week' || t.id === 'performance' || t.id === 'outreach')
       ? { ...t, label: t.id === 'week' ? 'Home' : t.id === 'outreach' ? 'Outreach' : 'Performance' } as unknown as (typeof TABS)[number]
