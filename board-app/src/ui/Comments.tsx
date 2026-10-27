@@ -33,7 +33,8 @@ function Text({ text, team }: { text: string; team: string[] }) {
     const re = new RegExp(`(${tags.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
     return text.split(re).filter(Boolean).map(t => ({ t, at: tags.includes(t) }));
   }, [text, team]);
-  return <>{parts.map((p, i) => (p.at ? <span key={i} className="mention">{p.t}</span> : <Fragment key={i}>{p.t}</Fragment>))}</>;
+  // A tag for a name two teammates share carries the email in brackets for the server; show the name only.
+  return <>{parts.map((p, i) => (p.at ? <span key={i} className="mention" title={p.t.slice(1)}>{p.t.replace(/ \([^()]+@[^()]+\)$/, '')}</span> : <Fragment key={i}>{p.t}</Fragment>))}</>;
 }
 
 export function Composer({ team, onSend, placeholder, submit = 'Comment', onCancel, autoFocus = false, label, people }: {

@@ -289,7 +289,7 @@ function Account() {
         <span className="h-[22px] w-[22px] rounded-full bg-sunk inline-flex items-center justify-center text-[10.5px] font-semibold text-soft">
           {email ? email.slice(0, 1).toUpperCase() : <UserRound size={13} />}
         </span>
-        <span className="max-sm:hidden truncate max-w-[180px]">{email ? (L?.model.nameOf(email) || email) : 'Board link'}</span>
+        <span className="max-sm:hidden truncate max-w-[180px]">{email ? (L?.model.nameOf(email) || email) : 'Sign in'}</span>
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-full mt-2 z-50 w-[300px] rounded-[14px] border hair bg-paper p-3 shadow-[0_12px_40px_rgba(0,0,0,0.25)]">

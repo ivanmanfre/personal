@@ -112,6 +112,11 @@ export type Model = {
   role: string;
 };
 
+const NOISE = new Set(['day_left_empty', 'day_refilled', 'slot_replace_undone', 'angle_swap_undone', 'slot_replaced', 'invite', 'shift_request']);
+
+/** Board labels (source, topic, format notes, resource titles) never show a long dash. Post copy is left as written. */
+const nd = (v?: string | null) => (v ? v.replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/,\s*,/g, ',') : v || undefined);
+
 const n = (v: unknown) => (v == null || v === '' ? 0 : Number(v) || 0);
 
 export function dayKey(iso: string | Date, tz: string) {
@@ -201,14 +206,19 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
       id: q.id, title, hook: q.hook || title, body: q.post_body || q.body || '',
       image: images[0], images,
       kind: q.kind, style: q.style || '', format: q.style === 'text' && images.length ? 'Post with photo' : FORMAT[q.style] || (q.kind === 'carousel' ? 'Carousel' : 'Post'),
-      angle: angle && angle !== FORMAT[q.style] ? angle : undefined,
+      angle: angle && angle !== FORMAT[q.style] ? nd(angle) : undefined,
       status, scheduledAt: q.scheduled_at || undefined, publishedAt: q.published_at || (status === 'live' ? q.scheduled_at : undefined) || undefined,
-      url: q.post_url || undefined, source: plainSource(q.source_label), topic: q.topic_label || undefined,
+      url: q.post_url || undefined, source: nd(plainSource(q.source_label)), topic: nd(q.topic_label),
       funnel: q.funnel_stage || undefined,
       approvedAt: meta[q.id]?.at, approvedBy: meta[q.id]?.by,
       archivedAt: q.archived_at || undefined,
-      lmKeyword: q.lm_gate?.keyword, lmTitle: q.lm_gate?.title,
-      trail: (q.agent_trail || []).filter((t: any) => t && t.step).map((t: any) => ({ step: t.step, detail: t.detail, done: !!t.done })),
+      lmKeyword: q.lm_gate?.keyword, lmTitle: nd(q.lm_gate?.title),
+      // The drafter stamps "Written from your discovery call" on every post; keep it only when the source really is a call.
+      trail: (q.agent_trail || []).filter((t: any) => t && t.step).map((t: any) => ({
+        step: nd(t.step) || '',
+        detail: /discovery call/i.test(t.detail || '') && !/call|meet/i.test(q.source_label || '') ? undefined : nd(t.detail),
+        done: !!t.done,
+      })),
       perf: pm ? { impressions: n(pm.impressions), reactions: n(pm.reactions), comments: n(pm.comments), reposts: n(pm.reposts), reached: pm.network?.members_reached } : undefined,
     };
   });
@@ -398,10 +408,16 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
     funnel, funnelAll, weekly,
     people,
     leadMagnets: (b.lead_magnets || []).map((l: any) => ({
-      id: l.id || l.title, title: l.title, status: plainLmStatus(l.status), statusRaw: l.status || '', url: l.url,
+      id: l.id || l.title, title: nd(l.title) || '', status: plainLmStatus(l.status), statusRaw: l.status || '', url: l.url,
       cover: l.cover_url || (l.covers || [])[0], optins: l.optins ?? null, visitors: l.visitors ?? null, format: l.format,
     })),
-    activity: (raw.activity || []).map((a: any) => ({ id: a.id, at: a.at, by: /board link/i.test(String(a.by || '')) ? 'Your team' : nameOf(a.by), action: a.action, title: a.title, ref: a.ref, before: a.before, after: a.after, note: a.note, text: a.text })),
+    activity: (raw.activity || [])
+      // Notes carry their own event: read those as what they are, and leave out bookkeeping rows.
+      .map((a: any) => (a.action === 'note' && a.event ? { ...a, action: a.event } : a))
+      .filter((a: any) => !NOISE.has(a.action))
+      // An edit that only changed spacing is not a change anyone needs to read.
+      .filter((a: any) => !(a.action === 'edit_copy' && typeof a.before === 'string' && typeof a.after === 'string' && a.before.trim() === a.after.trim()))
+      .map((a: any) => ({ id: a.id, at: a.at, by: /board link/i.test(String(a.by || '')) ? 'Your team' : nameOf(a.by), action: a.action, title: a.title, ref: a.ref, before: a.before, after: a.after, note: a.note, text: a.text })),
     lanes, lanesNote,
     perfNote: b.performance?.note,
     content: buildContent(raw, posts, theme.tz),

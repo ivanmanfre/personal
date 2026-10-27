@@ -3,10 +3,11 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import type { Model, Person, Step } from '../data/model';
 import { ago, fmtDay } from '../data/model';
-import { intentLabel, intentTone, plural } from '../data/copy';
+import { intentLabel, intentTone } from '../data/copy';
 import { fmtInt } from '../data/derive';
 import { AnimatedNumber, Avatar, SectionHead, SOFT, SPRING, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { track } from '../data/track';
 import { Results } from './Home';
 
 /* funnel-chart move: hovering a stage dims the others; the table columns below drive the same highlight. */
@@ -138,31 +139,18 @@ export function Lanes({ m, hover, setHover }: { m: Model; hover: number | null; 
 
 export function OutreachPanel({ full = false }: { full?: boolean }) {
   const { model: m, go } = useNav();
-  // A week-old window can read upside down (replies from earlier invites), so start on all time then.
-  const flat = !!m.funnel && m.funnel.steps.some((s, i) => i > 0 && s.value > m.funnel!.steps[i - 1].value);
-  const [scope, setScope] = useState<'win' | 'all'>(flat && m.funnelAll ? 'all' : 'win');
   const [hover, setHover] = useState<number | null>(null);
   if (!m.hasOutreach) return <p className="text-[14px] text-mute">No outreach numbers yet.</p>;
-  const f = scope === 'all' && m.funnelAll ? m.funnelAll : m.funnel;
+  // Every number counts the board's period. All-time totals and the all-time source table stay off
+  // the board: they mix months and read as this period's work.
+  const f = m.funnel;
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-10">
       <div className={`grid grid-cols-[minmax(0,1fr)] gap-10 ${full ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12' : ''}`}>
         {f && (
           <div>
-            <SectionHead
-              eyebrow={<>Invite to call · {f.label}</>}
-              right={m.funnelAll && (
-                <div className="seg" role="group" aria-label="Time range">
-                  {(['win', 'all'] as const).map(s => (
-                    <button key={s} aria-pressed={scope === s} onClick={() => setScope(s)}>
-                      {scope === s && <motion.span layoutId={`seg-${full}`} className="absolute inset-0 rounded-full bg-sunk" transition={SPRING} />}
-                      <span className="relative">{s === 'win' ? m.window.toggle : 'All time'}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            />
-            <Funnel key={scope} steps={f.steps} hover={hover} setHover={setHover} size={full ? 'lg' : 'md'} />
+            <SectionHead eyebrow={<>Invite to call · {f.label}</>} />
+            <Funnel steps={f.steps} hover={hover} setHover={setHover} size={full ? 'lg' : 'md'} />
           </div>
         )}
         {m.weekly.length > 0 && (
@@ -172,7 +160,6 @@ export function OutreachPanel({ full = false }: { full?: boolean }) {
           </div>
         )}
       </div>
-      <Lanes m={m} hover={hover} setHover={setHover} />
       {!full && (
         <button className="link self-start justify-self-start" onClick={() => go('outreach')}>Full outreach page <ArrowRight size={15} /></button>
       )}
@@ -205,7 +192,7 @@ export function PeopleList({ people, limit, showAll }: { people: Person[]; limit
         ))}
       </ul>
       {limit && people.length > limit && (
-        <button className="btn btn-outline btn-sm mt-5" onClick={() => (showAll ? showAll() : setAll(a => !a))}>
+        <button className="btn btn-outline btn-sm mt-5" onClick={() => { if (!all) track('expand', null, { which: 'people_all' }); if (showAll) showAll(); else setAll(a => !a); }}>
           {all ? 'Show fewer' : `Show all ${people.length}`}
         </button>
       )}
@@ -229,7 +216,7 @@ export function OutreachPage() {
           <Results />
           <div className="mt-10"><OutreachPanel full /></div>
           <div className="mt-10">
-            <SectionHead eyebrow={<>Everyone who booked or replied · {plural(m.people.length, 'person', 'people')}</>} />
+            <SectionHead eyebrow={<>Who booked or replied · newest first</>} />
             <PeopleList people={m.people} />
           </div>
         </>

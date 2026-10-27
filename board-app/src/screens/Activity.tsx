@@ -1,13 +1,14 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Archive, ArrowRightLeft, Check, MessageSquareText, PenLine, RotateCcw } from 'lucide-react';
 import type { Activity as Act, Model } from '../data/model';
 import { addDays, dayKey, fmtDay, fmtWeekday, fmtWhen } from '../data/model';
-import { actKind, plural, verbFor } from '../data/copy';
+import { actKind, plural, suffixFor, verbFor } from '../data/copy';
 import { archived } from '../data/derive';
 import { useLocal } from '../data/store';
 import { Avatar, SectionHead, Thumb } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { track } from '../data/track';
 
 const BADGE = { ok: Check, edit: PenLine, note: MessageSquareText, move: ArrowRightLeft, out: Archive };
 
@@ -88,7 +89,7 @@ export function Timeline({ limit }: { limit?: number }) {
                     <p className="text-[14px] leading-[1.5] text-mute">
                       <span className="text-ink font-semibold">{a.by}</span> {unscheduled ? 'took' : verbFor(a.action)}{' '}
                       <span className="text-ink">{many ? plural(all.length, 'post') : titles[0] || 'a post'}</span>
-                      {unscheduled ? <span> off the schedule</span> : d && <span> {d}</span>}
+                      {unscheduled ? <span> off the schedule</span> : <>{suffixFor(a.action) && <span> {suffixFor(a.action)}</span>}{d && <span> {d}</span>}</>}
                     </p>
                     {many && titles.length > 0 && (
                       <p className="text-[12.5px] text-mute mt-1 clamp-2">{titles.slice(0, 3).join(' · ')}{titles.length > 3 ? ` · and ${titles.length - 3} more` : ''}</p>
@@ -138,15 +139,28 @@ export function ArchiveList() {
 
 export function ActivityPage() {
   const { model: m } = useNav();
+  const { local } = useLocal();
+  const [all, setAll] = useState(false);
+  const rows = groupActivity(m).length;
+  const LIM = 20;
+  // Archived posts can be restored, so they sit above the log where they can be found.
+  const hasArchive = m.posts.some(p => p.status === 'archived' || local.pulled[p.id]);
   return (
     <div className="mx-auto w-full max-w-[820px] px-5 sm:px-8 pt-6 sm:pt-8 pb-20">
       <div className="eyebrow mb-2">Everything that changed on your board</div>
       <h1 className="display text-[28px] sm:text-[32px] mb-6">Changes log</h1>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-10">
-        <Timeline />
-        <div><ArchiveList /></div>
+        {hasArchive && <div><ArchiveList /></div>}
+        <div>
+          <Timeline limit={all ? undefined : LIM} />
+          {rows > LIM && (
+            <button className="btn btn-outline btn-sm mt-2" onClick={() => { if (!all) track('expand', null, { which: 'changes_log' }); setAll(a => !a); }}>
+              {all ? 'Show fewer' : `Show all ${rows}`}
+            </button>
+          )}
+          {all && m.activity.length >= 50 && <p className="mt-6 text-[13px] text-mute">These are the latest 50 changes.</p>}
+        </div>
       </div>
-      {m.activity.length >= 50 && <p className="mt-10 text-[13px] text-mute">Showing the latest 50 changes.</p>}
     </div>
   );
 }

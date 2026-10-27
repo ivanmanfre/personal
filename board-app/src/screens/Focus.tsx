@@ -74,7 +74,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
   const [done, setDone] = useState(queue.length === 0);
   const post = queue[idx];
   // Anything written on this post in the review counts as notes: line notes and comments are saved as
-  // comments the moment they are written, so "Send notes" only moves on.
+  // comments the moment they are written, so "Needs changes" only marks it and moves on.
   const notes = post ? local.comments.filter(c => c.ref === post.id && !c.id.startsWith('tmp-')).length : 0;
   useEffect(() => { setEditing(false); setLine(null); }, [post?.id]);
 
@@ -159,7 +159,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
         <div className="mt-3 flex items-center justify-between gap-4">
           <div className="eyebrow" data-testid="focus-counter">{done ? 'All done' : `Post ${idx + 1} of ${queue.length}`}</div>
           <div className="hidden md:flex items-center gap-4 text-[12px] text-mute">
-            {!done && <><span className="inline-flex items-center gap-1.5"><span className="kbd">A</span> approve</span><span className="inline-flex items-center gap-1.5"><span className="kbd">N</span> send notes</span><span className="inline-flex items-center gap-1.5"><span className="kbd">E</span> edit</span><span className="inline-flex items-center gap-1.5"><span className="kbd"><ArrowLeft size={11} /></span><span className="kbd"><ArrowRight size={11} /></span> move</span></>}
+            {!done && <><span className="inline-flex items-center gap-1.5"><span className="kbd">A</span> approve</span><span className="inline-flex items-center gap-1.5"><span className="kbd">N</span> needs changes</span><span className="inline-flex items-center gap-1.5"><span className="kbd">E</span> edit</span><span className="inline-flex items-center gap-1.5"><span className="kbd"><ArrowLeft size={11} /></span><span className="kbd"><ArrowRight size={11} /></span> move</span></>}
           </div>
           <button className="btn btn-outline btn-sm" onClick={onClose} aria-label="Close review"><X size={15} /> <span className="max-sm:hidden">Close</span> <span className="kbd max-md:hidden">Esc</span></button>
         </div>
@@ -172,7 +172,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
               <div className="mx-auto max-w-[680px] px-6 py-16 sm:py-24" data-testid="focus-done">
                 <CircleCheck size={28} className="text-accent-fg" strokeWidth={1.5} />
                 <h2 className="display text-[36px] sm:text-[48px] mt-6">
-                  {plural(approvedN, 'approved', 'approved')}{notesN ? `, ${notesN} sent back with notes` : ''}.
+                  {plural(approvedN, 'approved', 'approved')}{notesN ? `, ${notesN} left with notes for changes` : ''}.
                 </h2>
                 <p className="mt-4 text-[18px] text-soft">
                   {notesN ? 'Your comments are on the posts, and Ivan sees them now.' : approvedN ? 'Approved posts go into the next open slots.' : `Nothing changed. The posts stay here until ${word} decide.`}
@@ -181,7 +181,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
                 <div className="mt-10 border-t hair">
                   {queue.map(p => (
                     <div key={p.id} className="flex items-center gap-3 py-3 border-b hair">
-                      <span className={`chip ${out[p.id] === 'approved' ? 'chip-accent' : out[p.id] === 'notes' ? '' : 'chip-mute'}`}>{out[p.id] === 'approved' ? 'Approved' : out[p.id] === 'notes' ? 'Notes sent' : 'Later'}</span>
+                      <span className={`chip ${out[p.id] === 'approved' ? 'chip-accent' : out[p.id] === 'notes' ? '' : 'chip-mute'}`}>{out[p.id] === 'approved' ? 'Approved' : out[p.id] === 'notes' ? 'Needs changes' : 'Later'}</span>
                       <span className="text-[14.5px] text-ink truncate">{p.title}</span>
                     </div>
                   ))}
@@ -242,7 +242,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
                       {canApprove
                         ? <button className="btn btn-primary btn-lg w-full" disabled={editing} style={editing ? { opacity: 0.45 } : undefined} onClick={() => decide('approved')} data-testid="focus-approve">Approve <span className="kbd" style={{ opacity: 0.6 }}>A</span></button>
                         : <p className="text-[13px] text-mute">You can read and comment. Approving is for approvers on your team.</p>}
-                      <button className="btn btn-outline btn-lg w-full" disabled={!notes || editing} onClick={() => decide('notes')} data-testid="focus-notes" title={notes ? undefined : 'Leave a line note or a comment first'}>Send notes{notes ? ` (${notes})` : ''} <span className="kbd">N</span></button>
+                      <button className="btn btn-outline btn-lg w-full" disabled={!notes || editing} onClick={() => decide('notes')} data-testid="focus-notes" title={notes ? undefined : 'Leave a line note or a comment first'}>Needs changes{notes ? ` (${notes})` : ''} <span className="kbd">N</span></button>
                       {!editing && canApprove && <button className="btn btn-outline w-full" onClick={() => setEditing(true)} data-testid="focus-edit"><PenLine size={15} /> Edit the post <span className="kbd">E</span></button>}
                       {editing && <p className="text-[12.5px] text-mute text-center">Save or cancel the edit to approve.</p>}
                       <button className="btn btn-text w-full" onClick={() => { setOut(o => ({ ...o, [post.id]: o[post.id] || 'skipped' })); step(1); }}>Skip for now <span className="kbd"><ArrowRight size={11} /></span></button>
@@ -263,7 +263,7 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
       {phone && !done && post && (
         <div className="shrink-0 border-t hair bg-paper px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] grid gap-2" style={{ gridTemplateColumns: 'auto minmax(0,1fr) minmax(0,1.2fr)' }}>
           <button className="btn btn-text !px-3" onClick={() => { setOut(o => ({ ...o, [post.id]: o[post.id] || 'skipped' })); step(1); }}>Later</button>
-          <button className="btn btn-outline" disabled={!notes} onClick={() => decide('notes')}>Send notes</button>
+          <button className="btn btn-outline" disabled={!notes} onClick={() => decide('notes')}>Needs changes</button>
           {canApprove ? <button className="btn btn-primary" onClick={() => decide('approved')} data-testid="focus-approve">Approve</button> : <span />}
         </div>
       )}

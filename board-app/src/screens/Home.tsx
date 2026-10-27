@@ -3,8 +3,8 @@ import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-m
 import { ArrowRight, ArrowUpRight, CircleCheck, Undo2 } from 'lucide-react';
 import type { Model, Post } from '../data/model';
 import { ago, dayKey, fmtDay, fmtWeekday, fmtWhen } from '../data/model';
-import { intentLabel, intentTone, plural, verbFor } from '../data/copy';
-import { archived, fmtInt, needsOk, nextOut, nextSevenDays, reviewMinutes, upcoming, weekDays, whenLabel } from '../data/derive';
+import { intentLabel, intentTone, plural, suffixFor, verbFor } from '../data/copy';
+import { fmtInt, needsOk, nextOut, nextSevenDays, reviewMinutes, upcoming, weekDays, whenLabel } from '../data/derive';
 import { useLocal } from '../data/store';
 import { track } from '../data/track';
 import { AnimatedNumber, Sheet, SOFT, SPRING, Thumb } from '../ui/kit';
@@ -25,6 +25,8 @@ function Head({ children, all, onAll, which }: { children: ReactNode; all?: stri
     </div>
   );
 }
+const ROWS = 4;
+const ROWS_OUT = 4;
 const Count = ({ n }: { n: number }) => <span className="chip !h-[18px] !px-1.5 !text-[10.5px] !tracking-normal">{n}</span>;
 const Quiet = ({ children }: { children: ReactNode }) => <p className="text-[13.5px] text-mute py-1">{children}</p>;
 
@@ -92,9 +94,12 @@ function ResultsBand() {
     label = m.window.label;
     const out = m.content.posts.filter(p => m.inWindow(p.at));
     const seen = out.reduce((a, p) => a + (p.measured ? p.impressions : 0), 0);
+    // Still to go out inside the same window (to the window's last day), so every tile counts one period.
+    const end = m.window.kind === 'week' ? m.window.end : null;
+    const toGo = upcoming(m, statusOf).filter(p => !end || dayKey(p.scheduledAt!, m.theme.tz) <= end).length;
     tiles = [
       { key: 'live', label: 'Published', value: out.length, on: () => go('content') },
-      { key: 'next', label: 'Lined up', value: upcoming(m, statusOf).length, on: () => go('posts') },
+      { key: 'next', label: end ? 'Still to go out' : 'Lined up', value: toGo, on: () => go('posts') },
       ...(seen ? [{ key: 'seen', label: 'Impressions', value: seen, on: () => go('content') }] : []),
     ];
   }
@@ -172,14 +177,14 @@ function OkRow({ post }: { post: Post }) {
   const reduce = useReducedMotion();
   const done = statusOf(post) === 'approved';
   return (
-    <motion.li layout={reduce ? false : 'position'} transition={SOFT} className="border-b hair py-2.5" data-k="row">
+    <motion.li layout={reduce ? false : 'position'} transition={SOFT} className="border-b hair py-2" data-k="row">
       <AnimatePresence mode="popLayout" initial={false}>
         {done ? (
           <motion.div
             key="receipt"
             layoutId={reduce ? undefined : `ok-${post.id}`}
             transition={SPRING}
-            className="flex items-center gap-3 h-12 px-4 bg-wash"
+            className="flex items-center gap-3 h-10 px-4 bg-wash"
             style={{ borderRadius: 999 }}
             data-testid="receipt"
           >
@@ -191,8 +196,8 @@ function OkRow({ post }: { post: Post }) {
             {local.approved[post.id] && <button className="btn-text btn btn-sm !h-8 shrink-0" onClick={() => unapprove(post.id)}><Undo2 size={14} /> Undo</button>}
           </motion.div>
         ) : (
-          <motion.div key="row" exit={{ opacity: 0, transition: { duration: 0.12 } }} className="grid items-center gap-x-3.5 gap-y-2" style={{ gridTemplateColumns: '48px minmax(0,1fr) auto' }}>
-            <button onClick={() => openFocus(post.id)} aria-label={`Open ${post.title}`}><Thumb src={post.image} text={post.hook} size={48} rounded={8} /></button>
+          <motion.div key="row" exit={{ opacity: 0, transition: { duration: 0.12 } }} className="grid items-center gap-x-3.5 gap-y-2" style={{ gridTemplateColumns: '40px minmax(0,1fr) auto' }}>
+            <button onClick={() => openFocus(post.id)} aria-label={`Open ${post.title}`}><Thumb src={post.image} text={post.hook} size={40} rounded={7} /></button>
             <div className="min-w-0">
               <button onClick={() => openFocus(post.id)} className="text-left text-[14.5px] font-medium text-ink line-clamp-1 max-sm:line-clamp-2 max-sm:leading-snug hover:underline underline-offset-4 decoration-[var(--line-bold)]">{post.title}</button>
               <div className="text-[12.5px] text-mute mt-0.5 truncate">{post.format}{post.source ? ` · ${post.source}` : ''}</div>
@@ -216,12 +221,12 @@ function NeedsOk() {
   const { model: m, openFocus } = useNav();
   const { statusOf } = useLocal();
   const base = m.posts.filter(p => p.status === 'needs_ok');
-  const shown = base.slice(0, 4);
-  const rest = base.slice(4).filter(p => statusOf(p) === 'needs_ok');
+  const shown = base.slice(0, ROWS);
+  const rest = base.slice(ROWS).filter(p => statusOf(p) === 'needs_ok');
   const left = needsOk(m, statusOf).length;
   return (
     <section data-k="list">
-      <Head all="Review all" onAll={left > 0 ? () => openFocus() : undefined}>
+      <Head all="Review all" onAll={left > 0 ? () => openFocus() : undefined} which="review_all">
         Needs {m.theme.mode === 'team' ? "your team's" : 'your'} OK <Count n={left} />
       </Head>
       <LayoutGroup id="ok">
@@ -246,10 +251,10 @@ function GoingOutRow({ post }: { post: Post }) {
   const w = fmtWhen(post.scheduledAt!, m.theme.tz);
   const k = dayKey(post.scheduledAt!, m.theme.tz);
   return (
-    <motion.li layout={reduce ? false : 'position'} transition={SOFT} className="border-b hair py-2.5" data-k="row">
+    <motion.li layout={reduce ? false : 'position'} transition={SOFT} className="border-b hair py-2" data-k="row">
       <AnimatePresence mode="popLayout" initial={false}>
         {pulled ? (
-          <motion.div key="r" layoutId={reduce ? undefined : `pull-${post.id}`} transition={SPRING} style={{ borderRadius: 999 }} className="flex items-center gap-3 h-12 px-4 bg-sunk">
+          <motion.div key="r" layoutId={reduce ? undefined : `pull-${post.id}`} transition={SPRING} style={{ borderRadius: 999 }} className="flex items-center gap-3 h-10 px-4 bg-sunk">
             <span className="text-[13.5px] font-semibold text-ink shrink-0">Pulled</span>
             <span className="text-[13.5px] text-mute truncate flex-1 min-w-0"><span className="max-sm:hidden">· this one stays off LinkedIn · </span>{post.title}</span>
             {local.pulled[post.id] === 'pending' && <button className="btn btn-text btn-sm !h-8 shrink-0" onClick={() => unpull(post.id)} data-testid="pull-undo"><Undo2 size={14} /> Undo</button>}
@@ -258,9 +263,9 @@ function GoingOutRow({ post }: { post: Post }) {
           <motion.div key="row" exit={{ opacity: 0, transition: { duration: 0.12 } }} className="going-row grid items-center gap-x-3.5 gap-y-2">
             <div className="text-center">
               <div className="eyebrow !text-[10px] !tracking-[0.12em]">{fmtWeekday(k)}</div>
-              <div className="numeral text-[22px] mt-0.5">{Number(k.slice(8))}</div>
+              <div className="numeral text-[20px] mt-0.5">{Number(k.slice(8))}</div>
             </div>
-            <button onClick={() => openPost(post.id)} aria-label={`Open ${post.title}`} className="max-sm:hidden"><Thumb src={post.image} text={post.hook} size={48} rounded={8} /></button>
+            <button onClick={() => openPost(post.id)} aria-label={`Open ${post.title}`} className="max-sm:hidden"><Thumb src={post.image} text={post.hook} size={40} rounded={7} /></button>
             <div className="min-w-0">
               <button onClick={() => openPost(post.id)} className="text-left text-[14.5px] font-medium text-ink line-clamp-1 max-sm:line-clamp-2 max-sm:leading-snug hover:underline underline-offset-4 decoration-[var(--line-bold)]">{post.title}</button>
               <div className="text-[12.5px] text-mute mt-0.5 truncate">{w.time} {m.theme.tzLabel} · {post.format}</div>
@@ -283,16 +288,18 @@ function GoingOutRow({ post }: { post: Post }) {
 }
 
 function GoingOut() {
-  const { model: m } = useNav();
+  const { model: m, go } = useNav();
   const { statusOf } = useLocal();
   // Membership uses the board's status so a pulled row stays in place as a receipt.
   const list = nextSevenDays(m, p => p.status).filter(p => statusOf(p) === 'scheduled' || statusOf(p) === 'archived');
+  const more = list.length - ROWS_OUT;
   return (
     <section data-k="list">
-      <Head>Going out · next 7 days <Count n={list.length} /></Head>
+      <Head all="All posts" onAll={() => go('posts')} which="going_out">Going out · next 7 days <Count n={list.length} /></Head>
       {list.length ? (
         <LayoutGroup id="going">
-          <ul className="border-t hair">{list.map(p => <GoingOutRow key={p.id} post={p} />)}</ul>
+          <ul className="border-t hair">{list.slice(0, ROWS_OUT).map(p => <GoingOutRow key={p.id} post={p} />)}</ul>
+          {more > 0 && <button onClick={() => go('posts')} className="mt-2 text-[13px] text-soft hover:text-ink">+ {more} more <span className="text-mute">on Posts</span></button>}
         </LayoutGroup>
       ) : (
         <Quiet>Nothing is set for the next 7 days.</Quiet>
@@ -310,7 +317,7 @@ function WeekStrip() {
   const wkLabel = `${fmtDay(days[0].day)} to ${fmtDay(days[6].day)}`;
   return (
     <section data-k="week">
-      <Head all="All posts" onAll={() => go('posts')}>This week · {wkLabel}</Head>
+      <Head all="All posts" onAll={() => go('posts')} which="week">This week · {wkLabel}</Head>
       {!any ? (
         <Quiet>Nothing is set to go out this week yet.{m.theme.mode !== 'buffer' && ' Approved posts go into the next open slot.'}</Quiet>
       ) : (
@@ -332,11 +339,11 @@ function WeekStrip() {
                   <span className="text-[11.5px] tnum">{Number(d.day.slice(8))}</span>
                 </div>
                 {p ? (
-                  <div className="transition-opacity group-hover:opacity-85" style={{ height: 104 }}>
+                  <div className="transition-opacity group-hover:opacity-85" style={{ height: 76 }}>
                     <Thumb src={p.image} text={p.hook} size="fill" ratio="auto" rounded={8} className="h-full" />
                   </div>
                 ) : (
-                  <div className="rounded-[8px] border border-dashed hair" style={{ height: 104, opacity: d.isPast ? 0.35 : 0.6 }} />
+                  <div className="rounded-[8px] border border-dashed hair" style={{ height: 76, opacity: d.isPast ? 0.35 : 0.6 }} />
                 )}
                 <div className="mt-1 h-4 text-[11px] text-mute tnum">
                   {p ? <>{s === 'live' ? 'Live' : new Date(p.scheduledAt!) < new Date() ? 'Not out yet' : `${fmtWhen(p.scheduledAt!, m.theme.tz).time} ${m.theme.tzLabel}`}{d.posts.length > 1 ? ` · +${d.posts.length - 1}` : ''}</> : null}
@@ -353,7 +360,7 @@ function WeekStrip() {
 /* ---------- Side panels ---------- */
 function OutreachMini() {
   const { model: m, go } = useNav();
-  const f = m.funnel || m.funnelAll;
+  const f = m.funnel;
   if (!m.hasOutreach || !f) {
     return (
       <section data-k="outreach">
@@ -365,7 +372,7 @@ function OutreachMini() {
   const max = Math.max(f.steps[0]?.value || 0, 1);
   return (
     <section data-k="outreach">
-      <Head onAll={() => go('outreach')}>Outreach · {f === m.funnel ? m.window.short : 'all time'}</Head>
+      <Head onAll={() => go('outreach')} which="outreach">Outreach · {m.window.short}</Head>
       <div className="grid gap-y-1.5" style={{ gridTemplateColumns: '96px minmax(0,1fr) 54px 38px', columnGap: 10 }}>
         {f.steps.map((s, i) => {
           const prev = i > 0 ? f.steps[i - 1].value : 0;
@@ -388,11 +395,13 @@ function OutreachMini() {
 
 function PeopleMini() {
   const { model: m, go } = useNav();
-  const list = m.people.slice(0, 5);
+  // Same period as every other number on the page: people who replied or booked inside the window.
+  const inWin = m.people.filter(p => m.inWindow(p.when));
+  const list = inWin.slice(0, 4);
   return (
     <section data-k="people">
-      <Head onAll={() => go('outreach')}>People · newest <Count n={m.people.length} /></Head>
-      {!list.length ? <Quiet>Names show here once people reply.</Quiet> : (
+      <Head onAll={() => go('outreach')} which="people">People · {m.window.short} <Count n={inWin.length} /></Head>
+      {!list.length ? <Quiet>Nobody new {m.window.short} yet. Everyone so far is on Outreach.</Quiet> : (
         <ul className="border-t hair">
           {list.map(p => {
             const tone = intentTone(p.intent);
@@ -415,10 +424,10 @@ function PeopleMini() {
 
 function LeadMagnetsMini({ onAll }: { onAll: () => void }) {
   const { model: m } = useNav();
-  const list = [...m.leadMagnets].sort((a, b) => Number(b.statusRaw === 'live') - Number(a.statusRaw === 'live')).slice(0, 3);
+  const list = [...m.leadMagnets].sort((a, b) => Number(b.statusRaw === 'live') - Number(a.statusRaw === 'live')).slice(0, 2);
   return (
     <section>
-      <Head onAll={m.leadMagnets.length ? onAll : undefined}>Lead magnets <Count n={m.leadMagnets.length} /></Head>
+      <Head onAll={m.leadMagnets.length > list.length ? onAll : undefined} which="lead_magnets">Lead magnets <Count n={m.leadMagnets.length} /></Head>
       {!list.length ? <Quiet>No free resources yet.</Quiet> : (
         <ul className="border-t hair">
           {list.map(l => (
@@ -434,54 +443,26 @@ function LeadMagnetsMini({ onAll }: { onAll: () => void }) {
   );
 }
 
-function PostsMini() {
-  const { model: m, go } = useNav();
-  const { statusOf } = useLocal();
-  // Same count and start date as the Content page, so the two never disagree.
-  const pub = m.content.posts;
-  const first = pub.length ? fmtDay(dayKey(pub[pub.length - 1].at, m.theme.tz)) : '';
-  const arch = archived(m, statusOf).length;
-  const items: { label: string; value: number; on: () => void }[] = [
-    ...(pub.length ? [{ label: `published since ${first}`, value: pub.length, on: () => go('content') }] : []),
-    ...(arch ? [{ label: 'archived', value: arch, on: () => go('activity') }] : []),
-  ];
-  return (
-    <section>
-      <Head>Published</Head>
-      <div className="flex flex-wrap gap-x-6 sm:gap-x-8 gap-y-2 border-t hair pt-3">
-        {items.map(r => (
-          <button key={r.label} onClick={r.on} className="group inline-flex items-baseline gap-2 text-left">
-            <span className="numeral text-[22px]">{fmtInt(r.value)}</span>
-            <span className="text-[13.5px] text-ink group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{r.label}</span>
-            <ArrowRight size={13} className="self-center text-mute group-hover:text-[var(--accent-fg)] transition-colors" />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /* One quiet line of content numbers. The full picture lives on the Content page. */
 function ContentMini() {
   const { model: m, go } = useNav();
   const c = m.content;
-  const win = c.posts.filter(p => m.inWindow(p.at));
-  const useWin = win.some(p => p.measured) || !c.posts.some(p => p.measured);
-  const rows = useWin ? win : c.posts;
-  const label = useWin ? m.window.short : `since ${c.firstAt ? fmtDay(c.firstAt.slice(0, 10)) : ''}`;
+  // The board's window only: the same period as every other panel. The full history lives on Content.
+  const rows = c.posts.filter(p => m.inWindow(p.at));
   const measured = rows.filter(p => p.measured);
   const imp = measured.reduce((a, p) => a + p.impressions, 0);
   const pv = measured.reduce((a, p) => a + p.profileViews, 0);
+  const last = c.posts[0];
   return (
     <section data-k="content">
-      <Head onAll={() => go('content')}>Content · {label}</Head>
+      <Head onAll={() => go('content')} which="content">Content · {m.window.short}</Head>
       <div className="border-t hair pt-2.5 text-[13.5px] text-soft leading-snug" data-testid="content-line">
         {measured.length ? (
-          <><span className="numeral text-[18px] text-head">{fmtInt(imp)}</span> impressions <span className="text-mute">·</span> <span className="numeral text-[18px] text-head">{fmtInt(pv)}</span> profile views <span className="text-mute">· {plural(rows.length, 'post')}</span></>
+          <><span className="numeral text-[18px] text-head">{rows.length}</span> {rows.length === 1 ? 'post' : 'posts'} out <span className="text-mute">·</span> <span className="numeral text-[18px] text-head">{fmtInt(imp)}</span> impressions{pv > 0 && <> <span className="text-mute">·</span> <span className="numeral text-[18px] text-head">{fmtInt(pv)}</span> profile views</>}</>
         ) : rows.length ? (
-          <>{plural(rows.length, 'post')} out. LinkedIn numbers are not in yet.</>
+          <>{plural(rows.length, 'post')} out {m.window.short}. LinkedIn numbers are not in yet.</>
         ) : (
-          <span className="text-mute">Nothing out {label} yet.</span>
+          <span className="text-mute">Nothing out {m.window.short} yet.{last ? ` The last post went out ${fmtWhen(last.at, m.theme.tz).day}.` : ''}</span>
         )}
       </div>
     </section>
@@ -510,14 +491,15 @@ function ChangesMini() {
   };
   return (
     <section>
-      <Head onAll={() => go('activity')}>Changes log</Head>
+      <Head onAll={() => go('activity')} which="changes">Changes log</Head>
       {!rows.length ? <Quiet>No changes recorded yet.</Quiet> : (
         <ul className="border-t hair">
           {rows.map(({ lead: a, all, verbs }) => (
             <li key={a.id} className="flex items-baseline gap-3 py-2 border-b hair">
-              <p className="min-w-0 flex-1 text-[13px] leading-[1.45] text-mute clamp-2">
+              <p className="min-w-0 flex-1 text-[13px] leading-[1.45] text-mute truncate">
                 <span className="text-ink font-semibold">{a.by}</span> {joinVerbs(verbs)}{' '}
                 <span className="text-soft">{all.length > 1 ? plural(all.length, 'post') : titleOf(a.ref, a.title) || 'a post'}</span>
+                {suffixFor(a.action) && <> {suffixFor(a.action)}</>}
               </p>
               <span className="text-[12px] text-mute tnum shrink-0">{ago(a.at)}</span>
             </li>
@@ -553,29 +535,33 @@ export function Home() {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   // Boards that approve show the waiting list; when nothing waits, or the board runs on its own, show what goes out next.
   const showOk = m.theme.mode !== 'buffer' && m.posts.some(p => p.status === 'needs_ok');
+  // The week strip only earns its space beside the waiting list; with nothing waiting, "Going out" already lists the week.
+  const { statusOf } = useLocal();
+  const showWeek = showOk && weekDays(m, statusOf).some(d => d.posts.length);
   const openDrawer = (d: Drawer) => { track('expand', null, { which: `home:${d}` }); setDrawer(d); };
   const drawerConf: Record<Drawer, { title: string; body: ReactNode; width?: number }> = {
     lm: { title: plural(m.leadMagnets.length, 'lead magnet'), body: <LeadMagnets m={m} /> },
   };
   return (
-    <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 sm:pt-8 pb-16">
-      {/* Phone: one column in reading order. Desktop: a top band, then main (~62%) and side (~38%) columns. */}
-      <div className="flex flex-col gap-7 lg:grid lg:gap-x-12 lg:gap-y-8 lg:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
+    <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 lg:pt-7 pb-16 lg:pb-8">
+      {/* Phone: one column in reading order. Desktop: a top band, then main (~62%) and side (~38%) columns, one screen. */}
+      <div className="flex flex-col gap-7 lg:grid lg:gap-x-12 lg:gap-y-7 lg:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
         <section className="order-1 lg:order-none lg:col-span-2 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,62fr)_minmax(0,38fr)] lg:items-start gap-x-12 gap-y-6">
           <ActionLine />
           <ResultsBand />
         </section>
-        <div className="contents lg:flex lg:flex-col lg:gap-7 min-w-0">
-          <div className="order-4 lg:order-none min-w-0"><WeekStrip /></div>
+        <div className="contents lg:flex lg:flex-col lg:gap-6 min-w-0">
           <div className="order-3 lg:order-none min-w-0">{showOk ? <NeedsOk /> : <GoingOut />}</div>
-          <div className="order-9 lg:order-none min-w-0"><PostsMini /></div>
-          <div className="order-7 lg:order-none min-w-0"><ContentMini /></div>
+          {showWeek && <div className="order-4 lg:order-none min-w-0"><WeekStrip /></div>}
+          <div className="order-6 lg:order-none min-w-0"><ContentMini /></div>
+          {m.hasOutreach && m.leadMagnets.length > 0 && <div className="order-8 lg:order-none min-w-0"><LeadMagnetsMini onAll={() => openDrawer('lm')} /></div>}
         </div>
-        <aside className="contents lg:flex lg:flex-col lg:gap-6 min-w-0">
-          <div className="order-6 lg:order-none min-w-0"><OutreachMini /></div>
+        <aside className="contents lg:flex lg:flex-col lg:gap-5 min-w-0">
+          {m.hasOutreach && <div className="order-7 lg:order-none min-w-0"><OutreachMini /></div>}
           {m.hasOutreach && <div className="order-5 lg:order-none min-w-0"><PeopleMini /></div>}
-          <div className="order-8 lg:order-none min-w-0"><LeadMagnetsMini onAll={() => openDrawer('lm')} /></div>
-          <div className="order-10 lg:order-none min-w-0"><ChangesMini /></div>
+          {/* Without outreach the side column has room, so the lead magnets sit there. */}
+          {!m.hasOutreach && m.leadMagnets.length > 0 && <div className="order-8 lg:order-none min-w-0"><LeadMagnetsMini onAll={() => openDrawer('lm')} /></div>}
+          <div className="order-9 lg:order-none min-w-0"><ChangesMini /></div>
         </aside>
       </div>
       <Sheet open={!!drawer} onClose={() => setDrawer(null)} title={drawer ? drawerConf[drawer].title : ''} width={drawer ? drawerConf[drawer].width : undefined}>

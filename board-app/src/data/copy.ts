@@ -20,6 +20,8 @@ export function plainSource(label?: string | null): string | undefined {
   if (/^from top posts/.test(l)) return 'From top posts on LinkedIn';
   if (/^week one plan/.test(l)) return 'From your first-week plan';
   if (/competitor feeds/.test(l)) return 'From posts doing well in your market';
+  // Another creator's post named by person and platform: say where it sits, never whose it was.
+  if (/·\s*(x|linkedin|twitter|instagram|tiktok|youtube)\b/.test(l) && !/^(from your|your|team call|arch team call|call with)/.test(l)) return 'From a post in your market';
   let out = s
     .replace(/;.*$/, '')
     .replace(/\s*\((personal pass|reviewed)[^)]*\)/i, '')
@@ -88,18 +90,24 @@ export const intentTone = (i?: string | null): 'accent' | 'soft' | 'mute' =>
   i === 'booked' || i === 'positive' || i === 'soft_yes' || i === 'booking' ? 'accent' : i === 'negative' || i === 'vendor_pitch' ? 'mute' : 'soft';
 
 export const VERB: Record<string, string> = {
-  request_changes: 'asked for changes on', hide_draft: 'set aside', operator_buffer_approve: 'added to your board',
+  request_changes: 'asked for changes on', hide_draft: 'took', operator_buffer_approve: 'added',
+  undo_approve: 'took back the approval on', comment_resolved: 'resolved a comment on', comment_reopened: 'reopened a comment on',
+  post_removed: 'pulled', post_restored: 'put back', angle_swap: 'swapped the angle on', unarchive_draft: 'restored',
   approve: 'approved', set_schedule: 'moved', edit_copy: 'edited', archive_draft: 'archived', note: 'left a note on',
   comment: 'commented on', set_media: 'changed the picture on', restore: 'restored', publish: 'published',
 };
 export const verbFor = (a: string) => VERB[a] || 'updated';
+/** Words that go after the post title ("added 3 posts to your board"). */
+export const SUFFIX: Record<string, string> = { operator_buffer_approve: 'to your board', hide_draft: 'off the board' };
+export const suffixFor = (a: string) => SUFFIX[a] || '';
 
 export type ActKind = 'ok' | 'edit' | 'note' | 'move' | 'out';
 export const actKind = (a: string): ActKind =>
   a === 'approve' || a === 'operator_buffer_approve' ? 'ok'
     : a === 'note' || a === 'comment' || a === 'request_changes' ? 'note'
       : a === 'set_schedule' ? 'move'
-        : a === 'archive_draft' || a === 'hide_draft' ? 'out' : 'edit';
+        : a === 'archive_draft' || a === 'hide_draft' || a === 'post_removed' ? 'out'
+          : a === 'undo_approve' ? 'move' : a === 'comment_resolved' || a === 'comment_reopened' ? 'note' : 'edit';
 
 
 export function plural(n: number, one: string, many?: string) {

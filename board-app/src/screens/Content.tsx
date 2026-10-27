@@ -8,6 +8,7 @@ import { plural } from '../data/copy';
 import { fmtInt } from '../data/derive';
 import { AnimatedNumber, SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { track } from '../data/track';
 
 type Range = 'win' | 'all';
 
@@ -130,7 +131,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
           const day = fmtWhen(r.at, m.theme.tz).day;
           return (
             <li key={r.key} className="border-b hair">
-              <button type="button" onClick={() => setOpen(isOpen ? null : r.key)} aria-expanded={isOpen}
+              <button type="button" onClick={() => { if (!isOpen) track('expand', r.postId || null, { which: 'content_row' }); setOpen(isOpen ? null : r.key); }} aria-expanded={isOpen}
                 className="w-full text-left grid items-center gap-2 py-2.5 group" style={phone ? undefined : { gridTemplateColumns: tpl }} data-testid="content-row">
                 <div className="flex items-center gap-3 min-w-0">
                   <Thumb src={r.image} text={r.hook} size={40} rounded={7} />
@@ -169,7 +170,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
         })}
       </ul>
       {rows.length > LIM && (
-        <button className="btn btn-outline btn-sm mt-4" onClick={() => setAll(a => !a)}>{all ? 'Show fewer' : `Show all ${rows.length}`}</button>
+        <button className="btn btn-outline btn-sm mt-4" onClick={() => { if (!all) track('expand', null, { which: 'content_all_posts' }); setAll(a => !a); }}>{all ? 'Show fewer' : `Show all ${rows.length}`}</button>
       )}
     </div>
   );
@@ -227,7 +228,7 @@ export function ContentPage() {
         {hasBoth && (
           <div className="seg" role="group" aria-label="Time range">
             {(['win', 'all'] as const).map(s => (
-              <button key={s} aria-pressed={range === s} onClick={() => setRange(s)}>
+              <button key={s} aria-pressed={range === s} onClick={() => { track('expand', null, { which: `content_range:${s}` }); setRange(s); }}>
                 {range === s && <motion.span layoutId="seg-content" className="absolute inset-0 rounded-full bg-sunk" transition={SPRING} />}
                 <span className="relative">{contentRange(m, s).toggle}</span>
               </button>
@@ -250,9 +251,9 @@ export function ContentPage() {
           {icpTile}
         </div>
       )}
-      {t.measured > 0 && (
+      {t.measured > 0 && (t.reposts > 0 || t.inboundDms != null || t.ledToCall > 0 || (!icpTile && !!c.icp)) && (
         <p className="mt-4 text-[12.5px] text-mute" data-testid="content-also">
-          {[plural(t.reposts, 'repost'),
+          {[t.reposts ? plural(t.reposts, 'repost') : '',
             t.inboundDms != null ? `${plural(t.inboundDms, 'message')} received after a post` : '',
             t.ledToCall ? `${plural(t.ledToCall, 'call')} booked by someone who engaged with a post` : '',
             !icpTile && c.icp ? `${c.icp.short} not checked for these posts yet` : '',

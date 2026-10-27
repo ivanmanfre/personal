@@ -6,6 +6,7 @@ import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
 import { SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { track } from '../data/track';
 
 type Col = { id: PostStatus; label: string; tone: string };
 
@@ -46,7 +47,8 @@ export function Pipeline() {
   const column = (c: Col, i: number) => {
     const list = postsIn(c.id);
     const n = counts[i];
-    const LIM = 8;
+    // Show everything when only a couple would hide behind "Show more".
+    const LIM = n <= 10 ? n : 8;
     const open = more[c.id];
     return (
       <div key={c.id} className="min-w-0">
@@ -79,7 +81,7 @@ export function Pipeline() {
               ))}
           {n === 0 && <div className="rounded-[12px] border border-dashed hair px-3 py-5 text-[13px] text-mute text-center">Nothing here</div>}
           {n > LIM && (
-            <button className="btn btn-text btn-sm justify-self-start !px-1" onClick={() => setMore(x => ({ ...x, [c.id]: !x[c.id] }))}>
+            <button className="btn btn-text btn-sm justify-self-start !px-1" onClick={() => { if (!open) track('expand', null, { which: `posts:${c.id}` }); setMore(x => ({ ...x, [c.id]: !x[c.id] })); }}>
               {open ? 'Show fewer' : `Show ${n - LIM} more`}
             </button>
           )}

@@ -12,8 +12,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 const ALLOWED_ENV = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_BOARD_LOCKED_SLUG'] as const;
 const NAMES: Record<string, string> = { 'arch-agency': 'ARCH', 'risedtc-com': 'RISE DTC', 'swishdm-live': 'SwishDM' };
 
-export default defineConfig(({ command, mode }) => {
-  if (command === 'serve') {
+export default defineConfig(({ command, mode, isPreview }) => {
+  if (command === 'serve' && !isPreview) {
     const devHtml: Plugin = { name: 'board-html-dev', transformIndexHtml: h => h.replace(/%BOARD_TITLE%/g, 'Content board (dev)') };
     return { plugins: [react(), tailwindcss(), devHtml], server: { port: 5199, strictPort: true } };
   }
@@ -30,7 +30,7 @@ export default defineConfig(({ command, mode }) => {
     base: process.env.BOARD_BASE || '/',
     publicDir: false,
     // No env file is read into import.meta.env: a prefix nothing uses, and a folder with no env files.
-    envDir: path.resolve(__dirname, 'build-env'),
+    envDir: path.resolve(import.meta.dirname, 'build-env'),
     envPrefix: '__BOARD_NONE__',
     define: Object.fromEntries(ALLOWED_ENV.map(k => [`import.meta.env.${k}`, JSON.stringify(val(k))])),
     plugins: [react(), tailwindcss(), html],
