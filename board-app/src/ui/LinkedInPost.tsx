@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Ellipsis, Globe, MessageCircle, Plus, Repeat2, SendHorizontal, ThumbsUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis, Globe, MessageCircle, Plus, Repeat2, SendHorizontal, ThumbsUp } from 'lucide-react';
 import type { Model, Post } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
@@ -163,14 +163,13 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
         </div>
       )}
 
-      {post.image && (
-        <div className="relative border-t" style={{ borderColor: '#EBE9E4' }}>
-          <img src={post.image} alt="" className="w-full h-auto" loading="lazy" />
-          {post.images.length > 1 && (
-            <span className="absolute top-2.5 right-2.5 rounded-full px-2 h-6 inline-flex items-center text-[12px] font-semibold" style={{ background: 'rgba(0,0,0,0.65)', color: '#fff' }}>1 / {post.images.length}</span>
-          )}
-        </div>
-      )}
+      {post.image && (post.images.length > 1
+        ? <Slides images={post.images} />
+        : (
+          <div className="relative border-t" style={{ borderColor: '#EBE9E4' }}>
+            <img src={post.image} alt="" className="w-full h-auto" loading="lazy" />
+          </div>
+        ))}
 
       {post.perf && (
         <div className="flex items-center justify-between px-4 py-2 text-[12px] text-[rgba(0,0,0,0.6)] border-b" style={{ borderColor: '#EBE9E4' }}>
@@ -236,6 +235,48 @@ function Editor({ initial, onSave, onCancel }: { initial: string; onSave: (s: st
         </span>
       </div>
       {err && <p className="mt-2 text-[12.5px] leading-[1.45] text-[#B42318]" role="alert" data-testid="edit-error">{err}</p>}
+    </div>
+  );
+}
+
+/* Carousel slides: native scroll-snap track, so touch swipe and trackpad scroll work as in the feed;
+   arrow buttons for a mouse; the counter follows the slide in view. Left/right keys stay with the review. */
+function Slides({ images }: { images: string[] }) {
+  const track = useRef<HTMLDivElement | null>(null);
+  const [i, setI] = useState(0);
+  const n = images.length;
+  const go = (to: number) => {
+    const el = track.current;
+    if (!el) return;
+    const t = Math.max(0, Math.min(n - 1, to));
+    el.scrollTo({ left: t * el.clientWidth, behavior: 'smooth' });
+  };
+  const onScroll = () => {
+    const el = track.current;
+    if (!el || !el.clientWidth) return;
+    const at = Math.round(el.scrollLeft / el.clientWidth);
+    setI(p => (p === at ? p : at));
+  };
+  const btn = 'absolute top-1/2 -translate-y-1/2 h-9 w-9 rounded-full inline-flex items-center justify-center shadow-md transition-opacity';
+  return (
+    <div className="relative border-t" style={{ borderColor: '#EBE9E4' }} data-testid="slides">
+      <div
+        ref={track}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory"
+        style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
+      >
+        {images.map((src, k) => (
+          <img key={src + k} src={src} alt={`Slide ${k + 1} of ${n}`} className="w-full h-auto shrink-0 snap-start snap-always self-start" loading={k < 2 ? 'eager' : 'lazy'} draggable={false} />
+        ))}
+      </div>
+      <span className="absolute top-2.5 right-2.5 rounded-full px-2 h-6 inline-flex items-center text-[12px] font-semibold tnum" style={{ background: 'rgba(0,0,0,0.65)', color: '#fff' }}>{i + 1} / {n}</span>
+      <button type="button" aria-label="Previous slide" onClick={() => go(i - 1)} className={`${btn} left-2.5 ${i === 0 ? 'opacity-0 pointer-events-none' : ''}`} style={{ background: 'rgba(255,255,255,0.92)', color: '#111' }}>
+        <ChevronLeft size={18} />
+      </button>
+      <button type="button" aria-label="Next slide" onClick={() => go(i + 1)} className={`${btn} right-2.5 ${i === n - 1 ? 'opacity-0 pointer-events-none' : ''}`} style={{ background: 'rgba(255,255,255,0.92)', color: '#111' }}>
+        <ChevronRight size={18} />
+      </button>
     </div>
   );
 }
