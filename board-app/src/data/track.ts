@@ -88,6 +88,8 @@ export function trackVisit(entryView: string, auth: 'link' | 'session') {
     track('visit', null, {
       device: device(), viewport: `${window.innerWidth}x${window.innerHeight}`, referrer: refHost(), entry_view: entryView, auth,
     });
+    // A short visit still counts: send the arrival right away, the rest batches every 10s.
+    window.setTimeout(() => flush(), 1500);
   } catch { /* noop */ }
 }
 
