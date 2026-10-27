@@ -41,6 +41,14 @@ const HOSTED: Record<string, { slugs: string[]; url: string; from: string; brand
     from: "SwishDM <login@madebyswishdm.com>",
     brand: "SwishDM",
   },
+  // madebyarch.com is a verified Resend domain (DKIM + send MX + SPF, 2026-09-04). If the key
+  // ever refuses this sender the house sender below takes over; the link still points here.
+  "https://madebyarch.com": {
+    slugs: ["arch-agency"],
+    url: "https://madebyarch.com/board/",
+    from: "ARCH <login@madebyarch.com>",
+    brand: "ARCH",
+  },
 };
 
 const ALLOWED_ORIGINS = new Set([

@@ -44,6 +44,16 @@ jobs:
           BOARD_GEN_URL: ${{ secrets.BOARD_GEN_URL }}
           BOARD_GEN_TOKEN: ${{ secrets.BOARD_GEN_TOKEN }}
 
+      # Standalone board (board-app/, own npm ci, Vite 8 needs node >=20.19): /board-app/ +
+      # /client/risedtc-com/ = new board; /client/arch-agency/ and /client/swishdm-live/ forward
+      # to the client domains. Runs after the prerender so it wins for those three slugs.
+      # /client/<slug>/classic keeps the classic board (404.html -> SPA).
+      - name: Board app (live boards)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: bash scripts/build-board-app.sh main dist
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -150,6 +160,14 @@ jobs:
           BOARD_GEN_URL: ${{ secrets.BOARD_GEN_URL }}
           BOARD_GEN_TOKEN: ${{ secrets.BOARD_GEN_TOKEN }}
 
+      # Same board-app layout one level up (this dist becomes client/): /client/board-app/,
+      # /client/risedtc-com/ = new board, ARCH + SwishDM forward to their own domains.
+      - name: Board app (live boards)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: bash scripts/build-board-app.sh mirror dist
+
       - name: Push client mirror to inboundonsteroids-site
         env:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
@@ -169,9 +187,10 @@ jobs:
 
   # SwishDM board host: SwishDM's content board served top-level at
   # madebyswishdm.com/board (real files in the swishdm-resources repo's site/board/, same
-  # origin, so email sign-in and the ?k= board link work there). A board-only build locked
-  # to slug swishdm-live, no public/ dir, no service worker, only the two public Supabase
-  # values. Same script works by hand: scripts/publish-board-host.sh swishdm --push
+  # origin, so email sign-in and the ?k= board link work there). /board/ = the standalone
+  # board (board-app/, locked to swishdm-live), /board/classic/ = the classic board-host
+  # bundle; only the two public Supabase values reach either. Same script works by hand:
+  # scripts/publish-board-host.sh swishdm --push
   swishdm-board-mirror:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -195,6 +214,34 @@ jobs:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
           BOARD_HOST_WORKDIR: /tmp/swishdm-site
         run: bash scripts/publish-board-host.sh swishdm --push
+
+  # ARCH board host: madebyarch.com/board (real files in the madebyarch repo's board/; that
+  # repo's legacy Pages build serves its root). Same build as swishdm-board-mirror, locked to
+  # arch-agency. MIRROR_PUSH_TOKEN needs write access to ivanmanfre/madebyarch.
+  # By hand: scripts/publish-board-host.sh arch --push
+  arch-board-mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: arch-board-mirror
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the board and push it to madebyarch.com
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
+          BOARD_HOST_WORKDIR: /tmp/arch-site
+        run: bash scripts/publish-board-host.sh arch --push
 
   # Rise scan mirror: white-label the dtc_growth scans onto Rise's own domain,
   # served at resources.risedtc.com/scan/ (real files in the rise-dtc-resources

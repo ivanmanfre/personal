@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# Publish a white-label client board to the client's own domain (2026-10-15).
+# Publish a white-label client board to the client's own domain (2026-10-15; board-app 2026-10-27).
 #
 #   scripts/publish-board-host.sh <host> [--push]
 #
-#   host    key in vite.board-host.config.ts BOARD_HOSTS (today: swishdm)
-#   --push  commit + `git push origin main` in the client's site repo (its Pages
-#           workflow then deploys). Without it the synced checkout is left for review.
+#   host    swishdm (madebyswishdm.com/board) | arch (madebyarch.com/board); keys of
+#           vite.board-host.config.ts BOARD_HOSTS
+#   --push  commit + `git push origin main` in the client's site repo (its Pages build then
+#           deploys). Without it the synced checkout is left for review.
 #
-# Builds ONLY the board (npm run build:board-host, slug locked at build time), then
-# rsyncs dist-board-host/ into <repo>/<dir>/ with --delete, so stale hashed assets go.
-# Everything else in the client's repo (homepage redirect, 404.html, resources) is
-# untouched. Runs locally and in CI (.github/workflows/deploy.yml swishdm-board-mirror).
+# Builds with scripts/build-board-app.sh host <host>: <host>/board/ = the standalone board
+# (board-app/, slug locked), <host>/board/classic/ = the classic board-host bundle. Then syncs
+# that into <repo>/<dir>/, keeping the last two releases' hashed assets (cached index.html).
+# Everything else in the client's repo (homepage, resources, audit pages) is untouched; the
+# one exception is a missing root 404.html, which is seeded once (never overwritten) so stray
+# /board/... paths return to /board/. Runs locally and in CI (.github/workflows/deploy.yml
+# swishdm-board-mirror, arch-board-mirror).
 #
 # Env: VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (read from .env when unset; only those
 # two are ever passed to the build). In CI, MIRROR_PUSH_TOKEN authenticates the clone.
@@ -19,9 +23,13 @@ set -euo pipefail
 HOST="${1:-}"; shift || true
 PUSH=0; [ "${1:-}" = "--push" ] && PUSH=1
 
+# SEED_404: root 404.html written only when the repo has none (madebyarch.com had no custom 404;
+# swishdm-resources already ships site/404.html).
+SEED_404=""
 case "$HOST" in
   swishdm) REPO="ivanmanfre/swishdm-resources"; DIR="site/board"; URL="https://madebyswishdm.com/board/" ;;
-  *) echo "usage: $0 <swishdm> [--push]" >&2; exit 2 ;;
+  arch) REPO="ivanmanfre/madebyarch"; DIR="board"; URL="https://madebyarch.com/board/"; SEED_404="404.html" ;;
+  *) echo "usage: $0 <swishdm|arch> [--push]" >&2; exit 2 ;;
 esac
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,19 +41,11 @@ if [ -z "${VITE_SUPABASE_URL:-}" ] || [ -z "${VITE_SUPABASE_ANON_KEY:-}" ]; then
   VITE_SUPABASE_ANON_KEY="$(grep -E '^VITE_SUPABASE_ANON_KEY=' .env | head -1 | cut -d= -f2-)"
 fi
 
-# Build with a scrubbed env: nothing but the two public values reaches vite.
-env -i PATH="$PATH" HOME="$HOME" BOARD_HOST="$HOST" \
-  VITE_SUPABASE_URL="$VITE_SUPABASE_URL" VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY" \
-  npx vite build --config vite.board-host.config.ts
-
-[ -f dist-board-host/index.html ] || { echo "build produced no index.html" >&2; exit 1; }
-# Guard: the only key allowed in the bundle is the public anon JWT.
-node -e '
-const fs=require("fs"),p=require("path");let bad=[];
-const walk=(d)=>{for(const f of fs.readdirSync(d)){const q=p.join(d,f);if(fs.statSync(q).isDirectory())walk(q);else{const s=fs.readFileSync(q,"utf8");
-if(/sb_secret_/.test(s))bad.push(q+": sb_secret_");
-for(const m of s.matchAll(/eyJ[A-Za-z0-9_-]{10,}\.([A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]{10,}/g)){let r="?";try{r=JSON.parse(Buffer.from(m[1],"base64url").toString()).role}catch{}if(r!=="anon")bad.push(q+": jwt role "+r)}}}};
-walk("dist-board-host");if(bad.length){console.error("secret in build:",bad);process.exit(1)}'
+export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY
+# Scrubbed-env builds + the secret guard live in build-board-app.sh.
+OUT="$ROOT/dist-board-host"
+bash "$ROOT/scripts/build-board-app.sh" host "$HOST" "$OUT"
+[ -f "$OUT/index.html" ] && [ -f "$OUT/classic/index.html" ] || { echo "build incomplete" >&2; exit 1; }
 
 WORK="${BOARD_HOST_WORKDIR:-${HOME}/.local/state/board-host-publish/$HOST}"
 if [ -n "${MIRROR_PUSH_TOKEN:-}" ]; then
@@ -59,32 +59,63 @@ if [ -d "$WORK/.git" ]; then
   git -C "$WORK" rebase -q origin/main   # keeps any local, not-yet-pushed commit
 else
   rm -rf "$WORK"; mkdir -p "$(dirname "$WORK")"
-  git clone -q --depth 1 --branch main "$CLONE_URL" "$WORK"
+  # Sparse, blobless, shallow: madebyarch is >1 GB of audit pages; only the board folder,
+  # the release ledger and root files (404.html) are ever touched.
+  git clone -q --depth 1 --filter=blob:none --sparse --branch main "$CLONE_URL" "$WORK"
+  git -C "$WORK" sparse-checkout set "$DIR" ".board-releases"
 fi
 
-mkdir -p "$WORK/$DIR/assets"
 # Pages/CDN caches index.html for ~10 minutes, so a cached index can still ask for the
-# previous release's hashed chunks. Keep the last two releases' assets; prune older ones.
-REL="$WORK/.board-releases/$HOST"; mkdir -p "$REL"
-# First run: whatever is live now counts as the previous release.
-[ -f "$REL/prev1" ] || ls "$WORK/$DIR/assets" > "$REL/prev1"
-ls dist-board-host/assets > "$REL/new"
-{ cat "$REL/new"; cat "$REL/prev1" "$REL/prev2" 2>/dev/null || true; } | sort -u > "$REL/keep"
+# previous release's hashed chunks. Keep the last two releases' assets per asset folder
+# (board-app at assets/, classic board at classic/assets/); prune older ones.
 # --checksum: index.html keeps the same size between releases and a fresh clone can share
 # its mtime to the second, so rsync's size+mtime check would skip the new index.
-rsync -a --checksum --exclude assets dist-board-host/ "$WORK/$DIR/"
-rsync -a --checksum dist-board-host/assets/ "$WORK/$DIR/assets/"
-for f in "$WORK/$DIR/assets/"*; do
-  grep -qxF "$(basename "$f")" "$REL/keep" || rm -f "$f"
+mkdir -p "$WORK/$DIR"
+rsync -a --checksum --exclude assets "$OUT/" "$WORK/$DIR/"
+for SUB in assets classic/assets; do
+  [ -d "$OUT/$SUB" ] || continue
+  case "$SUB" in
+    assets) REL="$WORK/.board-releases/$HOST" ;;
+    classic/assets) REL="$WORK/.board-releases/$HOST-classic" ;;
+  esac
+  mkdir -p "$REL" "$WORK/$DIR/$SUB"
+  # First run: whatever is live now counts as the previous release.
+  [ -f "$REL/prev1" ] || ls "$WORK/$DIR/$SUB" > "$REL/prev1"
+  ls "$OUT/$SUB" > "$REL/new"
+  { cat "$REL/new"; cat "$REL/prev1" "$REL/prev2" 2>/dev/null || true; } | sort -u > "$REL/keep"
+  rsync -a --checksum "$OUT/$SUB/" "$WORK/$DIR/$SUB/"
+  for f in "$WORK/$DIR/$SUB/"*; do
+    grep -qxF "$(basename "$f")" "$REL/keep" || rm -f "$f"
+  done
+  if ! cmp -s "$REL/new" "$REL/prev1"; then
+    [ -f "$REL/prev1" ] && mv "$REL/prev1" "$REL/prev2"
+    mv "$REL/new" "$REL/prev1"
+  fi
+  rm -f "$REL/new" "$REL/keep"
 done
-if ! cmp -s "$REL/new" "$REL/prev1"; then
-  [ -f "$REL/prev1" ] && mv "$REL/prev1" "$REL/prev2"
-  mv "$REL/new" "$REL/prev1"
+
+# Root 404 for a client site that has none: a stray /board/... path goes back to the board with
+# its ?k= and #ml=; any other unknown path gets a plain noindex not-found page (status stays 404).
+if [ -n "$SEED_404" ] && [ ! -e "$WORK/$SEED_404" ]; then
+  case "$HOST" in
+    arch) cat > "$WORK/$SEED_404" <<'HTML'
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>ARCH.</title>
+<script>
+  // A stray path under /board/ goes back to the board, keeping its board link (?k=) and sign-in link (#ml=).
+  (function (l) { if (/^\/board(\/|$)/i.test(l.pathname) && l.pathname !== '/board/') l.replace('/board/' + l.search + l.hash); })(window.location);
+</script>
+<style>html,body{margin:0;height:100%;background:#000F41;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',system-ui,sans-serif}div{text-align:center}span{display:inline-block;background:#F2FF82;color:#000F41;font-weight:700;font-size:28px;letter-spacing:.02em;padding:14px 30px;border-radius:80px}p{color:#fff;opacity:.55;font-size:14px;margin-top:18px}</style>
+</head><body><div><span>ARCH.</span><p>Page not found</p></div></body></html>
+HTML
+    ;;
+    *) echo "no 404 template for $HOST" >&2; exit 1 ;;
+  esac
+  git -C "$WORK" add "$SEED_404"
 fi
-rm -f "$REL/new" "$REL/keep"
 
 cd "$WORK"
-git add -A "$DIR" ".board-releases/$HOST"
+git add -A "$DIR" .board-releases
 if git diff --cached --quiet; then echo "board host $HOST unchanged"; exit 0; fi
 SRC="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo local)"
 git -c user.name="board-host-bot" -c user.email="noreply@ivanmanfredi.com" commit -q -m "board: sync from personal-site ${SRC}"

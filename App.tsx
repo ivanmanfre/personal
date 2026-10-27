@@ -97,8 +97,9 @@ function App() {
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
   const isScanReport = /^\/scan\/[^/]+\/?$/.test(location.pathname);
-  // Client content board — full-screen, token-gated, no site chrome.
-  const isClientBoard = /^\/client\/[^/]+\/?$/.test(location.pathname);
+  // Client content board — full-screen, token-gated, no site chrome. /client/<slug>/classic is
+  // the same board, kept for live slugs whose /client/<slug>/ now serves board-app/.
+  const isClientBoard = /^\/client\/[^/]+(\/classic)?\/?$/.test(location.pathname);
   // / and /landing both render LandingPage with full-bleed treatment.
   // /landing kept as alias so existing links don't break.
   const isLanding = location.pathname === '/' || location.pathname.startsWith('/landing');

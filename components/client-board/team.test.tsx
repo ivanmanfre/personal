@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { ApprovedBy, BoardTeamProvider, PostComments, actorLabel, authorParts, isOperatorEmail, memberName, setBoardHouse, setBoardNames, setBoardRoles, setBoardViewer, type BoardTeamValue } from './team';
-import { boardShareUrl, isWhiteLabelBoard } from '../../lib/boardHost';
+import { boardCanonicalUrl, boardShareUrl, isWhiteLabelBoard } from '../../lib/boardHost';
 
 const base = (over: Partial<BoardTeamValue> = {}): BoardTeamValue => ({
   me: 'lyndsay@swishdm.com', comments: [], approvalMeta: {}, canComment: true, canApprove: true,
@@ -62,6 +62,10 @@ describe('board team attribution', () => {
     expect(isWhiteLabelBoard('swishdm-live')).toBe(true);
     expect(isWhiteLabelBoard('risedtc-com')).toBe(false);
     expect(boardShareUrl('swishdm-live')).toBe('https://madebyswishdm.com/board');
+    expect(isWhiteLabelBoard('arch-agency')).toBe(true);
+    expect(boardShareUrl('arch-agency')).toBe('https://madebyarch.com/board');
+    expect(boardCanonicalUrl('arch-agency')).toBe('https://madebyarch.com/board');
+    expect(boardCanonicalUrl('risedtc-com')).toBe('https://ivanmanfredi.com/client/risedtc-com');
     expect(boardShareUrl('risedtc-com')).toBe('https://inboundonsteroids.com/client/risedtc-com');
     expect(isOperatorEmail('im@ivanmanfredi.com')).toBe(true);
     expect(isOperatorEmail('john@swishdm.com')).toBe(false);

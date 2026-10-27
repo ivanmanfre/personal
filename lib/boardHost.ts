@@ -4,14 +4,15 @@
  * A board listed here also lives on the client's own domain, built from this same source by
  * `npm run build:board-host` (vite.board-host.config.ts, entry board-host.tsx) and published
  * into that domain's repo (scripts/publish-board-host.sh, deploy.yml `swishdm-board-mirror`).
- * The ivanmanfredi.com / inboundonsteroids.com /client/<slug> route keeps working for the
- * same slug; only the address we hand out and the house branding change.
+ * The ivanmanfredi.com / inboundonsteroids.com /client/<slug> address forwards to the client
+ * address (keeping ?k= and #ml=); /client/<slug>/classic still opens the classic board there.
  *
  * Keep in sync with HOSTED in supabase/functions/board-magic-link/index.ts (sign-in emails
  * requested from the client's domain link back to it).
  */
 export const WHITE_LABEL_BOARDS: Record<string, { url: string }> = {
   'swishdm-live': { url: 'https://madebyswishdm.com/board' },
+  'arch-agency': { url: 'https://madebyarch.com/board' },
 };
 
 /** True when this board is white-labelled: no operator agency name anywhere on it. */

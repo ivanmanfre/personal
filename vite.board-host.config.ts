@@ -26,11 +26,23 @@ export const BOARD_HOSTS: Record<string, { slug: string; base: string; url: stri
     title: 'SwishDM · content board',
     icon: 'https://swishdm.com/favicon.png',
   },
+  arch: {
+    slug: 'arch-agency',
+    base: '/board/',
+    url: 'https://madebyarch.com/board',
+    title: 'ARCH · content board',
+    // The ARCH. wordmark the madebyarch.com pages already use as their icon.
+    icon: 'https://madebyarch.com/creator-radar/assets/arch-yellow.svg',
+  },
 };
 
 const hostName = process.env.BOARD_HOST || 'swishdm';
 const host = BOARD_HOSTS[hostName];
 if (!host) throw new Error(`[board-host] unknown BOARD_HOST "${hostName}"`);
+// scripts/build-board-app.sh builds this classic board under <host>/board/classic/ (BOARD_HOST_BASE)
+// now that <host>/board/ serves board-app/. Unset = the host's own base.
+const base = process.env.BOARD_HOST_BASE || host.base;
+if (!/^\/[a-z0-9/-]*\/$/.test(base)) throw new Error(`[board-host] bad BOARD_HOST_BASE "${base}"`);
 
 // Only these reach the bundle. Everything else in import.meta.env stays undefined.
 const ALLOWED_ENV = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
@@ -54,7 +66,7 @@ function hostHtml(): Plugin {
 }
 
 export default defineConfig({
-  base: host.base,
+  base,
   publicDir: false,
   // Point env loading at a folder with no .env files; the define block below is the only
   // way a value gets in.
@@ -67,7 +79,8 @@ export default defineConfig({
   plugins: [tailwindcss(), react(), hostHtml()],
   resolve: { alias: { '@': path.resolve(__dirname, '.') } },
   build: {
-    outDir: 'dist-board-host',
+    // scripts/build-board-app.sh points this at <out>/classic (BOARD_HOST_OUT).
+    outDir: process.env.BOARD_HOST_OUT || 'dist-board-host',
     emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(__dirname, 'board-host.html'),
