@@ -24,7 +24,11 @@ export interface JourneyFixture {
   source: { kind: 'original-scan' | 'preview-draft'; url: string; capturedOn: string; quotes?: string[] };
   /** Flagged builds only: sourced profile findings (quotes are verbatim from the lead's profile). */
   profileAudit?: ProfileAudit;
+  /** People who engaged with the lead's competitors' posts and fit their buyer (every name came from the read). */
+  competitorEngagers?: CompetitorEngagers;
 }
+export interface CompetitorEngager { name: string; headline: string; company: string; profileUrl: string; reason: string; engaged: 'liked' | 'commented'; competitor: string; postUrl: string; postExcerpt: string; postedAt: string }
+export interface CompetitorEngagers { count: number; windowDays: number; readOn: string; competitors: string[]; postsRead: number; engagersRead: number; people: CompetitorEngager[]; notes: { to: string; headline: string; note: string }[] }
 export interface ProfileFinding { area: string; label: string; state: string; today: string; quote: string; fix: string }
 export interface ProfileAudit { findings: ProfileFinding[]; avatarUrl?: string; bannerUrl?: string }
 export const fixture = original as JourneyFixture;

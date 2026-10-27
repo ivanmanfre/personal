@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {motion, useReducedMotion} from 'framer-motion';
 import {ArrowDown, ArrowRight, ArrowUpRight} from 'lucide-react';
-import {asset, type JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
+import {asset, type JourneyFixture, type CompetitorEngagers} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel';
 import {Avatar} from '../../dev/scan-walkthrough/journey/ReadingChapter';
 import {ProspectPost, TextPost} from './StudioSamples';
@@ -24,6 +24,7 @@ import '../../dev/scan-walkthrough/journey/studio.css';
 import './story-brand.css';
 import './story-plan.css';
 import './story-motion.css';
+import './competitor-engagers.css';
 
 function ChapterTitle({text}:{text:string}) {return <h2>{text}</h2>}
 
@@ -170,6 +171,54 @@ function ColdChat() {
  </article>;
 }
 
+const shortName = (name: string) => name.split(/\s+[|(]|:\s|\s[-–]\s/)[0].trim();
+const listNames = (names: string[]) => names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+const shortDate = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', {day: 'numeric', month: 'short', timeZone: 'UTC'}); };
+const initials = (name: string) => name.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, '')[0]).filter(Boolean).slice(0, 2).join('');
+const SHOWN_PEOPLE = 5;
+
+/** People who liked or commented on their competitors' recent posts and fit their buyer. Every name, title and
+ * post link came from the read; the scan hides this section when nobody fit. */
+export function CompetitorEngagersSection({data}: {data: CompetitorEngagers}) {
+ const [open, setOpen] = useState(false);
+ const span = data.windowDays === 14 ? 'two weeks' : `${data.windowDays} days`;
+ const rivals = listNames(data.competitors.map(shortName));
+ const hidden = !open && data.people.length > SHOWN_PEOPLE + 1 ? data.people.length - SHOWN_PEOPLE : 0;
+ const people = hidden ? data.people.slice(0, SHOWN_PEOPLE) : data.people;
+ const readOn = shortDate(data.readOn);
+ return <section className="story-scene sp-rivals" id="rivals" aria-label="Buyers engaging with your competitors">
+  <div className="sp-rivals-layout">
+   <header className="sp-rivals-head">
+    <strong className="sp-rivals-count"><NumberTicker value={data.count}/></strong>
+    <h2>Buyers reading your competitors' posts</h2>
+    <p>In the last {span}, {data.count === 1 ? 'one person who fits' : `${data.count} people who fit`} the buyer you sell to liked or commented on LinkedIn posts from {rivals || 'your competitors'}. We checked everyone who engaged with those posts against your buyer, and these are the ones who fit.</p>
+    <p>They are already reading about what you sell, so they are good people to start a conversation with.</p>
+    {readOn && data.postsRead > 0 && <small className="sp-rivals-meta">Read on {readOn}: {data.postsRead} posts, {data.engagersRead} people checked.</small>}
+   </header>
+   <ol className="sp-rivals-list">
+    {people.map(p => <li key={p.profileUrl}>
+     <span className="sp-audit-face" aria-hidden="true">{initials(p.name)}</span>
+     <div>
+      <a className="sp-rivals-name" href={p.profileUrl} target="_blank" rel="noreferrer">{p.name}<ArrowUpRight size={13} aria-hidden="true"/></a>
+      {p.headline && <small className="sp-rivals-title">{p.headline}</small>}
+      <p className="sp-rivals-why">{p.reason}</p>
+      <a className="sp-rivals-post" href={p.postUrl} target="_blank" rel="noreferrer">{p.engaged === 'commented' ? 'Commented on' : 'Liked'} a {shortName(p.competitor)} post{shortDate(p.postedAt) ? ` · ${shortDate(p.postedAt)}` : ''}</a>
+     </div>
+    </li>)}
+    {hidden > 0 && <li className="sp-rivals-more"><button type="button" onClick={() => setOpen(true)}>Show {hidden} more people</button></li>}
+    {data.count > data.people.length && (open || !hidden) && <li className="sp-rivals-more"><span>Showing {data.people.length} of {data.count}.</span></li>}
+   </ol>
+  </div>
+  {data.notes.length > 0 && <div className="sp-rivals-notes">
+   <header><h3>A first message to {data.notes.length === 1 ? 'one of them' : 'two of them'}</h3><p>Short connection notes written as you. Each one is about their work and asks one question.</p></header>
+   <div className="sp-rivals-dms">{data.notes.map(n => <article key={n.to} className="sp-dm" data-mockup="linkedin" aria-label={`Example note to ${n.to}`}>
+    <DmHead name={n.to} role={n.headline}/>
+    <Thread><Bubble mine>{n.note}</Bubble></Thread>
+   </article>)}</div>
+  </div>}
+ </section>;
+}
+
 export function StudioPlan({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
  const plan = useStory(), rationale = plan.rationale;
  const brand = headlineName(plan.brand) || 'your brand';
@@ -177,6 +226,7 @@ export function StudioPlan({fixture, kind}: {fixture: JourneyFixture; kind: Stor
   <PlanHero fixture={fixture}/>
   <StepNav/>
   {fixture.profileAudit && <div className="sp-profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>}
+  {fixture.competitorEngagers && <div className="sp-profile sp-rivals-wrap"><CompetitorEngagersSection data={fixture.competitorEngagers}/></div>}
   <div id="diagnosis" style={{scrollMarginTop:110}}><DiagnosisArtifacts fixture={fixture}/></div>
   <Chapter headerVisual={plan.topicMap && <StudioBrain map={plan.topicMap} name={fixture.founder.name}/>} id="content" n={1} label="Content" title={plan.contentHeading} why={rationale?.content ?? plan.contentWhy}
    cols={3} samples={[
