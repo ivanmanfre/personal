@@ -1,0 +1,67 @@
+/* Component styles that need selectors Tailwind utilities cannot express cleanly. */
+@layer components {
+
+/* LinkedIn preview lines: hover lights the line, the gutter "+" appears (github-inline-diff move). */
+.li-card { --li-note-ink: color-mix(in srgb, var(--accent) 60%, #000); }
+.li-line { transition: background-color .15s ease; }
+.li-line:hover { background: color-mix(in srgb, var(--accent) 7%, #fff); }
+.li-line-on, .li-line-on:hover { background: color-mix(in srgb, var(--accent) 12%, #fff); }
+.li-plus {
+  opacity: 0; transform: scale(.7);
+  background: var(--accent); color: var(--accent-ink);
+  transition: opacity .15s ease, transform .15s ease;
+}
+.li-line:hover .li-plus, .li-plus:focus-visible, .li-line-on .li-plus { opacity: 1; transform: scale(1); }
+@media (hover: none), (max-width: 760px) { .li-plus { display: none !important; } }
+.li-note { background: color-mix(in srgb, var(--accent) 9%, #fff); border-left: 2px solid var(--accent); }
+.li-compose { background: #FAF9F7; border-color: color-mix(in srgb, var(--accent) 45%, #DCDAD5); }
+
+/* Rail + tab bar */
+.rail { width: var(--rail); }
+.rail-btn { position: relative; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--mute); }
+.rail-btn[aria-current="page"] { color: var(--ink); }
+.rail-tip {
+  position: absolute; left: 50px; top: 50%; transform: translateY(-50%) translateX(-4px);
+  background: var(--ink); color: var(--paper); font-size: 12px; font-weight: 600; white-space: nowrap;
+  height: 26px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center;
+  opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.rail-btn:hover .rail-tip, .rail-btn:focus-visible .rail-tip { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+/* Week strip */
+.day-tile { position: relative; }
+.day-today::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--accent); border-radius: 2px; }
+
+/* Bars: transform-only growth */
+.bar-x { transform-origin: left center; }
+.bar-y { transform-origin: center bottom; }
+
+/* Segmented toggle */
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--line); gap: 2px; }
+.seg button { position: relative; white-space: nowrap; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--mute); }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+
+/* Swipe tint on phone review */
+.swipe-tint { position: absolute; inset: 0; border-radius: 10px; pointer-events: none; }
+
+select.pill-select {
+  appearance: none; -webkit-appearance: none;
+  height: 30px; border-radius: 999px; padding: 0 28px 0 12px;
+  background: var(--paper); border: 1px solid var(--line-bold); color: var(--ink);
+  font-size: 12.5px; font-weight: 600;
+}
+}
+
+/* Home going-out rows: the cover drops on phone so the title keeps its width. */
+.going-row { grid-template-columns: 38px 48px minmax(0,1fr) auto; }
+@media (max-width: 639px) { .going-row { grid-template-columns: 38px minmax(0,1fr) auto; } }
+
+/* Lines with a note: a thin accent edge and a numbered marker that points at the thread. */
+.li-line-noted { border-left: 2px solid var(--accent); padding-left: 6px !important; }
+.li-marker { background: var(--accent); color: var(--accent-ink); }
+.li-editor:focus { background: #fff; outline: 1px solid color-mix(in srgb, var(--accent) 55%, #DCDAD5); }
+
+/* Diff lines in the thread. */
+.diff-del { background: color-mix(in srgb, #D92D20 12%, var(--paper)); color: var(--soft); text-decoration: line-through; text-decoration-color: color-mix(in srgb, #D92D20 55%, transparent); }
+.diff-add { background: color-mix(in srgb, #12B76A 14%, var(--paper)); color: var(--ink); }
+.mention { color: var(--accent-fg); font-weight: 600; }

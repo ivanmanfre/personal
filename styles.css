@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* board-app/ is the standalone board with its own Tailwind build; keep its classes out of this CSS. */
+@source not "./board-app";
 
 @theme {
   /* Editorial type system — Source Serif 4 for body, DM Serif Display for italic display,

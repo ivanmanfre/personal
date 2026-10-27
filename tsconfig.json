@@ -26,5 +26,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["cloudflare-share-worker", "node_modules", "dist"]
+  "exclude": ["cloudflare-share-worker", "node_modules", "dist", "board-app"]
 }

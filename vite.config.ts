@@ -60,6 +60,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, '.'),
     },
   },
+  // board-app/ is the standalone board (own package.json, own build). Same html scan as
+  // Vite's default, minus board-app/, so the dev dep scan never crawls its sources.
+  optimizeDeps: {
+    entries: ['**/*.html', '!**/node_modules/**', '!dist/**', '!board-app/**'],
+  },
   build: {
     rollupOptions: {
       output: {

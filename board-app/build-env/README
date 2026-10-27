@@ -1,0 +1,1 @@
+# Intentionally empty: vite.config.ts points envDir here for builds so no .env file is inlined.
