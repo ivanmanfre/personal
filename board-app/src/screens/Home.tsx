@@ -9,6 +9,7 @@ import { useLocal } from '../data/store';
 import { track } from '../data/track';
 import { AnimatedNumber, Sheet, SOFT, SPRING, Thumb } from '../ui/kit';
 import { useNav, type PeopleKind } from '../ui/nav';
+import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 import { groupActivity } from './Activity';
 
 const todayEyebrow = (m: Model) => {
@@ -245,6 +246,7 @@ function NeedsOk() {
 function GoingOutRow({ post }: { post: Post }) {
   const { model: m, openPost } = useNav();
   const { statusOf, pull, unpull, local, canAct } = useLocal();
+  const canRetime = useCanRetime();
   const reduce = useReducedMotion();
   const buffer = m.theme.mode === 'buffer' && canAct;
   const pulled = statusOf(post) === 'archived';
@@ -268,7 +270,9 @@ function GoingOutRow({ post }: { post: Post }) {
             <button onClick={() => openPost(post.id)} aria-label={`Open ${post.title}`} className="max-sm:hidden"><Thumb src={post.image} text={post.hook} size={40} rounded={7} /></button>
             <div className="min-w-0">
               <button onClick={() => openPost(post.id)} className="text-left text-[14.5px] font-medium text-ink line-clamp-1 max-sm:line-clamp-2 max-sm:leading-snug hover:underline underline-offset-4 decoration-[var(--line-bold)]">{post.title}</button>
-              <div className="text-[12.5px] text-mute mt-0.5 truncate">{w.time} {m.theme.tzLabel} · {post.format}</div>
+              <div className="text-[12.5px] text-mute mt-0.5 truncate">
+                {canRetime(post, statusOf(post)) ? <TimeEdit id={post.id} at={post.scheduledAt!} text={`${w.time} ${m.theme.tzLabel}`} /> : <>{w.time} {m.theme.tzLabel}</>} · {post.format}
+              </div>
             </div>
             <div className="flex items-center gap-1">
               {buffer ? (

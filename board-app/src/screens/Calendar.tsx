@@ -7,6 +7,7 @@ import { useLocal } from '../data/store';
 import { track } from '../data/track';
 import { SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 
 /** A post's day on the calendar: when it went out, else when it is set to go out. */
 const atOf = (p: Post, s: PostStatus) => (s === 'live' ? p.publishedAt || p.scheduledAt : p.scheduledAt);
@@ -36,6 +37,7 @@ function gridOf(mk: string) {
 export function PostCalendar() {
   const { model: m, openPost, openFocus } = useNav();
   const { statusOf, reschedule, canAct, canApprove, toast } = useLocal();
+  const canRetime = useCanRetime();
   const phone = useIsPhone();
   const tz = m.theme.tz;
   const today = dayKey(new Date(), tz);
@@ -43,11 +45,9 @@ export function PostCalendar() {
   const [pick, setPick] = useState(today);
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  const [timing, setTiming] = useState<string | null>(null);
 
-  const canMove = (p: Post) => {
-    const s = statusOf(p);
-    return s === 'scheduled' && canAct && (m.theme.mode === 'buffer' || canApprove);
-  };
+  const canMove = (p: Post) => canRetime(p, statusOf(p));
 
   const { byDay, undated } = useMemo(() => {
     const byDay = new Map<string, { p: Post; s: PostStatus; at: string }[]>();
@@ -98,7 +98,8 @@ export function PostCalendar() {
 
   const chip = ({ p, s, at }: { p: Post; s: PostStatus; at: string }, compact = false) => {
     const t = tone(s);
-    const movable = !phone && canMove(p);
+    const retime = canMove(p) && s !== 'live';
+    const movable = !phone && retime && timing !== p.id;
     return (
       <div key={p.id} role="button" tabIndex={0}
         draggable={movable}
@@ -106,7 +107,7 @@ export function PostCalendar() {
         onDragEnd={() => { setDrag(null); setOver(null); }}
         onClick={() => open(p, s)}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(p, s); } }}
-        title={`${t.label} · ${wallTime(at, tz)} ${m.theme.tzLabel}${movable ? ' · drag to another day to move it' : ''}`}
+        title={`${t.label} · ${wallTime(at, tz)} ${m.theme.tzLabel}${movable ? ' · drag to another day to move it, tap the time to change it' : ''}`}
         className={`group relative w-full text-left rounded-[8px] border hair bg-raise hover:border-[var(--line-bold)] transition-colors overflow-hidden ${movable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${drag === p.id ? 'opacity-40' : ''} ${s === 'live' ? 'opacity-70 hover:opacity-100' : ''}`}
         data-testid="cal-post" data-status={s}>
         <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: t.bar }} aria-hidden />
@@ -115,7 +116,9 @@ export function PostCalendar() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 text-[11px] text-mute tnum leading-none">
               {s === 'live' && <CircleCheck size={11} className="shrink-0" />}
-              <span>{wallTime(at, tz)}</span>
+              {retime
+                ? <TimeEdit id={p.id} at={at} text={wallTime(at, tz)} tight={!phone} onOpen={b => setTiming(b ? p.id : null)} />
+                : <span>{wallTime(at, tz)}</span>}
               {s === 'needs_ok' && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shrink-0" aria-label="needs your OK" />}
             </div>
             <div className={`mt-1 font-medium text-ink leading-snug ${phone ? 'text-[13.5px] clamp-2' : `text-[12px] ${compact ? 'clamp-1' : 'clamp-3'}`}`}>{p.title}</div>
@@ -130,7 +133,7 @@ export function PostCalendar() {
       {(['needs_ok', 'scheduled', 'live'] as PostStatus[]).filter(s => s !== 'needs_ok' || m.reviewMode).map(s => (
         <span key={s} className="inline-flex items-center gap-1.5"><span className="h-2.5 w-[3px] rounded-full" style={{ background: tone(s).bar }} />{tone(s).label}</span>
       ))}
-      {!phone && canAct && <span className="max-lg:hidden">Drag a scheduled post to another day to move it.</span>}
+      {canAct && <span className="max-lg:hidden">{phone ? 'Tap a time to change it.' : 'Drag a post to another day. Click its time to change the time.'}</span>}
     </div>
   );
 

@@ -6,6 +6,7 @@ import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
 import { SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 import { track } from '../data/track';
 import { PostCalendar } from './Calendar';
 
@@ -22,6 +23,7 @@ type Col = { id: PostStatus; label: string; tone: string };
 export function Pipeline() {
   const { model: m, openPost, openFocus, go } = useNav();
   const { statusOf } = useLocal();
+  const canRetime = useCanRetime();
   const phone = useIsPhone();
   const reduce = useReducedMotion();
   const buffer = m.theme.mode === 'buffer';
@@ -56,7 +58,10 @@ export function Pipeline() {
     if (s === 'scheduled') {
       if (!p.scheduledAt) return 'Time being set';
       const w = fmtWhen(p.scheduledAt, m.theme.tz);
-      return new Date(p.scheduledAt) < new Date() ? `Not out yet · was due ${w.day}, ${w.time} ${m.theme.tzLabel}` : `${w.day}, ${w.time} ${m.theme.tzLabel}`;
+      const time = canRetime(p, statusOf(p))
+        ? <TimeEdit id={p.id} at={p.scheduledAt} text={`${w.time} ${m.theme.tzLabel}`} />
+        : `${w.time} ${m.theme.tzLabel}`;
+      return <>{new Date(p.scheduledAt) < new Date() ? 'Not out yet · was due ' : ''}{w.day}, {time}</>;
     }
     if (s === 'approved') return 'Goes into the next open slot';
     return p.format;
@@ -79,10 +84,11 @@ export function Pipeline() {
         )}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
           {(open ? list : list.slice(0, LIM)).map(p => (
-                <button
-                  key={p.id}
+                <div
+                  key={p.id} role="button" tabIndex={0}
                   onClick={() => (c.id === 'needs_ok' ? openFocus(p.id) : openPost(p.id))}
-                  className="group text-left rounded-[12px] border hair bg-raise p-2.5 hover:border-[var(--line-bold)] transition-colors"
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (c.id === 'needs_ok' ? openFocus(p.id) : openPost(p.id)); } }}
+                  className="group text-left cursor-pointer rounded-[12px] border hair bg-raise p-2.5 hover:border-[var(--line-bold)] transition-colors"
                   data-testid="pipe-card"
                 >
                   {p.image && !phone && <div className="mb-2.5"><Thumb src={p.image} text={p.hook} size="fill" ratio="2 / 1" rounded={8} /></div>}
@@ -95,7 +101,7 @@ export function Pipeline() {
                       <div className="text-[12px] text-mute mt-1.5 truncate">{meta(p, c.id as PostStatus)}</div>
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
           {n === 0 && <div className="rounded-[12px] border border-dashed hair px-3 py-5 text-[13px] text-mute text-center">Nothing here</div>}
           {n > LIM && (
