@@ -1,6 +1,6 @@
 import { useMemo, useState, type DragEvent } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CircleCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleCheck, Layers, Play } from 'lucide-react';
 import type { Post, PostStatus } from '../data/model';
 import { addDays, dayKey, fmtWeekday, wallTime, wallToUtc, fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
@@ -32,6 +32,34 @@ function gridOf(mk: string) {
     weeks.push(days);
   }
   return weeks;
+}
+
+/** Slides in a carousel; 0 for a single image or a text post. */
+const slidesOf = (p: Post) => (p.kind === 'carousel' || p.format === 'Carousel' || p.images.length > 1 ? Math.max(p.images.length, 1) : 0);
+
+/** A small mark on a cover: the slide count for a carousel, a play sign for a video. */
+function Mark({ p, tiny = false }: { p: Post; tiny?: boolean }) {
+  const n = slidesOf(p);
+  const video = p.style === 'video';
+  if (!n && !video) return null;
+  return (
+    <span className={`absolute inline-flex items-center gap-[3px] rounded-full font-semibold tnum text-white ${tiny ? 'bottom-0.5 right-0.5 h-[13px] px-[3px] text-[8.5px]' : 'top-1 right-1 h-[18px] px-1.5 text-[10px]'}`}
+      style={{ background: 'rgba(0,0,0,.62)' }} title={video ? 'Video' : `Carousel, ${n} slides`} data-testid="cal-mark">
+      {video ? <Play size={tiny ? 7 : 9} fill="currentColor" /> : <Layers size={tiny ? 8 : 10} />}{!video && n > 1 && !tiny ? n : ''}
+    </span>
+  );
+}
+
+/** The post's picture or carousel cover across the top of its calendar card. */
+function Cover({ p, h }: { p: Post; h: number }) {
+  const [bad, setBad] = useState(false);
+  if (!p.image || bad) return null;
+  return (
+    <div className="relative ml-[3px] bg-sunk border-b hair overflow-hidden" style={{ height: h }}>
+      <img src={p.image} alt="" loading="lazy" draggable={false} onError={() => setBad(true)} className="w-full h-full object-cover" />
+      <Mark p={p} />
+    </div>
+  );
 }
 
 export function PostCalendar() {
@@ -110,18 +138,20 @@ export function PostCalendar() {
         title={`${t.label} · ${wallTime(at, tz)} ${m.theme.tzLabel}${movable ? ' · drag to another day to move it, tap the time to change it' : ''}`}
         className={`group relative w-full text-left rounded-[8px] border hair bg-raise hover:border-[var(--line-bold)] transition-colors overflow-hidden ${movable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${drag === p.id ? 'opacity-40' : ''} ${s === 'live' ? 'opacity-70 hover:opacity-100' : ''}`}
         data-testid="cal-post" data-status={s}>
-        <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: t.bar }} aria-hidden />
+        <span className="absolute left-0 top-0 bottom-0 w-[3px] z-[1]" style={{ background: t.bar }} aria-hidden />
+        {!phone && !compact && <Cover p={p} h={54} />}
         <div className={`flex gap-2 ${compact ? 'p-1.5 pl-2.5' : 'p-2 pl-3'}`}>
-          {phone && <Thumb src={p.image} text={p.hook} size={44} rounded={6} />}
+          {phone && <span className="relative shrink-0"><Thumb src={p.image} text={p.hook} size={44} rounded={6} />{p.image && <Mark p={p} tiny />}</span>}
+          {!phone && compact && p.image && <span className="relative self-center shrink-0"><Thumb src={p.image} text={p.hook} size={30} rounded={4} /><Mark p={p} tiny /></span>}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1 text-[11px] text-mute tnum leading-none">
+            {!(compact && s === 'live' && !phone) && <div className="flex items-center gap-1 text-[11px] text-mute tnum leading-none mb-1">
               {s === 'live' && <CircleCheck size={11} className="shrink-0" />}
               {retime
                 ? <TimeEdit id={p.id} at={at} text={wallTime(at, tz)} tight={!phone} onOpen={b => setTiming(b ? p.id : null)} />
                 : <span>{wallTime(at, tz)}</span>}
               {s === 'needs_ok' && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shrink-0" aria-label="needs your OK" />}
-            </div>
-            <div className={`mt-1 font-medium text-ink leading-snug ${phone ? 'text-[13.5px] clamp-2' : `text-[12px] ${compact ? 'clamp-1' : 'clamp-3'}`}`}>{p.title}</div>
+            </div>}
+            <div className={`font-medium text-ink leading-snug ${phone ? 'text-[13.5px] clamp-2' : `text-[12px] ${compact ? (p.image ? 'clamp-2' : 'clamp-1') : p.image ? 'clamp-2' : 'clamp-3'}`}`}>{p.title}</div>
           </div>
         </div>
       </div>
