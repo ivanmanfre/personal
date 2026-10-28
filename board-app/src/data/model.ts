@@ -110,6 +110,9 @@ export type Model = {
   nameOf: (email?: string | null) => string;
   me: string | null;
   role: string;
+  /** Everyone on the team list, as the server keeps it. */
+  members: { email: string; name: string; role: 'admin' | 'approver' | 'viewer'; owner: boolean }[];
+  teamCap: number;
 };
 
 const NOISE = new Set(['day_left_empty', 'day_refilled', 'slot_replace_undone', 'angle_swap_undone', 'slot_replaced', 'invite', 'shift_request']);
@@ -423,6 +426,11 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
     content: buildContent(raw, posts, theme.tz),
     inWindow: inWin,
     comments, team, mentionables, nameOf, me: raw.me || null, role: raw.role || 'approver',
+    members: members.filter(x => x.email).map(x => ({
+      email: String(x.email).toLowerCase(), name: String(x.name || '').trim(),
+      role: (x.role === 'admin' || x.role === 'viewer' ? x.role : 'approver') as 'admin' | 'approver' | 'viewer', owner: !!x.owner,
+    })),
+    teamCap: raw.teamCap || 25,
   };
 }
 

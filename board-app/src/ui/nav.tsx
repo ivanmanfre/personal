@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { Model } from '../data/model';
 
-export type View = 'home' | 'posts' | 'content' | 'outreach' | 'activity';
+export type View = 'home' | 'posts' | 'content' | 'outreach' | 'activity' | 'team';
 export type PeopleKind = 'booked' | 'positive' | 'replied' | 'reached';
 
 export type Nav = {

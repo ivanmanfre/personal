@@ -25,6 +25,7 @@ export type RawComment = {
 };
 
 export type Member = { email: string; name?: string | null; role?: string | null; owner?: boolean };
+export type TeamRes = Res & { members?: Member[]; cap?: number; already_member?: boolean };
 
 export type Raw = {
   board: any;
@@ -38,6 +39,8 @@ export type Raw = {
   schedule: Record<string, string | null> | null;
   /** board_team_list: everyone who can sign in, with names and roles. */
   members: Member[];
+  /** Seats on the team list. */
+  teamCap: number;
   /** Role of whoever is looking: 'admin' for the bare board link, else the member's role. */
   role: string;
   /** Email of the signed-in member, when there is one. */
@@ -92,6 +95,7 @@ export async function loadBoard(c: Cred): Promise<Raw> {
     audience: audience?.ok ? audience.audience : null, comments: comments?.ok && Array.isArray(comments.items) ? comments.items : [],
     schedule,
     members: team?.ok && Array.isArray(team.members) ? team.members : [],
+    teamCap: team?.ok && Number(team.cap) > 0 ? Number(team.cap) : 25,
     role: team?.ok ? String(team.my_role || (c.token && !s ? 'admin' : 'approver')) : (c.token && !s ? 'admin' : 'approver'),
     me: (comments?.ok && comments.me) || (team?.ok && team.me) || null,
   };
@@ -138,6 +142,13 @@ export const api = {
       p_slug: c.slug, p_ref: ref, p_text: text, p_parent: parent, p_session: c.session.token, ...(v2 ? { p_mentions: mentions } : {}),
     });
   },
+  /** Team (board_team_*): the board link and admins can add, remove and change roles; everyone signed in can read. */
+  teamList: (c: Cred) => call('board_team_list', { p_slug: c.slug, p_session: c.session?.token || null, p_token: c.session?.token ? null : c.token || null }),
+  teamAdd: (c: Cred, email: string, name: string | null, role: string) => call('board_team_add_v2', {
+    p_slug: c.slug, p_email: email, p_name: name, p_role: role, p_session: c.session?.token || null, p_token: c.session?.token ? null : c.token || null,
+  }),
+  teamRemove: (c: Cred, email: string) => call('board_team_remove', { p_slug: c.slug, p_email: email, p_session: c.session?.token || null, p_token: c.session?.token ? null : c.token || null }),
+  teamRole: (c: Cred, email: string, role: string) => call('board_team_set_role', { p_slug: c.slug, p_email: email, p_role: role, p_session: c.session?.token || null, p_token: c.session?.token ? null : c.token || null }),
   resolveComment: (c: Cred, id: string, resolved: boolean) => {
     if (!c.session?.token) return Promise.resolve<Res>({ ok: false, error: 'need_session' });
     return call('board_comment_resolve', { p_slug: c.slug, p_comment_id: id, p_resolved: resolved, p_session: c.session.token });
@@ -233,5 +244,16 @@ const ERR: Record<string, string> = {
   bad_mentions: 'Someone you tagged is not on this board. Remove the tag and send again.',
   rate_limited: 'That is a lot of comments in a few minutes. Wait a little and send again.',
   not_allowed: 'Only the person who wrote this comment can resolve it.',
+  admin_only: 'Only a team admin can change the team.',
+  bad_email: 'That email address does not look right.',
+  bad_name: 'Keep the name under 80 characters.',
+  list_full: 'The team is full. Remove someone first.',
+  owner: 'The board owner always keeps access.',
+  owner_is_admin: 'The board owner always stays an admin.',
+  last_member: 'The board needs at least one person on the team.',
+  cannot_remove_self: 'You cannot remove yourself. Ask another admin.',
+  cannot_change_self: 'You cannot change your own role. Ask another admin.',
+  not_member: 'That person is no longer on the team.',
+  not_available: 'Team sign-in is not switched on for this board yet.',
 };
 export const errText = (e?: string) => ERR[e || ''] || 'That did not save. Check your connection and try again.';

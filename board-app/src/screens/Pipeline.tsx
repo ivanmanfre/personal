@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CalendarDays, Columns3 } from 'lucide-react';
 import type { Post, PostStatus } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
 import { SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
 import { track } from '../data/track';
+import { PostCalendar } from './Calendar';
+
+type As = 'board' | 'calendar';
+const AS_KEY = 'board-posts-as';
+const readAs = (): As => {
+  const q = new URLSearchParams(location.search).get('as');
+  if (q === 'calendar' || q === 'board') return q;
+  try { return localStorage.getItem(AS_KEY) === 'calendar' ? 'calendar' : 'board'; } catch { return 'board'; }
+};
 
 type Col = { id: PostStatus; label: string; tone: string };
 
@@ -32,6 +41,15 @@ export function Pipeline() {
   const counts = cols.map(c => postsIn(c.id).length);
   const total = counts.reduce((a, b) => a + b, 0) || 1;
   const [sel, setSel] = useState(0);
+  const [as, setAsState] = useState<As>(readAs);
+  const setAs = (v: As) => {
+    setAsState(v);
+    try { localStorage.setItem(AS_KEY, v); } catch { /* private mode */ }
+    const q = new URLSearchParams(location.search);
+    q.set('as', v);
+    history.replaceState(null, '', `${location.pathname}?${q}`);
+    track('expand', null, { which: `posts_as:${v}` });
+  };
   const [more, setMore] = useState<Record<string, boolean>>({});
 
   const meta = (p: Post, s: PostStatus) => {
@@ -92,11 +110,23 @@ export function Pipeline() {
 
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 sm:pt-8 pb-20">
-      <div className="eyebrow mb-2">{buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 mb-6">
-        <h1 className="display text-[28px] sm:text-[32px]">Posts</h1>
+      <div className="eyebrow mb-2">{as === 'calendar' ? 'Every post on its day' : buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 mb-6">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <h1 className="display text-[28px] sm:text-[32px]">Posts</h1>
+          <div className="seg" role="group" aria-label="Show posts as">
+            {([['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays]] as const).map(([id, label, Icon]) => (
+              <button key={id} aria-pressed={as === id} onClick={() => setAs(id)} data-testid={`posts-as-${id}`}>
+                {as === id && <motion.span layoutId="seg-posts-as" className="absolute inset-0 rounded-full bg-sunk" transition={SPRING} />}
+                <span className="relative inline-flex items-center gap-1.5"><Icon size={14} strokeWidth={1.8} />{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <button className="link !text-[13px]" onClick={() => go('content')}>Published posts and their numbers <ArrowRight size={14} /></button>
       </div>
+
+      {as === 'calendar' ? <PostCalendar /> : <>
 
       {/* partition-bar move: one proportional strip, a label and count under each part */}
       {phone && (
@@ -147,6 +177,7 @@ export function Pipeline() {
           {cols.map((c, i) => <div id={`col-${c.id}`} key={c.id} className="min-w-0">{column(c, i)}</div>)}
         </div>
       )}
+      </>}
     </div>
   );
 }

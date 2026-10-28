@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { ChartNoAxesColumnIncreasing, Columns3, ExternalLink, History, House, LogOut, Send, UserRound } from 'lucide-react';
+import { ChartNoAxesColumnIncreasing, Columns3, ExternalLink, History, House, LogOut, Send, UserRound, UsersRound } from 'lucide-react';
 import { AuthError, loadBoard, redeem, type Cred, type Raw } from './data/api';
 import { buildModel, type Model } from './data/model';
 import { themeFor, cssVars, loadFonts } from './data/theme';
@@ -19,6 +19,7 @@ import { Pipeline } from './screens/Pipeline';
 import { OutreachPage } from './screens/Outreach';
 import { ActivityPage } from './screens/Activity';
 import { ContentPage } from './screens/Content';
+import { TeamPage } from './screens/Team';
 
 const VIEWS: { id: View; label: string; Icon: typeof House }[] = [
   { id: 'home', label: 'Home', Icon: House },
@@ -27,12 +28,16 @@ const VIEWS: { id: View; label: string; Icon: typeof House }[] = [
   { id: 'outreach', label: 'Outreach', Icon: Send },
   { id: 'activity', label: 'Activity', Icon: History },
 ];
+/** Pinned to the foot of the rail on every board, like the classic board's sidebar footer. */
+const FOOT: { id: View; label: string; Icon: typeof House }[] = [
+  { id: 'team', label: 'Team', Icon: UsersRound },
+];
 const SHORT: Record<string, string> = { 'arch-agency': 'ARCH', 'risedtc-com': 'RISE', 'swishdm-live': 'SwishDM' };
 const REFRESH_MS = 5 * 60 * 1000;
 
 const readView = (): View => {
   const v = new URLSearchParams(location.search).get('view') as View;
-  return VIEWS.some(x => x.id === v) ? v : 'home';
+  return [...VIEWS, ...FOOT].some(x => x.id === v) ? v : 'home';
 };
 
 function applyTheme(slug: string, board?: any) {
@@ -154,6 +159,7 @@ export default function App() {
     const q = new URLSearchParams(location.search);
     if (import.meta.env.DEV) q.set('board', entry.slug);
     q.set('view', v);
+    if (v !== 'posts') q.delete('as');
     history.pushState(null, '', `${location.pathname}?${q}`);
     setView(v);
     setTrackView(v);
@@ -240,7 +246,7 @@ function Shell({ view, go }: { view: View; go: (v: View) => void }) {
     openPeople: k => { setPeople(k); track('expand', null, { which: `people:${k}` }); },
   }), [model, view, go]);
 
-  const Screen = { home: Home, posts: Pipeline, content: ContentPage, outreach: OutreachPage, activity: ActivityPage }[view];
+  const Screen = { home: Home, posts: Pipeline, content: ContentPage, outreach: OutreachPage, activity: ActivityPage, team: TeamPage }[view];
 
   return (
     <NavCtx.Provider value={nav}>
@@ -265,7 +271,7 @@ function Shell({ view, go }: { view: View; go: (v: View) => void }) {
 }
 
 /* Who is signed in, a way to sign in for comments, and the classic board. Kept small and to the side. */
-function Account() {
+function Account({ go }: { go: (v: View) => void }) {
   const { entry, cred, signOut, signedIn } = useAuth();
   const L = useLocalMaybe();
   const [open, setOpen] = useState(false);
@@ -312,9 +318,13 @@ function Account() {
             </div>
           )}
           <div className="pt-2 grid">
+            <button role="menuitem" onClick={() => { setOpen(false); go('team'); }} className="h-9 px-1 rounded-[8px] inline-flex items-center gap-2 text-[13px] text-soft hover:text-ink text-left" data-testid="account-team">
+              <UsersRound size={14} /> Team
+              <span className="ml-auto text-[11.5px] text-mute">who can open the board</span>
+            </button>
             <a role="menuitem" href={classic} onClick={() => { track('classic'); flushNow(); }} className="h-9 px-1 rounded-[8px] inline-flex items-center gap-2 text-[13px] text-soft hover:text-ink" data-testid="classic-link">
               <ExternalLink size={14} /> Classic board
-              <span className="ml-auto text-[11.5px] text-mute">team, photos, newsletter</span>
+              <span className="ml-auto text-[11.5px] text-mute">photos, newsletter</span>
             </a>
             {email && (
               <button role="menuitem" onClick={() => { setOpen(false); signOut(); }} className="h-9 px-1 rounded-[8px] inline-flex items-center gap-2 text-[13px] text-soft hover:text-ink text-left">
@@ -356,6 +366,17 @@ function Chrome({ view, go, wordmark, logo, live = false }: { view: View; go: (v
               </button>
             ))}
           </div>
+          <div className="mt-auto w-full flex flex-col items-center gap-1.5 py-3 border-t hair" onMouseLeave={() => setHover(null)}>
+            {FOOT.map(({ id, label, Icon }) => (
+              <button key={id} className="rail-btn" aria-current={view === id ? 'page' : undefined} aria-label={label}
+                onClick={() => go(id)} onMouseEnter={() => setHover(id)} data-testid={`nav-${id}`}>
+                {(hover ?? view) === id && <motion.span layoutId="rail-pill" className="absolute inset-0 rounded-[12px] bg-sunk" transition={SPRING} />}
+                {view === id && <motion.span layoutId="rail-bar" className="absolute -left-2 top-2 bottom-2 w-[2px] rounded-full bg-accent" transition={SPRING} />}
+                <Icon size={19} strokeWidth={1.6} className="relative" />
+                <span className="rail-tip">{label}</span>
+              </button>
+            ))}
+          </div>
         </nav>
       )}
 
@@ -376,7 +397,7 @@ function Chrome({ view, go, wordmark, logo, live = false }: { view: View; go: (v
                 <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-mute" width="10" height="10" viewBox="0 0 10 10" aria-hidden><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
               </label>
             )}
-            {live && <Account />}
+            {live && <Account go={go} />}
           </div>
         </div>
       </header>

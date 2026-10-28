@@ -6,7 +6,7 @@ import { isTestBrowser } from './entry';
 
 export type TrackEvent =
   | 'visit' | 'view' | 'open_post' | 'open_focus' | 'expand' | 'approve' | 'comment' | 'resolve'
-  | 'edit' | 'reschedule' | 'pull' | 'photo' | 'sign_in' | 'classic';
+  | 'edit' | 'reschedule' | 'pull' | 'photo' | 'sign_in' | 'classic' | 'team_add' | 'team_remove' | 'team_role';
 
 type Row = { event: TrackEvent; view: string | null; ref: string | null; visit: string; meta: Record<string, unknown> | null; is_test: boolean };
 
