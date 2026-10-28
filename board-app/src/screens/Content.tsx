@@ -83,7 +83,7 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
   const roles = r.demo?.job_title.slice(0, 3).map(x => `${x.label} ${x.pct}%`).join(' · ');
   const sen = r.demo?.seniority.slice(0, 3).map(x => `${x.label} ${x.pct}%`).join(' · ');
   return (
-    <div className="pb-4 pt-1 pl-[52px] max-sm:pl-0">
+    <div className="pb-4 pt-1 pl-[76px] max-sm:pl-0">
       <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-2.5">
         {facts.map(([k, v]) => (
           <div key={k} className="min-w-0"><dt className="text-[11.5px] text-mute leading-tight">{k}</dt><dd className="text-[14px] text-ink tnum mt-0.5">{v}</dd></div>
@@ -104,6 +104,27 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
   );
 }
 
+function CoverGrid({ rows, m, more, all, setAll }: { rows: ContentPost[]; m: Model; more: number; all: boolean; setAll: (f: (a: boolean) => boolean) => void }) {
+  const { openPost } = useNav();
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-5 pt-1" data-testid="published-grid">
+        {rows.map(r => (
+          <button key={r.key} type="button" disabled={!r.postId} onClick={() => r.postId && openPost(r.postId)}
+            className="group text-left min-w-0 self-start" data-testid="content-row">
+            <Thumb src={r.image} text={r.hook} size="fill" ratio="4 / 5" rounded={10} className="group-hover:border-[var(--line-bold)] transition-colors" />
+            <div className="mt-2 text-[13.5px] font-medium text-ink leading-snug clamp-2 group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{r.title}</div>
+            <div className="mt-0.5 text-[12px] text-mute">{fmtWhen(r.at, m.theme.tz).day}</div>
+          </button>
+        ))}
+      </div>
+      {(more > 0 || all) && (
+        <button className="btn btn-outline btn-sm mt-5" onClick={() => setAll(a => !a)}>{all ? 'Show fewer' : `Show ${more} more`}</button>
+      )}
+    </div>
+  );
+}
+
 function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
   const phone = useIsPhone();
   const [open, setOpen] = useState<string | null>(null);
@@ -116,6 +137,8 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
   const cols = anyMeasured ? ['Seen', 'Reactions', 'Comments', 'Profile views', ...(icp ? [icp.label] : [])] : [];
   const tpl = anyMeasured ? `minmax(0,1fr) repeat(4, 84px)${icp ? ' 104px' : ''} 20px` : 'minmax(0,1fr) 20px';
   if (!rows.length) return <p className="text-[14px] text-mute py-2">Nothing went out in this range.</p>;
+  // No numbers yet: show the posts themselves, cover first, so the pictures and carousels are what you see.
+  if (!anyMeasured) return <CoverGrid rows={list} m={m} more={rows.length > LIM ? rows.length - LIM : 0} all={all} setAll={setAll} />;
   return (
     <div>
       {!phone && anyMeasured && (
@@ -134,7 +157,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
               <button type="button" onClick={() => { if (!isOpen) track('expand', r.postId || null, { which: 'content_row' }); setOpen(isOpen ? null : r.key); }} aria-expanded={isOpen}
                 className="w-full text-left grid items-center gap-2 py-2.5 group" style={phone ? undefined : { gridTemplateColumns: tpl }} data-testid="content-row">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Thumb src={r.image} text={r.hook} size={40} rounded={7} />
+                  <Thumb src={r.image} text={r.hook} size={phone ? 48 : 64} rounded={8} />
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px] text-ink truncate group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{r.title}</div>
                     <div className="text-[12px] text-mute flex items-center gap-2 min-w-0">
@@ -160,7 +183,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
                 {!phone && <ChevronDown size={15} className={`justify-self-end text-mute transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
               </button>
               {isOpen && (r.measured ? <Detail r={r} m={m} /> : (
-                <div className="pb-4 pl-[52px] max-sm:pl-0 text-[13px] text-mute">
+                <div className="pb-4 pl-[76px] max-sm:pl-0 text-[13px] text-mute">
                   LinkedIn numbers for this post are not in yet.
                   {r.postId && <> <OpenLink id={r.postId} /></>}
                 </div>
@@ -191,7 +214,8 @@ function Side({ title, children, note }: { title: ReactNode; children: ReactNode
   );
 }
 
-export function ContentPage() {
+/** Posts that went out, with their LinkedIn numbers. Shown as the Published tab of Posts. */
+export function PublishedPosts() {
   const { model: m } = useNav();
   const c = m.content;
   const [range, setRange] = useState<Range>(() => defaultRange(m));
@@ -219,12 +243,9 @@ export function ContentPage() {
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 sm:pt-8 pb-20">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5">
-        <div className="min-w-0">
-          <div className="eyebrow mb-2">{R.label}</div>
-          <h1 className="display text-[28px] sm:text-[32px]">Content</h1>
-        </div>
+    <div data-testid="published">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 mb-3">
+        <div className="eyebrow">{R.label}</div>
         {hasBoth && (
           <div className="seg" role="group" aria-label="Time range">
             {(['win', 'all'] as const).map(s => (

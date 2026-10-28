@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, CalendarDays, Columns3 } from 'lucide-react';
+import { CalendarDays, CircleCheck, Columns3 } from 'lucide-react';
 import type { Post, PostStatus } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
@@ -9,19 +9,21 @@ import { useNav } from '../ui/nav';
 import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 import { track } from '../data/track';
 import { PostCalendar } from './Calendar';
+import { PublishedPosts } from './Content';
 
-type As = 'board' | 'calendar';
+type As = 'board' | 'calendar' | 'published';
 const AS_KEY = 'board-posts-as';
+const isAs = (v: string | null): v is As => v === 'board' || v === 'calendar' || v === 'published';
 const readAs = (): As => {
   const q = new URLSearchParams(location.search).get('as');
-  if (q === 'calendar' || q === 'board') return q;
-  try { return localStorage.getItem(AS_KEY) === 'calendar' ? 'calendar' : 'board'; } catch { return 'board'; }
+  if (isAs(q)) return q;
+  try { const v = localStorage.getItem(AS_KEY); return isAs(v) ? v : 'board'; } catch { return 'board'; }
 };
 
 type Col = { id: PostStatus; label: string; tone: string };
 
 export function Pipeline() {
-  const { model: m, openPost, openFocus, go } = useNav();
+  const { model: m, openPost, openFocus } = useNav();
   const { statusOf } = useLocal();
   const canRetime = useCanRetime();
   const phone = useIsPhone();
@@ -34,7 +36,7 @@ export function Pipeline() {
     ...(buffer ? [] : [{ id: 'approved' as const, label: 'Approved', tone: 'color-mix(in srgb, var(--accent) 50%, var(--paper))' }]),
     { id: 'scheduled', label: 'Scheduled', tone: 'var(--soft)' },
   ];
-  // Published posts live on the Content page with their numbers; this board only shows what is still to come.
+  // Published posts have their own tab, with their numbers; the board columns only show what is still to come.
   const postsIn = (id: Col['id']) => {
     const list = m.posts.filter(p => statusOf(p) === id);
     if (id === 'scheduled') return list.sort((a, b) => (a.scheduledAt || '9').localeCompare(b.scheduledAt || '9'));
@@ -116,12 +118,12 @@ export function Pipeline() {
 
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 sm:pt-8 pb-20">
-      <div className="eyebrow mb-2">{as === 'calendar' ? 'Every post on its day' : buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
+      <div className="eyebrow mb-2">{as === 'published' ? 'Out on LinkedIn, with their numbers' : as === 'calendar' ? 'Every post on its day' : buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 mb-6">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <h1 className="display text-[28px] sm:text-[32px]">Posts</h1>
           <div className="seg" role="group" aria-label="Show posts as">
-            {([['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays]] as const).map(([id, label, Icon]) => (
+            {([['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays], ['published', 'Published', CircleCheck]] as const).map(([id, label, Icon]) => (
               <button key={id} aria-pressed={as === id} onClick={() => setAs(id)} data-testid={`posts-as-${id}`}>
                 {as === id && <motion.span layoutId="seg-posts-as" className="absolute inset-0 rounded-full bg-sunk" transition={SPRING} />}
                 <span className="relative inline-flex items-center gap-1.5"><Icon size={14} strokeWidth={1.8} />{label}</span>
@@ -129,10 +131,9 @@ export function Pipeline() {
             ))}
           </div>
         </div>
-        <button className="link !text-[13px]" onClick={() => go('content')}>Published posts and their numbers <ArrowRight size={14} /></button>
       </div>
 
-      {as === 'calendar' ? <PostCalendar /> : <>
+      {as === 'published' ? <PublishedPosts /> : as === 'calendar' ? <PostCalendar /> : <>
 
       {/* partition-bar move: one proportional strip, a label and count under each part */}
       {phone && (

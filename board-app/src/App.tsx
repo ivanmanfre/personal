@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { ChartNoAxesColumnIncreasing, Columns3, ExternalLink, History, House, LogOut, Send, UserRound, UsersRound } from 'lucide-react';
+import { Columns3, ExternalLink, History, House, LogOut, Send, UserRound, UsersRound } from 'lucide-react';
 import { AuthError, loadBoard, redeem, type Cred, type Raw } from './data/api';
 import { buildModel, type Model } from './data/model';
 import { themeFor, cssVars, loadFonts } from './data/theme';
@@ -18,13 +18,11 @@ import { Focus } from './screens/Focus';
 import { Pipeline } from './screens/Pipeline';
 import { OutreachPage } from './screens/Outreach';
 import { ActivityPage } from './screens/Activity';
-import { ContentPage } from './screens/Content';
 import { TeamPage } from './screens/Team';
 
 const VIEWS: { id: View; label: string; Icon: typeof House }[] = [
   { id: 'home', label: 'Home', Icon: House },
   { id: 'posts', label: 'Posts', Icon: Columns3 },
-  { id: 'content', label: 'Content', Icon: ChartNoAxesColumnIncreasing },
   { id: 'outreach', label: 'Outreach', Icon: Send },
   { id: 'activity', label: 'Activity', Icon: History },
 ];
@@ -35,8 +33,15 @@ const FOOT: { id: View; label: string; Icon: typeof House }[] = [
 const SHORT: Record<string, string> = { 'arch-agency': 'ARCH', 'risedtc-com': 'RISE', 'swishdm-live': 'SwishDM' };
 const REFRESH_MS = 5 * 60 * 1000;
 
+/* Content now lives inside Posts as its Published tab; an old ?view=content link lands there. */
 const readView = (): View => {
-  const v = new URLSearchParams(location.search).get('view') as View;
+  const q = new URLSearchParams(location.search);
+  const v = q.get('view') as View;
+  if (v === 'content') {
+    q.set('view', 'posts'); q.set('as', 'published');
+    history.replaceState(null, '', `${location.pathname}?${q}`);
+    return 'posts';
+  }
   return [...VIEWS, ...FOOT].some(x => x.id === v) ? v : 'home';
 };
 
@@ -57,6 +62,7 @@ type Phase =
 export default function App() {
   const [entry] = useState<Entry>(readEntry);
   const [view, setView] = useState<View>(readView);
+  const [hop, setHop] = useState(0);
   const [cred, setCred] = useState<Cred>(() => ({ slug: entry.slug, token: entry.token, session: loadBoardSession(entry.slug) }));
   const credRef = useRef(cred);
   credRef.current = cred;
@@ -155,12 +161,15 @@ export default function App() {
     return () => window.removeEventListener('popstate', on);
   }, []);
 
-  const go = useCallback((v: View) => {
+  const go = useCallback((to: View) => {
     const q = new URLSearchParams(location.search);
     if (import.meta.env.DEV) q.set('board', entry.slug);
+    const v: View = to === 'content' ? 'posts' : to;
     q.set('view', v);
-    if (v !== 'posts') q.delete('as');
+    if (to === 'content') q.set('as', 'published');
+    else q.delete('as');
     history.pushState(null, '', `${location.pathname}?${q}`);
+    setHop(n => n + 1);
     setView(v);
     setTrackView(v);
     track('view');
@@ -200,7 +209,7 @@ export default function App() {
       <AuthCtx.Provider value={auth}>
         {phase.kind === 'ready' && model ? (
           <LocalProvider model={model} fetchedAt={fetchedAt} cred={cred}>
-            <Shell view={view} go={go} />
+            <Shell view={view} go={go} hop={hop} />
           </LocalProvider>
         ) : phase.kind === 'signin' ? (
           <SignInScreen slug={entry.slug} name={t.name} note={phase.note} onAuthed={auth.signedIn} />
@@ -233,7 +242,7 @@ export default function App() {
   );
 }
 
-function Shell({ view, go }: { view: View; go: (v: View) => void }) {
+function Shell({ view, go, hop }: { view: View; go: (v: View) => void; hop: number }) {
   const { model } = useLocal();
   const [focus, setFocus] = useState<{ open: boolean; start?: string }>({ open: false });
   const [post, setPost] = useState<{ id: string | null; edit?: boolean }>({ id: null });
@@ -246,7 +255,7 @@ function Shell({ view, go }: { view: View; go: (v: View) => void }) {
     openPeople: k => { setPeople(k); track('expand', null, { which: `people:${k}` }); },
   }), [model, view, go]);
 
-  const Screen = { home: Home, posts: Pipeline, content: ContentPage, outreach: OutreachPage, activity: ActivityPage, team: TeamPage }[view];
+  const Screen = { home: Home, posts: Pipeline, content: Pipeline, outreach: OutreachPage, activity: ActivityPage, team: TeamPage }[view];
 
   return (
     <NavCtx.Provider value={nav}>
@@ -255,7 +264,7 @@ function Shell({ view, go }: { view: View; go: (v: View) => void }) {
         <main className="md:pl-[var(--rail)] pb-[72px] md:pb-0">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} transition={{ duration: 0.25 }}>
-              <Screen />
+              <Screen key={hop} />
             </motion.div>
           </AnimatePresence>
         </main>
