@@ -5,7 +5,7 @@ import type { Model, Post } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
 import { useAuth } from '../data/auth';
-import { Avatar } from './kit';
+import { Avatar, LmTag } from './kit';
 import { SignInForm } from './SignIn';
 import type { BoardSession } from '../data/session';
 
@@ -163,7 +163,11 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
         </div>
       )}
 
-      {post.image && (post.images.length > 1
+      {post.videoUrl ? (
+        <div className="relative border-t bg-black" style={{ borderColor: '#EBE9E4' }}>
+          <video src={post.videoUrl} poster={post.image} controls playsInline preload="metadata" className="block w-full h-auto max-h-[78vh] bg-black" data-testid="post-video" />
+        </div>
+      ) : post.image && (post.images.length > 1
         ? <Slides images={post.images} />
         : (
           <div className="relative border-t" style={{ borderColor: '#EBE9E4' }}>
@@ -186,8 +190,44 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
           return <span key={l as string} className="inline-flex items-center gap-1.5 px-2 py-2.5"><Icon size={17} strokeWidth={1.75} /><span className="max-[400px]:hidden">{l as string}</span></span>;
         })}
       </footer>
+
+      {post.firstComment && (
+        <div className="flex items-start gap-2 px-4 pt-2.5 pb-3 border-t" style={{ borderColor: '#EBE9E4' }} data-testid="first-comment">
+          <Avatar name={f.name || model.company} src={f.avatar} size={32} tone="accent" />
+          <div className="min-w-0 flex-1 rounded-[8px] px-3 py-2" style={{ background: '#F2F0EB' }}>
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-[13px] font-semibold text-[rgba(0,0,0,0.9)] truncate">{f.name || model.company}</span>
+              <span className="text-[11.5px] text-[rgba(0,0,0,0.55)] shrink-0">Author</span>
+            </div>
+            <p className="mt-1 text-[14px] leading-[20px] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap break-words">{linkify(post.firstComment.text, post.firstComment.url)}</p>
+          </div>
+        </div>
+      )}
+
+      {post.leadMagnet && (
+        <div className="flex items-center gap-2 px-4 py-2.5 border-t text-[13px]" style={{ borderColor: '#EBE9E4' }} data-testid="lm-line">
+          <LmTag />
+          <span className="min-w-0 truncate text-[rgba(0,0,0,0.6)]">
+            Guide: {post.leadMagnet.url
+              ? <a href={post.leadMagnet.url} target="_blank" rel="noreferrer" className="font-semibold text-[rgba(0,0,0,0.85)] hover:underline underline-offset-4">{post.leadMagnet.title} ↗</a>
+              : <span className="font-semibold text-[rgba(0,0,0,0.85)]">{post.leadMagnet.title}</span>}
+          </span>
+        </div>
+      )}
     </article>
   );
+}
+
+/** Turns web addresses in a comment into links. A link the comment lacks is added at the end. */
+function linkify(text: string, url?: string) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g).map((t, i) => {
+    if (i % 2 === 0) return t;
+    const end = t.match(/[.,;:!?)]+$/)?.[0] || '';
+    const href = end ? t.slice(0, -end.length) : t;
+    return <span key={i}><a href={href} target="_blank" rel="noreferrer" className="font-semibold text-[#0A66C2] hover:underline">{href}</a>{end}</span>;
+  });
+  if (url && !text.includes(url)) parts.push('\n', <a key="u" href={url} target="_blank" rel="noreferrer" className="font-semibold text-[#0A66C2] hover:underline">{url}</a>);
+  return parts;
 }
 
 function Editor({ initial, onSave, onCancel }: { initial: string; onSave: (s: string) => Promise<{ ok: boolean; error?: string }>; onCancel: () => void }) {

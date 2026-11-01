@@ -4,7 +4,7 @@ import { CalendarDays, CircleCheck, Columns3 } from 'lucide-react';
 import type { Post, PostStatus } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
-import { SPRING, Thumb, useIsPhone } from '../ui/kit';
+import { LmTag, SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
 import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 import { track } from '../data/track';
@@ -101,6 +101,7 @@ export function Pipeline() {
                       <div className="text-[13.5px] font-medium text-ink leading-snug clamp-2">{p.title}</div>
                       {(!p.image || phone) && <div className="text-[12.5px] text-mute leading-snug clamp-2 mt-1">{p.hook !== p.title ? p.hook : ''}</div>}
                       <div className="text-[12px] text-mute mt-1.5 truncate">{meta(p, c.id as PostStatus)}</div>
+                      {p.isLeadMagnet && <div className="mt-1.5"><LmTag /></div>}
                     </div>
                   </div>
                 </div>

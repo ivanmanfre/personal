@@ -5,7 +5,7 @@ import type { Post, PostStatus } from '../data/model';
 import { addDays, dayKey, fmtWeekday, wallTime, wallToUtc, fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
 import { track } from '../data/track';
-import { SPRING, Thumb, useIsPhone } from '../ui/kit';
+import { LmTag, SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
 import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 
@@ -152,6 +152,7 @@ export function PostCalendar() {
               {s === 'needs_ok' && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent shrink-0" aria-label="needs your OK" />}
             </div>}
             <div className={`font-medium text-ink leading-snug ${phone ? 'text-[13.5px] clamp-2' : `text-[12px] ${compact ? (p.image ? 'clamp-2' : 'clamp-1') : p.image ? 'clamp-2' : 'clamp-3'}`}`}>{p.title}</div>
+            {p.isLeadMagnet && <div className="mt-1"><LmTag /></div>}
           </div>
         </div>
       </div>
@@ -196,6 +197,7 @@ export function PostCalendar() {
             <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: tone(s).bar }} aria-hidden />
             <div className="text-[11px] text-mute">{s === 'needs_ok' ? tone(s).label : s === 'approved' ? 'Approved' : s === 'scheduled' ? 'Time being set' : 'In the buffer'}</div>
             <div className="mt-0.5 text-[12.5px] font-medium text-ink leading-snug clamp-2">{p.title}</div>
+            {p.isLeadMagnet && <div className="mt-1"><LmTag /></div>}
           </button>
         ))}
       </div>

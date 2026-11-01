@@ -29,6 +29,13 @@ export type Post = {
   archivedAt?: string;
   lmKeyword?: string;
   lmTitle?: string;
+  /** True for a post that launches a lead magnet: it has a comment gate, a lead magnet of its own, or a lead magnet that names it. */
+  isLeadMagnet: boolean;
+  /** The guide this post gives away. */
+  leadMagnet?: { title: string; url?: string };
+  /** The founder's own first comment, posted right after the post goes live. */
+  firstComment?: { text: string; url?: string };
+  videoUrl?: string;
   trail: { step: string; detail?: string; done: boolean }[];
   perf?: { impressions: number; reactions: number; comments: number; reposts: number; reached?: number };
 };
@@ -94,7 +101,7 @@ export type Model = {
   funnelAll: { label: string; steps: Step[] } | null;
   weekly: { week: string; replied: number; booked: number }[];
   people: Person[];
-  leadMagnets: { id: string; title: string; status: string; statusRaw: string; url?: string; cover?: string; optins?: number | null; visitors?: number | null; format?: string }[];
+  leadMagnets: { id: string; postId?: string; title: string; status: string; statusRaw: string; url?: string; cover?: string; optins?: number | null; visitors?: number | null; format?: string }[];
   activity: Activity[];
   lanes: { lane: string; name: string; reached: number; accepted: number; replied: number; booked: number }[];
   lanesNote: string;
@@ -205,6 +212,11 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
     const pm = status === 'live' ? findPerf(q) : undefined;
     const images: string[] = [q.image, q.media_url, ...(q.image_urls || [])].filter((u: any, i: number, a: any[]) => typeof u === 'string' && u && a.indexOf(u) === i);
     const angle = (q.creative_style || '').replace(/^Repurposed · /, '');
+    const sd = q.source_detail || {};
+    const lmEntry = (b.lead_magnets || []).find((l: any) => l.post_id && l.post_id === q.id);
+    const lmSrc = sd.lead_magnet || lmEntry;
+    const fc = sd.first_comment;
+    const videoUrl = [sd.video_url, q.video_url].find((u: any) => typeof u === 'string' && u);
     return {
       id: q.id, title, hook: q.hook || title, body: q.post_body || q.body || '',
       image: images[0], images,
@@ -216,6 +228,10 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
       approvedAt: meta[q.id]?.at, approvedBy: meta[q.id]?.by,
       archivedAt: q.archived_at || undefined,
       lmKeyword: q.lm_gate?.keyword, lmTitle: nd(q.lm_gate?.title),
+      isLeadMagnet: !!(q.lm_gate || sd.lead_magnet || lmEntry),
+      leadMagnet: lmSrc?.title ? { title: nd(lmSrc.title) || '', url: lmSrc.url || undefined } : undefined,
+      firstComment: fc?.text ? { text: String(fc.text), url: fc.url || undefined } : undefined,
+      videoUrl,
       // The drafter stamps "Written from your discovery call" on every post; keep it only when the source really is a call.
       trail: (q.agent_trail || []).filter((t: any) => t && t.step).map((t: any) => ({
         step: nd(t.step) || '',
@@ -411,7 +427,7 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
     funnel, funnelAll, weekly,
     people,
     leadMagnets: (b.lead_magnets || []).map((l: any) => ({
-      id: l.id || l.title, title: nd(l.title) || '', status: plainLmStatus(l.status), statusRaw: l.status || '', url: l.url,
+      id: l.id || l.title, postId: l.post_id || undefined, title: nd(l.title) || '', status: plainLmStatus(l.status), statusRaw: l.status || '', url: l.url,
       cover: l.cover_url || (l.covers || [])[0], optins: l.optins ?? null, visitors: l.visitors ?? null, format: l.format,
     })),
     activity: (raw.activity || [])

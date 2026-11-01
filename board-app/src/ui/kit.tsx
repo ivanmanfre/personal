@@ -90,6 +90,9 @@ export function Thumb({ src, text, size = 56, ratio, className = '', rounded = 1
   );
 }
 
+/** The small tag on every post that launches a lead magnet. */
+export const LmTag = () => <span className="chip chip-accent !h-[18px] !px-1.5 !text-[10.5px] shrink-0">Lead magnet</span>;
+
 export function Avatar({ name, src, size = 36, tone = 'wash' }: { name: string; src?: string; size?: number; tone?: 'wash' | 'accent' | 'plain' }) {
   const [bad, setBad] = useState(false);
   if (src && !bad) return <img src={src} alt="" onError={() => setBad(true)} className="rounded-full object-cover" style={{ width: size, height: size, flex: `0 0 ${size}px` }} />;

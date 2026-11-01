@@ -7,7 +7,7 @@ import { intentLabel, intentTone, plural, suffixFor, verbFor } from '../data/cop
 import { fmtInt, needsOk, nextOut, nextSevenDays, reviewMinutes, upcoming, weekDays, whenLabel } from '../data/derive';
 import { useLocal } from '../data/store';
 import { track } from '../data/track';
-import { AnimatedNumber, Sheet, SOFT, SPRING, Thumb } from '../ui/kit';
+import { AnimatedNumber, LmTag, Sheet, SOFT, SPRING, Thumb } from '../ui/kit';
 import { useNav, type PeopleKind } from '../ui/nav';
 import { TimeEdit, useCanRetime } from '../ui/TimeEdit';
 import { groupActivity } from './Activity';
@@ -202,6 +202,7 @@ function OkRow({ post }: { post: Post }) {
             <div className="min-w-0">
               <button onClick={() => openFocus(post.id)} className="text-left text-[14.5px] font-medium text-ink line-clamp-1 max-sm:line-clamp-2 max-sm:leading-snug hover:underline underline-offset-4 decoration-[var(--line-bold)]">{post.title}</button>
               <div className="text-[12.5px] text-mute mt-0.5 truncate">{post.format}{post.source ? ` · ${post.source}` : ''}</div>
+              {post.isLeadMagnet && <div className="mt-1"><LmTag /></div>}
             </div>
             <div className="flex items-center gap-1.5">
               <button className={`btn btn-outline btn-sm !h-8 ${canApprove ? 'max-sm:hidden' : ''}`} onClick={() => openFocus(post.id)}>Open</button>
@@ -273,6 +274,7 @@ function GoingOutRow({ post }: { post: Post }) {
               <div className="text-[12.5px] text-mute mt-0.5 truncate">
                 {canRetime(post, statusOf(post)) ? <TimeEdit id={post.id} at={post.scheduledAt!} text={`${w.time} ${m.theme.tzLabel}`} /> : <>{w.time} {m.theme.tzLabel}</>} · {post.format}
               </div>
+              {post.isLeadMagnet && <div className="mt-1"><LmTag /></div>}
             </div>
             <div className="flex items-center gap-1">
               {buffer ? (
@@ -427,7 +429,7 @@ function PeopleMini() {
 }
 
 function LeadMagnetsMini({ onAll }: { onAll: () => void }) {
-  const { model: m } = useNav();
+  const { model: m, openPost } = useNav();
   const list = [...m.leadMagnets].sort((a, b) => Number(b.statusRaw === 'live') - Number(a.statusRaw === 'live')).slice(0, 2);
   return (
     <section>
@@ -438,6 +440,7 @@ function LeadMagnetsMini({ onAll }: { onAll: () => void }) {
             <li key={l.id} className="flex items-baseline gap-3 py-2 border-b hair">
               <a href={l.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 text-[13.5px] text-ink truncate hover:underline underline-offset-4 decoration-[var(--line-bold)]">{l.title}</a>
               {l.optins != null && Number(l.optins) > 0 && <span className="text-[12px] text-mute tnum shrink-0">{plural(Number(l.optins), 'opt-in')}</span>}
+              {l.postId && m.posts.some(p => p.id === l.postId) && <button className="link !text-[12px] shrink-0" onClick={() => openPost(l.postId!)}>Open post</button>}
               <span className={`text-[12px] shrink-0 ${l.statusRaw === 'live' ? 'text-accent-fg font-semibold' : 'text-mute'}`}>{l.status}</span>
             </li>
           ))}
@@ -515,18 +518,21 @@ function ChangesMini() {
 }
 
 /* ---------- Drawer bodies (the full lists behind "See all") ---------- */
-function LeadMagnets({ m }: { m: Model }) {
+function LeadMagnets({ m, onOpenPost }: { m: Model; onOpenPost: (id: string) => void }) {
   return (
     <div className="grid gap-x-5 gap-y-7 grid-cols-1 sm:grid-cols-2">
       {m.leadMagnets.map(l => (
-        <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="group min-w-0 block">
-          <Thumb src={l.cover} text={l.title} size="fill" ratio="16 / 10" rounded={10} />
-          <div className="mt-2.5 text-[14.5px] text-ink font-medium clamp-2 group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{l.title}</div>
-          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-            <span className={`chip ${l.statusRaw === 'live' ? 'chip-accent' : ''}`}>{l.status}</span>
-            {l.optins != null && <span className="text-[12.5px] text-mute tnum">{plural(Number(l.optins), 'opt-in')}</span>}
-          </div>
-        </a>
+        <div key={l.id} className="min-w-0">
+          <a href={l.url} target="_blank" rel="noreferrer" className="group block">
+            <Thumb src={l.cover} text={l.title} size="fill" ratio="16 / 10" rounded={10} />
+            <div className="mt-2.5 text-[14.5px] text-ink font-medium clamp-2 group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{l.title}</div>
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+              <span className={`chip ${l.statusRaw === 'live' ? 'chip-accent' : ''}`}>{l.status}</span>
+              {l.optins != null && <span className="text-[12.5px] text-mute tnum">{plural(Number(l.optins), 'opt-in')}</span>}
+            </div>
+          </a>
+          {l.postId && m.posts.some(p => p.id === l.postId) && <button className="link !text-[13px] mt-2" onClick={() => onOpenPost(l.postId!)}>Open the post <ArrowRight size={13} /></button>}
+        </div>
       ))}
     </div>
   );
@@ -535,7 +541,7 @@ function LeadMagnets({ m }: { m: Model }) {
 type Drawer = 'lm';
 
 export function Home() {
-  const { model: m } = useNav();
+  const { model: m, openPost } = useNav();
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   // Boards that approve show the waiting list; when nothing waits, or the board runs on its own, show what goes out next.
   const showOk = m.theme.mode !== 'buffer' && m.posts.some(p => p.status === 'needs_ok');
@@ -544,7 +550,7 @@ export function Home() {
   const showWeek = showOk && weekDays(m, statusOf).some(d => d.posts.length);
   const openDrawer = (d: Drawer) => { track('expand', null, { which: `home:${d}` }); setDrawer(d); };
   const drawerConf: Record<Drawer, { title: string; body: ReactNode; width?: number }> = {
-    lm: { title: plural(m.leadMagnets.length, 'lead magnet'), body: <LeadMagnets m={m} /> },
+    lm: { title: plural(m.leadMagnets.length, 'lead magnet'), body: <LeadMagnets m={m} onOpenPost={id => { setDrawer(null); openPost(id); }} /> },
   };
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 lg:pt-7 pb-16 lg:pb-8">

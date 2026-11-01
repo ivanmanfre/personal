@@ -6,7 +6,7 @@ import { fmtDay, fmtWhen } from '../data/model';
 import { contentTotals, whoSaw, type ContentPost } from '../data/content';
 import { plural } from '../data/copy';
 import { fmtInt } from '../data/derive';
-import { AnimatedNumber, SPRING, Thumb, useIsPhone } from '../ui/kit';
+import { AnimatedNumber, LmTag, SPRING, Thumb, useIsPhone } from '../ui/kit';
 import { useNav } from '../ui/nav';
 import { track } from '../data/track';
 
@@ -126,6 +126,8 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
   );
 }
 
+const isLm = (m: Model, r: ContentPost) => !!r.postId && !!m.posts.find(p => p.id === r.postId)?.isLeadMagnet;
+
 function CoverGrid({ rows, m, more, all, setAll }: { rows: ContentPost[]; m: Model; more: number; all: boolean; setAll: (f: (a: boolean) => boolean) => void }) {
   const { openPost } = useNav();
   return (
@@ -137,6 +139,7 @@ function CoverGrid({ rows, m, more, all, setAll }: { rows: ContentPost[]; m: Mod
             <Thumb src={r.image} text={r.hook} size="fill" ratio="4 / 5" rounded={10} className="group-hover:border-[var(--line-bold)] transition-colors" />
             <div className="mt-2 text-[13.5px] font-medium text-ink leading-snug clamp-2 group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{r.title}</div>
             <div className="mt-0.5 text-[12px] text-mute">{fmtWhen(r.at, m.theme.tz).day}</div>
+            {isLm(m, r) && <div className="mt-1.5"><LmTag /></div>}
           </button>
         ))}
       </div>
@@ -184,6 +187,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
                     <div className="text-[14px] text-ink truncate group-hover:underline underline-offset-4 decoration-[var(--line-bold)]">{r.title}</div>
                     <div className="text-[12px] text-mute flex items-center gap-2 min-w-0">
                       <span className="shrink-0">{day}</span>
+                      {isLm(m, r) && <LmTag />}
                       {r.measured && r.impressions === best && rows.length > 1 && best > 0 && <span className="chip chip-accent !h-[17px] !px-1.5 !text-[10px]">Most seen</span>}
                       {phone && r.measured && <span className="truncate">{fmtInt(r.impressions)} seen · {plural(r.reactions, 'reaction')} · {plural(r.comments, 'comment')}</span>}
                       {!r.measured && (phone || !anyMeasured) && <span className="truncate">· LinkedIn numbers not in yet</span>}
