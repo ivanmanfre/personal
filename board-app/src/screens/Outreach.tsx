@@ -200,6 +200,32 @@ export function PeopleList({ people, limit, showAll }: { people: Person[]; limit
   );
 }
 
+const groupOf = (p: Person) => (p.kind === 'booked' || p.intent === 'booked' ? 'Booked a call' : intentLabel(p.intent));
+
+/** Chips over the people list: All, then each status that is present, booked first, then by count. */
+function FilteredPeople({ people }: { people: Person[] }) {
+  const [f, setF] = useState<string>('all');
+  const counts = new Map<string, number>();
+  for (const p of people) counts.set(groupOf(p), (counts.get(groupOf(p)) || 0) + 1);
+  const groups = [...counts.entries()].sort((a, b) => Number(b[0] === 'Booked a call') - Number(a[0] === 'Booked a call') || b[1] - a[1]);
+  const shown = f === 'all' || !counts.has(f) ? people : people.filter(p => groupOf(p) === f);
+  return (
+    <>
+      {groups.length > 1 && (
+        <div className="flex flex-wrap gap-1.5 mb-4" role="group" aria-label="Filter people" data-testid="people-filter">
+          {[['all', people.length] as [string, number], ...groups].map(([g, n]) => (
+            <button key={g} aria-pressed={f === g} className={`btn btn-sm ${f === g ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => { setF(g); track('expand', null, { which: `people_filter:${g}` }); }}>
+              {g === 'all' ? 'All' : g} <span className="tnum opacity-70">{n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <PeopleList key={f} people={shown} />
+    </>
+  );
+}
+
 export function OutreachPage() {
   const { model: m } = useNav();
   return (
@@ -217,7 +243,7 @@ export function OutreachPage() {
           <div className="mt-10"><OutreachPanel full /></div>
           <div className="mt-10">
             <SectionHead eyebrow={<>Who booked or replied · newest first</>} />
-            <PeopleList people={m.people} />
+            <FilteredPeople people={m.people} />
           </div>
         </>
       )}

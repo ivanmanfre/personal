@@ -35,12 +35,16 @@ export type ContentPost = {
   icpKeys?: string[];
   checkedKeys?: string[];
   inboundDms?: number;
+  /** Store owners and ICP people who engaged with this post, by name. */
+  people?: EngagedPerson[];
   /** RISE signals, first 48 hours after the post (latest five posts only). */
   named48?: number;
   lookedUp48?: number;
   buyerDms48?: number;
   ledToCall: number;
 };
+
+export type EngagedPerson = { name: string; headline?: string; url?: string; owner: boolean; icp: boolean; comment: boolean };
 
 export type Came = { name: string; role?: string; company?: string; via: string; at: string };
 
@@ -96,6 +100,13 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
     if (e.checked) { if (!checked.has(id)) checked.set(id, new Set()); checked.get(id)!.add(e.k); }
     if (e.fit) { if (!fit.has(id)) fit.set(id, new Set()); fit.get(id)!.add(e.k); }
   }
+  const peopleBy = new Map<string, EngagedPerson[]>();
+  for (const e of raw.postPeople || []) {
+    if (!e || !e.p || !e.name) continue;
+    if (!peopleBy.has(e.p)) peopleBy.set(e.p, []);
+    peopleBy.get(e.p)!.push({ name: String(e.name), headline: e.headline || undefined, url: e.url || undefined, owner: !!e.owner, icp: !!e.icp, comment: e.kind === 'comment' });
+  }
+  for (const l of peopleBy.values()) l.sort((a, b) => Number(b.icp) - Number(a.icp) || Number(b.owner) - Number(a.owner));
   const assists = new Map<string, number>();
   for (const a of report?.assists || []) { const id = aid(a.p); if (id) assists.set(id, (assists.get(id) || 0) + 1); }
   const sigPost = new Map<string, any>();
@@ -144,6 +155,7 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
       reached: pm.network?.members_reached ?? undefined, inPct: pm.network?.in_pct ?? undefined, outPct: pm.network?.out_pct ?? undefined,
       demo, icp, icpKeys: id && fit.has(id) ? [...fit.get(id)!] : undefined, checkedKeys: id && checked.has(id) ? [...checked.get(id)!] : undefined,
       inboundDms: pm.inbound_dms ?? undefined,
+      people: id ? peopleBy.get(id) : undefined,
       named48: sp?.named_views_48h, lookedUp48: sp?.organic_icp_views_48h, buyerDms48: sp?.buyer_dms_48h,
       ledToCall: id ? assists.get(id) || 0 : 0,
     });
@@ -233,12 +245,16 @@ export function contentTotals(rows: ContentPost[], mode: 'owners' | 'fit' | null
   const others = m.filter(r => r !== best);
   const avgOthers = others.length ? others.reduce((a, r) => a + r.impressions, 0) / others.length : 0;
   const dmsRows = m.filter(r => r.inboundDms != null);
+  // Distinct people across posts (one person engaging twice counts once).
+  const ideal = new Set<string>();
+  for (const r of m) for (const p of r.people || []) if (p.icp) ideal.add(p.url || p.name);
+  const named = m.some(r => r.people);
   return {
     published: rows.length, measured: m.length, impressions, reactions, comments,
     reposts: sum('reposts'), profileViews: sum('profileViews'), followers: sum('followers'),
     rate: impressions ? ((reactions + comments) / impressions) * 100 : null,
     perPost: m.length ? Math.round(impressions / m.length) : 0,
-    icp, best, bestX: best && avgOthers ? best.impressions / avgOthers : null,
+    icp, idealPeople: named ? ideal.size : null, best, bestX: best && avgOthers ? best.impressions / avgOthers : null,
     inboundDms: dmsRows.length ? dmsRows.reduce((a, r) => a + (r.inboundDms || 0), 0) : null,
     ledToCall: rows.reduce((a, r) => a + r.ledToCall, 0),
   };

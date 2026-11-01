@@ -70,6 +70,8 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
   const facts: [string, string][] = [];
   const icp = m.content.icp;
   if (icp && r.icp) facts.push([icp.mode === 'owners' ? 'Store owners among engagers' : 'Engagers who fit your buyer', `${r.icp.n} of ${r.icp.of}`]);
+  const icpN = r.people?.filter(p => p.icp).length || 0;
+  if (r.people) facts.push(['Ideal customers among them', fmtInt(icpN)]);
   facts.push(['Profile views', fmtInt(r.profileViews)]);
   if (r.reached) facts.push(['People reached', fmtInt(r.reached)]);
   if (r.outPct != null) facts.push(['Outside your network', `${r.outPct}%`]);
@@ -89,6 +91,26 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
           <div key={k} className="min-w-0"><dt className="text-[11.5px] text-mute leading-tight">{k}</dt><dd className="text-[14px] text-ink tnum mt-0.5">{v}</dd></div>
         ))}
       </dl>
+      {!!r.people?.length && (
+        <div className="mt-4" data-testid="post-people">
+          <div className="text-[11.5px] text-mute mb-1.5">Who engaged · store owners and ideal customers</div>
+          <ul className="grid gap-x-6 sm:grid-cols-2">
+            {r.people.map(p => (
+              <li key={p.name + (p.url || '')} className="flex items-center gap-2 min-w-0 py-1.5 border-b hair">
+                <div className="min-w-0 flex-1">
+                  {p.url
+                    ? <a className="text-[13.5px] text-ink hover:underline underline-offset-4" href={p.url} target="_blank" rel="noreferrer">{p.name}</a>
+                    : <span className="text-[13.5px] text-ink">{p.name}</span>}
+                  {p.headline && <div className="text-[12px] text-mute truncate" title={p.headline}>{p.headline}</div>}
+                </div>
+                {p.icp && <span className="chip chip-accent !h-[19px] !px-2 !text-[10.5px] shrink-0">Ideal customer</span>}
+                {p.owner && !p.icp && <span className="chip !h-[19px] !px-2 !text-[10.5px] shrink-0">Store owner</span>}
+                <span className="text-[11.5px] text-mute shrink-0 w-[62px] text-right">{p.comment ? 'Commented' : 'Reacted'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {(roles || sen) && (
         <div className="mt-3 grid gap-1 text-[12.5px] text-soft">
           {roles && <p><span className="text-mute">Top viewer roles:</span> {roles}</p>}
@@ -175,7 +197,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
                     <span className="text-right tnum text-[13.5px] text-soft">{fmtInt(r.reactions)}</span>
                     <span className="text-right tnum text-[13.5px] text-soft">{fmtInt(r.comments)}</span>
                     <span className="text-right tnum text-[13.5px] text-soft">{fmtInt(r.profileViews)}</span>
-                    {icp && <span className={`text-right tnum text-[13.5px] ${r.icp?.n ? 'text-accent-fg font-semibold' : 'text-soft'}`}>{r.icp ? `${r.icp.n} of ${r.icp.of}` : <span className="text-mute">·</span>}</span>}
+                    {icp && <span className={`text-right tnum text-[13.5px] ${r.icp?.n ? 'text-accent-fg font-semibold' : 'text-soft'}`}>{r.icp ? <>{`${r.icp.n} of ${r.icp.of}`}{!!r.people?.some(p => p.icp) && <span className="block text-[11px] text-accent-fg font-normal">{r.people.filter(p => p.icp).length} ideal</span>}</> : <span className="text-mute">·</span>}</span>}
                   </>
                 ) : (
                   <span className="text-right text-[12px] text-mute" style={{ gridColumn: `span ${cols.length}` }}>Not measured yet</span>
@@ -239,7 +261,7 @@ export function PublishedPosts() {
   }
 
   const icpTile = c.icp && t.icp && t.icp.of > 0
-    ? <Tile label={c.icp.mode === 'owners' ? 'Store owners among engagers' : 'Engagers who fit your buyer'} text={pct((t.icp.n / t.icp.of) * 100)} sub={`${t.icp.n} of ${fmtInt(t.icp.of)}${c.icp.mode === 'fit' ? ' people' : ''}`} />
+    ? <Tile label={c.icp.mode === 'owners' ? 'Store owners among engagers' : 'Engagers who fit your buyer'} text={pct((t.icp.n / t.icp.of) * 100)} sub={`${t.icp.n} of ${fmtInt(t.icp.of)}${c.icp.mode === 'fit' ? ' people' : ''}${t.idealPeople != null ? ` · ${plural(t.idealPeople, 'ideal customer')}` : ''}`} />
     : null;
 
   return (
