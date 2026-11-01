@@ -101,6 +101,21 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
   const past = !!target && new Date(target).getTime() < Date.now() + 60_000;
   const same = !!target && !!post.scheduledAt && new Date(target).getTime() === new Date(post.scheduledAt).getTime();
   const targetLabel = target ? (() => { const w = fmtWhen(target, tz); return `${w.day}, ${w.time} ${m.theme.tzLabel}`; })() : '';
+  const verb = s === 'buffer' ? 'Scheduled for' : 'Moved to';
+  // First Mon-Fri with no other scheduled post, at the picked time, that is still ahead of now.
+  const nextOpen = (() => {
+    if (!/^\d{2}:\d{2}$/.test(time)) return '';
+    for (let i = 0; i <= 365; i++) {
+      const d = addDays(today, i);
+      const dow = new Date(d + 'T12:00:00Z').getUTCDay();
+      if (dow === 0 || dow === 6 || busyDays.has(d)) continue;
+      const at = wallToUtc(d, time, tz);
+      if (new Date(at).getTime() < Date.now() + 60_000) continue;
+      return at;
+    }
+    return '';
+  })();
+  const nextOpenLabel = nextOpen ? (() => { const w = fmtWhen(nextOpen, tz); return `${w.day}, ${w.time} ${m.theme.tzLabel}`; })() : '';
 
   return (
     <Sheet open={!!postId} onClose={onClose} width={1040}
@@ -143,6 +158,11 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
           {panel === 'move' && (
             <div className="rounded-[14px] border hair p-4" data-testid="move-panel">
               <div className="eyebrow mb-3">{s === 'buffer' ? 'Schedule for' : 'Move to'} · {m.theme.tzLabel === 'PT' ? 'Pacific time' : m.theme.tzLabel === 'UK' ? 'UK time' : `${m.theme.tzLabel} time`}</div>
+              {nextOpen && !(post.scheduledAt && new Date(nextOpen).getTime() === new Date(post.scheduledAt).getTime()) && (
+                <button className="btn btn-outline btn-sm mb-3" onClick={() => { reschedule(post.id, nextOpen, nextOpenLabel, verb); setPanel(null); }} data-testid="move-next-open">
+                  <CalendarClock size={14} /> Next open weekday · {nextOpenLabel}
+                </button>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {moveDays.map(d => (
                   <button key={d} aria-pressed={day === d} className={`btn btn-sm relative ${day === d ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDay(d)} data-testid="move-day">
@@ -152,11 +172,14 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
                 ))}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <label className="text-[13px] text-soft inline-flex items-center gap-2">Other date
+                  <input type="date" min={today} max={addDays(today, 365)} value={day} onChange={e => e.target.value && setDay(e.target.value)} className="h-9 rounded-full border hair bg-paper px-3 text-[13.5px] text-ink tnum" data-testid="move-date" />
+                </label>
                 <label className="text-[13px] text-soft inline-flex items-center gap-2">Time
                   <input type="time" step={900} value={time} onChange={e => setTime(e.target.value)} className="h-9 rounded-full border hair bg-paper px-3 text-[13.5px] text-ink tnum" data-testid="move-time" />
                 </label>
                 <button className="btn btn-primary btn-sm" disabled={!target || past || same} style={!target || past || same ? { opacity: 0.45 } : undefined}
-                  onClick={() => { reschedule(post.id, target, targetLabel, s === 'buffer' ? 'Scheduled for' : 'Moved to'); setPanel(null); }} data-testid="move-confirm">
+                  onClick={() => { reschedule(post.id, target, targetLabel, verb); setPanel(null); }} data-testid="move-confirm">
                   {s === 'buffer' ? (target ? `Schedule for ${targetLabel}` : 'Schedule') : (target ? `Move to ${targetLabel}` : 'Move')}
                 </button>
               </div>
