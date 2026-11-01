@@ -124,7 +124,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
               </div>
             )}
             {canEdit && !editing && <button className="btn btn-outline" onClick={() => setEditing(true)} data-testid="drawer-edit"><PenLine size={15} /> Edit</button>}
-            {s === 'scheduled' && canEdit && !editing && <button className="btn btn-outline" aria-expanded={panel === 'move'} onClick={openMove} data-testid="drawer-move"><CalendarClock size={15} /> Move</button>}
+            {(s === 'scheduled' || s === 'buffer') && canEdit && !editing && <button className="btn btn-outline" aria-expanded={panel === 'move'} onClick={openMove} data-testid="drawer-move"><CalendarClock size={15} /> {s === 'buffer' ? 'Schedule' : 'Move'}</button>}
             {canPhoto && !editing && <button className="btn btn-outline" aria-expanded={panel === 'photo'} onClick={() => setPanel(p => (p === 'photo' ? null : 'photo'))} data-testid="drawer-photo"><ImageIcon size={15} /> {post.image ? 'Change picture' : 'Add a picture'}</button>}
             {(s === 'buffer' || s === 'scheduled') && m.theme.mode === 'buffer' && canAct && !editing && <button className="btn btn-text" onClick={() => pull(post.id)} data-testid="drawer-pull">Pull</button>}
             {s === 'archived' && pulled && (
@@ -142,7 +142,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
 
           {panel === 'move' && (
             <div className="rounded-[14px] border hair p-4" data-testid="move-panel">
-              <div className="eyebrow mb-3">Move to · {m.theme.tzLabel === 'PT' ? 'Pacific time' : m.theme.tzLabel === 'UK' ? 'UK time' : `${m.theme.tzLabel} time`}</div>
+              <div className="eyebrow mb-3">{s === 'buffer' ? 'Schedule for' : 'Move to'} · {m.theme.tzLabel === 'PT' ? 'Pacific time' : m.theme.tzLabel === 'UK' ? 'UK time' : `${m.theme.tzLabel} time`}</div>
               <div className="flex flex-wrap gap-1.5">
                 {moveDays.map(d => (
                   <button key={d} aria-pressed={day === d} className={`btn btn-sm relative ${day === d ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDay(d)} data-testid="move-day">
@@ -156,8 +156,8 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
                   <input type="time" step={900} value={time} onChange={e => setTime(e.target.value)} className="h-9 rounded-full border hair bg-paper px-3 text-[13.5px] text-ink tnum" data-testid="move-time" />
                 </label>
                 <button className="btn btn-primary btn-sm" disabled={!target || past || same} style={!target || past || same ? { opacity: 0.45 } : undefined}
-                  onClick={() => { reschedule(post.id, target, targetLabel); setPanel(null); }} data-testid="move-confirm">
-                  {target ? `Move to ${targetLabel}` : 'Move'}
+                  onClick={() => { reschedule(post.id, target, targetLabel, s === 'buffer' ? 'Scheduled for' : 'Moved to'); setPanel(null); }} data-testid="move-confirm">
+                  {s === 'buffer' ? (target ? `Schedule for ${targetLabel}` : 'Schedule') : (target ? `Move to ${targetLabel}` : 'Move')}
                 </button>
               </div>
               <p className="mt-2 text-[12px] text-mute">{past ? 'That time has already passed. Pick a later one.' : busyDays.size ? 'A dot means another post already goes out that day.' : ''}</p>

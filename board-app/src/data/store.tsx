@@ -45,7 +45,7 @@ export type Ctx = {
   unpull: (id: string) => void;
   restore: (id: string) => void;
   saveEdit: (id: string, before: string, body: string) => Promise<{ ok: boolean; error?: string }>;
-  reschedule: (id: string, at: string, label: string) => void;
+  reschedule: (id: string, at: string, label: string, verb?: string) => void;
   setPhoto: (id: string, url: string) => void;
   /** `sess` carries a sign-in that just happened, before the next render hands it down. */
   addComment: (ref: string, text: string, parent: string | null, mentions: string[], sess?: BoardSession) => Promise<'ok' | 'need_session' | 'failed'>;
@@ -198,14 +198,14 @@ export function LocalProvider({ model: base, fetchedAt, cred, children }: { mode
   }, [inOrder, toast]);
 
   /* ---------- move ---------- */
-  const reschedule = useCallback((id: string, at: string, label: string) => {
+  const reschedule = useCallback((id: string, at: string, label: string, verb = 'Moved to') => {
     const had = Object.prototype.hasOwnProperty.call(local.schedule, id);
     const prev = local.schedule[id];
     setLocal(l => ({ ...l, schedule: { ...l.schedule, [id]: at } }));
     track('reschedule', id, { to: at });
     void inOrder(id, async () => {
       const r = await api.setSchedule(credRef.current, id, at);
-      if (r.ok) { ok(`schedule:${id}`); toast(`Moved to ${label}`); }
+      if (r.ok) { ok(`schedule:${id}`); toast(`${verb} ${label}`); }
       else { setLocal(l => ({ ...l, schedule: had ? { ...l.schedule, [id]: prev } : without(l.schedule, id) })); report(r); }
     });
   }, [inOrder, report, toast, local.schedule]);
@@ -298,6 +298,7 @@ export function LocalProvider({ model: base, fetchedAt, cred, children }: { mode
       if (local.restored[p.id] && p.status === 'archived') return base.reviewMode ? 'needs_ok' : 'buffer';
       if (local.pulled[p.id]) return 'archived';
       if (p.status === 'needs_ok' && local.approved[p.id]) return 'approved';
+      if (p.status === 'buffer' && local.schedule[p.id]) return 'scheduled';
       return p.status;
     },
     bodyOf: p => local.edits[p.id] ?? p.body,
