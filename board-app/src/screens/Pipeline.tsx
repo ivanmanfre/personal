@@ -17,6 +17,8 @@ const isAs = (v: string | null): v is As => v === 'board' || v === 'calendar' ||
 const readAs = (): As => {
   const q = new URLSearchParams(location.search).get('as');
   if (isAs(q)) return q;
+  // Old links to the removed Lead magnets tab open the Board with the lead magnet filter on.
+  if (q === 'magnets') return 'board';
   try { const v = localStorage.getItem(AS_KEY); return isAs(v) ? v : 'board'; } catch { return 'board'; }
 };
 
@@ -38,10 +40,11 @@ export function Pipeline() {
   ];
   // Published posts have their own tab, with their numbers; the board columns only show what is still to come.
   // One board for every post; the "Lead magnets" tag narrows it to the posts that launch a free resource.
-  const lmCount = m.posts.filter(p => p.isLeadMagnet && p.status !== 'archived').length;
+  // Count only what the Board columns can show, so the tag never promises posts the filter hides.
+  const lmCount = m.posts.filter(p => p.isLeadMagnet && cols.some(c => c.id === statusOf(p))).length;
   const [lmOnly, setLmOnly] = useState(() => new URLSearchParams(location.search).get('as') === 'magnets');
   const postsIn = (id: Col['id']) => {
-    const list = m.posts.filter(p => statusOf(p) === id && (!lmOnly || p.isLeadMagnet));
+    const list = m.posts.filter(p => statusOf(p) === id && (!(lmOnly && lmCount > 0) || p.isLeadMagnet));
     if (id === 'scheduled') return list.sort((a, b) => (a.scheduledAt || '9').localeCompare(b.scheduledAt || '9'));
     return list;
   };
