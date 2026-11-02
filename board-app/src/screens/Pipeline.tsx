@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { CalendarDays, CircleCheck, Columns3 } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CircleCheck, Columns3, Magnet } from 'lucide-react';
 import type { Post, PostStatus } from '../data/model';
 import { fmtWhen } from '../data/model';
 import { useLocal } from '../data/store';
@@ -11,9 +11,9 @@ import { track } from '../data/track';
 import { PostCalendar } from './Calendar';
 import { PublishedPosts } from './Content';
 
-type As = 'board' | 'calendar' | 'published';
+type As = 'board' | 'calendar' | 'published' | 'magnets';
 const AS_KEY = 'board-posts-as';
-const isAs = (v: string | null): v is As => v === 'board' || v === 'calendar' || v === 'published';
+const isAs = (v: string | null): v is As => v === 'board' || v === 'calendar' || v === 'published' || v === 'magnets';
 const readAs = (): As => {
   const q = new URLSearchParams(location.search).get('as');
   if (isAs(q)) return q;
@@ -119,12 +119,12 @@ export function Pipeline() {
 
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8 pt-6 sm:pt-8 pb-20">
-      <div className="eyebrow mb-2">{as === 'published' ? 'Out on LinkedIn, with their numbers' : as === 'calendar' ? 'Every post on its day' : buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
+      <div className="eyebrow mb-2">{as === 'published' ? 'Out on LinkedIn, with their numbers' : as === 'magnets' ? 'Each free resource and the post that launches it' : as === 'calendar' ? 'Every post on its day' : buffer ? 'Everything lined up, in order' : 'From draft to scheduled'}</div>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 mb-6">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <h1 className="display text-[28px] sm:text-[32px]">Posts</h1>
           <div className="seg" role="group" aria-label="Show posts as">
-            {([['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays], ['published', 'Published', CircleCheck]] as const).map(([id, label, Icon]) => (
+            {([['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays], ['published', 'Published', CircleCheck], ...(m.leadMagnets.length || m.posts.some(p => p.isLeadMagnet) ? [['magnets', 'Lead magnets', Magnet]] as const : [])] as const).map(([id, label, Icon]) => (
               <button key={id} aria-pressed={as === id} onClick={() => setAs(id)} data-testid={`posts-as-${id}`}>
                 {as === id && <motion.span layoutId="seg-posts-as" className="absolute inset-0 rounded-full bg-sunk" transition={SPRING} />}
                 <span className="relative inline-flex items-center gap-1.5"><Icon size={14} strokeWidth={1.8} />{label}</span>
@@ -134,7 +134,7 @@ export function Pipeline() {
         </div>
       </div>
 
-      {as === 'published' ? <PublishedPosts /> : as === 'calendar' ? <PostCalendar /> : <>
+      {as === 'published' ? <PublishedPosts /> : as === 'magnets' ? <LeadMagnetPosts /> : as === 'calendar' ? <PostCalendar /> : <>
 
       {/* partition-bar move: one proportional strip, a label and count under each part */}
       {phone && (
@@ -186,6 +186,69 @@ export function Pipeline() {
         </div>
       )}
       </>}
+    </div>
+  );
+}
+
+const STATUS_LABEL: Record<PostStatus, string> = {
+  needs_ok: 'Needs OK', approved: 'Approved', scheduled: 'Scheduled', buffer: 'In the buffer', live: 'Published', archived: 'Archived',
+} as Record<PostStatus, string>;
+
+/* Lead magnets view: every free resource with the post that launches it, plus tagged posts that point at no listed resource. */
+function LeadMagnetPosts() {
+  const { model: m, openPost, openFocus } = useNav();
+  const { statusOf } = useLocal();
+  const byId = new Map(m.posts.map(p => [p.id, p]));
+  const linked = new Set(m.leadMagnets.map(l => l.postId).filter(Boolean) as string[]);
+  const loose = m.posts.filter(p => p.isLeadMagnet && !linked.has(p.id));
+  const lms = [...m.leadMagnets].sort((a, b) => Number(b.statusRaw === 'live') - Number(a.statusRaw === 'live'));
+  const postRow = (p: Post) => {
+    const s = statusOf(p);
+    const when = s === 'scheduled' && p.scheduledAt ? ` · ${fmtWhen(p.scheduledAt, m.theme.tz).day}` : s === 'live' && p.publishedAt ? ` · ${fmtWhen(p.publishedAt, m.theme.tz).day}` : '';
+    const open = () => (s === 'needs_ok' ? openFocus(p.id) : openPost(p.id));
+    return (
+      <div key={p.id} role="button" tabIndex={0} onClick={open}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
+        className="flex gap-3 items-center cursor-pointer rounded-[12px] border hair bg-raise p-2.5 hover:border-[var(--line-bold)] transition-colors" data-testid="lm-post">
+        <Thumb src={p.image} text={p.hook} size={56} rounded={8} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[13.5px] font-medium text-ink leading-snug clamp-2">{p.title}</div>
+          <div className="text-[12px] text-mute mt-1 truncate">{p.format} · <span className={s === 'needs_ok' ? 'text-accent-fg font-semibold' : ''}>{STATUS_LABEL[s] || s}</span>{when}</div>
+        </div>
+        <LmTag />
+      </div>
+    );
+  };
+  return (
+    <div className="grid gap-6" data-testid="lm-view">
+      {lms.map(l => {
+        const post = l.postId ? byId.get(l.postId) : undefined;
+        return (
+          <div key={l.id} className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)] items-start border-b hair pb-6">
+            <a href={l.url} target="_blank" rel="noreferrer" className="group block min-w-0">
+              <Thumb src={l.cover} text={l.title} size="fill" ratio="16 / 10" rounded={10} />
+            </a>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-[16px] text-ink font-semibold hover:underline underline-offset-4 decoration-[var(--line-bold)]">{l.title}</a>
+                <span className={`chip ${l.statusRaw === 'live' ? 'chip-accent' : ''}`}>{l.status}</span>
+                {l.optins != null && Number(l.optins) > 0 && <span className="text-[12.5px] text-mute tnum">{Number(l.optins)} opt-ins</span>}
+              </div>
+              {l.url && <a href={l.url} target="_blank" rel="noreferrer" className="link !text-[12.5px] mt-1 inline-flex items-center gap-1">Open the page <ArrowUpRight size={12} /></a>}
+              <div className="mt-3">
+                {post ? postRow(post) : <div className="rounded-[12px] border border-dashed hair px-3 py-4 text-[13px] text-mute">No post launches this one yet.</div>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {loose.length > 0 && (
+        <div>
+          <div className="eyebrow mb-3">Other lead magnet posts</div>
+          <div className="grid gap-2.5">{loose.map(postRow)}</div>
+        </div>
+      )}
+      {!lms.length && !loose.length && <div className="text-[13.5px] text-mute">No lead magnets yet.</div>}
     </div>
   );
 }
