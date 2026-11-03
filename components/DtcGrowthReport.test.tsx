@@ -177,6 +177,8 @@ function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · 
   expect(html.indexOf('Performance Model')).toBeLessThan(html.indexOf('Growth Model'));
   expect(html).toContain('Which model fits your brand gets settled on the call.');
   expect(html).toContain('Direct with Mattan and the team. No pitch deck.');
+  expect(html).toContain('RISE also runs a performance model, where we get paid on the growth we create above an agreed baseline, after ad spend.');
+  expect(html).toMatch(/see whether .+ is eligible, grab a time for a quick chat\./);
   expect(html).toContain('Walk my scan with Mattan');
   expect(html).toContain('data-cta="close"');
   expect(html).toContain('utm_content=close');
@@ -688,6 +690,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
       'Walk through the findings with Mattan.',
     ].map((n) => idx(html, n));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(html).toMatch(/see whether .+ is eligible, grab a time for a quick chat\./);
     // Inventory evidence leads; an unrelated store image cannot stand in for it.
     expect(html.slice(idx(html, 'data-promise-hero'), idx(html, 'data-promise-section="drop-off"'))).not.toContain('data-hero-proof');
     // Other advertisers sit behind a disclosure naming the keywords.
