@@ -88,10 +88,13 @@ describe('source-backed story', () => {
     expect(video.hasAttribute('autoplay')).toBe(false);
     expect(video.querySelector('source')!.getAttribute('src')).toContain('mattan-method-excerpt.mp4');
     expect(video.querySelector('track')!.getAttribute('kind')).toBe('captions');
-    expect(video.closest('details')!.open).toBe(false);
+    expect(video.closest('details')).toBeNull();
+    expect(video.closest('.ris-method-video')).toBeTruthy();
     expect(html).toContain('Meta and Google campaigns');
     expect(html).toContain('Let’s RISE Yananails');
     expect(doc.querySelector('.ris-booking')!.getAttribute('href')).toBe('https://example.com/meeting');
+    expect(doc.querySelector('#rise-conversation')!.textContent).toContain('performance model');
+    expect(doc.querySelector('#rise-conversation')!.textContent).toContain('see whether Yananails is eligible');
     expect(html).not.toMatch(/performance-only|no retainers|only get paid|guaranteed/i);
   });
   it('treats free shipping as strictly above the threshold and labels the basket as an example', () => {
