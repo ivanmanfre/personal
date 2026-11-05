@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ChevronDown, ExternalLink } from 'lucide-react';
 import type { Model } from '../data/model';
 import { fmtDay, fmtWhen } from '../data/model';
-import { contentTotals, whoSaw, type ContentPost } from '../data/content';
+import { contentTotals, viewerCounts, whoSaw, type ContentPost, type PostViewers, type Viewer } from '../data/content';
 import { plural } from '../data/copy';
 import { fmtInt } from '../data/derive';
 import { AnimatedNumber, LmTag, SPRING, Thumb, useIsPhone } from '../ui/kit';
@@ -65,6 +65,83 @@ function Bars({ title, rows }: { title: string; rows: { label: string; pct: numb
   );
 }
 
+/* ---------- Who viewed the profile after a post ---------- */
+
+/** "13 viewers: 4 from outreach, 0 new ideal customers, 9 not buyers" */
+function viewerSummary(v: PostViewers) {
+  const c = viewerCounts(v);
+  if (!c.total) return null;
+  const parts = [`${c.outreach} from outreach`, `${c.fit} new ${c.fit === 1 ? 'ideal customer' : 'ideal customers'}`, `${c.other} ${c.other === 1 ? 'not a buyer' : 'not buyers'}`];
+  if (c.unchecked) parts.push(`${c.unchecked} not checked yet`);
+  return `${plural(c.total, 'viewer')}: ${parts.join(', ')}`;
+}
+
+const spanWords = (v: PostViewers) => {
+  if (!v.cut) return '2 days';
+  return v.minutes < 120 ? plural(v.minutes, 'minute') : plural(v.hours, 'hour');
+};
+
+function viewerLead(v: PostViewers, r: ContentPost) {
+  const count = r.measured && r.profileViewsKnown !== false
+    ? `LinkedIn counts ${plural(r.profileViews, 'profile view')} from this post but doesn't say who.`
+    : `LinkedIn has not counted profile views from this post yet, and it never says who came from which post.`;
+  if (v.open) return `${count} These are the people who viewed the profile since it went out. The list keeps filling in for ${spanWords(v)}.`;
+  if (v.cut) return `${count} These are the people who viewed the profile in the ${spanWords(v)} after it, until the next post went out.`;
+  return `${count} These are the people who viewed the profile in the 2 days after it.`;
+}
+
+function after(p: Viewer, postAt: string) {
+  const h = Math.max(0, Math.floor((Date.parse(p.at) - Date.parse(postAt)) / 3600000));
+  const t = h < 1 ? 'within the hour' : `${h}h after`;
+  return p.about && h >= 1 ? `about ${t}` : t;
+}
+
+function ViewerTagLabel({ p }: { p: Viewer }) {
+  if (p.tag === 'outreach') return <span className="chip !h-[19px] !px-2 !text-[10.5px] shrink-0">Outreach · {p.stage}</span>;
+  if (p.tag === 'fit') return <span className="chip chip-accent !h-[19px] !px-2 !text-[10.5px] shrink-0">Ideal customer · new</span>;
+  if (p.tag === 'other') return <span className="chip chip-mute !h-[19px] !px-2 !text-[10.5px] shrink-0">Not a buyer{p.reason ? ` · ${p.reason}` : ''}</span>;
+  return <span className="text-[11px] text-mute shrink-0">Not checked yet</span>;
+}
+
+function Viewers({ r }: { r: ContentPost }) {
+  const phone = useIsPhone();
+  const [open, setOpen] = useState(false);
+  const v = r.viewers;
+  if (!v) return null;
+  const sum = viewerSummary(v);
+  const shown = !phone || open;
+  return (
+    <div className="mt-4" data-testid="post-viewers">
+      <div className="text-[11.5px] text-mute mb-1">Who viewed the profile after this post</div>
+      <p className="text-[12.5px] text-soft leading-snug max-w-[720px]">{viewerLead(v, r)}</p>
+      {sum
+        ? <p className="mt-1.5 text-[13px] text-ink" data-testid="viewer-summary">{sum}</p>
+        : <p className="mt-1.5 text-[13px] text-mute">No named viewers in that time.</p>}
+      {!!v.people.length && phone && (
+        <button type="button" className="link !text-[13px] mt-1.5" aria-expanded={open}
+          onClick={() => { if (!open) track('expand', r.postId || null, { which: 'post_viewers' }); setOpen(o => !o); }}>
+          {open ? 'Hide the names' : `Show the ${v.people.length === 1 ? 'name' : `${v.people.length} names`}`} <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+      {!!v.people.length && shown && (
+        <ul className="mt-2 grid gap-x-6 sm:grid-cols-2">
+          {v.people.map(p => (
+            <li key={p.name + p.at} className="flex items-center gap-2 min-w-0 py-1.5 border-b hair">
+              <div className="min-w-0 flex-1">
+                {p.url
+                  ? <a className="text-[13.5px] text-ink hover:underline underline-offset-4" href={p.url} target="_blank" rel="noreferrer">{p.name}</a>
+                  : <span className="text-[13.5px] text-ink">{p.name}</span>}
+                <div className="text-[12px] text-mute truncate" title={p.headline}>{[after(p, r.at), p.headline].filter(Boolean).join(' · ')}</div>
+              </div>
+              <ViewerTagLabel p={p} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function Detail({ r, m }: { r: ContentPost; m: Model }) {
   const { openPost } = useNav();
   const facts: [string, string][] = [];
@@ -111,6 +188,7 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
           </ul>
         </div>
       )}
+      <Viewers r={r} />
       {(roles || sen) && (
         <div className="mt-3 grid gap-1 text-[12.5px] text-soft">
           {roles && <p><span className="text-mute">Top viewer roles:</span> {roles}</p>}
@@ -192,6 +270,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
                       {phone && r.measured && <span className="truncate">{fmtInt(r.impressions)} seen · {plural(r.reactions, 'reaction')} · {plural(r.comments, 'comment')}</span>}
                       {!r.measured && (phone || !anyMeasured) && <span className="truncate">· LinkedIn numbers not in yet</span>}
                     </div>
+                    {!phone && r.viewers && <div className="text-[12px] text-soft truncate" data-testid="row-viewer-summary">{viewerSummary(r.viewers) || 'No named profile viewers after it'}</div>}
                   </div>
                   {phone && <ChevronDown size={15} className={`text-mute shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
                 </div>
@@ -212,6 +291,7 @@ function PostTable({ rows, m }: { rows: ContentPost[]; m: Model }) {
                 <div className="pb-4 pl-[76px] max-sm:pl-0 text-[13px] text-mute">
                   LinkedIn numbers for this post are not in yet.
                   {r.postId && <> <OpenLink id={r.postId} /></>}
+                  <Viewers r={r} />
                 </div>
               ))}
             </li>
@@ -398,7 +478,7 @@ export function PublishedPosts() {
 
       <p className="mt-12 text-[12px] text-mute max-w-[760px]">
         {c.measuring
-          ? <>Numbers come from LinkedIn{c.updatedAt ? `, last read ${fmtWhen(c.updatedAt, m.theme.tz).day}, ${fmtWhen(c.updatedAt, m.theme.tz).time} ${m.theme.tzLabel}` : ''}. Nothing here is an estimate.</>
+          ? <>Numbers come from LinkedIn{c.updatedAt ? `, last read ${fmtWhen(c.updatedAt, m.theme.tz).day}, ${fmtWhen(c.updatedAt, m.theme.tz).time} ${m.theme.tzLabel}` : ''}. Profile viewer times can be approximate.</>
           : <>Post numbers start once your LinkedIn account is connected for measuring.</>}
         {c.notMeasured.length > 0 && <> Not measured yet: {c.notMeasured.join(', ')}.</>}
       </p>

@@ -25,6 +25,8 @@ export type ContentPost = {
   comments: number;
   reposts: number;
   profileViews: number;
+  /** False when LinkedIn gave impressions but no profile-view count for this post. */
+  profileViewsKnown?: boolean;
   followers: number;
   reached?: number;
   inPct?: number;
@@ -37,12 +39,27 @@ export type ContentPost = {
   inboundDms?: number;
   /** Store owners and ICP people who engaged with this post, by name. */
   people?: EngagedPerson[];
+  /** Named people who viewed the profile after this post (from published_at to the next post, at most 48h). */
+  viewers?: PostViewers;
   /** RISE signals, first 48 hours after the post (latest five posts only). */
   named48?: number;
   lookedUp48?: number;
   buyerDms48?: number;
   ledToCall: number;
 };
+
+export type ViewerTag = 'outreach' | 'fit' | 'other' | 'unchecked';
+export type Viewer = { name: string; headline?: string; url?: string; at: string; about: boolean; tag: ViewerTag; stage?: string; reason?: string };
+export type PostViewers = { people: Viewer[]; hours: number; minutes: number; cut: boolean; open: boolean; until?: string };
+
+const TAG_ORDER: Record<ViewerTag, number> = { fit: 0, outreach: 1, unchecked: 2, other: 3 };
+
+/** Counts for the one-line summary under a post. */
+export function viewerCounts(v: PostViewers) {
+  const c = { total: v.people.length, outreach: 0, fit: 0, other: 0, unchecked: 0 };
+  for (const p of v.people) c[p.tag] += 1;
+  return c;
+}
 
 export type EngagedPerson = { name: string; headline?: string; url?: string; owner: boolean; icp: boolean; comment: boolean };
 
@@ -109,6 +126,21 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
   for (const l of peopleBy.values()) l.sort((a, b) => Number(b.icp) - Number(a.icp) || Number(b.owner) - Number(a.owner));
   const assists = new Map<string, number>();
   for (const a of report?.assists || []) { const id = aid(a.p); if (id) assists.set(id, (assists.get(id) || 0) + 1); }
+  const viewersBy = new Map<string, PostViewers>();
+  for (const v of raw.postViewers?.posts || []) {
+    if (!v || !v.p) continue;
+    const people: Viewer[] = (Array.isArray(v.people) ? v.people : [])
+      .filter((x: any) => x && x.name && x.tag in TAG_ORDER)
+      .map((x: any) => ({
+        name: String(x.name).trim(), headline: x.headline ? String(x.headline).replace(/\s+/g, ' ').trim() : undefined,
+        url: x.url || undefined, at: String(x.at), about: !!x.about, tag: x.tag as ViewerTag,
+        stage: x.stage || undefined, reason: x.reason || undefined,
+      }))
+      .sort((a: Viewer, b: Viewer) => TAG_ORDER[a.tag] - TAG_ORDER[b.tag] || a.at.localeCompare(b.at));
+    const span = v.until && v.at ? Math.max(0, Math.round((Date.parse(v.until) - Date.parse(v.at)) / 60000)) : 48 * 60;
+    const minutes = Math.min(span, 48 * 60);
+    viewersBy.set(String(v.p), { people, hours: Math.floor(minutes / 60), minutes, cut: !!v.cut, open: !!v.open, until: v.until || undefined });
+  }
   const sigPost = new Map<string, any>();
   for (const p of sig?.posts || []) { const id = aid(p.social_id); if (id) sigPost.set(id, p); }
 
@@ -151,11 +183,12 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
       key: id || pm.url || pm.title, postId: q?.id, title: q?.title || pm.title || 'Post', at, url: pm.url || q?.url,
       image: q?.image, hook: q?.hook || pm.title || '', measured,
       impressions: n(pm.impressions), reactions: n(pm.reactions), comments: n(pm.comments), reposts: n(pm.reposts),
-      profileViews: n(pm.profile_views), followers: n(pm.followers_gained),
+      profileViews: n(pm.profile_views), profileViewsKnown: pm.profile_views != null, followers: n(pm.followers_gained),
       reached: pm.network?.members_reached ?? undefined, inPct: pm.network?.in_pct ?? undefined, outPct: pm.network?.out_pct ?? undefined,
       demo, icp, icpKeys: id && fit.has(id) ? [...fit.get(id)!] : undefined, checkedKeys: id && checked.has(id) ? [...checked.get(id)!] : undefined,
       inboundDms: pm.inbound_dms ?? undefined,
       people: id ? peopleBy.get(id) : undefined,
+      viewers: id ? viewersBy.get(id) : undefined,
       named48: sp?.named_views_48h, lookedUp48: sp?.organic_icp_views_48h, buyerDms48: sp?.buyer_dms_48h,
       ledToCall: id ? assists.get(id) || 0 : 0,
     });
@@ -168,6 +201,7 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
     const id = aid(p.url);
     rows.push({
       key: id || p.id, postId: p.id, title: p.title, at, url: p.url, image: p.image, hook: p.hook, measured: false,
+      viewers: id ? viewersBy.get(id) : undefined,
       impressions: 0, reactions: 0, comments: 0, reposts: 0, profileViews: 0, followers: 0, ledToCall: id ? assists.get(id) || 0 : 0,
     });
   }

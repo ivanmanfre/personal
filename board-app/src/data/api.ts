@@ -36,6 +36,8 @@ export type Raw = {
   audience?: any | null;
   /** client_board_post_people: store owners and ICP people who engaged, one row per person per post. */
   postPeople?: any[] | null;
+  /** client_board_post_viewers: named profile viewers in the window after each post, tagged outreach / fit / other / unchecked. */
+  postViewers?: any | null;
   comments: RawComment[];
   /** carousel_drafts.scheduled_at per post: the schedule authority (a reschedule does not rewrite the queue's own field). */
   schedule: Record<string, string | null> | null;
@@ -55,10 +57,10 @@ export async function loadBoard(c: Cred): Promise<Raw> {
   const s = c.session?.token || null;
   const both = { p_slug: c.slug, p_session: s, p_token: c.token || null };
   const soft = <T,>(p: Promise<T>) => p.catch(() => null);
-  let b: any, slot: any, report: any, signals: any, audience: any, sched: any, pp: any;
+  let b: any, slot: any, report: any, signals: any, audience: any, sched: any, pp: any, pv: any;
   if (c.token) {
     const t = { p_slug: c.slug, p_token: c.token };
-    [b, slot, report, signals, audience, sched, pp] = await Promise.all([
+    [b, slot, report, signals, audience, sched, pp, pv] = await Promise.all([
       rpc<any>('get_client_board', t),
       soft(rpc<any>('client_board_slot_state', t)),
       soft(rpc<any>('client_board_report', t)),
@@ -66,10 +68,11 @@ export async function loadBoard(c: Cred): Promise<Raw> {
       soft(rpc<any>('client_board_audience', t)),
       soft(rpc<any>('client_board_schedule', t)),
       soft(rpc<any>('client_board_post_people', t)),
+      soft(rpc<any>('client_board_post_viewers', t)),
     ]);
   } else if (s) {
     const v = { p_slug: c.slug, p_session: s };
-    [b, slot, report, signals, audience, sched, pp] = await Promise.all([
+    [b, slot, report, signals, audience, sched, pp, pv] = await Promise.all([
       rpc<any>('get_client_board_by_session', v),
       soft(rpc<any>('client_board_slot_state_v2', v)),
       soft(rpc<any>('client_board_report_v2', v)),
@@ -77,6 +80,7 @@ export async function loadBoard(c: Cred): Promise<Raw> {
       soft(rpc<any>('client_board_audience_v2', v)),
       soft(rpc<any>('client_board_schedule_v2', v)),
       soft(rpc<any>('client_board_post_people_v2', v)),
+      soft(rpc<any>('client_board_post_viewers_v2', v)),
     ]);
   } else {
     throw new AuthError('no credentials');
@@ -96,7 +100,7 @@ export async function loadBoard(c: Cred): Promise<Raw> {
   return {
     board: resp.board, slot: slot?.ok ? slot : null, activity: act?.ok ? act.items : [],
     report: report?.ok ? report.report : null, signals: signals?.ok ? signals.signals : null,
-    audience: audience?.ok ? audience.audience : null, postPeople: pp?.ok && Array.isArray(pp.people) ? pp.people : null, comments: comments?.ok && Array.isArray(comments.items) ? comments.items : [],
+    audience: audience?.ok ? audience.audience : null, postPeople: pp?.ok && Array.isArray(pp.people) ? pp.people : null, postViewers: pv?.ok ? pv.viewers ?? null : null, comments: comments?.ok && Array.isArray(comments.items) ? comments.items : [],
     schedule,
     members: team?.ok && Array.isArray(team.members) ? team.members : [],
     teamCap: team?.ok && Number(team.cap) > 0 ? Number(team.cap) : 25,
