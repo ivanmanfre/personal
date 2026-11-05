@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +60,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -77,7 +77,7 @@ jobs:
   # (real files in the inboundonsteroids-site repo — no redirects). Same source, second
   # build with base=/scan/, scan routes prerendered only, pushed cross-repo.
   scan-mirror:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: scan-mirror
       cancel-in-progress: false
@@ -132,7 +132,7 @@ jobs:
   # no redirects). Same source, second build with base=/client/, client routes
   # prerendered only, pushed cross-repo. Parallels scan-mirror exactly; additive.
   client-mirror:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: client-mirror
       cancel-in-progress: false
@@ -192,7 +192,7 @@ jobs:
   # bundle; only the two public Supabase values reach either. Same script works by hand:
   # scripts/publish-board-host.sh swishdm --push
   swishdm-board-mirror:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     concurrency:
       group: swishdm-board-mirror
@@ -220,7 +220,7 @@ jobs:
   # arch-agency. MIRROR_PUSH_TOKEN needs write access to ivanmanfre/madebyarch.
   # By hand: scripts/publish-board-host.sh arch --push
   arch-board-mirror:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     concurrency:
       group: arch-board-mirror
@@ -250,7 +250,7 @@ jobs:
   # Rise's domain). No Ivan assets are copied: DTC reports reference only the
   # remote Rise logo + per-brand OG, never /ivan-portrait* or /content-system/*.
   rise-scan-mirror:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A hung runner here leaves a freshly-generated scan 404 on Rise's domain while its
     # DM is already drafted (seen 2026-08-18: playwright install stalled 28min under the
     # default 6h job timeout, so the run just sat there looking healthy). The individual
