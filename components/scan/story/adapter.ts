@@ -17,7 +17,8 @@ export function toStoryFixture(row:StoryScanRow):JourneyFixture {
  const name=str(founder.name)||str(row.company_name)||'Your team';
  const posts=Array.isArray(samples.posts)?samples.posts.filter(p=>p&&typeof p==='object'&&typeof p.hook==='string').map(p=>({...p,source_quote:str(p.source_quote)})):[];
  const a=record(cs.audience);
- const audience=Object.keys(a).length?{...a,named:Array.isArray(a.named)?a.named.filter(n=>n&&typeof n.name==='string').map(n=>({...n,headline:str(n.headline)})):[]}:undefined;
+ const people=(v:unknown)=>Array.isArray(v)?v.filter(n=>n&&typeof n.name==='string'&&n.name.trim()).map(n=>({...n,headline:str(n.headline)})):[];
+ const audience=Object.keys(a).length?{...a,named:Array.isArray(a.named)?a.named.filter(n=>n&&typeof n.name==='string').map(n=>({...n,headline:str(n.headline)})):[],existing_clients:people(a.existing_clients)}:undefined;
  const icp=record(samples.icp_targeting),segments=Array.isArray(icp.segments)?icp.segments.filter(s=>s&&typeof s.label==='string'):[];
  const date=str(a.audited_at)||str(row.completed_at);
  // Profile audit (flagged builds only): shown when the report carries at least two complete findings.

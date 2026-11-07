@@ -39,6 +39,17 @@ const STEPS = [
 /** Headline-safe company name: drop taglines after a separator, skip names too long to set large. */
 const headlineName = (name: string) => { const short = name.split(/\s+[-–|:]\s+/)[0].trim(); return short.length <= 24 ? short : ''; };
 
+/** Engagers who already work at the lead's clients: shown so the count reads as checked, never counted as buyers. */
+export function ClientEngagers({people}: {people: {name?: string; headline?: string}[]}) {
+ const list = people.filter(n => (n?.name || '').trim());
+ if (!list.length) return null;
+ const n = list.length;
+ return <div className="sp-audit-clients">
+  <p>{n === 1 ? 'One person who engaged works at one of your clients.' : `${n} people who engaged work at your clients.`} We left them out of the buyer count.</p>
+  <ul className="sp-audit-names" aria-label="People at your clients who engaged with your posts">{list.slice(0, 3).map(c => <li key={c.name}><span className="sp-audit-face" aria-hidden="true">{c.name!.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('')}</span><span><b>{c.name}</b>{c.headline && <small>{c.headline}</small>}</span></li>)}</ul>
+ </div>;
+}
+
 function PlanHero({fixture}: {fixture: JourneyFixture}) {
  const result = assessAudience(fixture), reduced = useReducedMotion(), reach = reachFrom(fixture);
  // The buyers the audit named from their own headlines: the specific finding, never just a count.
@@ -66,6 +77,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <b className="sp-audit-heading">{result.heading}</b>
    <p>{result.receipt}</p>
    {result.state === 'buyers' && named.length > 0 && <ul className="sp-audit-names" aria-label="Buyers who engaged with your posts">{named.map(n => <li key={n.name}><span className="sp-audit-face" aria-hidden="true">{n.name.split(/\s+/).map(w => w[0]).slice(0, 2).join('')}</span><span><b>{n.name}</b>{n.headline && <small>{n.headline}</small>}</span></li>)}</ul>}
+   {(result.state === 'buyers' || result.state === 'zero-buyers') && <ClientEngagers people={fixture.audience?.existing_clients ?? []}/>}
    {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">~{reach.readers} readers per post at ~15 per engager, 4 posts a week, 0.5% leave their email.</span></>}
    {result.state === 'buyers' && (() => { const per = Math.max(1, Math.ceil(result.people! / 60)), dots = Math.ceil(result.people! / per), lit = Math.max(1, Math.round(result.buyers! / per)); return <><div className="audience-dots" aria-hidden="true">{Array.from({length: dots}, (_, i) => <i key={i} className={i < lit ? 'is-buyer' : ''}/>)}</div>{per > 1 && <small className="sp-dots-key">Each dot is about {per} people.</small>}</>; })()}
    <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}</footer>

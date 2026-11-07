@@ -145,6 +145,9 @@ export interface ContentSystem {
     network_icp_count?: number | null;
     network_icp_density?: number | null;
     named?: { name?: string; headline?: string; source?: string }[];
+    // Engagers who work at a company the lead's own website shows as a client. Left out of
+    // engager_icp_count and shown on the page as already your clients (Bojan Mitevski 11-06).
+    existing_clients?: { name?: string; headline?: string }[];
     // The rubric this audit actually counted against, in plain words. The audit derives it
     // per prospect, so a mobile UA studio and an ecommerce agency get different buyers.
     // Absent means the audit fell back to the legacy hardcoded DTC rubric, and every reader
