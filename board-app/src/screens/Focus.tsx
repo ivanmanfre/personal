@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useTransform } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, CircleCheck, PenLine, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CircleCheck, Link2, PenLine, X } from 'lucide-react';
 import type { Model, Post } from '../data/model';
 import { plural } from '../data/copy';
 import { useLocal } from '../data/store';
@@ -54,8 +54,8 @@ function Why({ post }: { post: Post }) {
   );
 }
 
-export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onClose: () => void }) {
-  const { approve, local, canApprove } = useLocal();
+export function Focus({ m, startId, onClose, onPost }: { m: Model; startId?: string; onClose: () => void; onPost?: (id: string | null) => void }) {
+  const { approve, local, canApprove, toast } = useLocal();
   const [editing, setEditing] = useState(false);
   const [line, setLine] = useState<number | null>(null);
   const [focusNote, setFocusNote] = useState<string | null>(null);
@@ -77,6 +77,17 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
   // comments the moment they are written, so "Needs changes" only marks it and moves on.
   const notes = post ? local.comments.filter(c => c.ref === post.id && !c.id.startsWith('tmp-')).length : 0;
   useEffect(() => { setEditing(false); setLine(null); }, [post?.id]);
+  // Keep the address on the post being read, so a copied or refreshed link opens this same post.
+  useEffect(() => { onPost?.(done ? null : post?.id || null); }, [post?.id, done]); // eslint-disable-line react-hooks/exhaustive-deps
+  const copyLink = useCallback(async () => {
+    const q = new URLSearchParams(location.search);
+    for (const k of [...q.keys()]) if (k !== 'k' && k !== 'board') q.delete(k);
+    q.set('view', 'posts');
+    q.set('review', post ? post.id : '1');
+    const url = `${location.origin}${location.pathname}?${q}`;
+    try { await navigator.clipboard.writeText(url); toast('Link copied. It opens the review on this post.'); }
+    catch { window.prompt('Copy this link', url); }
+  }, [post, toast]);
 
   const step = useCallback((d: number, f: Fly = null) => {
     setFly(f);
@@ -161,7 +172,10 @@ export function Focus({ m, startId, onClose }: { m: Model; startId?: string; onC
           <div className="hidden md:flex items-center gap-4 text-[12px] text-mute">
             {!done && <><span className="inline-flex items-center gap-1.5"><span className="kbd">A</span> approve</span><span className="inline-flex items-center gap-1.5"><span className="kbd">N</span> needs changes</span><span className="inline-flex items-center gap-1.5"><span className="kbd">E</span> edit</span><span className="inline-flex items-center gap-1.5"><span className="kbd"><ArrowLeft size={11} /></span><span className="kbd"><ArrowRight size={11} /></span> move</span></>}
           </div>
+          <div className="flex items-center gap-2">
+          {!done && <button className="btn btn-outline btn-sm" onClick={copyLink} aria-label="Copy a link to this review" data-testid="focus-copy-link"><Link2 size={15} /> <span className="max-sm:hidden">Copy link</span></button>}
           <button className="btn btn-outline btn-sm" onClick={onClose} aria-label="Close review"><X size={15} /> <span className="max-sm:hidden">Close</span> <span className="kbd max-md:hidden">Esc</span></button>
+          </div>
         </div>
       </header>
 

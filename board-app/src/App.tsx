@@ -244,7 +244,16 @@ export default function App() {
 
 function Shell({ view, go, hop }: { view: View; go: (v: View) => void; hop: number }) {
   const { model } = useLocal();
-  const [focus, setFocus] = useState<{ open: boolean; start?: string }>({ open: false });
+  // ?review=1 (or ?review=<post id>) opens the review straight away, so the review has its own link.
+  const [focus, setFocus] = useState<{ open: boolean; start?: string }>(() => {
+    const r = new URLSearchParams(location.search).get('review');
+    return r ? { open: true, start: r === '1' ? undefined : r } : { open: false };
+  });
+  const setReviewParam = useCallback((id: string | null) => {
+    const q = new URLSearchParams(location.search);
+    if (id) q.set('review', id); else q.delete('review');
+    history.replaceState(null, '', `${location.pathname}${q.toString() ? `?${q}` : ''}${location.hash}`);
+  }, []);
   const [post, setPost] = useState<{ id: string | null; edit?: boolean }>({ id: null });
   const [people, setPeople] = useState<PeopleKind | null>(null);
 
@@ -269,7 +278,7 @@ function Shell({ view, go, hop }: { view: View; go: (v: View) => void; hop: numb
           </AnimatePresence>
         </main>
         <AnimatePresence>
-          {focus.open && <Focus key="focus" m={model} startId={focus.start} onClose={() => setFocus({ open: false })} />}
+          {focus.open && <Focus key="focus" m={model} startId={focus.start} onPost={id => setReviewParam(id || '1')} onClose={() => { setReviewParam(null); setFocus({ open: false }); }} />}
         </AnimatePresence>
         <PostSheet m={model} postId={post.id} edit={post.edit} onClose={() => setPost({ id: null })} onReview={id => nav.openFocus(id)} />
         <PeopleSheet m={model} kind={people} onClose={() => setPeople(null)} />
