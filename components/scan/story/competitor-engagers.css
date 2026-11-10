@@ -3,7 +3,7 @@
 .scan-journey .revenue-story .sp-rivals-count{display:block;font:800 64px/.9 StudioDisplay,StudioSans,system-ui,sans-serif;letter-spacing:-.035em;color:#be3823;margin:0 0 10px}
 .scan-journey .revenue-story .sp-rivals-head h2{font-size:30px;line-height:1.05;letter-spacing:-.8px;margin:0}
 .revenue-story .sp-rivals-head>p{font-size:15px;line-height:1.5;color:#625d56;margin:12px 0 0;max-width:40ch}
-.revenue-story .sp-rivals-meta{display:block;margin-top:14px;font-size:12px;line-height:1.5;color:#82796c}
+.revenue-story .sp-rivals-meta{display:block;margin-top:14px;font-size:12px;line-height:1.5;color:#726a5f}
 .sp-rivals-list{list-style:none;margin:0;padding:0;background:#fbfaf7;border:1px solid #e2ded7;border-radius:14px}
 .sp-rivals-list>li{display:flex;gap:14px;align-items:flex-start;padding:16px 20px}
 .sp-rivals-list>li+li{border-top:1px solid #ebe5db}
@@ -14,8 +14,8 @@
 .sp-rivals-name:focus-visible,.sp-rivals-post:focus-visible,.sp-rivals-more button:focus-visible{outline:2px solid #be3823;outline-offset:3px;border-radius:4px}
 .revenue-story .sp-rivals-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;font-size:13px;line-height:1.4;color:#625d56;overflow-wrap:anywhere}
 .revenue-story .sp-rivals-why{margin:8px 0 0;font-size:15px;line-height:1.5;color:#191919;overflow-wrap:anywhere}
-.sp-rivals-post{display:inline-block;margin-top:6px;font-size:13px;line-height:1.4;color:#82796c;text-decoration:underline;text-decoration-color:#d7d0c5;text-underline-offset:3px}
-.sp-rivals-list>li.sp-rivals-more{display:block;padding:12px 20px;font-size:13px;color:#82796c}
+.sp-rivals-post{display:inline-block;margin-top:6px;font-size:13px;line-height:1.4;color:#726a5f;text-decoration:underline;text-decoration-color:#d7d0c5;text-underline-offset:3px}
+.sp-rivals-list>li.sp-rivals-more{display:block;padding:12px 20px;font-size:13px;color:#726a5f}
 .sp-rivals-more button{appearance:none;border:0;background:none;padding:6px 0;font:inherit;font-size:14px;color:#191919;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .sp-rivals-more button:hover{color:#be3823}
 .sp-rivals-notes{margin-top:36px;padding-top:28px;border-top:1px solid #d7d0c5}

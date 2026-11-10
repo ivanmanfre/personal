@@ -12,7 +12,7 @@
 .profile-finding+.profile-finding{border-top:1px solid #ebe5db}
 .profile-finding-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#be3823;padding-top:3px}
 .revenue-story .profile-finding-fix{margin:0;font-size:15px;line-height:1.5;color:#191919;overflow-wrap:anywhere}
-.revenue-story .profile-finding-today{margin:6px 0 0;font-size:13px;line-height:1.45;color:#82796c;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.revenue-story .profile-finding-today{margin:6px 0 0;font-size:13px;line-height:1.45;color:#726a5f;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .profile-finding-today q{color:#625d56}
 @media(max-width:900px){.profile-audit-layout{grid-template-columns:minmax(0,1fr);gap:22px}.profile-audit-head{position:static}.profile-audit-images{max-width:520px}}
 @media(max-width:560px){.profile-finding{grid-template-columns:minmax(0,1fr);gap:4px;padding:14px 16px}.scan-journey .revenue-story .profile-audit-head h2{font-size:26px}}
