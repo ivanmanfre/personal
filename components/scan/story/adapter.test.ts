@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import rows from './__fixtures__/review-rows.json';
-import {toStoryFixture} from './adapter';
+import {toStoryFixture,firstNameOf} from './adapter';
 import {reviewDraft} from './reviewDrafts';
 import {validateEdition} from './validate';
 import {assessAudience} from './assessment';
@@ -56,4 +56,9 @@ describe('actual saved scan rows',()=>{
   expect(toStoryFixture(row).profileAudit).toBeUndefined();
  });
  it('normalizes malformed posts and nameless audience entries safely',()=>{const f=toStoryFixture({company_slug:'bad',report_json:{content_system:{founder:null,audience:{named:[null,{}, {name:'Alex',headline:null}]},sample_output:{posts:[null,{}],lm:null}}}});expect(f.samples.posts).toEqual([]);expect(f.audience?.named).toEqual([{name:'Alex',headline:''}])});
+});
+
+describe('firstNameOf',()=>{
+ it.each([['Dr Sami K.','Sami'],['Dr. Sami Khan','Sami'],['Prof. Ada Lovelace','Ada'],['Mrs Jane Doe','Jane'],['Sir Tim','Tim'],['J. Smith','Smith'],['Piotr Nowak','Piotr'],['Dr','Dr'],['Ana','Ana'],['Sami, MD','Sami']])('%s -> %s',(n,f)=>expect(firstNameOf(n)).toBe(f));
+ it('guards a backend first_name that is only a title',()=>{expect(toStoryFixture({company_slug:'x',report_json:{content_system:{founder:{name:'Dr Sami K.',first_name:'Dr'}}}}).founder.firstName).toBe('Sami')});
 });

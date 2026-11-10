@@ -37,7 +37,7 @@ function DocumentResource() {
   async function copy() { try { await navigator.clipboard.writeText(text); setCopied(true); setError(false); } catch { setError(true); } }
   function download() { const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })); const a = document.createElement('a'); a.href = url; a.download = `${plan.slug}-resource.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   const id = (i: number) => `resource-${index}-${i}`;
-  return <article className="brand-resource" aria-label="Lead magnet sample" style={{ '--res-dark': p.dark, '--res-light': p.light, '--res-accent': p.accent, '--res-accent-ink': p.accentInk, '--res-mark': p.accentOnLight, '--res-font': brandFont(r.brand.font) } as React.CSSProperties}>
+  return <article className="brand-resource" aria-label="Lead magnet sample" style={{ '--res-dark': p.dark, '--res-light': p.light, '--res-accent': p.accent, '--res-accent-ink': p.accentInk, '--res-mark': p.textOnLight, '--res-mark-dark': p.textOnDark, '--res-font': brandFont(r.brand.font) } as React.CSSProperties}>
     <header className="brand-resource-bar"><BrandMark ground={p.dark} height={24}/><span>{plan.magnet}</span></header>
     <div className="brand-resource-grid">
       <aside className="brand-resource-side">

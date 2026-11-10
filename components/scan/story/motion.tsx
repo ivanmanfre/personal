@@ -1,12 +1,21 @@
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {animate, motion, useInView, useReducedMotion} from 'framer-motion';
 
+/** The prerender bakes the final number; a visitor's first render must not replay a count-up over text that is already on screen. */
+const isPrerender = () => typeof window !== 'undefined' && !!(window as Window & {__RISE_PRERENDER__?: boolean}).__RISE_PRERENDER__;
+const hasBakedHtml = () => typeof document !== 'undefined' && !!document.querySelector('meta[name="x-prerendered"]');
+
 /** Counts up to the value once it scrolls into view. */
 export function NumberTicker({value, className}: {value: number; className?: string}) {
- const ref = useRef<HTMLSpanElement>(null), seen = useInView(ref, {once: true}), reduced = useReducedMotion();
- const [shown, setShown] = useState(reduced ? value : 0);
+ const ref = useRef<HTMLSpanElement>(null), seen = useInView(ref, {once: true}), reduced = useReducedMotion(), still = useRef(isPrerender());
+ const [shown, setShown] = useState(reduced || still.current ? value : 0);
+ useLayoutEffect(() => {
+  const el = ref.current; if (!el || still.current || !hasBakedHtml()) return;
+  const r = el.getBoundingClientRect();
+  if (r.bottom > 0 && r.top < window.innerHeight) { still.current = true; setShown(value); }
+ }, []); // eslint-disable-line react-hooks/exhaustive-deps
  useEffect(() => {
-  if (!seen || reduced) { setShown(value); return; }
+  if (!seen || reduced || still.current) { setShown(value); return; }
   const c = animate(0, value, {duration: Math.min(1.6, .5 + value / 40), ease: [.16, 1, .3, 1], onUpdate: v => setShown(Math.round(v))});
   return () => c.stop();
  }, [seen, value, reduced]);

@@ -14,7 +14,7 @@ export function ResearchArtifact({ moment }: { moment: number }) {
 }
 
 export function LinkedInActions() {
-  return <div className="sg-linkedin-actions" aria-hidden="true"><span><svg viewBox="0 0 24 24"><path d="M8 10l4-7c2 0 3 1 2 4l-1 3h6c2 0 2 1 2 3l-2 7H8M3 10h5v10H3z" /></svg>Like</span><span><svg viewBox="0 0 24 24"><path d="M21 11a9 8 0 0 1-9 8H5l-3 3V11a9 8 0 0 1 19 0z" /></svg>Comment</span><span><svg viewBox="0 0 24 24"><path d="M4 8h15l-4-4M20 16H5l4 4M19 8v5M5 16v-5" /></svg>Repost</span><span><svg viewBox="0 0 24 24"><path d="M3 3l18 8-8 2-2 8zM3 3l10 10" /></svg>Send</span></div>;
+  return <div className="sg-linkedin-actions" aria-hidden="true"><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 10l4-7c2 0 3 1 2 4l-1 3h6c2 0 2 1 2 3l-2 7H8M3 10h5v10H3z" /></svg>Like</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 11a9 8 0 0 1-9 8H5l-3 3V11a9 8 0 0 1 19 0z" /></svg>Comment</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8h15l-4-4M20 16H5l4 4M19 8v5M5 16v-5" /></svg>Repost</span><span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 8-8 2-2 8zM3 3l10 10" /></svg>Send</span></div>;
 }
 
 export function LinkedInBackdrop() {

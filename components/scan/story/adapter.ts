@@ -10,6 +10,15 @@ const storedAuditImage=(x:unknown,kind:'avatar'|'banner',slug:string)=>{
  const prefixes=kind==='banner'?[`profile-banner-${slug}`]:[`avatar-${slug}`,`profile-photo-${slug}`];
  return prefixes.some(prefix=>key.startsWith(prefix)&&/^(?:-[a-f0-9]{20})?\.(?:jpe?g|png|webp)$/i.test(key.slice(prefix.length)))?url:undefined;
 };
+const TITLES=new Set(['dr','doctor','prof','professor','mr','mrs','ms','miss','mx','sir','dame','lord','lady','rev','fr','sr','hon','mag','eng','ing','dipl']);
+const isTitle=(w:string)=>TITLES.has(w.toLowerCase().replace(/[.,]+$/,''));
+const isInitial=(w:string)=>/^\p{L}\.?$/u.test(w);
+/** Given name from a display name: skips leading titles ("Dr Sami K." gives "Sami") and initials. */
+export function firstNameOf(full:string):string{
+ const words=full.trim().split(/\s+/).filter(Boolean);
+ const rest=words.filter((w,i)=>!(isTitle(w)&&i<words.length-1)).filter((w,_,a)=>!(isInitial(w)&&a.length>1));
+ return (rest[0]||words[0]||'').replace(/[,;]+$/,'');
+}
 export interface StoryScanRow {company_slug:string;company_name?:string|null;domain?:string|null;completed_at?:string|null;report_json:unknown}
 /** No current-date, demo-person, fabricated metric or other-lead fallback. */
 export function toStoryFixture(row:StoryScanRow):JourneyFixture {
@@ -32,5 +41,5 @@ export function toStoryFixture(row:StoryScanRow):JourneyFixture {
  const cePeople=ce.version===1&&Array.isArray(ce.people)?ce.people.map(record).filter(p=>str(p.name)&&ceLink(p.profile_url,'in')&&ceLink(p.post_url,'posts')&&str(p.reason)&&str(p.competitor)&&(p.engaged==='liked'||p.engaged==='commented')).slice(0,15).map(p=>({name:str(p.name),headline:str(p.headline),company:str(p.company),profileUrl:ceLink(p.profile_url,'in')!,reason:str(p.reason),engaged:p.engaged,competitor:str(p.competitor),postUrl:ceLink(p.post_url,'posts')!,postExcerpt:str(p.post_excerpt),postedAt:str(p.posted_at)})):[];
  const ceNames=new Set(cePeople.map(p=>p.name));
  const competitorEngagers=cePeople.length?{count:Math.max(cePeople.length,Number.isInteger(ce.count)?ce.count:0),windowDays:Number.isInteger(ce.window_days)?ce.window_days:14,readOn:str(ce.at),competitors:Array.isArray(ce.competitors)?ce.competitors.map(record).map(c=>str(c.name)).filter(Boolean):[],postsRead:Number.isInteger(ce.posts_read)?ce.posts_read:0,engagersRead:Number.isInteger(ce.engagers_read)?ce.engagers_read:0,people:cePeople,notes:Array.isArray(ce.notes)?ce.notes.map(record).filter(n=>ceNames.has(str(n.to))&&str(n.note)).slice(0,2).map(n=>({to:str(n.to),headline:str(n.headline),note:str(n.note)})):[]}:undefined;
- return {slug:row.company_slug,ogImage:https(cs.og_image_url),domain:str(row.domain),founder:{name,firstName:str(founder.first_name)||name.split(' ')[0],company:str(row.company_name),headline:str(founder.headline),avatarUrl:https(founder.avatar_url)},audience,pillars:cs.pillars&&record(cs.pillars),diagnosis:cs.story_diagnosis&&record(cs.story_diagnosis),thesis:str(cs.thesis),buyer:{role:str(segments[0]?.label),project:str(segments[0]?.note)||str(icp.icp_line)},samples:{...samples,posts,lm:{...lm,brand:{...brand,font_heading:str(brand.font_heading)}}},lm_cover_local:https(lm.cover_url)||'',source:{kind:'original-scan',url:`https://inboundonsteroids.com/scan/${encodeURIComponent(row.company_slug)}/`,capturedOn:date,quotes:Array.isArray(cs.story_evidence?.quotes)?cs.story_evidence.quotes.filter((q:unknown)=>typeof q==='string'):[]},...(profileAudit?{profileAudit}:{}),...(competitorEngagers?{competitorEngagers}:{})} as JourneyFixture;
+ return {slug:row.company_slug,ogImage:https(cs.og_image_url),domain:str(row.domain),founder:{name,firstName:(str(founder.first_name)&&!isTitle(str(founder.first_name))?str(founder.first_name):'')||firstNameOf(name),company:str(row.company_name),headline:str(founder.headline),avatarUrl:https(founder.avatar_url)},audience,pillars:cs.pillars&&record(cs.pillars),diagnosis:cs.story_diagnosis&&record(cs.story_diagnosis),thesis:str(cs.thesis),buyer:{role:str(segments[0]?.label),project:str(segments[0]?.note)||str(icp.icp_line)},samples:{...samples,posts,lm:{...lm,brand:{...brand,font_heading:str(brand.font_heading)}}},lm_cover_local:https(lm.cover_url)||'',source:{kind:'original-scan',url:`https://inboundonsteroids.com/scan/${encodeURIComponent(row.company_slug)}/`,capturedOn:date,quotes:Array.isArray(cs.story_evidence?.quotes)?cs.story_evidence.quotes.filter((q:unknown)=>typeof q==='string'):[]},...(profileAudit?{profileAudit}:{}),...(competitorEngagers?{competitorEngagers}:{})} as JourneyFixture;
 }

@@ -18,7 +18,7 @@ export function Reveal({ children, className, delay = 0, as = 'div', ...rest }: 
 export function Paragraphs({ text, className = 'sample-body' }: {text: string; className?: string}) {
   return <RichText text={text} className={className}/>;
 }
-export function Avatar({ src, name }: {src?: string; name: string}) {
+export function Avatar({ src, name, alt = '' }: {src?: string; name: string; alt?: string}) {
   const [failed,setFailed] = React.useState(false);
-  return <span className="journey-avatar">{src && !failed ? <img src={src} alt="" onError={() => setFailed(true)}/> : name.split(' ').map(n => n[0]).slice(0,2).join('')}</span>;
+  return <span className="journey-avatar">{src && !failed ? <img src={src} alt={alt} onError={() => setFailed(true)}/> : name.split(' ').map(n => n[0]).slice(0,2).join('')}</span>;
 }

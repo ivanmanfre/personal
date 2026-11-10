@@ -92,6 +92,7 @@
     <div id="root"></div>
     <script type="module" src="/main.tsx"></script>
     <!-- LemonSqueezy overlay checkout -->
-    <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
+    <!-- Only store checkout pages use it; scan pages (/scan/...) never open a checkout, so they skip the third-party request. -->
+    <script>if(!/^\/scan(\/|$)/.test(location.pathname)){var ls=document.createElement('script');ls.src='https://assets.lemonsqueezy.com/lemon.js';ls.defer=true;document.body.appendChild(ls)}</script>
   </body>
 </html>

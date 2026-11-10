@@ -343,6 +343,8 @@ process.on('SIGTERM', () => shutdown(143));
           .waitForFunction(() => ((document.getElementById('root') || {}).innerText || '').length > 1000, { timeout: 20000 })
           .catch(() => console.error(`[prerender][${route}] scan body under threshold — baking whatever rendered`));
         await page.waitForTimeout(600);
+        // A prospect logo is classified (transparent or opaque) after it loads; bake the answer, not the hidden pending state.
+        await page.waitForFunction(() => !document.querySelector('img.brand-mark[data-logo="pending"]'), { timeout: 8000 }).catch(() => {});
         // A comparison is born absent until its narrow public visibility RPC approves
         // this exact revision. Bake the verified section into the mirror only after
         // that check settles; a failed or revoked RPC leaves the base report intact.
@@ -375,6 +377,14 @@ process.on('SIGTERM', () => shutdown(143));
         m.name = 'x-prerendered';
         m.content = new Date().toISOString();
         document.head.appendChild(m);
+        // Reveal-on-scroll is progressive enhancement: the baked page shows everything. Once the script runs, the app
+        // re-renders and hides then reveals below-the-fold content as before. Without script nothing stays at opacity 0.
+        document.querySelectorAll('img.brand-mark[data-logo="pending"]').forEach((i) => i.setAttribute('data-logo', 'opaque'));
+        document.querySelectorAll('.scan-studio [style*="opacity: 0;"]').forEach((el) => {
+          el.style.removeProperty('opacity');
+          el.style.removeProperty('transform');
+          el.style.removeProperty('filter');
+        });
         if (riseMirror) {
           // White-label scrub for Rise's domain: the SPA shell's static JSON-LD
           // (Person/Service schema: Ivan's name, portrait, offer URLs) and the Ivan

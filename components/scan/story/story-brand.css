@@ -17,6 +17,9 @@
 .revenue-story .journey-deck .brand-slide { aspect-ratio:4/5; display:flex; flex-direction:column; padding:30px 32px 24px; }
 .brand-slide > header { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:12px; letter-spacing:.04em; opacity:.92; }
 .brand-mark { display:block; max-width:150px; object-fit:contain; object-position:left center; }
+/* A logo with its own opaque background keeps its real colours on a small light chip; the one-colour filter only runs on transparent logos. */
+.brand-mark[data-logo=pending] { visibility:hidden; }
+.brand-mark[data-logo=opaque] { box-sizing:content-box; background:#fff; padding:3px 6px; border-radius:6px; object-position:center; }
 .brand-wordmark { font-size:18px; font-weight:700; letter-spacing:-.02em; }
 .brand-slide-copy { flex:1; display:flex; flex-direction:column; justify-content:safe center; padding-top:18px; }
 .brand-slide.is-dense .brand-slide-body { font-size:14px; }
@@ -57,28 +60,28 @@
 .brand-resource-side { padding:30px 26px; border-right:1px solid #ece8e1; background:#faf9f6; }
 .scan-journey .brand-resource-side h3 { font:700 25px/1.12 var(--res-font); letter-spacing:-.02em; margin:0 0 20px; }
 .brand-resource-options { display:flex; flex-direction:column; gap:6px; margin-bottom:22px; }
-.brand-resource-options button { text-align:left; background:#fff; border:1px solid #ddd8ce; border-radius:8px; padding:10px 12px; font:500 13px/1.3 Arial,sans-serif; color:#222; }
+.brand-resource-options button { text-align:left; background:#fff; border:1px solid #ddd8ce; border-radius:8px; padding:10px 12px; font:500 13px/1.3 var(--res-font); color:#222; }
 .brand-resource-options button[aria-pressed=true] { background:var(--res-dark); border-color:var(--res-dark); color:var(--res-light); }
 .brand-resource-side nav ol { list-style:none; margin:0; padding:0; counter-reset:sec; }
 .brand-resource-side nav li { counter-increment:sec; }
-.brand-resource-side nav a { display:flex; gap:10px; padding:7px 0; font:13px/1.35 Arial,sans-serif; color:#5b564d; text-decoration:none; border-top:1px solid #ece8e1; }
+.brand-resource-side nav a { display:flex; gap:10px; padding:7px 0; font:13px/1.35 var(--res-font); color:#5b564d; text-decoration:none; border-top:1px solid #ece8e1; }
 .brand-resource-side nav a::before { content:counter(sec,decimal-leading-zero); color:#77716a; font-variant-numeric:tabular-nums; }
 .brand-resource-side nav a:hover { color:#111; }
 .brand-resource-actions { display:flex; gap:8px; margin-top:22px; }
-.brand-resource-actions button { display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:9px; padding:12px 14px; font:600 14px Arial,sans-serif; background:var(--res-accent); color:var(--res-accent-ink); }
+.brand-resource-actions button { display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:9px; padding:12px 14px; font:600 14px var(--res-font); background:var(--res-accent); color:var(--res-accent-ink); }
 .brand-resource-actions button:first-child { flex:1; }
 .brand-resource-side > p[role=status] { font-size:12px; margin-top:10px; color:#a22a19; }
 .brand-resource-doc { padding:30px 40px 34px; max-height:760px; overflow:auto; scroll-behavior:smooth; }
-.brand-resource-kicker { font:600 12px/1.4 Arial,sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#766f64; margin:0 0 6px; }
+.brand-resource-kicker { font:600 12px/1.4 var(--res-font); letter-spacing:.06em; text-transform:uppercase; color:#766f64; margin:0 0 6px; }
 .brand-resource-doc section { padding:22px 0; border-bottom:1px solid #eeeae3; scroll-margin-top:12px; max-width:72ch; }
 .brand-resource-doc section:last-of-type { border-bottom:0; }
 .scan-journey .brand-resource-doc h4 { display:flex; align-items:baseline; gap:12px; font:700 19px/1.25 var(--res-font); letter-spacing:-.01em; margin:0 0 12px; }
-.brand-resource-doc h4 > span { font:600 12px Arial,sans-serif; color:var(--res-mark); font-variant-numeric:tabular-nums; }
-.brand-resource-body { font:15px/1.6 Arial,sans-serif; color:#302d28; }
+.brand-resource-doc h4 > span { font:600 12px var(--res-font); color:var(--res-mark); font-variant-numeric:tabular-nums; }
+.brand-resource-body { font:15px/1.6 var(--res-font); color:#302d28; }
 .brand-resource-body p + p,.brand-resource-body p + .rt-list,.brand-resource-body .rt-list + p,.brand-resource-body .rt-list + .rt-list { margin-top:.8em; }
 .brand-resource-body .rt-list > li + li { margin-top:.35em; }
 .brand-resource-body .rt-list > li::before { color:var(--res-mark); font-weight:600; }
-.brand-resource-doc > small { display:block; margin-top:14px; font:11px/1.5 Arial,sans-serif; color:#766f64; }
+.brand-resource-doc > small { display:block; margin-top:14px; font:11px/1.5 var(--res-font); color:#766f64; }
 
 /* Who this reaches: near the end, after how leads become calls. */
 .audience-reach ul { list-style:none; margin:0 auto; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; max-width:980px; }
@@ -141,27 +144,39 @@ ol.brand-slide-points.is-timeline > li > b { width:30px; text-align:center; bord
 .brand-slide-close ol.brand-slide-points > li > b { color:inherit; background:color-mix(in srgb,currentColor 16%,transparent); }
 /* Skill kit lead magnet */
 .skill-kit-list { list-style:none; margin:0 0 6px; padding:0; display:grid; gap:6px; }
-.skill-kit-list button { width:100%; display:flex; gap:10px; align-items:baseline; text-align:left; background:#fff; border:1px solid #ddd8ce; border-radius:9px; padding:11px 12px; font:500 13.5px/1.3 Arial,sans-serif; color:#222; cursor:pointer; }
-.skill-kit-list button span { font:600 11.5px Arial,sans-serif; color:#77716a; font-variant-numeric:tabular-nums; }
+.skill-kit-list button { width:100%; display:flex; gap:10px; align-items:baseline; text-align:left; background:#fff; border:1px solid #ddd8ce; border-radius:9px; padding:11px 12px; font:500 13.5px/1.3 var(--res-font); color:#222; cursor:pointer; }
+.skill-kit-list button span { font:600 11.5px var(--res-font); color:#77716a; font-variant-numeric:tabular-nums; }
 .skill-kit-list button[aria-pressed=true] { background:var(--res-dark); border-color:var(--res-dark); color:var(--res-light); }
-.skill-kit-list button[aria-pressed=true] span { color:var(--res-accent); }
-.skill-kit-install { margin:12px 0 0; font:12.5px/1.5 Arial,sans-serif; color:#6f695f; }
+.skill-kit-list button[aria-pressed=true] span { color:var(--res-mark-dark,var(--res-accent)); }
+.skill-kit-install { margin:12px 0 0; font:12.5px/1.5 var(--res-font); color:#6f695f; }
 .scan-journey .skill-kit-title { font:700 26px/1.15 var(--res-font); letter-spacing:-.02em; margin:0 0 8px; }
-.skill-kit-when { margin:0 0 20px; font:15px/1.55 Arial,sans-serif; color:#5b564d; max-width:62ch; }
+.skill-kit-when { margin:0 0 20px; font:15px/1.55 var(--res-font); color:#5b564d; max-width:62ch; }
 .skill-kit-try { position:relative; padding:16px 18px 14px; border-radius:12px; background:var(--res-dark); color:var(--res-light); margin-bottom:18px; }
-.skill-kit-try > span { font:700 11px Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--res-accent); }
+.skill-kit-try > span { font:700 11px var(--res-font); letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark-dark,var(--res-accent)); }
 .skill-kit-try p { margin:8px 0 12px; font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
-.skill-kit-try button, .skill-kit-file header button { display:inline-flex; align-items:center; gap:6px; border:0; border-radius:7px; padding:7px 11px; font:600 12.5px Arial,sans-serif; background:var(--res-accent); color:var(--res-accent-ink); cursor:pointer; }
+.skill-kit-try button, .skill-kit-file header button { display:inline-flex; align-items:center; gap:6px; border:0; border-radius:7px; padding:7px 11px; font:600 12.5px var(--res-font); background:var(--res-accent); color:var(--res-accent-ink); cursor:pointer; }
 .skill-kit-file { border:1px solid #e6e1d8; border-radius:12px; overflow:hidden; }
 .skill-kit-file header { display:flex; align-items:center; justify-content:space-between; padding:9px 12px 9px 16px; background:#f6f4ef; border-bottom:1px solid #e6e1d8; }
 .skill-kit-file header > span { font:600 12.5px ui-monospace,SFMono-Regular,Menlo,monospace; color:#5b564d; }
 .skill-kit-file .brand-resource-body { padding:16px 18px 18px; font-size:14.5px; }
 .skill-kit .brand-resource-doc > small { margin-top:16px; }
+/* Skill kit: no inner scroll box (it trapped phone scrolling); the page scrolls, the full SKILL.md opens in flow. */
+.skill-kit .brand-resource-doc { max-height:none; overflow:visible; }
+.skill-kit .skill-kit-checks { margin:22px 0 18px; }
+.scan-journey .skill-kit-checks h5 { margin:0 0 8px; font:700 12px var(--res-font); letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark); }
+.scan-journey .skill-kit-checks h5:not(:first-child) { margin-top:18px; }
+.skill-kit-checks ol { list-style:decimal; } .skill-kit-checks ul { list-style:disc; }
+.skill-kit-checks ol,.skill-kit-checks ul { margin:0; padding:0 0 0 1.3em; font:15px/1.55 var(--res-font); color:#302d28; max-width:68ch; }
+.skill-kit-checks li + li { margin-top:6px; }
+.skill-kit-file > details > summary { display:flex; align-items:center; min-height:44px; padding:0 16px; cursor:pointer; font:600 14px var(--res-font); color:#302d28; }
+.skill-kit-file > details[open] > summary { border-bottom:1px solid #e6e1d8; }
+.skill-kit-file > details > summary::after { content:'+'; margin-left:auto; padding-left:12px; font-size:18px; }
+.skill-kit-file > details[open] > summary::after { content:'\2212'; }
 @media (max-width:760px) { .skill-kit .brand-resource-grid { grid-template-columns:1fr; } .skill-kit .brand-resource-side { border-right:0; border-bottom:1px solid #ece8e1; } }
 .skill-kit-md { padding:6px 18px 16px; }
 .skill-kit-md .skill-kit-block + .skill-kit-block { border-top:1px solid #eeeae3; }
 .skill-kit-md .skill-kit-block { padding:12px 0; }
-.scan-journey .skill-kit-md h5 { margin:0 0 8px; font:700 12px Arial,sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark); }
+.scan-journey .skill-kit-md h5 { margin:0 0 8px; font:700 12px var(--res-font); letter-spacing:.1em; text-transform:uppercase; color:var(--res-mark); }
 .skill-kit-file .skill-kit-md .brand-resource-body { padding:0; }
 @media (max-width:760px) { .skill-kit-try p { font-size:13.5px; } .scan-journey .skill-kit-title { font-size:22px; } }
 .assessment-resource .brand-resource-bar { justify-content:flex-start; }
@@ -170,3 +185,5 @@ ol.brand-slide-points.is-timeline > li > b { width:30px; text-align:center; bord
 .assessment-frame { position:relative; background:#fff; }
 .assessment-frame iframe { display:block; width:100%; height:min(900px,82vh); border:0; }
 .assessment-loading { position:absolute; inset:40px 0 auto; text-align:center; font:500 14px/1.4 var(--res-font); color:#6b6760; }
+/* 44px hit areas on the resource controls (the base rule above sets min-height:0). */
+.scan-journey .brand-resource-actions button,.scan-journey .brand-resource-options button,.scan-journey .skill-kit-list button,.scan-journey .skill-kit-try button,.scan-journey .skill-kit-file header button { min-height:44px; }

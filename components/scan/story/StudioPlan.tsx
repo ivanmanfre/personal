@@ -56,7 +56,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
  const named = (fixture.audience?.named ?? []).filter(n => (n?.name || '').trim()).slice(0, 3);
  return <section className="sp-hero audit-opening" data-assessment={result.state}>
   <div className="sp-hero-copy">
-   <span className="made-for"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/>Made for {fixture.founder.name}{fixture.founder.company ? ` · ${fixture.founder.company}` : ''}</span>
+   <span className="made-for"><Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name} alt={fixture.founder.name}/>Made for {fixture.founder.name}{fixture.founder.company ? ` · ${fixture.founder.company}` : ''}</span>
    <h1><span>Make your LinkedIn</span><span>into a true</span><span><mark>revenue line.</mark></span></h1>
    <p className="sp-hero-sub">Create inbound and outbound opportunities by content, lead magnets and signal based outreach.</p>
    <p className="studio-mobile-finding">{result.heading}</p>
@@ -78,7 +78,7 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
    <p>{result.receipt}</p>
    {result.state === 'buyers' && named.length > 0 && <ul className="sp-audit-names" aria-label="Buyers who engaged with your posts">{named.map(n => <li key={n.name}><span className="sp-audit-face" aria-hidden="true">{n.name.split(/\s+/).map(w => w[0]).slice(0, 2).join('')}</span><span><b>{n.name}</b>{n.headline && <small>{n.headline}</small>}</span></li>)}</ul>}
    {(result.state === 'buyers' || result.state === 'zero-buyers') && <ClientEngagers people={fixture.audience?.existing_clients ?? []}/>}
-   {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">~{reach.readers} readers per post at ~15 per engager, 4 posts a week, 0.5% leave their email.</span></>}
+   {reach && <><div className="sp-reach"><div><strong><NumberTicker value={reach.people}/></strong><small>engaged with your last {reach.posts} posts</small></div><ArrowRight size={18} aria-hidden="true"/><div><strong>≈<NumberTicker value={reach.leads}/></strong><small>named leads a month, with the system</small></div></div><span className="sp-reach-note">Estimate: about {reach.readers} readers per post (15 per engager), 4 posts a week, 0.5% leave their email.</span></>}
    {result.state === 'buyers' && (() => { const per = Math.max(1, Math.ceil(result.people! / 60)), dots = Math.ceil(result.people! / per), lit = Math.max(1, Math.round(result.buyers! / per)); return <><div className="audience-dots" aria-hidden="true">{Array.from({length: dots}, (_, i) => <i key={i} className={i < lit ? 'is-buyer' : ''}/>)}</div>{per > 1 && <small className="sp-dots-key">Each dot is about {per} people.</small>}</>; })()}
    <footer>{result.rubric && <details><summary>Buyer criteria</summary><p>{result.rubric}.</p></details>}</footer>
   </motion.aside>
@@ -214,7 +214,7 @@ export function CompetitorEngagersSection({data}: {data: CompetitorEngagers}) {
       <a className="sp-rivals-name" href={p.profileUrl} target="_blank" rel="noreferrer">{p.name}<ArrowUpRight size={13} aria-hidden="true"/></a>
       {p.headline && <small className="sp-rivals-title">{p.headline}</small>}
       <p className="sp-rivals-why">{p.reason}</p>
-      <a className="sp-rivals-post" href={p.postUrl} target="_blank" rel="noreferrer">{p.engaged === 'commented' ? 'Commented on' : 'Liked'} a {shortName(p.competitor)} post{shortDate(p.postedAt) ? ` · ${shortDate(p.postedAt)}` : ''}</a>
+      <a className="sp-rivals-post" href={p.postUrl} target="_blank" rel="noreferrer">{p.engaged === 'commented' ? 'Commented on' : 'Liked'} a post by {shortName(p.competitor)}{shortDate(p.postedAt) ? ` · ${shortDate(p.postedAt)}` : ''}</a>
      </div>
     </li>)}
     {hidden > 0 && <li className="sp-rivals-more"><button type="button" onClick={() => setOpen(true)}>Show {hidden} more people</button></li>}

@@ -11,7 +11,7 @@ export function GmailNewsletter({fixture}: {fixture: JourneyFixture}) {
  const plan=useStory(), name=readerName(plan);
  return <article className="gmail-preview" data-mockup="email" aria-label="Newsletter sample in Gmail">
   <div className="gmail-appbar" aria-hidden="true">
-   <svg className="gmail-mark" viewBox="0 0 24 18"><path fill="#4285f4" d="M0 4v12a2 2 0 0 0 2 2h2V7z"/><path fill="#34a853" d="M20 7v11h2a2 2 0 0 0 2-2V4z"/><path fill="#fbbc04" d="M20 7l4-3V2a2 2 0 0 0-3.2-1.6L20 1z"/><path fill="#ea4335" d="M4 1l8 6 8-6v6l-8 6-8-6z"/><path fill="#c5221f" d="M0 2v2l4 3V1L3.2.4A2 2 0 0 0 0 2z"/></svg>
+   <svg className="gmail-mark" aria-hidden="true" focusable="false" viewBox="0 0 24 18"><path fill="#4285f4" d="M0 4v12a2 2 0 0 0 2 2h2V7z"/><path fill="#34a853" d="M20 7v11h2a2 2 0 0 0 2-2V4z"/><path fill="#fbbc04" d="M20 7l4-3V2a2 2 0 0 0-3.2-1.6L20 1z"/><path fill="#ea4335" d="M4 1l8 6 8-6v6l-8 6-8-6z"/><path fill="#c5221f" d="M0 2v2l4 3V1L3.2.4A2 2 0 0 0 0 2z"/></svg>
    <span>Gmail</span>
   </div>
   <div className="gmail-message">

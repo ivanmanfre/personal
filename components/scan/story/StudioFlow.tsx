@@ -4,10 +4,11 @@ import {CalendarDays, Check, FileText, Eye, Radar, Pause, Play} from 'lucide-rea
 import {useStory} from './context';
 import {Beams} from './motion';
 import type {StoryEdition} from './types';
+import {firstNameOf} from './adapter';
 
 /** The example reader's first name, taken from the edition's own conversation so every sample agrees. */
 export function readerName(plan: StoryEdition): string {
- const founderFirst = plan.founderName.split(' ')[0];
+ const founderFirst = firstNameOf(plan.founderName);
  for (const m of plan.flow.messages) { const who = m.match(/^([^:]{1,40}):/)?.[1]?.trim(); if (who && !who.startsWith(founderFirst)) return who.split(' ')[0]; }
  const hi = plan.message.match(/^(?:Hi|Hey|Hello|Ciao|Hola)\s+([A-Z][\p{L}'-]+)/u)?.[1];
  return hi && hi !== founderFirst ? hi : founderFirst === 'Alex' ? 'Sam' : 'Alex';

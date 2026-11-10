@@ -32,19 +32,19 @@ export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string
     <nav className="lmp-sitenav"><BrandMark ground={p.dark} height={22}/><span>What’s inside</span><span>Who it’s for</span><em style={{background: p.accentOnDark, color: p.accentOnDark === p.accent ? p.accentInk : p.dark}}>Get it free</em></nav>
     <div className="lmp-hero-grid">
      <div>
-      <span className="lmp-eyebrow" style={{color: p.accentOnDark}}><i style={{background: p.accentOnDark}}/>Free · by {plan.brand.split(/\s+[-|–:]\s+/)[0]}</span>
+      <span className="lmp-eyebrow" style={{color: p.textOnDark}}><i style={{background: p.accentOnDark}}/>Free · by {plan.brand.split(/\s+[-|–:]\s+/)[0]}</span>
       <h3>{r.title}</h3>
       <p>{plan.magnetWhy}</p>
       <div className="lmp-cta"><span style={{background: p.accentOnDark, color: p.accentOnDark === p.accent ? p.accentInk : p.dark}}>Send it to me <ArrowRight size={15}/></span><small>Free. Lands in your inbox.</small></div>
       {stats.length > 0 && <dl className="lmp-stats">{stats.map(s => <div key={s.label}><dt style={{color: p.accentOnDark}}><NumberTicker value={s.n}/></dt><dd>{s.label}</dd></div>)}</dl>}
      </div>
-     {plan.coverImage && !coverFailed && <motion.img className="lmp-cover" src={plan.coverImage} alt="" loading="lazy" onError={() => setCoverFailed(true)}
-      initial={reduced ? false : {rotate: 0, y: 30, opacity: 0}} whileInView={{rotate: 4, y: 0, opacity: 1}} viewport={{once: true, amount: .3}} transition={{type: 'spring', stiffness: 90, damping: 16}}/>}
+     {plan.coverImage && !coverFailed && <motion.img className="lmp-cover" src={plan.coverImage} alt={`Cover of ${r.title}`} loading="lazy" onError={() => setCoverFailed(true)}
+      initial={reduced ? false : {rotate: 0, y: 30}} whileInView={{rotate: 4, y: 0}} viewport={{once: true, amount: .3}} transition={{type: 'spring', stiffness: 90, damping: 16}}/>}
     </div>
    </section>
    {sections.length > 0 && <section className="lmp-index" style={{background: p.light, color: p.dark}}>
-    <span className="lmp-eyebrow" style={{color: p.accentOnLight}}><i style={{background: p.accentOnLight}}/>What’s inside</span>
-    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.accentOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b>{s.body && <small>{summary(s.body)}</small>}</li>)}</ol>
+    <span className="lmp-eyebrow" style={{color: p.textOnLight}}><i style={{background: p.accentOnLight}}/>What’s inside</span>
+    <ol>{sections.map((s, i) => <li key={s.heading}><span style={{color: p.textOnLight}}>{String(i + 1).padStart(2, '0')}</span><b>{s.heading}</b>{s.body && <small>{summary(s.body)}</small>}</li>)}</ol>
    </section>}
    <section className="lmp-doc"><LeadMagnetTool kind={kind}/></section>
   </div>

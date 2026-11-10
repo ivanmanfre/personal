@@ -29,7 +29,7 @@ describe('competitor engagers on the story page',()=>{
   const html=renderToStaticMarkup(<CompetitorEngagersSection data={f.competitorEngagers!}/>);
   expect(html).toContain('Buyers reading your competitors');
   expect(html).toContain('In the last two weeks, 21 people who fit the buyer you sell to liked or commented on LinkedIn posts from Blue Array and Exposure Ninja.');
-  expect(html).toContain('Commented on a Blue Array post · 21 Oct');
+  expect(html).toContain('Commented on a post by Blue Array · 21 Oct');
   expect(html).toContain('Person 5');
   expect(html).not.toContain('Person 6');
   expect(html).toContain('Show 2 more people');
