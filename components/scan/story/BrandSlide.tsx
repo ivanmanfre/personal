@@ -33,26 +33,30 @@ type LogoKind = 'pending' | 'alpha' | 'opaque';
 const logoKinds = new Map<string, LogoKind>(), logoProbes = new Map<string, Promise<LogoKind>>();
 /** A logo with no transparent edge is a picture with its own background; the one-colour filter would turn it into a solid box. */
 function probeLogo(url: string): Promise<LogoKind> {
+  // Vector logos are drawn without a background, and many sit on hosts that block pixel reads.
+  if (/\.svg([?#]|$)/i.test(url)) { logoKinds.set(url, 'alpha'); return Promise.resolve('alpha'); }
   let probe = logoProbes.get(url);
   if (!probe) {
     probe = new Promise<LogoKind>(resolve => {
       const done = (k: LogoKind) => { logoKinds.set(url, k); resolve(k); };
       const timer = window.setTimeout(() => done('opaque'), 6000);
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        window.clearTimeout(timer);
-        try {
-          const w = Math.min(img.naturalWidth, 120), h = Math.max(1, Math.round(w * img.naturalHeight / img.naturalWidth)), c = document.createElement('canvas');
-          c.width = w; c.height = h;
-          const ctx = c.getContext('2d', { willReadFrequently: true })!;
-          ctx.drawImage(img, 0, 0, w, h);
-          const edge = [...Array.from({ length: w }, (_, x) => [x, 0]), ...Array.from({ length: w }, (_, x) => [x, h - 1]), ...Array.from({ length: h }, (_, y) => [0, y]), ...Array.from({ length: h }, (_, y) => [w - 1, y])];
-          done(edge.every(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3] >= 250) ? 'opaque' : 'alpha');
-        } catch { done('opaque'); }
-      };
-      img.onerror = () => { window.clearTimeout(timer); done('opaque'); };
-      img.src = url;
+      // Read the bytes with fetch and decode from a same-origin object URL: the canvas is never tainted, and the prerender's image stub does not touch fetch.
+      fetch(url, { mode: 'cors' }).then(r => r.ok ? r.blob() : Promise.reject(new Error('logo'))).then(blob => new Promise<void>((ok, fail) => {
+        const local = URL.createObjectURL(blob), img = new Image();
+        img.onload = () => {
+          try {
+            const w = Math.min(img.naturalWidth, 120), h = Math.max(1, Math.round(w * img.naturalHeight / img.naturalWidth)), c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            const ctx = c.getContext('2d', { willReadFrequently: true })!;
+            ctx.drawImage(img, 0, 0, w, h);
+            const edge = [...Array.from({ length: w }, (_, x) => [x, 0]), ...Array.from({ length: w }, (_, x) => [x, h - 1]), ...Array.from({ length: h }, (_, y) => [0, y]), ...Array.from({ length: h }, (_, y) => [w - 1, y])];
+            done(edge.every(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3] >= 250) ? 'opaque' : 'alpha');
+            ok();
+          } catch (e) { fail(e); } finally { URL.revokeObjectURL(local); }
+        };
+        img.onerror = () => { URL.revokeObjectURL(local); fail(new Error('logo')); };
+        img.src = local;
+      })).catch(() => done('opaque')).finally(() => window.clearTimeout(timer));
     });
     logoProbes.set(url, probe);
   }
