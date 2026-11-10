@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useTransform } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check, CircleCheck, Link2, PenLine, X } from 'lucide-react';
 import type { Model, Post } from '../data/model';
+import { sourceLinkLabel } from '../data/model';
 import { plural } from '../data/copy';
 import { useLocal } from '../data/store';
 import { LinkedInPost } from '../ui/LinkedInPost';
@@ -36,7 +37,12 @@ function Why({ post }: { post: Post }) {
         {rows.filter(r => r[1]).map(([k, v]) => (
           <div key={k}>
             <dt className="text-[12px] text-mute">{k}</dt>
-            <dd className="text-[14.5px] text-ink mt-0.5">{v}</dd>
+            <dd className="text-[14.5px] text-ink mt-0.5">
+              {v}
+              {k === 'Where it came from' && post.sourceUrl && (
+                <a className="link !text-[13px] block mt-1" href={post.sourceUrl} target="_blank" rel="noopener noreferrer">{sourceLinkLabel(post.sourceUrl)}</a>
+              )}
+            </dd>
           </div>
         ))}
       </dl>

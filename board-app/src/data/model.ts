@@ -22,6 +22,8 @@ export type Post = {
   publishedAt?: string;
   url?: string;
   source?: string;
+  /** Public link to an outside source (a Reddit thread, a video). Never set for calls. */
+  sourceUrl?: string;
   topic?: string;
   funnel?: string;
   approvedAt?: string;
@@ -125,6 +127,20 @@ export type Model = {
 const NOISE = new Set(['day_left_empty', 'day_refilled', 'slot_replace_undone', 'angle_swap_undone', 'slot_replaced', 'invite', 'shift_request']);
 
 /** Board labels (source, topic, format notes, resource titles) never show a long dash. Post copy is left as written. */
+/** Keep only real web links, so nothing else can end up in an href. */
+const httpUrl = (v?: unknown): string | undefined => {
+  if (typeof v !== 'string' || !v) return undefined;
+  try { const u = new URL(v); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined; } catch { return undefined; }
+};
+/** Words for the link under "Where it came from". */
+export const sourceLinkLabel = (url: string): string => {
+  let host = '';
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* keep the plain label */ }
+  if (/(^|\.)reddit\.com$/.test(host)) return 'Open the Reddit thread';
+  if (/(^|\.)(youtube\.com|youtu\.be)$/.test(host)) return 'Open the video';
+  if (/(^|\.)(x\.com|twitter\.com)$/.test(host)) return 'Open the post on X';
+  return 'Open the original';
+};
 const nd = (v?: string | null) => (v ? v.replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/,\s*,/g, ',') : v || undefined);
 
 const n = (v: unknown) => (v == null || v === '' ? 0 : Number(v) || 0);
@@ -223,7 +239,7 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
       kind: q.kind, style: q.style || '', format: q.style === 'text' && images.length ? 'Post with photo' : FORMAT[q.style] || (q.kind === 'carousel' ? 'Carousel' : 'Post'),
       angle: angle && angle !== FORMAT[q.style] ? nd(angle) : undefined,
       status, scheduledAt: q.scheduled_at || undefined, publishedAt: q.published_at || (status === 'live' ? q.scheduled_at : undefined) || undefined,
-      url: q.post_url || undefined, source: nd(plainSource(q.source_label)), topic: nd(q.topic_label),
+      url: q.post_url || undefined, source: nd(plainSource(q.source_label)), sourceUrl: httpUrl(sd.source_url || sd.url), topic: nd(q.topic_label),
       funnel: q.funnel_stage || undefined,
       approvedAt: meta[q.id]?.at, approvedBy: meta[q.id]?.by,
       archivedAt: q.archived_at || undefined,

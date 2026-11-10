@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, CalendarClock, CircleCheck, ExternalLink, Image as ImageIcon, PenLine, RotateCcw, Undo2 } from 'lucide-react';
 import type { Model, PostStatus } from '../data/model';
-import { addDays, dayKey, fmtDay, fmtWeekday, fmtWhen, wallTime, wallToUtc } from '../data/model';
+import { addDays, dayKey, fmtDay, fmtWeekday, fmtWhen, sourceLinkLabel, wallTime, wallToUtc } from '../data/model';
 import { PhotoPicker, photoSwappable, usePhotos } from './Photos';
 import { fmtInt, whenLabel } from '../data/derive';
 import { plural } from '../data/copy';
@@ -211,7 +211,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
           <LinkedInPost post={post} model={m} editing={editing} onEditDone={() => setEditing(false)} activeLine={line} onLineMarker={setFocusNote} />
 
           <dl className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 gap-x-6 gap-y-3 pt-4 border-t hair">
-            {post.source && <div><dt className="text-[12px] text-mute">Where it came from</dt><dd className="text-[14px] text-ink mt-0.5">{post.source}</dd></div>}
+            {post.source && <div><dt className="text-[12px] text-mute">Where it came from</dt><dd className="text-[14px] text-ink mt-0.5">{post.source}{post.sourceUrl && <a className="link !text-[13px] block mt-1" href={post.sourceUrl} target="_blank" rel="noopener noreferrer">{sourceLinkLabel(post.sourceUrl)}</a>}</dd></div>}
             {post.topic && <div><dt className="text-[12px] text-mute">Topic</dt><dd className="text-[14px] text-ink mt-0.5">{post.topic}</dd></div>}
             <div><dt className="text-[12px] text-mute">Format</dt><dd className="text-[14px] text-ink mt-0.5">{[post.format, post.angle].filter(Boolean).join(' · ')}</dd></div>
           </dl>
