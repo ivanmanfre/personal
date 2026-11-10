@@ -380,7 +380,9 @@ process.on('SIGTERM', () => shutdown(143));
         // Reveal-on-scroll is progressive enhancement: the baked page shows everything. Once the script runs, the app
         // re-renders and hides then reveals below-the-fold content as before. Without script nothing stays at opacity 0.
         document.querySelectorAll('img.brand-mark[data-logo="pending"]').forEach((i) => i.setAttribute('data-logo', 'opaque'));
-        document.querySelectorAll('.scan-studio [style*="opacity: 0;"]').forEach((el) => {
+        // Narrow on purpose: only story-page (.scan-studio) elements that framer-motion parked at opacity 0 AND translated (the reveal wrappers).
+        // Overlays, modals, tooltips and posters never carry an inline translate, and pages outside .scan-studio (RISE, call intelligence, legacy) are untouched.
+        document.querySelectorAll('.scan-studio [style*="opacity: 0;"][style*="transform: translate"]').forEach((el) => {
           el.style.removeProperty('opacity');
           el.style.removeProperty('transform');
           el.style.removeProperty('filter');
