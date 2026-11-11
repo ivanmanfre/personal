@@ -144,26 +144,33 @@ function Connector({ postId, link }: { postId: string; link: { key: string; id: 
   useEffect(() => {
     if (!link) { setD(null); return; }
     let raf = 0;
+    let last: string | undefined; // unset, so the first measure always commits, also when there is nothing to draw
+    // Measured every frame while a note is pointed at, so the line follows scrolling, resizing and any change
+    // of layout (the post entering edit mode, a reply box opening), and goes away when its paragraph does.
     const calc = () => {
-      raf = 0;
-      const a = document.querySelector<HTMLElement>(`[data-post="${postId}"] [data-anchor="${link.key}"]`);
+      raf = requestAnimationFrame(calc);
       const t = document.querySelector<HTMLElement>(`[data-thread="${link.id}"]`);
-      if (!a || !t) { setD(null); return; }
-      const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect();
-      let top = 0, bottom = window.innerHeight;
-      for (let el = a.parentElement; el; el = el.parentElement) {
-        const o = getComputedStyle(el).overflowY;
-        if (o === 'auto' || o === 'scroll') { const r = el.getBoundingClientRect(); top = Math.max(top, r.top); bottom = Math.min(bottom, r.bottom); break; }
+      // The post beside this thread: the copy inside the same sheet or review, when more than one is on the page.
+      const scope = t?.closest('[role="dialog"]') || document;
+      const a = scope.querySelector<HTMLElement>(`[data-post="${postId}"] [data-anchor="${link.key}"]`);
+      let next: { x1: number; y1: number; x2: number; y2: number; color: string } | null = null;
+      if (a && t) {
+        const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect();
+        let top = 0, bottom = window.innerHeight;
+        for (let el = a.parentElement; el; el = el.parentElement) {
+          const o = getComputedStyle(el).overflowY;
+          if (o === 'auto' || o === 'scroll') { const r = el.getBoundingClientRect(); top = Math.max(top, r.top); bottom = Math.min(bottom, r.bottom); break; }
+        }
+        const y1 = ar.top + Math.min(ar.height / 2, 10), y2 = tr.top + 14;
+        if (!(tr.left < ar.right + 20 || y1 < top || y1 > bottom || y2 < top || y2 > bottom)) {
+          next = { x1: Math.round(ar.right + 2), y1: Math.round(y1), x2: Math.round(tr.left - 8), y2: Math.round(y2), color: getComputedStyle(t).getPropertyValue('--accent').trim() || '#111' };
+        }
       }
-      const y1 = ar.top + Math.min(ar.height / 2, 10), y2 = tr.top + 14;
-      if (tr.left < ar.right + 20 || y1 < top || y1 > bottom || y2 < top || y2 > bottom) { setD(null); return; }
-      setD({ x1: ar.right + 2, y1, x2: tr.left - 8, y2, color: getComputedStyle(t).getPropertyValue('--accent').trim() || '#111' });
+      const sig = next ? `${next.x1},${next.y1},${next.x2},${next.y2},${next.color}` : '';
+      if (sig !== last) { last = sig; setD(next); }
     };
-    const on = () => { if (!raf) raf = requestAnimationFrame(calc); };
     calc();
-    window.addEventListener('scroll', on, true);
-    window.addEventListener('resize', on);
-    return () => { if (raf) cancelAnimationFrame(raf); window.removeEventListener('scroll', on, true); window.removeEventListener('resize', on); };
+    return () => cancelAnimationFrame(raf);
   }, [link, postId]);
   if (!d) return null;
   const mx = (d.x1 + d.x2) / 2;
@@ -215,10 +222,12 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
   useEffect(() => { setReplyTo(null); setShowDone(false); setWaiting(null); setAskIn(false); setLink(null); }, [post.id]);
   useEffect(() => {
     if (!focusNote) return;
+    // A pin can point at a resolved note (its line was reworded or removed): open the resolved threads first.
+    if (!showDone && closed.some(it => it.kind === 'comment' && it.c.id === focusNote)) { setShowDone(true); return; }
     const el = box.current?.querySelector<HTMLElement>(`[data-thread="${focusNote}"]`);
     if (el) { el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); el.focus({ preventScroll: true }); }
     onFocused?.();
-  }, [focusNote, onFocused, reduce]);
+  }, [focusNote, onFocused, reduce, showDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (text: string, parent: string | null, mentions: string[], sess?: BoardSession) => {
     const r = await addComment(post.id, text, parent, mentions, sess);
@@ -282,10 +291,9 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
               <p className="mt-0.5 text-[13.5px] leading-[1.5] text-ink whitespace-pre-wrap break-words"><Text text={c.text} team={m.team} /></p>
               {fix && (
                 <div className="mt-2 rounded-[10px] border hair overflow-hidden" data-testid="note-fix">
-                  <div className="px-2.5 h-7 flex items-center gap-1.5 bg-sunk text-[11.5px] font-semibold text-soft">
-                    <Check size={12} className="text-accent-fg" />
-                    {fix.kind === 'removed' ? 'Removed' : fix.kind === 'added' ? 'Added after this line' : 'Reworded'}
-                    {review?.at && <span className="font-normal text-mute tnum">· {stamp(review.at, m)}</span>}
+                  <div className="px-2.5 py-1 min-h-7 flex flex-wrap items-center gap-x-1.5 bg-sunk text-[11.5px] font-semibold text-soft">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Check size={12} className="text-accent-fg" />{fix.kind === 'removed' ? 'Removed' : fix.kind === 'added' ? 'Added after this line' : 'Reworded'}</span>
+                    {review?.at && <span className="font-normal text-mute tnum whitespace-nowrap">{stamp(review.at, m)}</span>}
                   </div>
                   <div className="px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-ink break-words">
                     {fix.blocks.map((b, i) => (

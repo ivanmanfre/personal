@@ -66,7 +66,9 @@ export function diffWords(before: string, after: string): Seg[] {
     if (raw[k].kind === 'same') { push('same', raw[k].text); k++; continue; }
     let del = '', add = '';
     while (k < raw.length && raw[k].kind !== 'same') { if (raw[k].kind === 'del') del += raw[k].text; else add += raw[k].text; k++; }
-    // A removed run keeps a space before what follows, so struck text never glues to the next word.
+    // A removed run keeps a space on both sides, so struck text never glues to the word before or after it.
+    const prev = out[out.length - 1];
+    if (del && prev && !/\s$/.test(prev.text)) del = ' ' + del;
     push('del', del && !/\s$/.test(del) && (add || k < raw.length) ? del + ' ' : del);
     push('add', add);
   }
@@ -74,7 +76,8 @@ export function diffWords(before: string, after: string): Seg[] {
 }
 
 export type Block =
-  | { kind: 'same' | 'add'; text: string; line: number }
+  | { kind: 'same'; text: string; line: number; baseLine: number }
+  | { kind: 'add'; text: string; line: number }
   | { kind: 'del'; text: string; baseLine: number }
   | { kind: 'change'; text: string; line: number; before: string; baseLine: number; segs: Seg[] };
 
@@ -97,7 +100,7 @@ export function diffBlocks(before: string, after: string): Block[] {
   const out: Block[] = [];
   let k = 0;
   while (k < rows.length) {
-    if (rows[k].kind === 'same') { out.push({ kind: 'same', text: rows[k].text, line: rows[k].b }); k++; continue; }
+    if (rows[k].kind === 'same') { out.push({ kind: 'same', text: rows[k].text, line: rows[k].b, baseLine: rows[k].a }); k++; continue; }
     const dels: typeof rows = [], adds: typeof rows = [];
     while (k < rows.length && rows[k].kind !== 'same') { (rows[k].kind === 'del' ? dels : adds).push(rows[k]); k++; }
     // Pair each added paragraph with the removed one it rewords, in order.
