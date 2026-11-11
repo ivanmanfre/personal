@@ -3,7 +3,7 @@
 // the last board read until a newer read (focus, every 5 minutes) carries them itself.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Comment, Model, Post, PostStatus } from './model';
-import { NOTE_RE, noteText } from './model';
+import { noteText, parseNote } from './model';
 import { api, errText, type Cred, type Res } from './api';
 import { track } from './track';
 import type { BoardSession } from './session';
@@ -49,7 +49,7 @@ export type Ctx = {
   setPhoto: (id: string, url: string) => void;
   /** `sess` carries a sign-in that just happened, before the next render hands it down. */
   addComment: (ref: string, text: string, parent: string | null, mentions: string[], sess?: BoardSession) => Promise<'ok' | 'need_session' | 'failed'>;
-  addNote: (postId: string, quote: string, text: string, sess?: BoardSession) => Promise<'ok' | 'need_session' | 'failed'>;
+  addNote: (postId: string, quote: string, text: string, sess?: BoardSession, occ?: number) => Promise<'ok' | 'need_session' | 'failed'>;
   resolveComment: (id: string, on: boolean) => void;
   statusOf: (p: Post) => PostStatus;
   bodyOf: (p: Post) => string;
@@ -229,13 +229,13 @@ export function LocalProvider({ model: base, fetchedAt, cred, children }: { mode
     if (!c.session?.token) return 'need_session' as const;
     const emails = labels.map(l => base.mentionables.find(x => x.label === l)?.email).filter((x): x is string => !!x);
     const tmp = 'tmp-' + uid();
-    const nm = text.match(NOTE_RE);
+    const nt = parseNote(text);
     const me = base.nameOf(c.session.email);
     setLocal(l => ({ ...l, comments: [...l.comments, {
-      id: tmp, ref, at: new Date().toISOString(), by: me, byEmail: c.session!.email, text: nm ? nm[2] : text, quote: nm ? nm[1] : undefined,
+      id: tmp, ref, at: new Date().toISOString(), by: me, byEmail: c.session!.email, text: nt.text, quote: nt.quote, occ: nt.occ,
       parent, mentions: labels, local: true,
     }] }));
-    track('comment', ref, { reply: !!parent, mentions: emails.length, line_note: !!nm });
+    track('comment', ref, { reply: !!parent, mentions: emails.length, line_note: !!nt.quote });
     const r = await api.addComment(c, ref, text, parent, emails);
     if (r.ok && r.item && typeof r.item === 'object') {
       const it = r.item as any;
@@ -256,7 +256,7 @@ export function LocalProvider({ model: base, fetchedAt, cred, children }: { mode
     return 'failed' as const;
   }, [base, fail, report]);
 
-  const addNote = useCallback((postId: string, quote: string, text: string, sess?: BoardSession) => addComment(postId, noteText(quote, text), null, [], sess), [addComment]);
+  const addNote = useCallback((postId: string, quote: string, text: string, sess?: BoardSession, occ?: number) => addComment(postId, noteText(quote, text, occ), null, [], sess), [addComment]);
 
   const resolveComment = useCallback((id: string, on: boolean) => {
     if (id.startsWith('tmp-')) return;

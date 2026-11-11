@@ -53,7 +53,11 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
   const save = async (sess?: BoardSession) => {
     if (openLine == null || !draft.trim() || busy) return;
     setBusy(true);
-    const r = await addNote(post.id, lineKey(lines[openLine] || ''), draft.trim(), sess);
+    // When this sentence appears more than once in the post, the note records which copy it is on.
+    const key = lineKey(lines[openLine] || '');
+    const copies = lines.map(lineKey);
+    const occ = copies.filter(l => l === key).length > 1 ? copies.slice(0, openLine + 1).filter(l => l === key).length : undefined;
+    const r = await addNote(post.id, key, draft.trim(), sess, occ);
     setBusy(false);
     if (r === 'need_session') { setNeedIn(true); return; }
     if (r === 'ok') { setDraft(''); setOpenLine(null); setNeedIn(false); }

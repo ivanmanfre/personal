@@ -66,6 +66,8 @@ export type Comment = {
   mentions: string[]; resolvedAt?: string | null; resolvedBy?: string | null; local?: boolean;
   /** A note left on one line of the post: the line as it read, kept at the top of the comment. */
   quote?: string;
+  /** Which copy of that line, counted from 1, when the same line appears more than once in the post. */
+  occ?: number;
 };
 
 /** Someone a comment can tag. `label` is exactly what the server matches after the @. */
@@ -73,8 +75,18 @@ export type Mentionable = { email: string; label: string; display: string };
 
 /** Line notes are stored as ordinary comments that start with the quoted line. */
 export const NOTE_RE = /^> (.+)\n\n([\s\S]+)$/;
-export function noteText(quote: string, text: string) {
-  return `> ${quote.replace(/\s+/g, ' ').trim().slice(0, 240)}\n\n${text}`;
+/** When the quoted sentence appears more than once in the post, the quote ends in ` [#2]`: the note is on
+    the 2nd time that sentence appears. A sentence that appears once carries no mark. */
+const OCC_RE = /^(.*\S) \[#(\d{1,3})\]$/;
+export function noteText(quote: string, text: string, occ?: number) {
+  return `> ${quote.replace(/\s+/g, ' ').trim().slice(0, 240)}${occ && occ > 0 ? ` [#${occ}]` : ''}\n\n${text}`;
+}
+/** Splits a stored note into the quoted line, which copy of it the note is on, and the note itself. */
+export function parseNote(raw: string): { quote?: string; occ?: number; text: string } {
+  const nm = String(raw).match(NOTE_RE);
+  if (!nm) return { text: raw };
+  const oc = nm[1].match(OCC_RE);
+  return oc ? { quote: oc[1], occ: Number(oc[2]), text: nm[2] } : { quote: nm[1], text: nm[2] };
 }
 
 export type Model = {
@@ -411,9 +423,9 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
     return plainActor(by, founderFirst);
   };
   const comments: Comment[] = (raw.comments || []).filter(c => c && c.id && c.ref && c.text).map(c => {
-    const nm = String(c.text).match(NOTE_RE);
+    const nt = parseNote(c.text);
     return {
-      id: c.id, ref: c.ref, at: c.at, by: nameOf(c.by), byEmail: c.by || undefined, text: nm ? nm[2] : c.text, quote: nm ? nm[1] : undefined,
+      id: c.id, ref: c.ref, at: c.at, by: nameOf(c.by), byEmail: c.by || undefined, text: nt.text, quote: nt.quote, occ: nt.occ,
       parent: c.parent || null, mentions: (c.mentions || []).map(x => x.label).filter(Boolean),
       resolvedAt: c.resolved_at || null, resolvedBy: c.resolved_by ? nameOf(c.resolved_by) : null,
     };

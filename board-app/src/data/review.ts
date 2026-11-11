@@ -50,12 +50,16 @@ export function pinsOf(notes: Comment[], body: string, review: Review | null, is
   const baseLines = review ? review.base.split('\n').map(lineKey) : [];
   const found: { id: string; at: string; key: string; pos: number; block?: Block; index: number; loose?: boolean }[] = [];
   const count = (list: string[], q: string) => list.reduce((n, l) => n + (l === q ? 1 : 0), 0);
+  /** Index of the k-th copy (from 1) of a line, or -1. */
+  const nth = (list: string[], q: string, k: number) => { let seen = 0; for (let x = 0; x < list.length; x++) if (list[x] === q && ++seen === k) return x; return -1; };
   // A paragraph of the reviewed text, followed through the change: where it is now, or that it was removed.
   const viaBase = (c: Comment) => {
     if (!review) return false;
-    const j = baseLines.indexOf(c.quote!);
-    // The same sentence twice in the reviewed text: which one the note was on is unknown, so nothing is inferred.
-    if (j < 0 || count(baseLines, c.quote!) > 1) return false;
+    // A sentence that appears twice: a note that recorded its copy is placed on that copy. An older note
+    // that did not is left alone here, since which one it was on is unknown.
+    const many = count(baseLines, c.quote!) > 1;
+    const j = c.occ ? nth(baseLines, c.quote!, c.occ) : many ? -1 : baseLines.indexOf(c.quote!);
+    if (j < 0) return false;
     const index = review.blocks.findIndex(b => b.kind !== 'add' && b.baseLine === j);
     if (index < 0) return false;
     const b = review.blocks[index];
@@ -64,11 +68,13 @@ export function pinsOf(notes: Comment[], body: string, review: Review | null, is
     return true;
   };
   const viaNow = (c: Comment) => {
-    const i = lines.indexOf(c.quote!);
+    const exact = c.occ ? nth(lines, c.quote!, c.occ) : -1;
+    const i = exact >= 0 ? exact : lines.indexOf(c.quote!);
     if (i < 0) return false;
     if (isResolved(c)) return true;
     const index = review ? review.blocks.findIndex(b => b.kind !== 'del' && b.line === i) : -1;
-    const loose = count(lines, c.quote!) > 1 || count(baseLines, c.quote!) > 1;
+    // A best guess (first match of a repeated sentence, with no recorded copy): a pin, no claim about changes.
+    const loose = exact < 0 && (!!c.occ || count(lines, c.quote!) > 1 || count(baseLines, c.quote!) > 1);
     found.push({ id: c.id, at: c.at, key: `l${i}`, pos: review && index >= 0 ? index : i, block: index >= 0 ? review!.blocks[index] : undefined, index, loose });
     return true;
   };
