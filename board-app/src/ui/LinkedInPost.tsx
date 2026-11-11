@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Ellipsis, Globe, MessageCircle, Plus, Repeat2, SendHorizontal, ThumbsUp } from 'lucide-react';
 import type { Model, Post } from '../data/model';
 import { fmtWhen } from '../data/model';
+import { lineKey, pinsOf, reviewOf } from '../data/review';
 import { useLocal } from '../data/store';
 import { useAuth } from '../data/auth';
 import { Avatar, LmTag } from './kit';
@@ -17,19 +18,27 @@ export const charCount = (s: string) => [...s].length;
      A saved note goes to the comment thread beside the post; the line keeps a small numbered marker.
    - `editing`: the body turns into a textarea in the same card, growing with the text, with LinkedIn's
      3,000-character limit counted live. */
-export function LinkedInPost({ post, model, notes = false, compact = false, editing = false, onEditDone, activeLine = null, onLineMarker }: {
+/* - `changes`: when the text was edited after the client reviewed it, a bar above the card offers the text
+     with its changes marked (removed words struck through, added words tinted) or the final text alone.
+     Line notes keep their numbered pin on the line they were written on, also when that line was reworded
+     or removed. `active` is the pin a thread beside the post points at: `l<line>` or `d<removed line>`. */
+export function LinkedInPost({ post, model, notes = false, compact = false, editing = false, onEditDone, active = null, onLineMarker, changes = false }: {
   post: Post; model: Model; notes?: boolean; compact?: boolean;
   editing?: boolean; onEditDone?: () => void;
-  activeLine?: number | null; onLineMarker?: (noteId: string) => void;
+  active?: string | null; onLineMarker?: (noteId: string) => void; changes?: boolean;
 }) {
   const { local, addNote, bodyOf, saveEdit, isResolved, model: mv } = useLocal();
   const { entry, signedIn } = useAuth();
   const reduce = useReducedMotion();
   const body = bodyOf(post);
   const lines = body.split('\n');
-  // Open line notes on this post: comments that start with the quoted line.
-  const postNotes = [...mv.comments, ...local.comments].filter(c => c.ref === post.id && c.quote && !c.parent && !isResolved(c));
-  const lineKey = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 240);
+  // Line notes on this post: comments that start with the quoted line. Each gets a numbered pin.
+  const quoted = [...mv.comments, ...local.comments].filter(c => c.ref === post.id && c.quote && !c.parent);
+  const rv = changes ? reviewOf(post, body, model) : null;
+  const pins = pinsOf(quoted, body, rv, isResolved);
+  const notesAt = (key: string) => quoted.filter(c => pins.get(c.id)?.key === key);
+  const [showCh, setShowCh] = useState(true);
+  const review = editing || !showCh ? null : rv;
   const [openLine, setOpenLine] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   const [needIn, setNeedIn] = useState(false);
@@ -37,7 +46,7 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
   const ta = useRef<HTMLTextAreaElement>(null);
   const edited = (local.edits[post.id] != null && local.edits[post.id] !== post.body) || model.activity.some(a => a.action === 'edit_copy' && a.ref === post.id);
 
-  useEffect(() => { setOpenLine(null); setDraft(''); setNeedIn(false); }, [post.id]);
+  useEffect(() => { setOpenLine(null); setDraft(''); setNeedIn(false); setShowCh(true); }, [post.id]);
   useEffect(() => { if (openLine != null) ta.current?.focus(); }, [openLine]);
   useEffect(() => { if (editing) setOpenLine(null); }, [editing]);
 
@@ -50,46 +59,31 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
     if (r === 'ok') { setDraft(''); setOpenLine(null); setNeedIn(false); }
   };
 
-  const when = post.publishedAt ? fmtWhen(post.publishedAt, model.theme.tz).day : post.scheduledAt ? fmtWhen(post.scheduledAt, model.theme.tz).day : 'Draft';
-  const f = model.founder;
-
-  return (
-    <article
-      className="li-card relative bg-white text-[rgba(0,0,0,0.9)] font-li rounded-[10px] border"
-      style={{ borderColor: editing ? 'var(--accent)' : '#DCDAD5', colorScheme: 'light' }}
-      data-testid="li-card"
+  const markers = (list: typeof quoted) => list.map(c => (
+    <button
+      key={c.id}
+      type="button"
+      onClick={e => { e.stopPropagation(); onLineMarker?.(c.id); }}
+      className="li-marker ml-1.5 align-[1px] inline-flex items-center justify-center h-[17px] min-w-[17px] px-1 rounded-full text-[10.5px] font-bold"
+      aria-label={`Note ${pins.get(c.id)?.n} on this line, shown in the comments`}
+      data-testid="line-pin"
     >
-      <header className="flex items-start gap-2.5 px-4 pt-3.5 pb-2">
-        <Avatar name={f.name || model.company} src={f.avatar} size={48} tone="accent" />
-        <div className="min-w-0 flex-1 leading-tight">
-          <div className="text-[14px] font-semibold text-[rgba(0,0,0,0.9)] truncate">{f.name || model.company}</div>
-          <div className="text-[12px] text-[rgba(0,0,0,0.6)] truncate mt-0.5">{f.headline}</div>
-          <div className="text-[12px] text-[rgba(0,0,0,0.6)] mt-0.5 inline-flex items-center gap-1">
-            {when}{edited && !editing && <> · <span className="font-semibold text-[rgba(0,0,0,0.75)]" data-testid="edited-mark">Edited</span></>} · <Globe size={11} strokeWidth={2} />
-          </div>
-        </div>
-        <Ellipsis size={20} className="text-[rgba(0,0,0,0.6)] mt-1" />
-      </header>
-
-      {editing ? (
-        <Editor key={post.id} initial={body} onCancel={() => onEditDone?.()} onSave={async next => {
-          const r = await saveEdit(post.id, body, next);
-          if (r.ok) onEditDone?.();
-          return r;
-        }} />
-      ) : (
-        <div className={`px-4 pb-3 text-[14px] leading-[20px] ${compact ? 'max-h-[340px] overflow-hidden' : ''}`}>
-          {lines.map((raw, i) => {
-            if (!raw.trim()) return <div key={i} className="h-[20px]" />;
-            const lineNotes = postNotes.filter(n => n.quote === lineKey(raw));
+      {pins.get(c.id)?.n}
+    </button>
+  ));
+  /* One paragraph of the text as it reads now: note gutter, numbered pins, and the note box under it. */
+  const row = (i: number, content: ReactNode, k: number) => {
+            const key = `l${i}`;
+            const lineNotes = notesAt(key);
             const isOpen = openLine === i;
-            const lit = isOpen || activeLine === i;
+            const lit = isOpen || active === key;
             return (
-              <div key={i} className="relative">
+              <div key={k} className="relative">
                 <div
                   className={`li-line group relative -mx-2 px-2 rounded-[4px] ${notes ? 'cursor-text' : ''} ${lit ? 'li-line-on' : ''} ${lineNotes.length ? 'li-line-noted' : ''}`}
                   onClick={notes ? () => { setOpenLine(isOpen ? null : i); setDraft(''); setNeedIn(false); } : undefined}
                   data-line={i}
+                  data-anchor={key}
                 >
                   {notes && (
                     <button
@@ -101,17 +95,8 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
                       <Plus size={13} strokeWidth={2.5} />
                     </button>
                   )}
-                  <span className="whitespace-pre-wrap break-words">{raw}</span>
-                  {lineNotes.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={e => { e.stopPropagation(); onLineMarker?.(lineNotes[0].id); }}
-                      className="li-marker ml-1.5 align-[1px] inline-flex items-center justify-center h-[17px] min-w-[17px] px-1 rounded-full text-[10.5px] font-bold"
-                      aria-label={`${lineNotes.length} note${lineNotes.length > 1 ? 's' : ''} on this line, shown in the comments`}
-                    >
-                      {lineNotes.length}
-                    </button>
-                  )}
+                  <span className="whitespace-pre-wrap break-words">{content}</span>
+                  {markers(lineNotes)}
                 </div>
 
                 <AnimatePresence initial={false}>
@@ -156,7 +141,59 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
                 </AnimatePresence>
               </div>
             );
-          })}
+  };
+
+  const when = post.publishedAt ? fmtWhen(post.publishedAt, model.theme.tz).day : post.scheduledAt ? fmtWhen(post.scheduledAt, model.theme.tz).day : 'Draft';
+  const f = model.founder;
+
+  const counts = rv ? [rv.removed && `${rv.removed} removed`, rv.added && `${rv.added} added`, rv.reworded && `${rv.reworded} reworded`].filter(Boolean).join(' · ') : '';
+  const card = (
+    <article
+      className="li-card relative bg-white text-[rgba(0,0,0,0.9)] font-li rounded-[10px] border"
+      style={{ borderColor: editing ? 'var(--accent)' : '#DCDAD5', colorScheme: 'light' }}
+      data-testid="li-card" data-post={post.id}
+    >
+      <header className="flex items-start gap-2.5 px-4 pt-3.5 pb-2">
+        <Avatar name={f.name || model.company} src={f.avatar} size={48} tone="accent" />
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="text-[14px] font-semibold text-[rgba(0,0,0,0.9)] truncate">{f.name || model.company}</div>
+          <div className="text-[12px] text-[rgba(0,0,0,0.6)] truncate mt-0.5">{f.headline}</div>
+          <div className="text-[12px] text-[rgba(0,0,0,0.6)] mt-0.5 inline-flex items-center gap-1">
+            {when}{edited && !editing && <> · <span className="font-semibold text-[rgba(0,0,0,0.75)]" data-testid="edited-mark">Edited</span></>} · <Globe size={11} strokeWidth={2} />
+          </div>
+        </div>
+        <Ellipsis size={20} className="text-[rgba(0,0,0,0.6)] mt-1" />
+      </header>
+
+      {editing ? (
+        <Editor key={post.id} initial={body} onCancel={() => onEditDone?.()} onSave={async next => {
+          const r = await saveEdit(post.id, body, next);
+          if (r.ok) onEditDone?.();
+          return r;
+        }} />
+      ) : (
+        <div className={`px-4 pb-3 text-[14px] leading-[20px] ${compact ? 'max-h-[340px] overflow-hidden' : ''}`}>
+          {review
+            ? (() => {
+                let gap = false;
+                return review.blocks.map((b, k) => {
+                  if (!b.text.trim()) { if (gap) return null; gap = true; return <div key={k} className="h-[20px]" />; }
+                  gap = false;
+                  if (b.kind === 'del') {
+                    const key = `d${b.baseLine}`;
+                    return (
+                      <div key={k} className={`relative -mx-2 px-2 rounded-[4px] ${active === key ? 'li-line-on' : ''}`} data-anchor={key} data-testid="line-removed">
+                        <span className="sr-only">Removed: </span><span className="ch-del whitespace-pre-wrap break-words">{b.text}</span>{markers(notesAt(key))}
+                      </div>
+                    );
+                  }
+                  if (b.kind === 'add') return row(b.line, <><span className="sr-only">Added: </span><span className="ch-add">{b.text}</span></>, k);
+                  if (b.kind === 'change') return row(b.line, b.segs.map((g, x) => (g.kind === 'same' ? <span key={x}>{g.text}</span>
+                    : <span key={x} className={g.kind === 'del' ? 'ch-del' : 'ch-add'}><span className="sr-only">{g.kind === 'del' ? 'Removed: ' : 'Added: '}</span>{g.text}</span>)), k);
+                  return row(b.line, b.text, k);
+                });
+              })()
+            : lines.map((raw, i) => (!raw.trim() ? <div key={i} className="h-[20px]" /> : row(i, raw, i)))}
           {post.lmKeyword && (
             <div className="mt-3 text-[12.5px] text-[rgba(0,0,0,0.6)]">People who comment <span className="font-semibold text-[rgba(0,0,0,0.85)]">{post.lmKeyword}</span> get {post.lmTitle || 'the resource'} by message.</div>
           )}
@@ -215,6 +252,22 @@ export function LinkedInPost({ post, model, notes = false, compact = false, edit
         </div>
       )}
     </article>
+  );
+  if (!rv || editing) return card;
+  return (
+    <div>
+      <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[12px] border hair bg-sunk pl-3.5 pr-2 py-2" data-testid="changes-bar">
+        <div className="min-w-[200px] flex-1">
+          <div className="text-[13px] font-semibold text-ink">Text changed after {model.theme.mode === 'team' ? "your team's" : 'your'} review{rv.at ? ` · ${fmtWhen(rv.at, model.theme.tz).day}` : ''}</div>
+          <div className="text-[12px] text-mute">{counts ? `Lines: ${counts}. ` : ''}{showCh ? 'Struck text was removed, tinted text is new.' : 'This is the text that goes out.'}</div>
+        </div>
+        <div className="ch-seg" role="group" aria-label="How to show the text">
+          <button type="button" aria-pressed={showCh} onClick={() => setShowCh(true)} data-testid="changes-on">Changes</button>
+          <button type="button" aria-pressed={!showCh} onClick={() => setShowCh(false)} data-testid="changes-off">Final text</button>
+        </div>
+      </div>
+      {card}
+    </div>
   );
 }
 

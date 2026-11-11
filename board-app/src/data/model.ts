@@ -24,6 +24,8 @@ export type Post = {
   source?: string;
   /** Public link to an outside source (a Reddit thread, a video). Never set for calls. */
   sourceUrl?: string;
+  /** The text as the client last reviewed it, kept when it was edited afterwards. */
+  reviewBase?: { body: string; at?: string };
   topic?: string;
   funnel?: string;
   approvedAt?: string;
@@ -128,6 +130,12 @@ const NOISE = new Set(['day_left_empty', 'day_refilled', 'slot_replace_undone', 
 
 /** Board labels (source, topic, format notes, resource titles) never show a long dash. Post copy is left as written. */
 /** Keep only real web links, so nothing else can end up in an href. */
+/** source_detail.review_base: { body, at }. Postgres writes '2026-11-11 08:45:35+00'; make it a date every browser reads. */
+const reviewBase = (v?: any): { body: string; at?: string } | undefined => {
+  if (!v || typeof v.body !== 'string' || !v.body.trim()) return undefined;
+  const at = typeof v.at === 'string' ? v.at.trim().replace(' ', 'T').replace(/([+-]\d\d)$/, '$1:00') : '';
+  return { body: v.body, at: at && Number.isFinite(new Date(at).getTime()) ? at : undefined };
+};
 const httpUrl = (v?: unknown): string | undefined => {
   if (typeof v !== 'string' || !v) return undefined;
   try { const u = new URL(v); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined; } catch { return undefined; }
@@ -239,7 +247,7 @@ export function buildModel(slug: string, raw: Raw, now = new Date()): Model {
       kind: q.kind, style: q.style || '', format: q.style === 'text' && images.length ? 'Post with photo' : FORMAT[q.style] || (q.kind === 'carousel' ? 'Carousel' : 'Post'),
       angle: angle && angle !== FORMAT[q.style] ? nd(angle) : undefined,
       status, scheduledAt: q.scheduled_at || undefined, publishedAt: q.published_at || (status === 'live' ? q.scheduled_at : undefined) || undefined,
-      url: q.post_url || undefined, source: nd(plainSource(q.source_label)), sourceUrl: httpUrl(sd.source_url || sd.url), topic: nd(q.topic_label),
+      url: q.post_url || undefined, source: nd(plainSource(q.source_label)), sourceUrl: httpUrl(sd.source_url || sd.url), reviewBase: reviewBase(sd.review_base), topic: nd(q.topic_label),
       funnel: q.funnel_stage || undefined,
       approvedAt: meta[q.id]?.at, approvedBy: meta[q.id]?.by,
       archivedAt: q.archived_at || undefined,

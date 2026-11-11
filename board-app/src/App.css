@@ -65,3 +65,14 @@ select.pill-select {
 .diff-del { background: color-mix(in srgb, #D92D20 12%, var(--paper)); color: var(--soft); text-decoration: line-through; text-decoration-color: color-mix(in srgb, #D92D20 55%, transparent); }
 .diff-add { background: color-mix(in srgb, #12B76A 14%, var(--paper)); color: var(--ink); }
 .mention { color: var(--accent-fg); font-weight: 600; }
+
+/* Changes since the review, inside the white post card. */
+.ch-del { color: rgba(0,0,0,0.5); text-decoration: line-through; text-decoration-color: rgba(217,45,32,0.7); background: rgba(217,45,32,0.09); border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.ch-add { background: rgba(18,183,106,0.2); border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.ch-seg { display: inline-flex; padding: 2px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); }
+.ch-seg button { height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--soft); white-space: nowrap; }
+.ch-seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+/* The line from a paragraph to its note. */
+.pin-link path { stroke-dasharray: 1; animation: pin-draw 0.22s ease-out; }
+@keyframes pin-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .pin-link path { animation: none; } }

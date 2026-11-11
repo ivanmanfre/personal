@@ -69,7 +69,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
   const [panel, setPanel] = useState<null | 'move' | 'photo'>(null);
   const [day, setDay] = useState('');
   const [time, setTime] = useState('09:00');
-  const [line, setLine] = useState<number | null>(null);
+  const [line, setLine] = useState<string | null>(null);
   const [focusNote, setFocusNote] = useState<string | null>(null);
   const clearFocus = useCallback(() => setFocusNote(null), []);
   useEffect(() => {
@@ -208,7 +208,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
           )}
           {s === 'live' && (!row || !row.measured) && <p className="text-[13px] text-mute">LinkedIn numbers for this post are not in yet.</p>}
 
-          <LinkedInPost post={post} model={m} editing={editing} onEditDone={() => setEditing(false)} activeLine={line} onLineMarker={setFocusNote} />
+          <LinkedInPost post={post} model={m} editing={editing} onEditDone={() => setEditing(false)} active={line} changes onLineMarker={setFocusNote} />
 
           <dl className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 gap-x-6 gap-y-3 pt-4 border-t hair">
             {post.source && <div><dt className="text-[12px] text-mute">Where it came from</dt><dd className="text-[14px] text-ink mt-0.5">{post.source}{post.sourceUrl && <a className="link !text-[13px] block mt-1" href={post.sourceUrl} target="_blank" rel="noopener noreferrer">{sourceLinkLabel(post.sourceUrl)}</a>}</dd></div>}

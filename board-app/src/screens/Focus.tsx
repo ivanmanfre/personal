@@ -63,7 +63,7 @@ function Why({ post }: { post: Post }) {
 export function Focus({ m, startId, onClose, onPost }: { m: Model; startId?: string; onClose: () => void; onPost?: (id: string | null) => void }) {
   const { approve, local, canApprove, toast } = useLocal();
   const [editing, setEditing] = useState(false);
-  const [line, setLine] = useState<number | null>(null);
+  const [line, setLine] = useState<string | null>(null);
   const [focusNote, setFocusNote] = useState<string | null>(null);
   const clearFocus = useCallback(() => setFocusNote(null), []);
   const phone = useIsPhone();
@@ -243,7 +243,7 @@ export function Focus({ m, startId, onClose, onPost }: { m: Model; startId?: str
                       className="relative"
                       data-testid="swipe-card"
                     >
-                      <LinkedInPost post={post} model={m} notes activeLine={line} onLineMarker={setFocusNote} />
+                      <LinkedInPost post={post} model={m} notes active={line} changes onLineMarker={setFocusNote} />
                       <motion.div className="swipe-tint flex items-start justify-start p-4" style={{ opacity: okTint, background: 'color-mix(in srgb, var(--accent) 16%, transparent)', outline: '2px solid var(--accent)' }}>
                         <span className="btn btn-primary btn-sm">Approve</span>
                       </motion.div>
@@ -252,7 +252,7 @@ export function Focus({ m, startId, onClose, onPost }: { m: Model; startId?: str
                       </motion.div>
                     </motion.div>
                   ) : (
-                    <LinkedInPost post={post} model={m} notes={!editing} editing={editing} onEditDone={() => setEditing(false)} activeLine={line} onLineMarker={setFocusNote} />
+                    <LinkedInPost post={post} model={m} notes={!editing} editing={editing} onEditDone={() => setEditing(false)} active={line} changes onLineMarker={setFocusNote} />
                   )}
                   {phone && !editing && <p className="mt-3 text-center text-[12px] text-mute">Swipe right to approve, left for later. Tap a line to leave a note.</p>}
                 </div>

@@ -21,7 +21,7 @@ export type Theme = {
 
 export const THEMES: Record<string, Theme> = {
   'arch-agency': {
-    name: 'ARCH', mode: 'gatekeeper', tz: 'Europe/Zagreb', tzLabel: 'Zagreb', dark: true,
+    name: 'ARCH.', mode: 'gatekeeper', tz: 'Europe/Zagreb', tzLabel: 'Zagreb', dark: true,
     accent: '#3562FF', accentInk: '#FFFFFF', accentFg: 'color-mix(in srgb, #3562FF 70%, #FFFFFF)',
     head: '"DM Sans"', body: '"DM Sans"', fonts: 'family=DM+Sans:opsz,wght@9..40,300..700',
   },

@@ -1,9 +1,11 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ChevronDown, CornerDownRight, PenLine, RotateCcw } from 'lucide-react';
 import type { Comment, Model, Post } from '../data/model';
 import { dayKey, fmtWhen } from '../data/model';
 import { diffHunks, diffLines } from '../data/diff';
+import { fixOf, pinsOf, reviewOf } from '../data/review';
 import { plural } from '../data/copy';
 import { useLocal, type EditEntry } from '../data/store';
 import { useAuth } from '../data/auth';
@@ -14,7 +16,9 @@ import { SignInForm } from './SignIn';
 
 /* Comment threads beside a post, like the live board: one thread per comment, replies under it,
    @mentions, resolve. Line notes from the review are comments that quote their line; copy edits
-   (from the change log, and from this tab) sit in the same thread with their diff. */
+   (from the change log, and from this tab) sit in the same thread with their diff.
+   A line note carries the number of its pin in the post. When the text changed after the note, the note
+   shows what happened to its line. Pointing at a note draws a line from its paragraph to the note. */
 
 type Item =
   | { kind: 'comment'; at: string; c: Comment }
@@ -133,10 +137,51 @@ function Head({ name, at, m, tag }: { name: string; at: string; m: Model; tag?: 
   );
 }
 
+/* A thin line from a paragraph of the post to its note, drawn over the page while the note is pointed at.
+   Only when the two sit side by side and both are in view. */
+function Connector({ postId, link }: { postId: string; link: { key: string; id: string } | null }) {
+  const [d, setD] = useState<{ x1: number; y1: number; x2: number; y2: number; color: string } | null>(null);
+  useEffect(() => {
+    if (!link) { setD(null); return; }
+    let raf = 0;
+    const calc = () => {
+      raf = 0;
+      const a = document.querySelector<HTMLElement>(`[data-post="${postId}"] [data-anchor="${link.key}"]`);
+      const t = document.querySelector<HTMLElement>(`[data-thread="${link.id}"]`);
+      if (!a || !t) { setD(null); return; }
+      const ar = a.getBoundingClientRect(), tr = t.getBoundingClientRect();
+      let top = 0, bottom = window.innerHeight;
+      for (let el = a.parentElement; el; el = el.parentElement) {
+        const o = getComputedStyle(el).overflowY;
+        if (o === 'auto' || o === 'scroll') { const r = el.getBoundingClientRect(); top = Math.max(top, r.top); bottom = Math.min(bottom, r.bottom); break; }
+      }
+      const y1 = ar.top + Math.min(ar.height / 2, 10), y2 = tr.top + 14;
+      if (tr.left < ar.right + 20 || y1 < top || y1 > bottom || y2 < top || y2 > bottom) { setD(null); return; }
+      setD({ x1: ar.right + 2, y1, x2: tr.left - 8, y2, color: getComputedStyle(t).getPropertyValue('--accent').trim() || '#111' });
+    };
+    const on = () => { if (!raf) raf = requestAnimationFrame(calc); };
+    calc();
+    window.addEventListener('scroll', on, true);
+    window.addEventListener('resize', on);
+    return () => { if (raf) cancelAnimationFrame(raf); window.removeEventListener('scroll', on, true); window.removeEventListener('resize', on); };
+  }, [link, postId]);
+  if (!d) return null;
+  const mx = (d.x1 + d.x2) / 2;
+  return createPortal(
+    <svg className="pin-link" aria-hidden data-testid="pin-link" style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 95 }}>
+      <path d={`M ${d.x1} ${d.y1} C ${mx} ${d.y1}, ${mx} ${d.y2}, ${d.x2} ${d.y2}`} pathLength={1} fill="none" stroke={d.color} strokeWidth={1.5} strokeLinecap="round" />
+      <circle cx={d.x1} cy={d.y1} r={3} fill={d.color} />
+      <circle cx={d.x2} cy={d.y2} r={3} fill={d.color} />
+    </svg>,
+    document.body,
+  );
+}
+
 export function Comments({ post, m, onLine, focusNote, onFocused }: {
-  post: Post; m: Model; onLine?: (line: number | null) => void; focusNote?: string | null; onFocused?: () => void;
+  post: Post; m: Model; onLine?: (key: string | null) => void; focusNote?: string | null; onFocused?: () => void;
 }) {
-  const { local, addComment, resolveComment, isResolved, signedIn: hasSession, me } = useLocal();
+  const { local, addComment, resolveComment, isResolved, signedIn: hasSession, me, bodyOf } = useLocal();
+  const [link, setLink] = useState<{ key: string; id: string } | null>(null);
   const { entry, signedIn } = useAuth();
   const reduce = useReducedMotion();
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -148,7 +193,9 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
   const box = useRef<HTMLDivElement>(null);
   const all = [...m.comments, ...local.comments].filter(c => c.ref === post.id);
   const repliesOf = (id: string) => all.filter(c => c.parent === id).sort((a, b) => a.at.localeCompare(b.at));
-  const lineOf = (q?: string) => (q ? post.body.split('\n').findIndex(l => l.replace(/\s+/g, ' ').trim().slice(0, 240) === q) : -1);
+  // Where each line note sits in the post, and what changed in the text since it was reviewed.
+  const review = reviewOf(post, bodyOf(post), m);
+  const pins = pinsOf(all, bodyOf(post), review, isResolved);
   // Copy edits: the server's change log, plus edits saved in this tab that the log does not carry yet.
   const serverEdits: EditEntry[] = m.activity.filter(a => a.action === 'edit_copy' && a.ref === post.id && typeof a.before === 'string' && typeof a.after === 'string')
     .map(a => ({ id: a.id, at: a.at, before: a.before as string, after: a.after as string, by: a.by }));
@@ -158,12 +205,14 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
     ...edits.map(e => ({ kind: 'edit' as const, at: e.at, e })),
   ].sort((a, b) => a.at.localeCompare(b.at));
   const done = (it: Item) => (it.kind === 'comment' ? isResolved(it.c) : false);
-  const open = items.filter(it => !done(it));
+  // Pinned notes first, in the order of the text; everything else stays in the order it was written.
+  const pinN = (it: Item) => (it.kind === 'comment' ? pins.get(it.c.id)?.n ?? Infinity : Infinity);
+  const open = items.filter(it => !done(it)).sort((a, b) => { const x = pinN(a), y = pinN(b); return x === y ? 0 : x - y; });
   const closed = items.filter(done);
   const mine = (c: Comment) => !!me && (c.byEmail || '').toLowerCase() === me.toLowerCase();
   const viewer = m.role === 'viewer';
 
-  useEffect(() => { setReplyTo(null); setShowDone(false); setWaiting(null); setAskIn(false); }, [post.id]);
+  useEffect(() => { setReplyTo(null); setShowDone(false); setWaiting(null); setAskIn(false); setLink(null); }, [post.id]);
   useEffect(() => {
     if (!focusNote) return;
     const el = box.current?.querySelector<HTMLElement>(`[data-thread="${focusNote}"]`);
@@ -215,17 +264,40 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
   const render = (it: Item) => {
     if (it.kind === 'comment') {
       const c = it.c; const r = isResolved(c);
-      const line = lineOf(c.quote);
+      const pin = pins.get(c.id);
+      const fix = fixOf(pin, c, review);
+      const point = pin ? () => { onLine?.(pin.key); setLink({ key: pin.key, id: c.id }); } : undefined;
+      const leave = pin ? () => { onLine?.(null); setLink(null); } : undefined;
       return (
         <div data-thread={c.id} tabIndex={-1} className="outline-none" style={c.id.startsWith('tmp-') ? { opacity: 0.6 } : undefined}
-          onMouseEnter={c.quote ? () => onLine?.(line >= 0 ? line : null) : undefined} onMouseLeave={c.quote ? () => onLine?.(null) : undefined}
-          onFocus={c.quote ? () => onLine?.(line >= 0 ? line : null) : undefined} onBlur={c.quote ? () => onLine?.(null) : undefined}>
+          onMouseEnter={point} onMouseLeave={leave} onFocus={point} onBlur={leave}>
           <div className="flex gap-2.5">
             <Avatar name={c.by} size={28} tone={mine(c) ? 'accent' : 'plain'} />
             <div className="min-w-0 flex-1">
-              <Head name={c.by} at={c.at} m={m} tag={c.quote ? <span className="chip !h-[18px] !px-1.5 !text-[10.5px]">Note on a line</span> : undefined} />
+              <Head name={c.by} at={c.at} m={m} tag={c.quote ? <>
+                {pin && <span className="li-marker inline-flex items-center justify-center h-[17px] min-w-[17px] px-1 rounded-full text-[10.5px] font-bold self-center" aria-label={`Pin ${pin.n} in the post`} data-testid="thread-pin">{pin.n}</span>}
+                <span className="chip !h-[18px] !px-1.5 !text-[10.5px]">Note on a line</span>
+              </> : undefined} />
               {c.quote && <p className="mt-1 pl-2.5 border-l-2 text-[12.5px] leading-[1.45] text-mute clamp-2" style={{ borderColor: 'var(--accent)' }}>{c.quote}</p>}
               <p className="mt-0.5 text-[13.5px] leading-[1.5] text-ink whitespace-pre-wrap break-words"><Text text={c.text} team={m.team} /></p>
+              {fix && (
+                <div className="mt-2 rounded-[10px] border hair overflow-hidden" data-testid="note-fix">
+                  <div className="px-2.5 h-7 flex items-center gap-1.5 bg-sunk text-[11.5px] font-semibold text-soft">
+                    <Check size={12} className="text-accent-fg" />
+                    {fix.kind === 'removed' ? 'Removed' : fix.kind === 'added' ? 'Added after this line' : 'Reworded'}
+                    {review?.at && <span className="font-normal text-mute tnum">· {stamp(review.at, m)}</span>}
+                  </div>
+                  <div className="px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-ink break-words">
+                    {fix.blocks.map((b, i) => (
+                      <p key={i} className={i ? 'mt-1.5' : undefined}>
+                        {b.kind === 'change'
+                          ? b.segs.map((g, x) => (g.kind === 'same' ? <span key={x}>{g.text}</span> : <span key={x} className={g.kind === 'del' ? 'diff-del' : 'diff-add'}><span className="sr-only">{g.kind === 'del' ? 'Removed: ' : 'Added: '}</span>{g.text}</span>))
+                          : <span className={b.kind === 'del' ? 'diff-del' : 'diff-add'}>{b.text}</span>}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
               {r && c.resolvedAt && !(c.id in local.resolved) && <p className="mt-1 text-[11.5px] text-mute">Resolved by {c.resolvedBy || 'your team'} · {stamp(c.resolvedAt, m)}</p>}
               {replies(c.id)}
               {actions(c, r)}
@@ -270,6 +342,7 @@ export function Comments({ post, m, onLine, focusNote, onFocused }: {
   const key = (it: Item) => (it.kind === 'comment' ? it.c.id : it.e.id);
   return (
     <section ref={box} aria-label="Comments" data-testid="comments">
+      <Connector postId={post.id} link={link} />
       <div className="flex items-center gap-2 mb-3">
         <span className="eyebrow">Comments</span>
         <span className="chip !h-[18px] !px-1.5 !text-[10.5px] !tracking-normal">{open.filter(i => i.kind !== 'edit').length} open</span>

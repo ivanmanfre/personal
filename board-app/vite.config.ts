@@ -10,7 +10,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
 const ALLOWED_ENV = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_BOARD_LOCKED_SLUG'] as const;
-const NAMES: Record<string, string> = { 'arch-agency': 'ARCH', 'risedtc-com': 'RISE DTC', 'swishdm-live': 'SwishDM' };
+const NAMES: Record<string, string> = { 'arch-agency': 'ARCH.', 'risedtc-com': 'RISE DTC', 'swishdm-live': 'SwishDM' };
 
 export default defineConfig(({ command, mode, isPreview }) => {
   if (command === 'serve' && !isPreview) {
