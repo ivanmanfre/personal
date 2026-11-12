@@ -35,8 +35,10 @@ Deno.serve(async () => {
     const { error } = await supabase
       .from("linkedin_follower_history")
       .upsert(
-        { date: baDate, follower_count: followers, connections_count: connections, fetched_at: new Date().toISOString() },
-        { onConflict: "date" },
+        { client_id: "ivan", date: baDate, follower_count: followers, connections_count: connections, fetched_at: new Date().toISOString() },
+        // The table's key became (client_id, date) on 2026-09-04 when client seats were added. Conflicting on "date"
+        // alone matched no constraint, so every daily run failed from 09-04 to 11-12 while the cron reported success.
+        { onConflict: "client_id,date" },
       );
     if (error) return json({ ok: false, stage: "upsert", error: error.message }, 500);
 
