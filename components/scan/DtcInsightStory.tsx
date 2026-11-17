@@ -3,6 +3,7 @@ import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 import './DtcInsightStory.css';
 import { Evidence, useRiseStoryMotion, RiseCallClose } from './DtcStoryShared';
 import { DtcGrowthStory, canShowStandardStory } from './DtcGrowthStory';
+import { DtcGrowthStoryV2, canShowStandardStoryV2, V2_VERSION } from './DtcGrowthStoryV2';
 
 type Product = { name: string; image: string; url: string; price: number };
 type Capture = { url: string; source_url: string; captured_at: string };
@@ -26,6 +27,7 @@ const money = (value: number, currency: string) => `${value.toLocaleString('en-G
 // The story is an optional, reviewed presentation of existing recommendations. Older scans
 // retain their renderer. A missing ad journey or incomplete section cannot become a story.
 export function canShowStory(data?: DtcCommercialEvidence, meta?: any, domain?: string): boolean {
+  if ((data?.presentation as { version?: string } | undefined)?.version === V2_VERSION) { const p = data!.presentation as unknown as { requested_domain?: string; domain: string }; return canShowStandardStoryV2(data!) && (!domain || (p.requested_domain || p.domain).replace(/^www\./, '') === domain.replace(/^www\./, '')); }
   if (data?.presentation?.version === 'rise-standard-2026-10-14') return canShowStandardStory(data) && (!domain || ((data.presentation as import('./DtcGrowthStory').DtcStandardPresentation).requested_domain || (data.presentation as import('./DtcGrowthStory').DtcStandardPresentation).domain).replace(/^www\./, '') === domain.replace(/^www\./, ''));
   const s = data?.presentation as DtcStoryPresentation | undefined;
   if (data?.status !== 'present' || s?.version !== 'rise-story-2026-10-14' || s.review?.approved !== true || meta?.status !== 'present') return false;
@@ -75,6 +77,7 @@ function LegacyDtcInsightStory({ companyName, domain, data, ads, bookingUrl, log
   </div>;
 }
 
-export function DtcInsightStory(props: Parameters<typeof LegacyDtcInsightStory>[0]) {
+export function DtcInsightStory(props: Parameters<typeof LegacyDtcInsightStory>[0] & { proofVertical?: string | null }) {
+  if ((props.data.presentation as { version?: string } | undefined)?.version === V2_VERSION) return <DtcGrowthStoryV2 {...props} />;
   return props.data.presentation?.version === 'rise-standard-2026-10-14' ? <DtcGrowthStory {...props} /> : <LegacyDtcInsightStory {...props} />;
 }

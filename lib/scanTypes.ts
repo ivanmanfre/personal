@@ -274,9 +274,11 @@ export interface DtcCatalogItem {
 export interface DtcCommercialEvidence {
   status: 'present' | 'error' | 'absent';
   version: string;
-  presentation?: import('../components/scan/DtcInsightStory').DtcStoryPresentation | import('../components/scan/DtcGrowthStory').DtcStandardPresentation;
+  presentation?: import('../components/scan/DtcInsightStory').DtcStoryPresentation | import('../components/scan/DtcGrowthStory').DtcStandardPresentation | import('../components/scan/DtcGrowthStoryV2').DtcStandardPresentationV2;
   checked_at?: string;
   tests: { title: string; observation: string; test: string; measure: string; proposal_type?: 'paid_creative';
+    gap?: string; finding_type?: 'ad_vs_page'; absent_terms?: string[]; focus_note?: string; demoted?: boolean;
+    ad_drafts?: { product_url: string; hook: string; body: string; proof_quote: string; proof_source_url: string }[];
     evidence: { source_url: string; quote: string; kind: 'store' | 'ad' | 'reference' }[] }[];
   journeys?: { ad_url: string; ad_excerpt: string; destinations: string[]; observed_at?: string }[];
   screenshot?: { url: string; source_url: string; captured_at: string };
@@ -284,6 +286,7 @@ export interface DtcCommercialEvidence {
 
 export interface DtcGrowth {
   commercial_evidence?: DtcCommercialEvidence;
+  proof?: { vertical: 'beauty' | 'apparel' | 'accessories' | 'home' | null };
   comparison_v1?: import('./dtcComparisonTypes').DtcComparisonV1 | null;
   brand: DtcBrand;
   builder_version?: string | null;

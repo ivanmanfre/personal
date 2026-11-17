@@ -118,6 +118,12 @@ export function casesFor(words: string[]): RiseCase[] {
   return BY_VERTICAL[caseVertical(words)].map((s) => C[s]);
 }
 
+// 2026-11-17 standard: the builder's reasoned category, or none. No fallback: a store outside the published
+// case groups (supplements, food, drink, pets, fitness) shows no client results.
+export function casesForVertical(v: Vertical | string | null | undefined): RiseCase[] {
+  return v && v in BY_VERTICAL ? BY_VERTICAL[v as Vertical].map((s) => C[s]) : [];
+}
+
 export function caseUrl(c: RiseCase): string {
   return `https://risedtc.com/projects/${c.slug}/?utm_source=scan&utm_medium=case&utm_campaign=growth-scan&utm_content=${c.slug}`;
 }
