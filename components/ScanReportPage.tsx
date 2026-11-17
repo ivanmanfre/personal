@@ -21,7 +21,7 @@ import { deriveIcpTargeting, deriveColdOutbound, buyerDefinitionWords } from '..
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
-import { trackScanOpen } from '../lib/scanOpenTracker';
+import { trackOpenWithEvents } from '../lib/scanEvents';
 import { DtcGrowthReport } from './DtcGrowthReport';
 import ScanWalkthroughVideo from './ScanWalkthroughVideo';
 import ScanStoryReport from './scan/story/ScanStoryReport';
@@ -5278,8 +5278,9 @@ const ScanReportPage: React.FC = () => {
 
   // Record a prospect open once the report data resolves. Fire-and-forget;
   // the edge fn decides real-vs-owner server-side (IP + dashboard/?me=1 flag).
+  // Once the open is stored, section views and booking clicks are tied to it (lib/scanEvents.ts).
   useEffect(() => {
-    if (scan && slug) trackScanOpen(slug);
+    if (scan && slug) return trackOpenWithEvents(slug);
   }, [scan, slug]);
 
   if (loading) {

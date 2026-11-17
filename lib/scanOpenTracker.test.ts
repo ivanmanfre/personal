@@ -25,8 +25,8 @@ describe('trackScanOpen', () => {
     setHost('inboundonsteroids.com');
     invoke.mockResolvedValue({ data: { ok: true, open_id: 1 } });
     const { trackScanOpen } = await import('./scanOpenTracker');
-    await trackScanOpen('acme-2');
-    expect(await trackScanOpen('acme-2')).toBeNull();
+    expect(await trackScanOpen('acme-2')).toBe(1);
+    expect(await trackScanOpen('acme-2')).toBe(1);
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke.mock.calls[0][1].body.view).toBe('main');
   });

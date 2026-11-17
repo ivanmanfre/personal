@@ -17,12 +17,14 @@
 //
 // Body: { company_slug, owner_flag?, device_type?, referrer_host?, user_agent?, view? ('main' | 'team') }
 // Response: { ok: true, is_owner, open_id }
+// Second body shape (events.ts): { kind: 'event', open_id, company_slug, events: [...] } -> { ok: true }
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), IP_HASH_SALT.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { lookupNetwork } from "./network.ts";
 import { finalizeOpen, type FinalizeDb } from "./finalize.ts";
+import { parseEventBody, storeEvents, type EventsDb } from "./events.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -71,6 +73,15 @@ Deno.serve(async (req: Request) => {
     const SALT = Deno.env.get("IP_HASH_SALT") || "scan-open-fallback-salt";
 
     const body = await req.json().catch(() => ({}));
+
+    if (body && body.kind === "event") {
+      const batch = parseEventBody(body);
+      if (!batch) return json({ error: "bad event" }, 400);
+      const supabase = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
+      await storeEvents(supabase as unknown as EventsDb, batch);
+      return json({ ok: true });
+    }
+
     const slug = String(body.company_slug || "").trim();
     if (!slug || !SLUG_RE.test(slug)) return json({ error: "bad slug" }, 400);
 

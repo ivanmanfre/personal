@@ -7,7 +7,7 @@ import { isAuthenticated } from './dashboardAuth';
 // guards in pageviewTracker.ts so the two agree on what counts as a real open.
 
 const EXCLUDE_KEY = '__pv_exclude';
-const fired = new Set<string>();
+const fired = new Map<string, Promise<number | null>>();
 
 // `?me=1` sets a persistent "don't count me" flag; `?me=0` clears it. Shared
 // with pageviewTracker so claiming a device once covers both trackers.
@@ -45,16 +45,17 @@ export type ScanView = 'main' | 'team';
 
 /**
  * Fire-and-forget. Records at most one open per slug per page load and resolves to the stored open id
- * (null when skipped or on any failure). Callers that ignore the result keep working as before.
+ * (null when skipped or on any failure); a second call for the same slug gets the same promise.
+ * Callers that ignore the result keep working as before.
  */
 export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<number | null> {
   if (typeof window === 'undefined' || !slug) return Promise.resolve(null);
   if (isPreviewHost(window.location.hostname)) return Promise.resolve(null);   // keep dev traffic out
-  if (fired.has(slug)) return Promise.resolve(null);
-  fired.add(slug);
+  const already = fired.get(slug);
+  if (already) return already;   // one open per slug per page load; a re-render gets the same open id
 
   const ua = navigator.userAgent || '';
-  return supabase.functions
+  const p = supabase.functions
     .invoke('scan-open', {
       body: {
         company_slug: slug,
@@ -70,4 +71,6 @@ export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<nu
       return typeof id === 'number' && Number.isFinite(id) ? id : null;
     })
     .catch(() => null);   // never surface tracker errors to the page
+  fired.set(slug, p);
+  return p;
 }
