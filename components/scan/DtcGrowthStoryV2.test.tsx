@@ -68,8 +68,18 @@ describe('layout (2026-11-17)', () => {
     expect(labels).toEqual(['Your ad', 'Your page']);
     expect(html(story()).querySelector('.rv2-hero .rv2-shot-page img')!.getAttribute('src')).toBe('https://x.supabase.co/p1-crop.webp');
   });
-  it('zero_ads first screen shows the rival ad with its start date and no count', () => {
+  it('zero_ads first screen shows the brand page beside its gap and the rival below the findings', () => {
+    const d = story(); d.presentation.first_screen = { case: 'zero_ads', lead_test_index: 1, ads_line: 'No active Meta ads on 14 Nov 2026.' }; delete d.presentation.ads_strip;
+    d.presentation.sections = [d.presentation.sections[1]];
+    d.presentation.rival = { advertiser: 'Pawfect', ad_url: 'https://www.facebook.com/ads/library/?id=5', image_url: 'https://x.supabase.co/r.jpg', opening_text: 'Joint chews dogs love', start_date: '2026-11-02', observed_at: SEEN };
+    const c = html(d), hero = c.querySelector('.rv2-hero')!;
+    expect(hero.querySelector('.rv2-hero-rival')).toBeNull();
+    expect([...hero.querySelectorAll('.rv2-shot-label')].map(n => n.textContent)).toEqual(['Your page']);
+    expect(c.querySelector('.rv2-rival h2')!.textContent).toBe('Pawfect');
+  });
+  it('zero_ads first screen shows the rival ad with its start date and no count when nothing of the brand is captured', () => {
     const d = story(); d.presentation.first_screen = { case: 'zero_ads', lead_test_index: 0, ads_line: 'No active Meta ads on 14 Nov 2026.' }; delete d.presentation.ads_strip;
+    d.presentation.sections[0].captures = d.presentation.sections[0].captures.filter((c: any) => c.kind === 'ad');
     d.presentation.rival = { advertiser: 'Pawfect', ad_url: 'https://www.facebook.com/ads/library/?id=5', image_url: 'https://x.supabase.co/r.jpg', opening_text: 'Joint chews dogs love', start_date: '2026-11-02', observed_at: SEEN };
     const hero = html(d).querySelector('.rv2-hero')!;
     expect(hero.textContent).toContain('Pawfect\'s ad, started 2 Nov 2026, live on 14 Nov 2026');

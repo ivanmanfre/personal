@@ -190,10 +190,12 @@ export function DtcGrowthStoryV2({ companyName, domain, data, ads, bookingUrl, l
   const firstDraft = lead.drafts?.[0];
   let side: React.ReactNode = null;
   if (fs.case === 'advertiser' && (leadAd || leadPage)) side = <div className="rv2-hero-pair">{leadAd ? <Shot capture={leadAd} alt={`Your ad, ${brand || 'your store'}`} label="Your ad" eager /> : null}{leadPage ? <Shot capture={leadPage} alt={`Your page, ${brand || 'your store'}`} label="Your page" eager /> : null}</div>;
-  else if (fs.case === 'zero_ads' && s.rival) side = <figure className="rv2-hero-rival"><img src={s.rival.image_url} alt={`${s.rival.advertiser} ad`} /><figcaption>{`${s.rival.advertiser}'s ad, started ${day(s.rival.start_date)}${dated(s.rival.observed_at) ? `, live on ${day(s.rival.observed_at)}` : ''}`} · <a href={s.rival.ad_url} target="_blank" rel="noopener noreferrer">View ↗</a></figcaption></figure>;
-  else if (fs.case === 'zero_ads' && firstDraft) side = <div className="rv2-hero-draft"><Drafts drafts={[firstDraft]} brand={brand} /></div>;
+  // Replay 11-17 (Delilah): a rival's ad beside a gap about the brand's own bundle price read as unrelated. The first
+  // screen shows the brand's own page beside its gap; a rival ad leads only when nothing of the brand's is captured.
   else if (leadPage) side = <div className="rv2-hero-pair">{<Shot capture={leadPage} alt={`Your page, ${brand || 'your store'}`} label="Your page" eager />}</div>;
-  const rivalBelow = s.rival && !(fs.case === 'zero_ads');
+  else if (fs.case === 'zero_ads' && firstDraft) side = <div className="rv2-hero-draft"><Drafts drafts={[firstDraft]} brand={brand} /></div>;
+  else if (fs.case === 'zero_ads' && s.rival) side = <figure className="rv2-hero-rival"><img src={s.rival.image_url} alt={`${s.rival.advertiser} ad`} /><figcaption>{`${s.rival.advertiser}'s ad, started ${day(s.rival.start_date)}${dated(s.rival.observed_at) ? `, live on ${day(s.rival.observed_at)}` : ''}`} · <a href={s.rival.ad_url} target="_blank" rel="noopener noreferrer">View ↗</a></figcaption></figure>;
+  const rivalBelow = s.rival && !(fs.case === 'zero_ads' && !leadPage && !firstDraft);
   return <div className="ris-story ris-standard rv2" ref={root} onClick={navigate} data-rise-story={s.version}>
     <nav className="ris-nav" aria-label="Report navigation"><a href="https://risedtc.com" className="ris-logo"><img src={logo} alt="RISE DTC" /></a><div>{s.ads_strip ? <a href="#public-ads">Your ads</a> : null}<a href={`#finding-${lead.test_index}`}>Findings</a></div><a className="ris-nav-cta" href="#rise-conversation">Let’s talk ↗</a></nav>
     <div ref={wrapper} className="ris-smooth-wrapper"><div ref={content} className="ris-smooth-content">
