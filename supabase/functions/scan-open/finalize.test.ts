@@ -57,6 +57,17 @@ describe('finalizeOpen', () => {
     expect(looked).toBe(0);
     expect(db.calls).toHaveLength(1);
   });
+  it('deployed before db/303-304 (round 3 release order): no open_networks table and no scan_open_finalize yet, never throws', async () => {
+    const calls: string[] = [];
+    const db = {
+      from: (_t: string) => ({ select: (_c: string) => ({ eq: (_k: string, _v: string) => ({
+        maybeSingle: async () => ({ data: null, error: { code: '42P01', message: 'relation "public.open_networks" does not exist' } }),
+      }) }) }),
+      rpc: async (fn: string) => { calls.push(fn); return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.scan_open_finalize' } }; },
+    };
+    await expect(finalizeOpen(db, { openId: 13, ip: '203.0.113.9', ipHash: 'H2', isOwner: false }, async () => MS)).resolves.toBeNull();
+    expect(calls).toEqual(['scan_open_finalize']);
+  });
   it('a database failure never throws', async () => {
     const db = fakeDb(null, null, true);
     await expect(finalizeOpen(db, { openId: 12, ip: null, ipHash: null, isOwner: false }, async () => MS)).resolves.toBeNull();
