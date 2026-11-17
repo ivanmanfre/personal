@@ -45,8 +45,8 @@ export type ScanView = 'main' | 'team';
 
 /**
  * Fire-and-forget. Records at most one open per slug per page load and resolves to the stored open id
- * (null when skipped or on any failure); a second call for the same slug gets the same promise.
- * Callers that ignore the result keep working as before.
+ * (null when skipped, on any failure, and for the owner: an owner open never starts page events); a second call for
+ * the same slug gets the same promise. Callers that ignore the result keep working as before.
  */
 export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<number | null> {
   if (typeof window === 'undefined' || !slug) return Promise.resolve(null);
@@ -55,11 +55,12 @@ export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<nu
   if (already) return already;   // one open per slug per page load; a re-render gets the same open id
 
   const ua = navigator.userAgent || '';
+  const owner = ownerFlag();
   const p = supabase.functions
     .invoke('scan-open', {
       body: {
         company_slug: slug,
-        owner_flag: ownerFlag(),
+        owner_flag: owner,
         device_type: deviceType(ua),
         referrer_host: referrerHost(),
         user_agent: ua.slice(0, 512),
@@ -67,7 +68,9 @@ export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<nu
       },
     })
     .then(({ data }) => {
-      const id = (data as { open_id?: unknown } | null)?.open_id;
+      const d = data as { open_id?: unknown; is_owner?: unknown } | null;
+      if (owner || d?.is_owner === true) return null;   // the owner's own opens never collect page events
+      const id = d?.open_id;
       return typeof id === 'number' && Number.isFinite(id) ? id : null;
     })
     .catch(() => null);   // never surface tracker errors to the page
