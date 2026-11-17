@@ -204,6 +204,11 @@ if (SCAN_MIRROR) {
   ROUTES.splice(0, ROUTES.length, ...ROUTES.filter((r) => r.startsWith('/scan/')));
   console.log(`[prerender] SCAN_MIRROR: ${ROUTES.length} scan routes only`);
 }
+// PRERENDER_ONLY=/scan/a,/scan/a/team: local checks render just these routes (never set in CI).
+if (process.env.PRERENDER_ONLY) {
+  ROUTES.splice(0, ROUTES.length, ...process.env.PRERENDER_ONLY.split(',').map((r) => r.trim()).filter(Boolean));
+  console.log(`[prerender] PRERENDER_ONLY: ${ROUTES.join(', ')}`);
+}
 
 // RISE_SCAN_MIRROR=1: white-label mirror of ONLY Rise's dtc_growth scans, destined for the
 // rise-dtc-resources repo's scan/ dir, served at resources.risedtc.com/scan/ (so prospect-facing

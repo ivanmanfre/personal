@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useSyncExternalStore} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import type {CompetitorEngager, HeroRow, JourneyFixture} from '../../../dev/scan-walkthrough/journey/model';
 import {ClientEngagers, DmHead, Thread, Bubble} from '../StudioPlan';
@@ -7,7 +7,10 @@ import {bookUrl, shortDate} from './hero';
 import {AFTER_BUYERS, CHECKED} from './copy';
 import {BuyerRow, PersonName} from './HeroBuyer';
 
-const SHOWN = 5;
+/** Five people before "Show more", three on a phone so the offer comes sooner. */
+const PHONE = '(max-width: 600px)';
+const subscribe = (cb: () => void) => { const m = window.matchMedia?.(PHONE); m?.addEventListener?.('change', cb); return () => m?.removeEventListener?.('change', cb); };
+const useShown = () => useSyncExternalStore(subscribe, () => (window.matchMedia?.(PHONE).matches ? 3 : 5), () => 5);
 const shortName = (name: string) => name.split(/\s+[|(]|:\s|\s[-–]\s/)[0].trim();
 const initials = (name: string) => name.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, '')[0]).filter(Boolean).slice(0, 2).join('');
 const LINKEDIN_IN = /^https:\/\/(www\.)?linkedin\.com\/in\//;
@@ -27,9 +30,9 @@ function OutsideRow({p}: {p: CompetitorEngager}) {
 
 function Outside({fixture}: {fixture: JourneyFixture}) {
  const data = fixture.competitorEngagers!, checked = fixture.hero?.checked;
- const [open, setOpen] = useState(false);
- const hidden = !open && data.people.length > SHOWN + 1 ? data.people.length - SHOWN : 0;
- const people = hidden ? data.people.slice(0, SHOWN) : data.people;
+ const [open, setOpen] = useState(false), shown = useShown();
+ const hidden = !open && data.people.length > shown + 1 ? data.people.length - shown : 0;
+ const people = hidden ? data.people.slice(0, shown) : data.people;
  return <div className="sv2-part" data-part="outside">
   <h2>Buyers reading posts in your market</h2>
   {checked && <p className="sv2-checked">{CHECKED(checked.people, checked.passed)}</p>}

@@ -37,8 +37,19 @@ const CANDIDATES: Record<string, React.ComponentType<{ report: ReportJson; scan:
   ledger: CandidateLedger,
 };
 
+// V2 scan page (2026-11-17): six real saved scans with a hero object, /dev/scan-lab?story=fabio[&view=team][&hero=0].
+// Dev builds only: the glob sits behind import.meta.env.DEV so the JSON never reaches the production bundle.
+const STORY_FIXTURES: Record<string, () => Promise<unknown>> = import.meta.env.DEV ? import.meta.glob('./scanlab/v2-*.json', { import: 'default' }) : {};
+const StoryLab = React.lazy(() => import('./scanlab/StoryLab'));
+
 export default function ScanLabPage() {
   const params = new URLSearchParams(window.location.search);
+  const story = params.get('story');
+  if (story) {
+    const load = STORY_FIXTURES[`./scanlab/v2-${story}.json`];
+    if (!load) return <div style={{ padding: 40, fontFamily: 'monospace' }}>scan-lab: unknown story "{story}" (dev builds only).</div>;
+    return <React.Suspense fallback={null}><StoryLab load={load} view={params.get('view') === 'team' ? 'team' : 'main'} hero={params.get('hero') !== '0'} /></React.Suspense>;
+  }
   const candKey = params.get('candidate') || 'current';
   const fixKey = params.get('fixture') || 'rodial';
   const fixture = FIXTURES[fixKey];

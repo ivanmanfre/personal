@@ -35,6 +35,12 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
  },[]);
  useGoogleFonts([fixture.samples.lm?.brand?.font_heading,edition.resource?.brand?.font]);
  const v2=useV2(fixture),team=v2&&view==='team';
+ // The V2 hero's first line is set in the display face: preload it so the swap cannot shift the page (the prerender bakes the tag).
+ React.useEffect(()=>{
+  if(!v2||document.head.querySelector('link[data-sv2-font]'))return;
+  const l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.crossOrigin='anonymous';l.href=import.meta.env.BASE_URL+'studio-fonts/Brico.woff2';l.setAttribute('data-sv2-font','');
+  document.head.appendChild(l);
+ },[v2]);
  useMetadata({title:team?`${fixture.founder.company||fixture.founder.name}: the short version`:v2?v2Title(fixture):`Turn LinkedIn into booked calls | ${fixture.founder.firstName}`,description:`Content, resources and outreach for ${fixture.founder.company}.`,canonical:`https://inboundonsteroids.com/scan/${fixture.slug}/${team?'team/':''}`,ogImage:fixture.ogImage,noindex:true});
  return <main className="scan-journey scan-studio" id="top">
   {!team&&<a href="#content" className="journey-skip">Skip to your samples</a>}
