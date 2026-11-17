@@ -82,6 +82,7 @@
 [data-rise-story="rise-standard-2026-11-17"] .rv2-rival figure,[data-rise-story="rise-standard-2026-11-17"] .rv2-hero-rival{margin:0}
 [data-rise-story="rise-standard-2026-11-17"] .rv2-rival img,[data-rise-story="rise-standard-2026-11-17"] .rv2-hero-rival img{width:100%;max-height:520px;object-fit:contain;border-radius:10px;background:#f4f1ea}
 [data-rise-story="rise-standard-2026-11-17"] .rv2-rival-meta,[data-rise-story="rise-standard-2026-11-17"] .rv2-hero-rival figcaption{font-size:14px;opacity:.8}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-rival-meta a{min-height:44px;display:inline-flex;align-items:center}
 [data-rise-story="rise-standard-2026-11-17"] .rv2-footnote{font-size:13px;line-height:1.5;opacity:.7;margin:12px 0 0;max-width:70ch}
 @media(max-width:600px){[data-rise-story="rise-standard-2026-11-17"] .rv2-lede{font-size:26px}[data-rise-story="rise-standard-2026-11-17"] .rv2-pair{grid-template-columns:minmax(0,1fr);gap:24px}[data-rise-story="rise-standard-2026-11-17"] .rv2-rival-grid{grid-template-columns:minmax(0,1fr);gap:20px}[data-rise-story="rise-standard-2026-11-17"] .rv2-hero-pair{gap:10px}[data-rise-story="rise-standard-2026-11-17"] .rv2-strip-row{grid-auto-columns:72%}}
 /* Tap targets of at least 44 px on both standards (spec 2.12). */

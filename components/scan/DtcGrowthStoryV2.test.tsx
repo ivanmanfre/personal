@@ -142,3 +142,11 @@ describe('layout (2026-11-17)', () => {
     expect(c.querySelector('.ris-close-model')!.textContent).toBe(html(v1()).querySelector('.ris-close-model')!.textContent);
   });
 });
+
+describe('11-17 tap targets', () => {
+  it('the rival "View the ad" link is at least 44 px tall (replay render 11-17 measured 38 px)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('./DtcInsightStory.css', import.meta.url), 'utf8');
+    expect(css).toContain('[data-rise-story="rise-standard-2026-11-17"] .rv2-rival-meta a{min-height:44px;display:inline-flex;align-items:center}');
+  });
+});
