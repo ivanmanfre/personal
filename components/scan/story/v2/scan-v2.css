@@ -60,3 +60,12 @@
 .scan-studio.scan-journey .sv2-after p{font:800 clamp(24px,2.6vw,34px)/1.1 StudioDisplay,sans-serif;letter-spacing:-.025em;color:#f3efe6;margin:0;max-width:22ch}
 @media(max-width:900px){.scan-studio.scan-journey .sv2-part{grid-template-columns:minmax(0,1fr)}.scan-studio.scan-journey .sv2-part>*{grid-column:1!important;grid-row:auto!important}.scan-studio.scan-journey .sv2-part>.sv2-list{margin-top:10px}}
 @media(max-width:600px){.scan-studio.scan-journey .sv2-buyers{padding:48px var(--studio-pad);gap:36px}.scan-studio.scan-journey .sv2-pair{grid-template-columns:minmax(0,1fr)}.scan-studio.scan-journey .sv2-list{padding:4px 16px}.scan-studio.scan-journey .sv2-after .studio-primary{width:100%}}
+
+/* Offer */
+.scan-studio.scan-journey .sv2-offer{padding:48px var(--studio-pad);border-top:1px solid #f3efe619;scroll-margin-top:90px}
+.scan-studio.scan-journey .sv2-offer-lines{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin:0}
+.scan-studio.scan-journey .sv2-offer-lines dt{font:500 12px/1.4 StudioMono,monospace;color:#e5502f;margin:0 0 10px}
+.scan-studio.scan-journey .sv2-offer-lines dd{font:450 17px/1.55 StudioSans;color:#f3efe6;margin:0}
+.scan-studio.scan-journey .sv2-price{font:450 17px/1.55 StudioSans;color:#f3efe6;margin:28px 0 0;padding-top:20px;border-top:1px solid #f3efe61f}
+.scan-studio.scan-journey .sv2-share{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:8px;font:600 15px StudioSans;color:#f3efe6;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:899px){.scan-studio.scan-journey .sv2-offer-lines{grid-template-columns:minmax(0,1fr);gap:20px}.scan-studio.scan-journey .sv2-offer{padding:40px var(--studio-pad)}.scan-studio.scan-journey .sv2-offer-lines dd,.scan-studio.scan-journey .sv2-price{font-size:16px}}
