@@ -13,6 +13,7 @@ export function validateEdition(raw:unknown,f:JourneyFixture,production=false):{
  if(raw.slug!==f.slug||raw.founderName!==f.founder.name||raw.companyName!==f.founder.company)errors.push('Story belongs to a different lead.');
  if(!['draft','approved'].includes(raw.reviewStatus)||(production&&raw.reviewStatus!=='approved'))errors.push('Story needs editorial approval.');
  if(!fields(raw,['brand','post','plainPost','magnet','magnetPost','keyword','message','reply','next','subject','email','contentHeading','contentWhy','magnetWhy','researchNote','buyerRole','coldTrigger','coldMessage','newsletterNote','nurtureNote']))errors.push('A required sample or explanation is missing.');
+ if(raw.readerStyle!==undefined&&raw.readerStyle!=='role')errors.push('Unknown reader style.');
  if(!['creative','research','custom'].includes(raw.art))errors.push('Unknown artwork style.');
  if(!items(raw.slides,['title','body'],2)||raw.slides.length>12||raw.slides.some((s:any)=>s.title.length>140||s.body.length>950||(s.note!==undefined&&typeof s.note!=='string')))errors.push('Slides need 2–12 readable pages.');
  if(!items(raw.segments,['label','note'])||raw.segments.length>5)errors.push('Buyer segments are missing or invalid.');

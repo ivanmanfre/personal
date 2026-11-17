@@ -69,3 +69,24 @@
 .scan-studio.scan-journey .sv2-price{font:450 17px/1.55 StudioSans;color:#f3efe6;margin:28px 0 0;padding-top:20px;border-top:1px solid #f3efe61f}
 .scan-studio.scan-journey .sv2-share{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:8px;font:600 15px StudioSans;color:#f3efe6;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:899px){.scan-studio.scan-journey .sv2-offer-lines{grid-template-columns:minmax(0,1fr);gap:20px}.scan-studio.scan-journey .sv2-offer{padding:40px var(--studio-pad)}.scan-studio.scan-journey .sv2-offer-lines dd,.scan-studio.scan-journey .sv2-price{font-size:16px}}
+
+/* Folded steps */
+.scan-studio.scan-journey .sv2-fold{padding:28px var(--studio-pad);scroll-margin-top:90px}
+.scan-studio.scan-journey .sv2-fold+.sv2-fold{padding-top:0}
+.scan-studio.scan-journey .sv2-fold-card{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:center;border:1px solid #f3efe622;border-radius:22px;padding:30px 32px;background:#151311}
+.scan-studio.scan-journey .sv2-fold-text h2{font:800 clamp(26px,2.8vw,38px)/1.08 StudioDisplay,sans-serif;letter-spacing:-.03em;color:#f3efe6;margin:12px 0 10px;text-wrap:balance}
+.scan-studio.scan-journey .sv2-fold-text p{font:450 16px/1.6 StudioSans;color:#bdb6aa;margin:0;max-width:52ch}
+.scan-studio.scan-journey .sv2-fold-toggle{display:inline-flex;align-items:center;gap:10px;min-height:48px;margin-top:20px;padding:0 18px;border-radius:12px;border:0;background:#f3efe6;color:#16181a;font:600 15px StudioSans}
+.scan-studio.scan-journey .sv2-fold-toggle svg{transition:transform .2s}.scan-studio.scan-journey .is-open .sv2-fold-toggle svg{transform:rotate(180deg)}
+.scan-studio.scan-journey .is-open .sv2-fold-toggle{background:transparent;color:#f3efe6;border:1px solid #f3efe63d}
+.scan-studio.scan-journey .sv2-fold-preview{min-width:0;display:flex;justify-content:center}
+.scan-studio.scan-journey .is-open .sv2-fold-preview{opacity:.35}
+.scan-studio.scan-journey .sv2-fold-body{padding-top:28px}
+.scan-studio.scan-journey .sv2-fold-body .sp-chapter-head{margin-bottom:28px}
+.scan-studio.scan-journey .sv2-pv{background:#fbfaf7;color:#16181a;border-radius:14px;padding:18px 20px;max-width:340px;width:100%;box-shadow:inset 0 1px 0 #fff,0 1px 2px #0006,0 24px 50px -26px #000c}
+.scan-studio.scan-journey .sv2-pv small{display:block;font:500 11px/1.4 StudioMono,monospace;color:#68645f;margin-bottom:8px}
+.scan-studio.scan-journey .sv2-pv b{display:block;font:700 17px/1.35 StudioSans;overflow-wrap:anywhere}
+.scan-studio.scan-journey .sv2-pv p{font:450 15px/1.5 StudioSans;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.scan-studio.scan-journey .sv2-pv-cover{width:240px;max-width:100%;height:auto;border-radius:10px;display:block;box-shadow:0 24px 50px -26px #000c}
+@media(max-width:900px){.scan-studio.scan-journey .sv2-fold-card{grid-template-columns:minmax(0,1fr);gap:22px;padding:24px 20px}.scan-studio.scan-journey .sv2-fold-preview{justify-content:flex-start;order:-1}.scan-studio.scan-journey .sv2-fold-toggle{width:100%;justify-content:center}}
+@media(max-width:600px){.scan-studio.scan-journey .sv2-fold{padding:18px var(--studio-pad)}.scan-studio.scan-journey .sv2-pv-cover{width:160px}}

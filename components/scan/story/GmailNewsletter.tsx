@@ -20,7 +20,7 @@ export function GmailNewsletter({fixture}: {fixture: JourneyFixture}) {
     <h3>{plan.subject}<span className="gmail-inbox-label">Inbox</span></h3>
     <div className="gmail-sender">
      <Avatar src={fixture.founder.avatarUrl} name={fixture.founder.name}/>
-     <div className="gmail-sender-name"><b>{fixture.founder.name}</b><small>to {name} <ChevronDown size={12} aria-hidden="true"/></small></div>
+     <div className="gmail-sender-name"><b>{fixture.founder.name}</b><small>to {name || 'me'} <ChevronDown size={12} aria-hidden="true"/></small></div>
      <div className="gmail-sender-tools" aria-hidden="true"><Star/><Reply/><MoreVertical/></div>
     </div>
    </header>

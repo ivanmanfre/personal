@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {motion, useReducedMotion} from 'framer-motion';
-import {ArrowDown, ArrowRight, ArrowUpRight} from 'lucide-react';
+import {ArrowDown, ArrowRight, ArrowUpRight, User} from 'lucide-react';
 import {asset, type JourneyFixture, type CompetitorEngagers} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel';
 import {Avatar} from '../../dev/scan-walkthrough/journey/ReadingChapter';
@@ -26,7 +26,7 @@ import './story-plan.css';
 import './story-motion.css';
 import './competitor-engagers.css';
 
-function ChapterTitle({text}:{text:string}) {return <h2>{text}</h2>}
+export function ChapterTitle({text}:{text:string}) {return <h2>{text}</h2>}
 
 const BOOK = 'https://calendly.com/im-ivanmanfredi/30min';
 const STEPS = [
@@ -116,9 +116,9 @@ function StepNav() {
  </nav>;
 }
 
-type Sample = {key: string; title?: string; hint?: string; render: () => React.ReactNode; full?: boolean};
+export type Sample = {key: string; title?: string; hint?: string; render: () => React.ReactNode; full?: boolean};
 
-function ResourcePreview({kind, domain}: {kind: StoryKind; domain: string}) {
+export function ResourcePreview({kind, domain}: {kind: StoryKind; domain: string}) {
  const [open, setOpen] = useState(false);
  return <div className={`studio-resource ${open ? 'is-open' : ''}`}>
   <div id="resource-preview-body" className={`studio-resource-window ${open ? 'is-open' : ''}`} inert={!open} aria-hidden={!open}><LeadMagnetPage kind={kind} domain={domain}/></div>
@@ -126,26 +126,31 @@ function ResourcePreview({kind, domain}: {kind: StoryKind; domain: string}) {
  </div>;
 }
 
-/** Every sample on show at once, side by side, each with the one line on what it does for them. */
-function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, headerVisual, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; headerVisual?: React.ReactNode; after?: React.ReactNode}) {
+/** The samples of one chapter, side by side, each with the one line on what it does for them. */
+export function SampleGrid({samples, cols = 2}: {samples: Sample[]; cols?: 2 | 3}) {
  const reduced = useReducedMotion();
+ return <div className={`sp-stage sp-grid sp-grid-${cols}`}>
+   {samples.map((x, i) => <motion.figure key={x.key} className={`sp-exhibit sp-exhibit-${x.key} ${x.full ? 'is-full' : ''}`} initial={reduced ? false : {opacity: 0, y: 14}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, amount: .1}} transition={{duration: reduced ? 0 : .5, delay: reduced ? 0 : i * .055, ease: [.22, .84, .36, 1]}}>
+    {x.title && <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>}
+    {x.render()}
+   </motion.figure>)}
+  </div>;
+}
+
+/** Every sample on show at once, side by side, each with the one line on what it does for them. */
+export function Chapter({id, n, label, title, why, samples, cols = 2, tone = 'paper', aside, headerVisual, after}: {id: string; n: number; label: string; title: string; why: string; samples: Sample[]; cols?: 2 | 3; tone?: 'paper' | 'warm'; aside?: React.ReactNode; headerVisual?: React.ReactNode; after?: React.ReactNode}) {
  return <section className="sp-chapter story-scene" id={id} data-tone={tone}>
   <header className={`sp-chapter-head ${headerVisual ? 'has-brain' : ''}`}>
    <div><span className="sp-eyebrow"><b>{String(n).padStart(2, '0')}</b>{label}<em className="sp-eyebrow-group">{n <= 2 ? 'Inbound' : 'Outbound'}</em></span><ChapterTitle text={title}/>{headerVisual && <div className="sp-content-intro"><p>{why}</p>{aside}</div>}</div>
    {headerVisual || <div><p>{why}</p>{aside}</div>}
   </header>
-  <div className={`sp-stage sp-grid sp-grid-${cols}`}>
-   {samples.map((x, i) => <motion.figure key={x.key} className={`sp-exhibit sp-exhibit-${x.key} ${x.full ? 'is-full' : ''}`} initial={reduced ? false : {opacity: 0, y: 14}} whileInView={{opacity: 1, y: 0}} viewport={{once: true, amount: .1}} transition={{duration: reduced ? 0 : .5, delay: reduced ? 0 : i * .055, ease: [.22, .84, .36, 1]}}>
-    {x.title && <figcaption><b>{x.title}</b><span>{x.hint}</span></figcaption>}
-    {x.render()}
-   </motion.figure>)}
-  </div>
+  <SampleGrid samples={samples} cols={cols}/>
   {after}
  </section>;
 }
 
 /** Short bubbles the way people actually message: a long paragraph becomes two or three sends. */
-const bubbles = (text: string) => {
+export const bubbles = (text: string) => {
  const parts = text.split(/(?<=[.?!])\s+(?=[A-Z¿¡])/).filter(Boolean);
  if (parts.length <= 2) return parts;
  return [parts[0], parts.slice(1, -1).join(' '), parts[parts.length - 1]];
@@ -158,10 +163,10 @@ export function Thread({children}: {children: React.ReactNode}) {
 export const Bubble = ({mine, children}: {mine?: boolean; children: React.ReactNode}) => <motion.p className={mine ? 'is-mine' : ''} variants={{hide: {opacity: 0, y: 14, scale: .97}, show: {opacity: 1, y: 0, scale: 1, transition: {type: 'spring', stiffness: 260, damping: 24}}}}>{children}</motion.p>;
 
 export function DmHead({name, role}: {name: string; role: string}) {
- return <header className="sp-dm-head"><span className="sp-dm-avatar">{name[0]}</span><span><b>{name}</b><small>{role}</small></span><span className="chat-linkedin">in</span></header>;
+ return <header className="sp-dm-head"><span className="sp-dm-avatar">{name ? name[0] : <User size={15} aria-hidden="true"/>}</span><span><b>{name || 'Example buyer'}</b><small>{role}</small></span><span className="chat-linkedin">in</span></header>;
 }
 
-function WarmChat() {
+export function WarmChat() {
  const plan = useStory(), name = readerName(plan);
  return <article className="sp-dm" data-mockup="linkedin" aria-label="Example LinkedIn conversation">
   <DmHead name={name} role={plan.buyerRole}/>
@@ -174,7 +179,7 @@ function WarmChat() {
  </article>;
 }
 
-function ColdChat() {
+export function ColdChat() {
  const plan = useStory(), name = readerName(plan);
  return <article className="sp-dm" data-mockup="linkedin" aria-label="Example signal-based outreach">
   <div className="sp-signal"><span className="sp-signal-badge"><i/>The signal we watch for</span><b>{plan.coldTrigger}</b><small>We reach out while the project is live.</small></div>
