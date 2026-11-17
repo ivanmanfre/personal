@@ -37,7 +37,7 @@ const CANDIDATES: Record<string, React.ComponentType<{ report: ReportJson; scan:
   ledger: CandidateLedger,
 };
 
-// V2 scan page (2026-11-17): six real saved scans with a hero object, /dev/scan-lab?story=fabio[&view=team][&hero=0].
+// V2 scan page (2026-11-17): six invented scans with a hero object (rich, norwegian, own-only, zero-own, thin, few-buyers), /dev/scan-lab?story=rich[&view=team][&hero=0].
 // Dev builds only: the glob sits behind import.meta.env.DEV so the JSON never reaches the production bundle.
 const STORY_FIXTURES: Record<string, () => Promise<unknown>> = import.meta.env.DEV ? import.meta.glob('./scanlab/v2-*.json', { import: 'default' }) : {};
 const StoryLab = React.lazy(() => import('./scanlab/StoryLab'));

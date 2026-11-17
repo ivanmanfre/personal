@@ -1,7 +1,8 @@
 // Visual acceptance captures for the V2 scan page (plan 2026-11-17-ivan-scan-page, Task 11).
 //   BASE=http://localhost:4732 OUT=/tmp/v2-shots node scripts/capture-scan-v2.cjs
-// BASE is a local `vite preview` of a VITE_BASE=/scan/ build. The six saved scans in components/dev/scanlab/v2-*.json
-// are served in place of the scans read, so no live row is needed. Guarded: edge functions, trackers and every
+// BASE is a local `vite preview` of a VITE_BASE=/scan/ build. The six invented scans in components/dev/scanlab/v2-*.json
+// are served in place of the scans read, so no live row is needed. Their profile images point at lm-og keys that do not
+// exist (the adapter needs that URL shape); they are served from components/dev/scanlab/placeholders/. Guarded: edge functions, trackers and every
 // non-GET are aborted, service workers blocked, storage video/GIF blocked (blockStorageMedia).
 const path = require('path'), os = require('os'), fs = require('fs');
 const req = (m) => { try { return require(m); } catch { return require(path.join(os.homedir(), '.claude/skills/playwright-driver/node_modules', m)); } };
@@ -10,20 +11,25 @@ const blockStorageMedia = require(path.join(os.homedir(), '.claude/skills/playwr
 const BASE = process.env.BASE || 'http://localhost:4732', OUT = process.env.OUT || path.join(os.tmpdir(), 'v2-shots');
 const DIR = path.join(__dirname, '..', 'components', 'dev', 'scanlab');
 const rows = new Map(fs.readdirSync(DIR).filter(f => /^v2-.*\.json$/.test(f)).map(f => { const r = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')); return [r.company_slug, {key: f.slice(3, -5), row: {...r, matched_offer: 'content_system'}}]; }));
+const PLACEHOLDER = /\/storage\/v1\/(?:object|render\/image)\/public\/lm-og\/profile-(photo|banner)-[a-z0-9-]+-fx\d\.png/;
+const placeholder = kind => fs.readFileSync(path.join(DIR, 'placeholders', kind === 'banner' ? 'banner.svg' : 'avatar.svg'));
 const WIDTHS = [[390, 844], [1440, 900]];
 fs.mkdirSync(OUT, {recursive: true});
 
 async function guard(ctx) {
+  // Registered first so it runs last: Playwright tries the newest route first, and this one ends in route.continue().
+  await blockStorageMedia(ctx);
   await ctx.route('**/*', route => {
     const r = route.request(), u = r.url(), m = r.method(), remote = !/^http:\/\/(localhost|127\.0\.0\.1)/.test(u);
     if (remote && (/\/functions\/v1\/|scan-open|page-open|pageview|googletagmanager|google-analytics/i.test(u) || !['GET', 'HEAD', 'OPTIONS'].includes(m))) return route.abort('blockedbyclient');
+    const ph = remote && m === 'GET' && u.match(PLACEHOLDER);
+    if (ph) return route.fulfill({status: 200, contentType: 'image/svg+xml', body: placeholder(ph[1])});
     if (remote && m === 'GET' && /\/rest\/v1\/scans\?/.test(u)) {
       const hit = rows.get((new URL(u).searchParams.get('company_slug') || '').replace(/^eq\./, ''));
       if (hit) return route.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(/pgrst\.object/.test(r.headers()['accept'] || '') ? hit.row : [hit.row])});
     }
     return route.fallback();
   });
-  await blockStorageMedia(ctx);
 }
 
 async function settle(page) {
