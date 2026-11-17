@@ -135,6 +135,25 @@ for (const slug of [...(await fetchScanSlugs()), ...(await fetchInlineScanSlugs(
   const r = `/scan/${slug}`;
   if (!ROUTES.includes(r)) ROUTES.push(r);
 }
+// Partner view (/scan/<slug>/team/) for scans that carry a hero, only while the SCAN_HERO switch is on.
+async function fetchTeamScanSlugs() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key || process.env.VITE_SCAN_HERO === '0' || process.env.SCAN_MIRROR !== '1') return [];
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/scans?status=eq.complete&matched_offer=eq.content_system&report_json->content_system->hero->>v=eq.1&company_slug=not.is.null&select=company_slug`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.map((r) => r.company_slug).filter(Boolean) : [];
+  } catch { return []; }
+}
+for (const slug of await fetchTeamScanSlugs()) {
+  const r = `/scan/${slug}/team`;
+  if (!ROUTES.includes(r)) ROUTES.push(r);
+}
 console.log(`[prerender] scan routes:`, ROUTES.filter((r) => r.startsWith('/scan/')).join(', '));
 
 // Parallel to the scan enumeration, but for client boards. client_boards is RLS
@@ -333,7 +352,7 @@ process.on('SIGTERM', () => shutdown(143));
       // carries the right share tags (other routes set metadata synchronously).
       if (route.startsWith('/scan/')) {
         await page
-          .waitForFunction(() => (/^(A content system|An inbound engine|An inbound service|A growth scan|LinkedIn as a revenue line) for /.test(document.title) || /, your LinkedIn plan for qualified calls$/.test(document.title) || /^Turn LinkedIn into booked calls \| /.test(document.title)|| /^[^,]{1,40}, \d+ (buyers within reach|more buyers)/.test(document.title) || ([...document.querySelectorAll('[data-rise-story] h1, [data-rise-story] .ris-standard-finding h2')].some(el => document.title.endsWith(el.innerText.replace(/\s+/g, ' ').trim())))), { timeout: 15000 })
+          .waitForFunction(() => (/^(A content system|An inbound engine|An inbound service|A growth scan|LinkedIn as a revenue line) for /.test(document.title) || /, your LinkedIn plan for qualified calls$/.test(document.title) || /^Turn LinkedIn into booked calls \| /.test(document.title)|| /^[^,]{1,40}, \d+ (buyers within reach|more buyers)/.test(document.title)|| /: the short version$/.test(document.title) || ([...document.querySelectorAll('[data-rise-story] h1, [data-rise-story] .ris-standard-finding h2')].some(el => document.title.endsWith(el.innerText.replace(/\s+/g, ' ').trim())))), { timeout: 15000 })
           .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
         // Bake the full report body, not just OG tags. The scan content arrives via a
         // client-side Supabase fetch, so without this wait the baked #root is empty and

@@ -5272,15 +5272,17 @@ const SidebarNav: React.FC = () => {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const ScanReportPage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, '*': rest } = useParams<{ slug: string; '*': string }>();
+  // /scan/<slug>/team/ is the partner view (V2 scans only; anything else renders the main page).
+  const view: 'main' | 'team' = (rest || '').split('/')[0] === 'team' ? 'team' : 'main';
   const { scan, loading, error } = useScan(slug ?? null);
   const reduceMotion = useReducedMotion();
 
   // Record a prospect open once the report data resolves. Fire-and-forget;
   // the edge fn decides real-vs-owner server-side (IP + dashboard/?me=1 flag).
   useEffect(() => {
-    if (scan && slug) trackScanOpen(slug);
-  }, [scan, slug]);
+    if (scan && slug) trackScanOpen(slug, view);
+  }, [scan, slug, view]);
 
   if (loading) {
     return (
@@ -5342,7 +5344,7 @@ const ScanReportPage: React.FC = () => {
   if (offer === 'content_system' && report.content_system) {
     const fixture=toStoryFixture(scan);
     const {edition}=validateEdition(report.content_system.story_v1,fixture,true);
-    if(edition)return <><ScanWalkthroughVideo slug={scan.company_slug}/><ScanStoryReport fixture={fixture} edition={edition}/></>;
+    if(edition)return <><ScanWalkthroughVideo slug={scan.company_slug}/><ScanStoryReport fixture={fixture} edition={edition} view={view}/></>;
     return <><ScanWalkthroughVideo slug={scan.company_slug} /><ContentSystemReport report={report} scan={scan} companyName={companyName} /></>;
   }
 
