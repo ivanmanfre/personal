@@ -1,0 +1,35 @@
+/* V2 scan page (SCAN_HERO). Same room, fonts and reds as scan-studio.css; no new colour or family. */
+.scan-studio.scan-journey .sv2-hero{padding:56px var(--studio-pad) 72px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:56px;align-items:start;position:relative;animation:studio-rise .7s cubic-bezier(.16,1,.3,1) both;--sv2-rise:12px}
+.scan-studio.scan-journey .sv2-hero:before{content:'';position:absolute;z-index:-1;inset:-140px 0 0;background:radial-gradient(ellipse at 75% 20%,#ad4b251c,transparent 58%);pointer-events:none}
+.scan-studio.scan-journey .sv2-brand-line{font:600 13px/1.4 StudioSans;letter-spacing:.02em;color:#bdb6aa;margin:0 0 18px;display:flex;align-items:center;gap:10px}
+.scan-studio.scan-journey .sv2-brand-line:before{content:'';width:7px;height:7px;background:#e5502f;flex:none}
+.scan-studio.scan-journey .sv2-hero h1{font:800 clamp(28px,6.2vw,52px)/1.12 StudioDisplay,sans-serif;letter-spacing:-.03em;color:#f3efe6;margin:0;max-width:22ch;text-wrap:balance;overflow-wrap:anywhere}
+.scan-studio.scan-journey .sv2-hero h1 mark{color:inherit;background:linear-gradient(#c8361b,#c8361b) 0 92%/100% .16em no-repeat;padding-bottom:.02em}
+.scan-studio.scan-journey .sv2-fix{font:450 19px/1.55 StudioSans;color:#f3efe6;max-width:46ch;margin:18px 0 0;border-left:2px solid #e5502f;padding-left:14px}
+.scan-studio.scan-journey .sv2-count{font:500 19px/1.5 StudioSans;color:#f3efe6;max-width:46ch;margin:20px 0 0}
+.scan-studio.scan-journey .sv2-sub{font:450 17px/1.55 StudioSans;color:#bdb6aa;max-width:46ch;margin:14px 0 0}
+.scan-studio.scan-journey .sv2-hero-actions{display:flex;gap:18px;flex-wrap:wrap;margin-top:28px}
+.scan-studio.scan-journey .sv2-sheet{background:#fbfaf7;color:#16181a;border-radius:18px;padding:22px 24px 18px;box-shadow:inset 0 1px 0 #fff,0 1px 2px #0006,0 30px 60px -28px #000c;min-width:0}
+.scan-studio.scan-journey .sv2-rows{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.scan-studio.scan-journey .sv2-rows li{display:flex;gap:12px;padding:14px 0;border-top:1px solid #e3ded5;min-width:0}.scan-studio.scan-journey .sv2-rows li:first-child{border-top:0;padding-top:2px}
+.scan-studio.scan-journey .sv2-rows li>div{min-width:0;display:grid;gap:3px}
+.scan-studio.scan-journey .sv2-rows .sp-audit-face{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;background:#ece7de;color:#16181a;font:700 13px StudioSans}
+.scan-studio.scan-journey .sv2-name{font:700 16px/1.3 StudioSans;color:#16181a;text-decoration:none;display:inline-flex;gap:4px;align-items:center;overflow-wrap:anywhere;min-height:24px}
+.scan-studio.scan-journey a.sv2-name:hover{text-decoration:underline}
+.scan-studio.scan-journey .sv2-role{font:450 14px/1.4 StudioSans;color:#5f5a53;overflow-wrap:anywhere}
+.scan-studio.scan-journey .sv2-signal{font:500 13px/1.4 StudioSans;color:#5f5a53}.scan-studio.scan-journey a.sv2-signal{color:#a8301a;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:44px;margin:-10px 0}
+.scan-studio.scan-journey .sv2-more{display:none}
+.scan-studio.scan-journey .sv2-note{font:450 13px/1.5 StudioSans;color:#68645f;margin:12px 0 0;padding-top:12px;border-top:1px solid #e3ded5}
+.scan-studio.scan-journey .sv2-sheet>.sv2-note:first-child{margin:0;padding:0;border:0}
+@media(max-width:1023px){
+ .scan-studio.scan-journey .sv2-rows li:nth-child(n+2){display:none}
+ .scan-studio.scan-journey .sv2-more{display:inline-flex;align-items:center;min-height:44px;font:600 15px StudioSans;color:#16181a;text-decoration:underline;text-underline-offset:3px}
+}
+@media(max-width:900px){.scan-studio.scan-journey .sv2-hero{grid-template-columns:minmax(0,1fr);gap:28px;padding-top:36px}}
+@media(max-width:600px){
+ .scan-studio.scan-journey .sv2-hero{padding-bottom:44px}
+ .scan-studio.scan-journey .sv2-count{font-size:17px}.scan-studio.scan-journey .sv2-sub{font-size:16px}
+ .scan-studio.scan-journey .sv2-sheet{padding:18px 18px 14px}
+ .scan-studio.scan-journey .sv2-hero-actions .studio-primary{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.scan-studio.scan-journey .sv2-hero{animation:none}}
