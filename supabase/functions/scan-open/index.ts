@@ -11,11 +11,18 @@
 // opens from those IPs are excluded even in incognito or when he clicks a raw
 // sent link — closing the LinkedIn/phone gap the client-only flag can't.
 //
-// Body: { company_slug, owner_flag?, device_type?, referrer_host?, user_agent? }
+// After the insert, the caller's network is looked up once per ip_hash (network.ts; the raw IP is never stored)
+// and the database labels the row: owner, own_tool, link_scanner or human (scan_open_finalize, db/304).
+// A failed or slow lookup still labels the row; the response always carries the open id when the insert worked.
+//
+// Body: { company_slug, owner_flag?, device_type?, referrer_host?, user_agent?, view? ('main' | 'team') }
+// Response: { ok: true, is_owner, open_id }
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), IP_HASH_SALT.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { lookupNetwork } from "./network.ts";
+import { finalizeOpen, type FinalizeDb } from "./finalize.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -98,16 +105,22 @@ Deno.serve(async (req: Request) => {
         );
     }
 
-    await supabase.from("scan_opens").insert({
+    const { data: row } = await supabase.from("scan_opens").insert({
       company_slug: slug,
       is_owner: isOwner,
       device_type: clamp(body.device_type, 16),
       referrer_host: clamp(body.referrer_host, 253),
       ip_hash: ipHash,
       user_agent: clamp(body.user_agent, 512),
-    });
+      view: body.view === "team" ? "team" : "main",
+    }).select("id").single();
+    const openId = typeof row?.id === "number" ? row.id : null;
 
-    return json({ ok: true, is_owner: isOwner });
+    if (openId !== null) {
+      await finalizeOpen(supabase as unknown as FinalizeDb, { openId, ip, ipHash, isOwner }, (addr) => lookupNetwork(addr));
+    }
+
+    return json({ ok: true, is_owner: isOwner, open_id: openId });
   } catch (_e) {
     // Never surface tracker errors — the page must not break on a bad open.
     return json({ ok: false }, 200);

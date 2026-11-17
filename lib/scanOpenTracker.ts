@@ -41,15 +41,20 @@ function referrerHost(): string | null {
   catch { return null; }
 }
 
-/** Fire-and-forget. Records at most one open per slug per page load. */
-export function trackScanOpen(slug: string): void {
-  if (typeof window === 'undefined' || !slug) return;
-  if (isPreviewHost(window.location.hostname)) return;   // keep dev traffic out
-  if (fired.has(slug)) return;
+export type ScanView = 'main' | 'team';
+
+/**
+ * Fire-and-forget. Records at most one open per slug per page load and resolves to the stored open id
+ * (null when skipped or on any failure). Callers that ignore the result keep working as before.
+ */
+export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<number | null> {
+  if (typeof window === 'undefined' || !slug) return Promise.resolve(null);
+  if (isPreviewHost(window.location.hostname)) return Promise.resolve(null);   // keep dev traffic out
+  if (fired.has(slug)) return Promise.resolve(null);
   fired.add(slug);
 
   const ua = navigator.userAgent || '';
-  supabase.functions
+  return supabase.functions
     .invoke('scan-open', {
       body: {
         company_slug: slug,
@@ -57,7 +62,12 @@ export function trackScanOpen(slug: string): void {
         device_type: deviceType(ua),
         referrer_host: referrerHost(),
         user_agent: ua.slice(0, 512),
+        view,
       },
     })
-    .catch(() => { /* never surface tracker errors to the page */ });
+    .then(({ data }) => {
+      const id = (data as { open_id?: unknown } | null)?.open_id;
+      return typeof id === 'number' && Number.isFinite(id) ? id : null;
+    })
+    .catch(() => null);   // never surface tracker errors to the page
 }
