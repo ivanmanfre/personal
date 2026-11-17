@@ -158,7 +158,7 @@ function AdsStrip({ strip, google }: { strip: NonNullable<DtcStandardPresentatio
   const gd = google?.data, gOk = google?.status === 'present' && Number.isInteger(gd?.ads_found) && dated(google?.fetched_at);
   return <section id="public-ads" className="rv2-strip"><div className="ris-shell ris-section">
     <p className="ris-label">Public ad records</p>
-    <h2>{`The ${strip.read} ads we read`}</h2>
+    <h2>{strip.read === 1 ? 'The one ad we read' : `The ${strip.read} ads we read`}</h2>
     <p className="ris-body">{strip.summary ? `${strip.summary} ` : ''}{strip.capped && strip.active != null ? `Meta showed ${strip.active} active ads; we read ${strip.read} of them.` : ''}</p>
     <ol className="rv2-strip-row">{strip.items.map(i => <li key={i.ad_url}><a href={i.ad_url} target="_blank" rel="noopener noreferrer">
       {i.image_url ? <img src={i.image_url} alt="" loading="lazy" /> : <span className="rv2-strip-noimg" aria-hidden="true">Ad</span>}
