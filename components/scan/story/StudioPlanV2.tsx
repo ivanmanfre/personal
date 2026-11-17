@@ -19,6 +19,7 @@ import {OfferBlock} from './v2/OfferBlock';
 import {FoldedChapter} from './v2/FoldedChapter';
 import {PeopleStory} from './v2/PeopleStory';
 import {bookUrl, pageShape, teamUrl} from './v2/hero';
+import {storageImage} from './v2/storageImage';
 import {CHAPTERS, CLOSE, PREVIEW, TEAM} from './v2/copy';
 import '../../dev/scan-walkthrough/journey/connected.css';
 import '../../dev/scan-walkthrough/journey/bold.css';
@@ -48,7 +49,7 @@ function Steps({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
    ]}/></>}
   </FoldedChapter>
   <FoldedChapter id="resource" n={2} label={CHAPTERS.resource.label} title={CHAPTERS.resource.title} why={rationale?.resource ?? plan.magnetWhy}
-   preview={cover ? <img className="sv2-pv-cover" src={cover} alt="" width={240} loading="lazy" decoding="async"/> : <Card label={PREVIEW.resource}><b>{plan.resource.title}</b></Card>}>
+   preview={cover ? <img className="sv2-pv-cover" src={storageImage(cover, 480)} alt="" width={240} loading="lazy" decoding="async"/> : <Card label={PREVIEW.resource}><b>{plan.resource.title}</b></Card>}>
    {() => <SampleGrid cols={2} samples={[
     {key: 'magnet-post', title: 'The post', hint: plan.keyword ? `One comment, “${plan.keyword}”, and they raise their hand.` : 'One comment and they raise their hand.', render: () => <TextPost fixture={fixture} kind={kind} promotion/>},
     {key: 'signup', title: 'The signup', hint: 'Every download becomes a name you own.', render: () => <EmailCapture kind={kind}/>},
