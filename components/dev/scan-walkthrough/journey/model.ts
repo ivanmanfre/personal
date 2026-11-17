@@ -36,7 +36,7 @@ export interface JourneyFixture {
 export interface FirmSize { staff?: number; band: 'small' | 'larger' | 'unknown' }
 export interface HeroRow { name: string; role: string; headline: string; profileUrl?: string; source: 'competitor' | 'topic' | 'own'; how: 'commented' | 'liked' | 'engaged'; author?: string; postUrl?: string; postExcerpt: string; date?: string; dateKind?: 'comment' | 'post'; reason: string }
 export interface ScanHero { tier: 'competitor_commenter' | 'competitor_liker' | 'own_engager' | 'profile'; lead?: HeroRow; rows: HeroRow[]; count: { buyers: number; own: number; outside: number; windowDays?: number; authors: string[] }; profile?: { quote: string; fix: string }; checked?: { people: number; passed: number } }
-export interface CompetitorEngager { name: string; headline: string; company: string; profileUrl: string; reason: string; engaged: 'liked' | 'commented'; competitor: string; postUrl: string; postExcerpt: string; postedAt: string }
+export interface CompetitorEngager { name: string; headline: string; company: string; profileUrl: string; reason: string; engaged: 'liked' | 'commented'; competitor: string; postUrl: string; postExcerpt: string; postedAt: string; source?: 'competitor' | 'topic'; commentedAt?: string }
 export interface CompetitorEngagers { count: number; windowDays: number; readOn: string; competitors: string[]; postsRead: number; engagersRead: number; people: CompetitorEngager[]; notes: { to: string; headline: string; note: string }[] }
 export interface ProfileFinding { area: string; label: string; state: string; today: string; quote: string; fix: string }
 export interface ProfileAudit { findings: ProfileFinding[]; avatarUrl?: string; bannerUrl?: string }

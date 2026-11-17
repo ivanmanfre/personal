@@ -151,13 +151,13 @@ const bubbles = (text: string) => {
  return [parts[0], parts.slice(1, -1).join(' '), parts[parts.length - 1]];
 };
 
-function Thread({children}: {children: React.ReactNode}) {
+export function Thread({children}: {children: React.ReactNode}) {
  const reduced = useReducedMotion();
  return <motion.div className="sp-dm-thread" initial={reduced ? false : 'hide'} whileInView="show" viewport={{once: true, amount: .35}} variants={{show: {transition: {staggerChildren: .08}}}}>{children}</motion.div>;
 }
-const Bubble = ({mine, children}: {mine?: boolean; children: React.ReactNode}) => <motion.p className={mine ? 'is-mine' : ''} variants={{hide: {opacity: 0, y: 14, scale: .97}, show: {opacity: 1, y: 0, scale: 1, transition: {type: 'spring', stiffness: 260, damping: 24}}}}>{children}</motion.p>;
+export const Bubble = ({mine, children}: {mine?: boolean; children: React.ReactNode}) => <motion.p className={mine ? 'is-mine' : ''} variants={{hide: {opacity: 0, y: 14, scale: .97}, show: {opacity: 1, y: 0, scale: 1, transition: {type: 'spring', stiffness: 260, damping: 24}}}}>{children}</motion.p>;
 
-function DmHead({name, role}: {name: string; role: string}) {
+export function DmHead({name, role}: {name: string; role: string}) {
  return <header className="sp-dm-head"><span className="sp-dm-avatar">{name[0]}</span><span><b>{name}</b><small>{role}</small></span><span className="chat-linkedin">in</span></header>;
 }
 
