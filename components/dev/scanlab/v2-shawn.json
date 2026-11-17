@@ -1,0 +1,345 @@
+{
+ "company_slug": "shawn-manaher-57",
+ "company_name": "Ignite Marketing",
+ "completed_at": "2026-11-16 20:47:16.709191+00",
+ "status": "complete",
+ "domain": "",
+ "report_json": {
+  "matched_offer": "content_system",
+  "content_system": {
+   "founder": {
+    "name": "Shawn Manaher",
+    "headline": "Building my way out, in public | Scaling content with AI: 1 idea = 20 pieces = 1 day | Founder, Ignite Marketing (700+ clinic campaigns, ~$65M client revenue) | Writing The Notebook",
+    "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-shawn-manaher-57-37bdd91ee9cba2517620.png",
+    "first_name": "Shawn"
+   },
+   "pillars": {
+    "content": {
+     "found": "You publish clinic SEO explainers, AI-in-business posts and a public Content at Scale experiment built on 1 idea becoming 20 pieces.",
+     "projected": "We turn your deeper insights, sales calls and client work into expert content, then publish it in your name."
+    },
+    "inbound": {
+     "found": "You run comment keywords like \"STAGE\" for your First-Talk Game Plan and \"Crash\" on your agency post, and you point readers to The Notebook, your free weekly newsletter.",
+     "projected": "We build a lead magnet under your name that turns your readers into named leads."
+    },
+    "outbound": {
+     "found": "In your About you ask readers to message you with an idea they have yet to act on and promise to answer every one.",
+     "projected": "Every warm engager gets a short personal note from you, drafted for your approval before it goes out."
+    }
+   },
+   "audience": {
+    "named": [],
+    "posts": 5,
+    "engagers": 31,
+    "audited_at": "2026-11-16T20:40:06.547140Z",
+    "audit_status": "complete",
+    "buyer_examples": [],
+    "buyer_definition": "Owners and clinic directors of scoliosis, regenerative medicine, integrative, orthopedic and chiropractic practices seeking new patients",
+    "client_companies": [
+     "Health 1st Center",
+     "Myers Chiropractic",
+     "Life Essentials Chiropractic",
+     "Moss Family Chiropractic",
+     "Scoliosis Reduction Center",
+     "Koenig Chiropractic",
+     "Stagecoach Family Chiropractic",
+     "Health and Harmony Wellness Center"
+    ],
+    "existing_clients": [],
+    "engager_icp_count": 0
+   },
+   "story_v1": {
+    "art": "custom",
+    "flow": {
+     "brief": "Illustrative example: Alex directs a regenerative clinic running Facebook ads for knee PRP consults. For example, one week brought 100 leads, 40 reached, 30 booked and 20 showed. The front desk calls between patients, sometimes the next day. The call covers who owns follow-up, how fast leads are contacted, how cash-pay consults are explained, and whether the front desk process or the ads come first.",
+     "checks": [
+      {
+       "label": "Fit",
+       "value": "Regenerative clinic running paid ads for cash-pay knee PRP consults."
+      },
+      {
+       "label": "Timing",
+       "value": "Leads are coming in now and the reach step is the current gap."
+      },
+      {
+       "label": "Decision",
+       "value": "Alex and the co-owner decide on marketing together, so both join the call."
+      }
+     ],
+     "signal": "Alex shared their lead to visit numbers and named contact as the biggest drop.",
+     "messages": [
+      "Ran the review on our knee PRP ads. For example last week: 100 leads, 40 reached, 30 booked, 20 showed. Reach is the big drop.",
+      "That's useful, Alex. Who calls new leads right now, and how soon after the form comes in?",
+      "Our front desk, between patients. Sometimes it's the next day. I co-own the clinic and we decide on marketing together.",
+      "Then the first thing to look at is contact speed and who owns it. Want to go through your follow-up process and ad sources on a short call with both owners next week?"
+     ],
+     "callTitle": "Lead follow-up review for a regenerative clinic"
+    },
+    "next": "Sounds good. When you have the result, send me the step with the biggest drop and I'll tell you what I'd look at first for PRP leads. If it's contact, the fix may sit with your front desk process before the ads.",
+    "post": "Before your clinic spends more on ads, look at what happens to the leads you already get.\n\nWe've run 700+ patient-acquisition campaigns for specialty clinics. The ad brings someone to a form. Your team turns that form into a visit, and that handoff is where a lot of new patients can slip away.\n\nCount four numbers for each ad source every week:\n\n→ Leads in\n→ Leads reached in a real conversation\n→ Consults booked\n→ Patients who showed up\n\nDivide each number by the one before it. The lowest rate is your first job.\n\nIf reach is low, buying more leads makes the leak bigger. Give one person the job of calling new leads the same business day.\n\nIf bookings are low, listen to the calls. People asking about cash-pay or non-surgical care want plain answers on the first visit and the cost.\n\nIf people book and don't show, tighten reminders and keep health details out of texts.\n\nThe free skill kit below runs this weekly review in Claude from your own numbers, and drafts lead follow-ups, patient question pages and review replies.",
+    "slug": "shawn-manaher-57",
+    "brand": "Ignite Marketing",
+    "cover": {
+     "left": "Claude skill kit",
+     "lines": [
+      "Find where leads slip away",
+      "Book more patient visits"
+     ],
+     "right": "For clinic owners",
+     "details": [
+      "Weekly lead to visit review",
+      "Follow-ups, pages, replies"
+     ]
+    },
+    "email": "Hi Alex,\n\nThanks for grabbing the Claude skill kit. One detail makes the weekly lead to visit review work: how you count a lead as reached.\n\nCount it as reached only when someone on your team had a real two-way conversation with the person, by phone or text. A voicemail or an unanswered text stays in the not reached column.\n\nThat one rule changes the picture. Say a knee PRP ad brought in 100 leads in one week, and your team logged 40 as reached, 30 as booked and 20 as showed. That's a reach rate of 40%, 75% of those reached booking, and 67% of bookings showing up. The biggest drop is contact: 60 people asked for help and never spoke to anyone.\n\nIf voicemails had been counted as reached, that leak would hide and the booking step would look like the problem instead.\n\nSo before you run the skill, agree on the rule with your front desk and keep it the same each week. Run it for one ad source at a time, since event leads and search leads behave differently.\n\nTalk soon,\nShawn",
+    "reply": "Thanks Shawn. We're a regenerative clinic, mostly PRP for knees. Leads come in from Facebook but the schedule doesn't match. I'll run it this week.",
+    "magnet": "4 Claude skills for clinic patient acquisition",
+    "slides": [
+     {
+      "body": "Four numbers each week show where new patients slip away.",
+      "title": "Check your leads before you buy more ads"
+     },
+     {
+      "body": "Pull them from your CRM or front desk log for the same seven days.",
+      "title": "Count four numbers for each ad source",
+      "points": [
+       "Leads in",
+       "Leads reached in a real conversation",
+       "Consults booked",
+       "Patients who showed up"
+      ]
+     },
+     {
+      "body": "Divide each number by the one before it. The lowest rate is the step to fix this week. Keep event, search and social leads separate.",
+      "title": "Work on the biggest drop first"
+     },
+     {
+      "body": "More leads into a slow process makes the leak bigger. Give one person the job of calling new leads.",
+      "title": "Low reach means fix follow-up before ads",
+      "points": [
+       "Call or text the same business day",
+       "Try again on day 2 and day 3",
+       "Log every attempt with the time"
+      ]
+     },
+     {
+      "body": "People asking about cash-pay or non-surgical care want plain answers before they commit.",
+      "title": "Low bookings mean listen to the calls",
+      "points": [
+       "What the first visit involves",
+       "How long it takes",
+       "What it costs and what insurance covers",
+       "One clear next step to book"
+      ]
+     },
+     {
+      "body": "Send a reminder the day before and the morning of. Keep diagnosis and treatment details out of texts.",
+      "title": "Low show rates mean tighten reminders",
+      "points": [
+       "Date, time and address",
+       "Who they will meet",
+       "An easy way to reschedule"
+      ]
+     },
+     {
+      "body": "A free kit with a weekly lead to visit review, new lead follow-up drafts, patient question pages and Google review replies with privacy checks.",
+      "title": "4 Claude skills for clinic patient acquisition"
+     }
+    ],
+    "keyword": "LEADS",
+    "message": "Hi Alex, here's the Claude skill kit you asked for. Start with the weekly lead to visit review: paste last week's leads, reached, booked and showed numbers for one ad source and it tells you which step to work on first. What kind of clinic are you running?",
+    "subject": "One counting rule for your weekly lead review",
+    "version": 1,
+    "resource": {
+     "mode": "skills",
+     "brand": {
+      "ink": "#ffffff",
+      "font": "Roboto",
+      "logo": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/story-logo-shawn-manaher-57.png",
+      "accent": "#c2410c",
+      "surface": "#000000",
+      "logoTone": "light"
+     },
+     "title": "4 Claude skills for clinic patient acquisition",
+     "options": [
+      {
+       "label": "Skill kit",
+       "title": "4 Claude skills for clinic patient acquisition",
+       "skills": [
+        {
+         "body": "You help a specialty clinic (scoliosis, regenerative, orthopedic, integrative or chiropractic) find where new patient leads drop off.\n\n## Ask first\nIf any of these are missing, ask before you answer:\n- The week and the lead source (Facebook, Google, website form, event)\n- Leads in\n- Leads reached (a real two-way conversation, not a voicemail)\n- Consults or first visits booked\n- Patients who showed up\n- Who follows up and how fast, if they know\n\n## Steps\n1. Work out each rate: reached / leads, booked / reached, showed / booked.\n2. Name the lowest rate as the main leak. If two are within 5 points, name both.\n3. Give 2-3 checks for that step only.\n4. Say what to measure next week to see if the fix worked.\n\n## Judgement calls (proposed guidance, adjust to the clinic)\n- Reach under 60%: fix contact speed and ownership before any ad change. More leads into a slow process makes the leak bigger.\n- Booking under half of reached: suggest listening to calls. Cash-pay callers often stall on cost and on what the first visit involves.\n- Show rate under 60%: check reminders, directions and whether the visit was explained.\n- Fewer than 20 leads: say one week is too small to judge; combine weeks.\n- Mixed sources: ask to split them. An event lead and a search lead behave differently.\n- Never suggest texts or emails that carry diagnosis or treatment details.\n\n## Output format\n**Source and week**\n**Rates:** reached X%, booked X%, showed X%\n**Main leak:** one line\n**Check this week:** 2-3 bullets\n**Measure next week:** one line\n\n## Worked example (fictional)\nInput: knee PRP Facebook ad, one week. Say 100 leads, 40 reached, 30 booked, 20 showed. Front desk calls between patients, often next day.\n\n**Source and week:** Knee PRP Facebook ad, one week\n**Rates:** reached 40%, booked 75%, showed 67%\n**Main leak:** contact. 60 of 100 leads never had a conversation.\n**Check this week:**\n- Name one person who calls new leads, with set call times\n- Call or text the same business day, then try again on days 2 and 3\n- Log each attempt with the time\n**Measure next week:** reach rate for the same ad.",
+         "name": "lead-to-visit-review",
+         "when": "Use when a clinic owner or director shares weekly lead, contact, booking and show numbers and wants to know which step to fix first.",
+         "title": "Weekly lead to visit review",
+         "tryIt": "Weekly review for our knee PRP Facebook ad, Nov 9-15: 100 leads in, 40 reached by phone, 30 consults booked, 20 showed up. Our front desk calls new leads between patients, usually the next day."
+        },
+        {
+         "body": "You draft follow-up for a new patient lead at a specialty clinic.\n\n## Ask first\nIf missing, ask:\n- Clinic name and specialty\n- What the lead asked about, in their words from the form\n- Where the lead came from and when\n- Whether the lead agreed to be texted\n- Who is calling, and the next open consult times\n- Consult fee and price range for cash-pay care, if any\n\nIf texting consent is unclear, write the call opener only and tell the user to confirm consent first. Rules on marketing texts (in the US, the TCPA and state laws) change; tell the user to check the current rule with their compliance adviser before sending.\n\n## Steps\n1. Write a first text, under 300 characters.\n2. Write a 4-line call opener for the front desk.\n3. Write a 3-day plan: day 1 call and text, day 2 call, day 3 call and a final text.\n4. Add short answers to the two questions this lead will most likely ask, based on what they asked about.\n\n## Judgement calls (proposed guidance)\n- Keep health details out of texts. Refer to \"your consult request\", never the condition or treatment, since others may see the phone.\n- Lead with one next step: a time to talk or to book.\n- Describe the visit and the process. Never promise results, pain relief or outcomes. Health claims are restricted and must be checked before use.\n- For regenerative treatments, do not call a treatment approved or proven unless the clinic has confirmed that wording for its market.\n- If price comes up, use only the fee or range the user gave you and say what changes it. Never guess a number.\n- A same-day message beats a perfect message sent tomorrow.\n\n## Output format\n**First text**\n**Call opener**\n**3-day plan**\n**Likely questions and answers**\n**Check before sending:** consent, claims, privacy",
+         "name": "new-lead-follow-up",
+         "when": "Use when a clinic team needs a first text, call opener and follow-up plan for a new patient lead from an ad, form or event.",
+         "title": "New lead follow-up messages",
+         "tryIt": "New lead for Valley Joint Clinic, a regenerative clinic. Form came in at 10am from our Facebook ad, asking about options for knee pain. They agreed to texts. Maria calls; open consults Tuesday 2pm and Wednesday 9am. Consult fee is $100."
+        },
+        {
+         "body": "You draft a patient education page for a specialty clinic.\n\n## Ask first\nIf missing, ask:\n- The patient question, in the words patients use (for example \"can scoliosis be treated without surgery\")\n- Clinic name, city and specialty\n- Which services the clinic actually offers for this\n- Who reviews medical content at the clinic\n- The markets the clinic serves (state or country), since claim rules differ\n\n## Steps\n1. Restate the question in plain words as the page title.\n2. Give a direct answer in 2-3 sentences.\n3. Explain the options in plain language, including when to see a doctor.\n4. Explain what a first visit at this clinic involves.\n5. Add practical details: location, hours, how to book.\n6. Suggest 2-3 related questions to link to.\n7. List every sentence that makes a health claim, for clinician review.\n\n## Judgement calls (proposed guidance)\n- Use everyday words first, clinical terms second.\n- Health claims are restricted, not a style choice. Never say a treatment cures, reverses, regrows or guarantees anything. In the US, tell the user to check FTC rules on backing up health claims, FDA guidance on regenerative products and the advertising rules of the state licensing board for each profession involved (medical, chiropractic, physical therapy). For other markets, tell them to check the current rule at that market's regulator.\n- No \"best\" or \"only\" claims and no before-and-after promises.\n- No patient stories, names or photos unless the clinic has written consent.\n- Keep to services the clinic offers. Never describe care it does not provide.\n\n## Output format\n**Page title**\n**Short answer**\n**Body:** headed sections, short paragraphs\n**First visit**\n**Practical details**\n**Related questions**\n**For clinician review:** each claim sentence, with the reason it needs a check",
+         "name": "patient-question-page",
+         "when": "Use when a clinic wants a web page or blog post that answers one real question patients ask about a condition or treatment.",
+         "title": "Patient question page draft",
+         "tryIt": "Draft a page for Northside Spine Center in Columbus, Ohio. The question patients ask: 'can scoliosis be treated without surgery as an adult?' We offer non-surgical scoliosis care and physical rehab. Dr. Lee reviews our content."
+        },
+        {
+         "body": "You write public replies to online reviews for a specialty clinic.\n\n## Ask first\nIf missing, ask:\n- The review text and star rating\n- Clinic name and who signs replies\n- The clinic's contact line for concerns\n- The country the clinic works in\n\n## Steps\n1. Sort the review: positive, mixed, negative, or not a patient issue (spam, wrong business).\n2. Draft a reply of 2-4 sentences.\n3. For mixed or negative reviews, add what the owner should do offline.\n4. Flag anything that needs a manager before anyone replies.\n\n## Judgement calls\n- Privacy is a legal rule, not a tone choice. In the US, HIPAA restricts sharing patient information, and a public reply can do that just by confirming someone was seen. Never confirm or deny the reviewer is a patient, and never mention visits, conditions, treatment or billing, even if the reviewer did. Outside the US, tell the user to check the current privacy rule with that market's regulator.\n- Thank people in general terms: \"Thank you for taking the time to share this.\"\n- For complaints, invite contact offline through the clinic line. Do not argue facts in public.\n- Never offer discounts or gifts in exchange for reviews or edits.\n- Escalate before replying if the review mentions a safety issue, a legal threat or a staff member by name.\n- Proposed guidance: reply within a few business days so reviews do not sit unanswered.\n\n## Output format\n**Review type**\n**Reply**\n**Offline action** (if any)\n**Escalate?** yes or no, and why\n\n## Example reply line\n\"Thank you for sharing this. We want every visit to our office to feel well run. Please call our office manager at the number on our website so we can talk it through.\"",
+         "name": "clinic-review-replies",
+         "when": "Use when a clinic needs replies to Google or other online reviews that stay helpful without revealing that the reviewer is a patient.",
+         "title": "Google review replies for clinics",
+         "tryIt": "Reply to this 2-star Google review for Lakeside Chiropractic: 'Waited 40 minutes past my appointment time and nobody explained why.' Replies are signed by Jen, office manager. Concerns go to our main office number."
+        }
+       ]
+      }
+     ]
+    },
+    "segments": [
+     {
+      "note": "Owners and directors reaching parents and adults looking for non-surgical scoliosis care, locally and nationally.",
+      "label": "Scoliosis clinics"
+     },
+     {
+      "note": "Clinic directors selling cash-pay consults for PRP and other regenerative treatments.",
+      "label": "Regenerative medicine clinics"
+     },
+     {
+      "note": "Practice owners bringing in joint, sports injury and spine patients from search, ads and referrals.",
+      "label": "Orthopedic practices"
+     },
+     {
+      "note": "Owners who want a steady flow of new practice members each month.",
+      "label": "Integrative and chiropractic practices"
+     }
+    ],
+    "buyerRole": "Clinic director at a regenerative medicine practice",
+    "magnetWhy": "Written for clinic owners and directors who want Claude to help with weekly patient-acquisition work, from reviewing lead numbers to drafting follow-ups, pages and review replies.",
+    "plainPost": "If your clinic offers cash-pay care, explain the cost before anyone gets on the phone.\n\nPeople looking into PRP, regenerative treatments or non-surgical scoliosis care often find you through an ad or a search. Many call with one question in mind: what will this cost me?\n\nWhen the page and the ad say nothing about it, your front desk has to handle that question cold. The consult gets harder to book.\n\nPut these on the page first:\n\n→ What the first visit includes\n→ Whether the consult has a fee\n→ A price range, or the factors that change the price\n→ What insurance does and does not cover\n→ What happens after the consult\n\nDescribe the treatment and the process in plain words. Leave out promised results. Health claims in ads are regulated, so check the current rules for your state and specialty before you publish anything about what a treatment will do.\n\nThen give your front desk the same wording, so the page and the phone call say the same thing.",
+    "rationale": {
+     "calls": "The example qualification confirms a clinic with paid ads already running, a current gap at contact, and two co-owners who decide on marketing together, so both join a strategy session on follow-up and campaigns.",
+     "close": "Close with a casual offer to look at one ad source's lead to visit numbers together, since that is where Ignite's discovery step starts.",
+     "content": "Shawn's agency runs patient-acquisition campaigns for scoliosis, regenerative, orthopedic and chiropractic clinics, including follow-up and front desk training. The posts help an owner decide whether to fix lead handling or buy more ads, and how to present cash-pay care before the consult call.",
+     "resource": "Clinic owners already have weekly lead counts, form notes and Google reviews. The kit turns those into a review, follow-ups, pages and replies, with privacy and health claim checks a clinic needs before anything goes out.",
+     "conversations": "In the example, Alex reports reach as the biggest drop on knee PRP leads. That opens a concrete talk about who calls new leads and how fast, which is the follow-up side of Ignite's campaigns."
+    },
+    "contentWhy": "Written for specialty clinic owners deciding whether to fix lead follow-up or spend more on ads, and how to explain cash-pay care.",
+    "coverImage": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-shawn-manaher-57-story-lm_cover.png?v=1",
+    "magnetPost": "Here are 4 Claude skills for clinic owners who want more booked visits from the leads they already get.\n\nEach one does a job that comes up every week in a scoliosis, regenerative, orthopedic or chiropractic practice:\n\n→ A weekly lead to visit review that finds where leads drop off\n→ New lead follow-up texts and call notes your front desk can use the same day\n→ Patient question pages written in plain words, without outcome promises\n→ Google review replies that never confirm someone is a patient\n\nYou paste in your own numbers, notes or reviews. Claude asks for anything missing before it writes.\n\nThe skills flag what deserves a second look in healthcare marketing: texts that carry health details, pages that promise results, replies that could reveal patient information. They tell you to check the current rules for your state and specialty before you publish.\n\nThe final call stays with you and your team. Claude drafts, you decide what goes out.",
+    "coldMessage": "Hi Alex, if your clinic is bringing on a new patient coordinator, the first few weeks are a good time to set how new leads get followed up: who calls, how fast, and what counts as reached. There's a free Claude skill kit that reviews your weekly lead to visit numbers and drafts follow-up texts with health details kept out. Want me to send it?",
+    "coldTrigger": "A specialty clinic posts a job opening for a patient coordinator or front desk role.",
+    "companyName": "Ignite Marketing",
+    "founderName": "Shawn Manaher",
+    "nurtureNote": "A note on fixing slow lead follow-up at the front desk.",
+    "sourceQuote": "",
+    "researchNote": "Built from public LinkedIn material and the company website.",
+    "reviewStatus": "approved",
+    "contentHeading": "Reach clinic owners who want more booked patient visits.",
+    "newsletterNote": "notes on AI, content and clinic marketing"
+   },
+   "profile_audit": {
+    "source": "linkedin_profile",
+    "version": 1,
+    "findings": [
+     {
+      "fix": "Open with your clinic buyers: Patient acquisition for scoliosis, regenerative and chiropractic clinics | Founder, Ignite Marketing (700+ clinic campaigns, ~$65M client revenue) | Writing The Notebook",
+      "area": "headline",
+      "label": "Headline",
+      "quote": "Building my way out, in public | Scaling content with AI: 1 idea = 20 pieces = 1 day | Founder, Ignite Marketing (700+ clinic campaigns, ~$65M client revenue) | Writing The Notebook",
+      "state": "present",
+      "today": "Your headline reads:"
+     },
+     {
+      "fix": "Open with a line for clinic owners: I run patient-acquisition campaigns for scoliosis, regenerative medicine, orthopedic and chiropractic clinics through Ignite Marketing. End with how they book a call.",
+      "area": "about",
+      "label": "About",
+      "quote": "Ideas are worth nothing until you act.",
+      "state": "present",
+      "today": "From your About section:"
+     },
+     {
+      "fix": "Add a line for clinic owners above the newsletter offer: Patient acquisition for specialty clinics · Ignite Marketing · 700+ clinic campaigns.",
+      "area": "banner",
+      "label": "Banner",
+      "quote": "BUILDING MY WAY OUT, IN PUBLIC · Ideas are worth nothing until you act. · Get The Notebook, my free weekly letter → shawnmanaher.com",
+      "state": "present",
+      "today": "Your banner reads:"
+     },
+     {
+      "fix": "Pin a post on one clinic patient-acquisition campaign and the new patients it brought in. Next to it, pin imarketing2030.com so clinic owners can see the service.",
+      "area": "featured",
+      "label": "Featured",
+      "quote": "",
+      "state": "present",
+      "today": "Your Featured shows 1 item: one link."
+     },
+     {
+      "fix": "Add a booking page to imarketing2030.com for clinic owners and put that link in your About and website field with the label: Clinic owners, book a patient growth call.",
+      "area": "booking",
+      "label": "How a buyer books",
+      "quote": "http://imarketing2030.com",
+      "state": "present",
+      "today": "A link a buyer can find on your profile:"
+     }
+    ],
+    "audited_at": "2026-11-16T20:41:01.550838+00:00",
+    "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-shawn-manaher-57-37bdd91ee9cba2517620.png",
+    "banner_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-banner-shawn-manaher-57-d9a94bcbd1927e69b5f1.jpg"
+   },
+   "sample_output": {},
+   "story_evidence": {
+    "quotes": [],
+    "captured_at": "2026-11-16T20:40:17.676908+00:00",
+    "posts_status": "saved",
+    "website_status": "read"
+   },
+   "story_diagnosis": {
+    "v": 2,
+    "at": "2026-11-16T20:47:16.613521Z",
+    "content": {
+     "today": "You post clinic SEO explainers, AI-in-business takes and your public Content at Scale experiment.",
+     "result": "Clinic owners already know your work before your first call.",
+     "monthly": "We turn your deeper insights, sales calls and client work into expert content, then publish it in your name."
+    },
+    "inbound": {
+     "today": "You offer comment keywords like \"STAGE\" and \"Crash\" and point readers to The Notebook.",
+     "result": "A list of named clinic owner leads that grows monthly.",
+     "monthly": "We build your lead magnet and turn clinic-owner readers into named leads."
+    },
+    "outbound": {
+     "today": "Your About invites messages about unacted ideas and says \"I answer every one.\"",
+     "result": "Steady booked calls with clinic owners who fit.",
+     "monthly": "Every clinic owner who engages gets a short personal note from you."
+    }
+   },
+   "hero": {
+    "v": 1,
+    "tier": "profile",
+    "lead": null,
+    "rows": [],
+    "count": {
+     "buyers": 0,
+     "own": 0,
+     "outside": 0,
+     "window_days": null,
+     "authors": []
+    },
+    "profile": {
+     "quote": "Building my way out, in public | Scaling content with AI: 1 idea = 20 pieces = 1 day | Founder, Ignite Marketing (700+ clinic campaigns, ~$65M client revenue) | Writing The Notebook",
+     "fix": "Open with your clinic buyers: Patient acquisition for scoliosis, regenerative and chiropractic clinics | Founder, Ignite Marketing (700+ clinic campaigns, ~$65M client revenue) | Writing The Notebook"
+    },
+    "checked": null
+   },
+   "firm": {
+    "staff": 16,
+    "band": "larger"
+   },
+   "partner": {
+    "story": null
+   }
+  }
+ }
+}

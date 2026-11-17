@@ -35,6 +35,9 @@ export function BuyerRow({row}: {row: HeroRow}) {
  </li>;
 }
 
+/** A LinkedIn headline is a run of " | " parts; the hero quotes the first one when the whole line is long. */
+export const headlineQuote = (quote: string) => quote.length > 60 && quote.includes(' | ') ? quote.split(' | ')[0].trim() : quote;
+
 /** The read date: the outside read when there is one, else the audit date. */
 export const readDate = (fixture: JourneyFixture) => shortDate(fixture.competitorEngagers?.readOn || fixture.source.capturedOn || '');
 
@@ -54,12 +57,12 @@ export function HeroBuyer({fixture}: {fixture: JourneyFixture}) {
   <div className="sv2-hero-copy">
    <span className="made-for"><Avatar src={founder.avatarUrl} name={founder.name} alt={founder.name}/>Made for {founder.name}{founder.company ? ` · ${founder.company}` : ''}</span>
    <p className="sv2-brand-line">{BRAND_LINE}</p>
-   {profile ? <><h1>{PROFILE_HERO(profile.quote)}</h1><p className="sv2-fix">{profile.fix}</p></> : lead && <Headline lead={lead}/>}
+   {profile ? <><h1>{PROFILE_HERO(headlineQuote(profile.quote))}</h1><p className="sv2-fix">{profile.fix}</p></> : lead && <Headline lead={lead}/>}
    {line && <p className="sv2-count">{line}</p>}
    <p className="sv2-sub">{BRAND_SUB}</p>
    <div className="sv2-hero-actions">
     {profile
-     ? <a href="#profile" className="studio-primary">See the profile changes <ArrowDown size={17} aria-hidden="true"/></a>
+     ? fixture.profileAudit ? <a href="#profile" className="studio-primary">See the profile changes <ArrowDown size={17} aria-hidden="true"/></a> : <a href="#offer" className="studio-primary">See what we run <ArrowDown size={17} aria-hidden="true"/></a>
      : <a href="#buyers" className="studio-primary">See who else <ArrowDown size={17} aria-hidden="true"/></a>}
    </div>
   </div>

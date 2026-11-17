@@ -29,3 +29,17 @@ export const TEAM = {
   share: 'Deciding with a partner? Send them the short version.',
 };
 export const FOLD = {open: 'Open the samples', close: 'Close'};
+/** People stories, word for word from StudioResults (the proof already on every scan page). */
+export const STORIES = {
+  kyle: {name: 'Kyle Hunt', role: 'Agency ops coach', photo: '/content-system/kyle-portrait.webp', metric: '$30k → $80k a month', line: 'Across the 90 days we ran his LinkedIn.', link: 'https://inboundonsteroids.com/case/kyle-hunt/', linkText: 'See Kyle’s case study'},
+  mattan: {name: 'Mattan Danino', role: 'Founder, RISE DTC', photo: 'https://resources.risedtc.com/tools/assets/mattan.jpg', metric: '+$20k/mo', line: 'In new revenue closed by month 3. We run his content, lead magnets and outreach.', link: 'https://resources.risedtc.com/tools/', linkText: 'See his lead magnets'},
+  davorin: {name: 'Davorin Smit', role: 'Founder, ARCH. Influencer Agency', photo: '/content-system/davorin-portrait.webp', metric: '2 clients', line: 'Closed in month 1. We run his LinkedIn content and outreach.', link: '', linkText: ''},
+} as const;
+export const CLOSE = {title: 'Your next clients are already on LinkedIn.', body: 'We find them, start the conversation and put them on your calendar. Let’s map the process around your business.', cta: 'Book a call with me', note: '30 minutes with me. You leave with the plan either way.'};
+export const PREVIEW = {content: 'First slide', resource: 'The lead magnet', conversations: 'First message', calls: 'The booked call'};
+export const CHAPTERS = {
+  resource: {label: 'Lead magnets', title: 'Turn readers into a list you own.'},
+  conversations: {label: 'Conversations', title: 'Every raised hand gets a conversation.', why: 'We message the people who engage, keep readers warm by email and reach buyers with a live project, even if they never saw your posts.'},
+  calls: {label: 'Booked calls', title: 'You only take calls that already fit.', why: 'We check fit, timing and who decides before anything gets booked. You walk in knowing the project.'},
+};
+export const PLAN_TITLE = (first: string) => `${first}, your LinkedIn plan for qualified calls`;

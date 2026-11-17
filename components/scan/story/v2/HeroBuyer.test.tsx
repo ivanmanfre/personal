@@ -38,12 +38,17 @@ describe('HeroBuyer', () => {
   expect(screen.getByText(/27 buyers within reach/)).toBeTruthy();
  });
  it('profile tier', () => {
-  const {container} = render(<HeroBuyer fixture={heroFixture({tier: 'profile', rows: [], count: {buyers: 0, own: 0, outside: 0, authors: []}, profile: {quote: 'Building my way out, in public', fix: 'Open with the clinics you sell to.'}})}/>);
+  const {container} = render(<HeroBuyer fixture={heroFixture({tier: 'profile', rows: [], count: {buyers: 0, own: 0, outside: 0, authors: []}, profile: {quote: 'Building my way out, in public', fix: 'Open with the clinics you sell to.'}}, {profileAudit: {findings: []}})}/>);
   const h1 = screen.getByRole('heading', {level: 1});
   expect(h1.textContent).toBe('Your headline says “Building my way out, in public”.');
   expect(h1.nextElementSibling?.textContent).toContain('Open with the clinics you sell to.');
   expect(container.querySelector('.sv2-rows')).toBeNull();
   expect(screen.getByRole('link', {name: /See the profile changes/}).getAttribute('href')).toBe('#profile');
+ });
+ it('profile tier quotes the first part of a long headline and links on to the offer without an audit', () => {
+  render(<HeroBuyer fixture={heroFixture({tier: 'profile', rows: [], count: {buyers: 0, own: 0, outside: 0, authors: []}, profile: {quote: 'Building my way out, in public | Scaling content with AI: 1 idea = 20 pieces = 1 day | Founder, Ignite Marketing', fix: 'Open with your clinic buyers.'}})}/>);
+  expect(screen.getByRole('heading', {level: 1}).textContent).toBe('Your headline says “Building my way out, in public”.');
+  expect(screen.getByRole('link', {name: /See what we run/}).getAttribute('href')).toBe('#offer');
  });
  it('the sub is not hidden on phone', () => {
   render(<HeroBuyer fixture={heroFixture(richHero)}/>);

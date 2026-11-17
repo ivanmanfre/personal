@@ -86,16 +86,16 @@ function PlanHero({fixture}: {fixture: JourneyFixture}) {
 }
 
 /** Sticky chapter index: which part of the plan the reader is in, one tap to any other. */
-function StepNav() {
+export function StepNav({book = BOOK, hero = '.sp-hero'}: {book?: string; hero?: string} = {}) {
  const [active, setActive] = useState<string>('');
  const [visible, setVisible] = useState(false);
  useEffect(() => {
-  const hero = document.querySelector('.sp-hero');
-  if (!hero) return;
+  const heroEl = document.querySelector(hero);
+  if (!heroEl) return;
   const observer = new IntersectionObserver(([entry]) => setVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0));
-  observer.observe(hero);
+  observer.observe(heroEl);
   return () => observer.disconnect();
- }, []);
+ }, [hero]);
  useEffect(() => {
   const els = STEPS.map(s => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
   const io = new IntersectionObserver(() => {
@@ -111,7 +111,7 @@ function StepNav() {
    <ol>{STEPS.map((s, i) => <li key={s.id} className={i === 2 ? 'sp-nav-split' : ''}>{(i === 0 || i === 2) && <span className="sp-nav-group" aria-hidden="true">{i === 0 ? 'Inbound' : 'Outbound'}</span>}<a href={`#${s.id}`} aria-current={active === s.id ? 'step' : undefined} className={i < index ? 'is-done' : ''}>
     {active === s.id && <motion.span layoutId="sp-nav-active" className="sp-nav-active" transition={{type: 'spring', stiffness: 420, damping: 36}}/>}
     <span className="sp-nav-num">{String(i + 1).padStart(2, '0')}</span><span className="sp-nav-label">{s.label}</span></a></li>)}</ol>
-   <a className="sp-nav-cta" href={BOOK} target="_blank" rel="noreferrer">Book a call</a>
+   <a className="sp-nav-cta" href={book} target="_blank" rel="noreferrer">Book a call</a>
   </div>
  </nav>;
 }

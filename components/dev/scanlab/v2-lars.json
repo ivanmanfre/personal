@@ -1,0 +1,414 @@
+{
+ "company_slug": "lars-pedersen-20",
+ "company_name": "FRIDAY",
+ "completed_at": "2026-11-16 09:18:20.99882+00",
+ "status": "complete",
+ "domain": "",
+ "report_json": {
+  "matched_offer": "content_system",
+  "content_system": {
+   "founder": {
+    "name": "Lars Pedersen",
+    "headline": "Jeg styrker virksomheders tiltrækningskraft med brandstrategi  |  Partner i FRIDAY",
+    "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-lars-pedersen-20-f71e280e3949524387cf.png",
+    "first_name": "Lars"
+   },
+   "pillars": {
+    "content": {
+     "found": "Lars publishes case posts on brand identities FRIDAY built, such as Nordsjælland Håndbold, It'sFrank and Verka Collective, and walks through the process behind each one.",
+     "projected": "We turn your deeper insights, sales calls and client work into expert content, then publish it in your name."
+    },
+    "inbound": {
+     "found": "A reader who wants to talk has one route, the closing line of his About section, where he offers a chat to companies whose brand lags behind the business they have become.",
+     "projected": "We build a lead magnet under your name from your brand strategy process, so the readers who download it arrive as named leads."
+    },
+    "outbound": {
+     "found": "His posts draw steady reactions, up to 83 on the post about apprentice Adrian, and there is no visible follow-up with the people who reacted.",
+     "projected": "Each person who engages with your posts gets a short personal note from you, which we draft and you approve before it goes out."
+    }
+   },
+   "audience": {
+    "named": [
+     {
+      "name": "Vibeke Askov",
+      "headline": "Brand & Marketing Leader | Creative Direction | Identity, Communication & Experience"
+     },
+     {
+      "name": "Palle Studsgaard Odgaard",
+      "headline": "Adm. direktør, Dystan & Rosenberg ApS"
+     },
+     {
+      "name": "Mette Bernt",
+      "headline": "Marketingchef med fokus på relationer og fortælling"
+     }
+    ],
+    "posts": 5,
+    "engagers": 102,
+    "audited_at": "2026-11-16T09:10:38.819662Z",
+    "audit_status": "complete",
+    "network_total": 2187,
+    "buyer_examples": [
+     {
+      "headline": "Brand & Marketing Leader | Creative Direction | Identity, Communication & Experience"
+     },
+     {
+      "headline": "Adm. direktør, Dystan & Rosenberg ApS"
+     },
+     {
+      "headline": "Marketingchef med fokus på relationer og fortælling"
+     },
+     {
+      "headline": "Salgs- og Marketingchef hos Poul Schmith/Kammeradvokaten"
+     },
+     {
+      "headline": "Co-founder RUBY spiritz"
+     },
+     {
+      "headline": "I build trust and improve organisational positioning through communication / Ørsted Content & Channels | MSc. in Business Admin and Organisational Communication"
+     },
+     {
+      "headline": "Senior presserådgiver i Tryg"
+     },
+     {
+      "headline": "Arbejdende bestyrelsesformand"
+     },
+     {
+      "headline": "Co-founder of Nordic Bio Food"
+     },
+     {
+      "headline": "Co-Founder of Nordic Bio Food Aps"
+     }
+    ],
+    "buyer_definition": "CEOs, CMOs, communication and marketing directors at Danish companies and organisations needing brand strategy, PR, public affairs or crisis advice",
+    "client_companies": [],
+    "existing_clients": [],
+    "engager_icp_count": 18
+   },
+   "story_v1": {
+    "art": "custom",
+    "flow": {
+     "brief": "Illustrative call with Alex, marketing lead at a merged advisory firm of 100 people. Walk through the filled scope checklist, agree which layers (formål, fortælling, identitet) belong in step one, and confirm how the CEO and board take part in decisions along the way.",
+     "checks": [
+      {
+       "label": "Fit",
+       "value": "Merged advisory firm without a shared story, needing brand strategy before a new identity."
+      },
+      {
+       "label": "Timing",
+       "value": "Wants the shared story ready for a joint staff meeting in spring."
+      },
+      {
+       "label": "Decision",
+       "value": "CEO and marketing lead drive it; the board approves the direction."
+      }
+     ],
+     "signal": "Alex ran the scope checklist on the merger and asked what the first step should cover.",
+     "messages": [
+      "Hej Lars, jeg har kørt scope-tjeklisten. Den siger, at vi mangler en fælles fortælling efter fusionen, og at vi ikke bør starte med logoet.",
+      "Det lyder rimeligt efter en fusion. Hvem i ledelsen skal stå bag den nye fortælling, og hvornår skal den helst være klar?",
+      "Direktøren og jeg driver det. Vi vil gerne være klar til et fælles medarbejdermøde i foråret, og bestyrelsen skal godkende retningen.",
+      "Så foreslår jeg en snak, hvor vi går tjeklisten igennem sammen og ser på, hvad der skal med i første skridt, og hvem fra jeres side der skal være med i maskinrummet."
+     ],
+     "callTitle": "Brandstrategi efter fusionen: første skridt"
+    },
+    "next": "Godt valg. Kig særligt på lagene formål og fortælling, før I taler logo. Efter en fusion er det tit dér, tingene ikke hænger sammen endnu. Hvis du vil, kan vi tage en kort snak om, hvad tjeklisten viser.",
+    "post": "Hver kategori har sine klichéer. Mange virksomheder ser først deres egne, når de ser dem samlet.\n\nGrønne blade og jordfarver i fødevarer. Håndtryk og blå flader i finans. Glas, stål og solnedgang i byggeri.\n\nDe er opstået, fordi alle kigger på de samme konkurrenter og gerne vil virke trygge.\n\nDet, der gør jer trygge at se på, gør jer også svære at huske. Og tiltrækningskraft kræver, at man bliver husket.\n\nMit forslag er en enkel øvelse, før I går i gang med en ny identitet:\n\n1. Saml 8-10 konkurrenters forsider, annoncer og emballage.\n2. Skriv de farver, billeder, ord og former ned, der går igen.\n3. Del dem i to: dem, der betyder noget for kunden, og dem, der bare er vane.\n4. Behold de første. Udfordr de andre, skridt for skridt.\n\nNogle koder skal I have med, ellers forstår folk ikke, hvad I sælger.\n\nVane er sjældent en god grund til at ligne alle andre. Et brud skal kunne forklares med noget, der er sandt om jer.\n\nVil I lave tjeklisten for jeres egen kategori, ligger der en Claude-skill til det til sidst.",
+    "slug": "lars-pedersen-20",
+    "brand": "FRIDAY",
+    "cover": {
+     "left": "4 Claude-skills",
+     "lines": [
+      "Scope og klichéer",
+      "afklaret før bureauet"
+     ],
+     "right": "Til brandprojekter",
+     "details": [
+      "Scope- og kliché-tjekliste",
+      "Kontaktpunkter og værdier"
+     ]
+    },
+    "email": "Hej Alex,\n\nTak fordi du hentede Claude-skills til jeres brandprojekt.\n\nEt lille råd til kliché-tjeklisten: Giv den mindst seks konkurrenter. Skillen markerer først et træk som kliché, når det går igen hos mindst halvdelen af dem. Med for få eksempler kan tilfældigheder ligne mønstre.\n\nNår listen er klar, så brug mest tid på opdelingen i to bunker. Nogle koder hjælper kunden med at forstå, hvad I sælger, og dem skal I beholde. Andre er bare vane i branchen. Det er dem, der er værd at udfordre, og kun hvis I kan begrunde bruddet med noget, der er sandt om jer.\n\nStår der påstande om fx bæredygtighed eller sundhed på listen, så tjek dem hos myndigheden i jeres marked, før I bruger dem.\n\nHvis du vil vende resultatet, så skriv endelig.\n\nVenlig hilsen\nLars Pedersen\nPartner, FRIDAY",
+    "reply": "Tak! Vi er lige blevet lagt sammen med et andet rådgivningsfirma, og ledelsen vil have et fælles udtryk. Jeg prøver scope-tjeklisten først.",
+    "magnet": "4 Claude-skills til jeres næste brandprojekt",
+    "slides": [
+     {
+      "body": "Sådan finder I dem, før I bygger en ny identitet.",
+      "title": "Jeres kategori har klichéer. I har måske også nogle."
+     },
+     {
+      "body": "Tag 8-10 konkurrenter og saml deres forsider, annoncer, emballage og jobopslag ét sted, så I kan se dem side om side.",
+      "title": "Start med at samle det, jeres kunder ser"
+     },
+     {
+      "body": "Kig efter træk, der dukker op hos mindst halvdelen af konkurrenterne. Det er dér, kategoriens vaner sidder.",
+      "title": "Skriv det ned, der går igen",
+      "points": [
+       "Farver og farvekombinationer",
+       "Billedtyper og motiver",
+       "Ord og vendinger i overskrifter",
+       "Former, ikoner og typografi"
+      ]
+     },
+     {
+      "body": "Nogle koder hjælper kunden med at forstå, hvad I sælger. Andre er bare vane i branchen.",
+      "title": "Del klichéerne i to bunker",
+      "points": [
+       "Bunke 1: koder kunden har brug for. Behold dem.",
+       "Bunke 2: koder alle bruger af vane. Udfordr dem."
+      ]
+     },
+     {
+      "body": "Vælg de vaner, der fylder mest hos jer, og find jeres eget svar på dem. Hvert brud skal kunne forklares med noget, der er sandt om jer.",
+      "title": "Udfordr vanerne et greb ad gangen"
+     },
+     {
+      "body": "Handler en kliché om bæredygtighed, sundhed eller økonomi, er ordene ofte reguleret. Tjek den gældende regel hos myndigheden i hvert marked, I sælger i.",
+      "title": "Tjek påstandene, før I lover noget"
+     },
+     {
+      "body": "Fire skills, der laver en kliché-tjekliste for jeres kategori, en scope-tjekliste til projektet og et tjek af jeres kontaktpunkter og værdier.",
+      "title": "4 Claude-skills til jeres næste brandprojekt"
+     }
+    ],
+    "keyword": "KLICHÉ",
+    "message": "Hej Alex, tak fordi du bad om de fire Claude-skills til brandprojektet. Her er de. Hvis du vil starte et sted, så prøv kliché-tjeklisten på jeres kategori eller scope-tjeklisten på jeres projekt. Hvad står I over for lige nu?",
+    "subject": "Hvornår er et træk en kliché?",
+    "version": 1,
+    "resource": {
+     "mode": "skills",
+     "brand": {
+      "ink": "#043362",
+      "accent": "#1032cf",
+      "surface": "#ffffff"
+     },
+     "title": "4 Claude-skills til jeres næste brandprojekt",
+     "options": [
+      {
+       "label": "Skill kit",
+       "title": "4 Claude-skills til jeres næste brandprojekt",
+       "skills": [
+        {
+         "body": "# Scope-tjekliste til brandprojekt\n\nDu hjælper en marketing- eller kommunikationschef med at beslutte, hvor meget et brandprojekt skal omfatte, før de taler pris med et bureau.\n\n## Spørg først\n- Hvad er anledningen? (fusion, ny strategi, nyt marked, rekruttering, nyt kapitel)\n- Hvad findes i dag: formål, værdier, fortælling, budskaber, logo, designsystem?\n- Hvem skal opleve brandet: kunder, medarbejdere, ejere, investorer?\n- Hvem træffer den endelige beslutning?\n\n## Trin\n1. Gå de fem lag igennem: formål, selvforståelse, fortælling, identitet, budskaber. Vurdér hvert lag: findes og passer, findes men passer ikke, mangler.\n2. For hver leverance (fx logo, farver, typografi, billedstil, tone): behold, opdatér eller nyt. Spørg til omfang: én version eller flere, skal den kunne bevæge sig, skal den have lyd?\n3. Bed om de strategier, virksomheden allerede har, og tjek om de peger på samme kerne.\n4. Foreslå en rækkefølge i skridt. Det, der binder resten sammen, kommer først.\n\n## Vurderinger\n- Mangler formål eller selvforståelse, så anbefal ikke at starte med logoet. Et nyt udtryk uden fundament ender ofte i en ommer.\n- Er tre eller flere lag markeret \"passer ikke\", så foreslå en samlet brandstrategi frem for enkeltleverancer.\n- Holder fundamentet, og halter kun udtrykket, er en opdatering ofte nok.\n- Rødt flag: ingen beslutningstager er med i processen. Skriv det tydeligt.\n- Rødt flag: målet er formuleret som \"et nyt logo\" uden en forretningsgrund.\n- Gæt ikke på budget eller pris. Scope er kundens beslutning, og prisen følger af den.\n\n## Output\n1. **Kort status** (3-4 linjer)\n2. **Tjekliste**: tabel med kolonnerne Lag/leverance | Status | Beslutning (behold / opdatér / nyt / ikke nu) | Begrundelse\n3. **Skridt 1, 2 og 3**, hver med ét formål\n4. **Spørgsmål til bureauet** (3-5)\n5. **Åbne punkter**, der skal afklares internt",
+         "name": "brand-scope-tjekliste",
+         "when": "Use when a marketing or communication lead wants to decide how much a brand project should cover before talking price with an agency.",
+         "title": "Scope-tjekliste til brandprojekt",
+         "tryIt": "Vi er en rådgivningsvirksomhed med 100 ansatte, der er lagt sammen med et mindre firma. Vi har værdier og et logo, men ingen fælles fortælling. Direktionen beslutter. Lav en scope-tjekliste til vores brandprojekt."
+        },
+        {
+         "body": "# Kliché-tjekliste for jeres kategori\n\nDu hjælper en marketingchef med at se, hvilke visuelle og sproglige koder der går igen i deres kategori, og hvilke de selv bruger.\n\n## Spørg først\n- Hvilken kategori, og hvilke markeder sælger I i?\n- 6-10 konkurrenter: skærmbilleder eller beskrivelser af forside, annoncer, emballage.\n- Det samme materiale fra jer selv.\n- Hvad skal kunden helst huske jer for?\n\n## Trin\n1. Beskriv for hver konkurrent: farver, billedtyper, typografi, former og ikoner, gennemgående ord.\n2. Markér et træk som kliché, når det går igen hos mindst halvdelen af konkurrenterne.\n3. Del klichéerne i to: koder kunden har brug for for at forstå kategorien (behold), og vaner uden betydning for kunden (udfordr).\n4. Tjek, hvilke klichéer jeres eget materiale deler.\n5. Foreslå for hver vane, I deler, én retning at gå i stedet, bundet til det, kunden skal huske jer for.\n\n## Vurderinger\n- Fjern ikke alle koder. Uden kategoritræk forstår kunden ikke, hvad der sælges.\n- Et brud skal kunne forklares med noget, der er sandt om produktet eller virksomheden. Ellers er det bare pynt.\n- Rødt flag: en ny retning, der kopierer den største konkurrent.\n- Påstande om bæredygtighed, miljø, sundhed eller økonomi er reguleret i mange markeder. Behandl dem aldrig som et spørgsmål om tone. Markér dem, og skriv, hvor de skal tjekkes før brug:\n  - Markedsføring generelt: Forbrugerombudsmanden (DK), Konsumentverket (SE).\n  - Sundheds- og ernæringsanprisninger på fødevarer: EU's anprisningsforordning, tilsyn hos Fødevarestyrelsen (DK) og Livsmedelsverket (SE). Ordlyden skal matche den godkendte anprisning.\n  - Finansielle produkter: Finanstilsynets regler (DK), Finansinspektionen (SE).\n  - Andre markeder: tjek den gældende regel hos myndigheden dér.\n- Arbejd kun ud fra det materiale, du har fået. Sig det, hvis udvalget er for lille til at se et mønster.\n\n## Output\n1. **Kategoriens koder**: tabel Træk | Antal konkurrenter | Behold / udfordr | Hvorfor\n2. **Jeres overlap**: liste over klichéer, I deler\n3. **Tre retninger at teste**, hver med begrundelse\n4. **Påstande der skal tjekkes**, med myndighed pr. marked",
+         "name": "kategori-kliche-tjekliste",
+         "when": "Use when someone wants to see which visual and verbal clichés repeat in their category and which of them their own brand shares.",
+         "title": "Kliché-tjekliste for jeres kategori",
+         "tryIt": "Vi er en dansk producent af plantebaserede pålægsprodukter og sælger i Danmark og Sverige. Jeg vedhæfter skærmbilleder af 8 konkurrenters forsider og vores egen. Vi vil huskes for smagen. Lav en kliché-tjekliste for vores kategori."
+        },
+        {
+         "body": "# Tjek af jeres kontaktpunkter\n\nDu hjælper en kommunikations- eller marketingchef med at finde de steder, hvor oplevelsen af virksomheden ikke matcher den virksomhed, de siger, de er.\n\n## Spørg først\n- Hvad vil I gerne opfattes som? Tre ord eller en kort positionering.\n- Hvem er vigtigst: kunder, kandidater, ejere og investorer, omverden?\n- 8-15 kontaktpunkter med tekst eller en kort beskrivelse, fx forside, jobopslag, autosvar, telefonkø, faktura, onboarding, reception, LinkedIn.\n\n## Trin\n1. Beskriv for hvert kontaktpunkt, hvad det faktisk signalerer til målgruppen.\n2. Sammenlign med den ønskede opfattelse. Vurdér: passer, delvist, modsiger.\n3. Find mønstre: modsiger flere punkter det samme ord?\n4. Vælg de tre største afstande ud fra, hvor mange der møder punktet, og hvor tidligt i forløbet det sker.\n\n## Vurderinger\n- De små, upolerede punkter (ventetid, autosvar, faktura) siger ofte mere end kampagnen. Tag dem lige så alvorligt.\n- Et punkt, ingen har ansvaret for, er et rødt flag. Skriv det.\n- Kan den ønskede opfattelse ikke ses i mindst tre punkter, er positioneringen måske ikke defineret skarpt nok. Sig det.\n- Hold udtryk (hvordan det ser ud) og oplevelse (hvordan det føles at bruge) adskilt i vurderingen.\n- Gæt ikke på data, du ikke har fået. Markér hullerne.\n\n## Output\n1. **Oversigt**: tabel Kontaktpunkt | Signalerer i dag | Ønsket | Vurdering | Ejer\n2. **De tre største afstande**, hver med en konkret første handling\n3. **Punkter uden ejer**\n4. **Hvad det siger om positioneringen** (2-3 linjer)",
+         "name": "kontaktpunkt-tjek",
+         "when": "Use when a team wants to find touchpoints where the experience of the company does not match how it wants to be seen.",
+         "title": "Tjek af jeres kontaktpunkter",
+         "tryIt": "Vi vil opfattes som personlige og lette at komme i kontakt med. Nedenfor er teksten fra vores forside, et jobopslag, vores autosvar og kundeservicens ventetekst i telefonen. Find de steder, hvor oplevelsen ikke passer."
+        },
+        {
+         "body": "# Værdier i drift\n\nDu hjælper en direktør eller kommunikationschef med at gøre virksomhedens værdier til noget, der kan ses i hverdagen.\n\n## Spørg først\n- Værdierne, som de står i dag, og en linje om, hvad hver betyder for jer.\n- Hvilke teams eller funktioner der findes.\n- Hvor værdierne bruges i dag: væg, intranet, rekruttering, medarbejdersamtaler?\n\n## Trin\n1. Test hver værdi: kunne en konkurrent skrive den under uden at ændre noget? Hvis ja, markér den som generisk.\n2. Omsæt hver værdi til 2-3 handlinger pr. team. Skriv dem som noget, man kan se nogen gøre.\n3. Find ét sted pr. værdi i kommunikationen, hvor den bør kunne mærkes, fx jobopslag, kundemail eller mødeform.\n4. Find, hvor en værdi og en eksisterende praksis modsiger hinanden.\n5. Foreslå, hvem der kan eje hver værdi i en arbejdsgruppe.\n\n## Vurderinger\n- En værdi, der ikke ændrer en eneste beslutning, er pynt. Sig det venligt og tydeligt.\n- Mere end fem værdier er et rødt flag. Foreslå at samle dem.\n- Handlinger skal kunne lade sig gøre for teamet i dag, uden nye budgetter eller systemer som forudsætning.\n- Værdier om ansættelse, løn eller arbejdsvilkår kan berøre arbejdsretlige regler. Formulér ikke løfter om det, og skriv, at HR eller en rådgiver skal tjekke formuleringen.\n- Ændr ikke værdiernes ordlyd uden at sige hvorfor.\n\n## Output\n1. **Værditest**: tabel Værdi | Generisk ja/nej | Hvorfor\n2. **Værdier i drift**: for hver værdi en liste pr. team med konkrete handlinger\n3. **Modsigelser**, I bør tage stilling til\n4. **Forslag til ejere og første skridt**",
+         "name": "vaerdier-i-drift",
+         "when": "Use when a company has written values and wants to turn them into concrete actions per team and in its communication.",
+         "title": "Værdier i drift",
+         "tryIt": "Vores værdier er Troværdighed, Ordentlighed og Mod. Vi har salg, kundeservice og produktion. Værdierne står på intranettet, men bruges ikke rigtig i hverdagen. Gør dem konkrete for hvert team."
+        }
+       ]
+      }
+     ]
+    },
+    "segments": [
+     {
+      "note": "At Danish companies facing a new chapter, merger or rebrand, who own the brief and the scope conversation with a brand agency.",
+      "label": "Marketing and communication directors"
+     },
+     {
+      "note": "Leaders of growing Danish companies and consumer brands who decide how far a brand strategy should go and want their brand to match their ambitions.",
+      "label": "CEOs and founders"
+     },
+     {
+      "note": "Communication leads in larger Danish organisations who need positioning, messaging and the wider brand to hang together.",
+      "label": "PR and public affairs leads"
+     }
+    ],
+    "buyerRole": "Marketingchef i en dansk rådgivningsvirksomhed",
+    "magnetWhy": "Written for marketing and communication leads who want to prepare scope and category decisions on their own material before they brief a brand agency.",
+    "plainPost": "Læg jeres strategier ved siden af hinanden og se, om de beskriver den samme virksomhed.\n\nMange virksomheder har en forretningsstrategi, en HR-strategi, en kommunikationsstrategi og måske en bæredygtighedsstrategi. Hver for sig giver de mening.\n\nMen de er ofte skrevet af forskellige mennesker, på forskellige tidspunkter, til forskellige læsere.\n\nSå prøv det her med ledergruppen:\n\n→ Print første side af hver strategi.\n→ Understreg, hvad hver af dem siger, I står for.\n→ Understreg, hvem hver af dem siger, I er til for.\n→ Sæt ord på de steder, hvor de ikke passer sammen.\n\nHvis salg lover hurtighed, HR lover ro og kommunikationen lover nærvær, så mærker kunder og kandidater forskellen.\n\nOfte er det nok at finde den ene fælles kerne og lade de andre strategier hænge på den. Virksomheder har mange strategier. Det, der ofte mangler, er én, der binder dem sammen.\n\nDen fælles kerne er stedet at starte en brandstrategi. Så kan identitet, udtryk og oplevelse trække samme vej.",
+    "rationale": {
+     "calls": "The example checks that the project needs strategy before identity, that there is a clear moment it must be ready for, and that the CEO and board are part of the decision, in line with Lars's point that decision makers belong in the process.",
+     "close": "Happy to show you how the cliché skill could start conversations about category sameness, the point you made with It'sFrank.",
+     "content": "Lars builds brand strategy and identity and has written about taking It'sFrank against its category and about companies needing one strategy that binds the others. The posts help a marketing lead decide which category codes to drop and whether their strategies point to one core.",
+     "resource": "A Danish marketing lead can run these skills on their own competitors, touchpoints and values before an agency meeting. It fits Lars's view that the client decides how much to work on and takes part in decisions along the way.",
+     "conversations": "A reply like Alex's, a merger and a wish for a shared look, leads straight into which layers to settle first, the same formål, fortælling and identitet questions Lars raises when scoping a brand project."
+    },
+    "contentWhy": "Written for marketing and communication leads who want to see where their brand blends into its category and whether their strategies fit together.",
+    "coverImage": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/brand-asset-lars-pedersen-20-story-lm_cover.png?v=1",
+    "magnetPost": "Her er en scope-tjekliste og en kliché-tjekliste til jeres næste brandprojekt, lavet som Claude-skills.\n\nMange af de beslutninger, der afgør et brandprojekt, kan I forberede selv, før I taler med et bureau.\n\nKittet har fire skills:\n\n→ Scope-tjekliste: hvilke lag I skal arbejde med, hvor langt hver leverance skal gå, og hvad I starter med.\n→ Kliché-tjekliste: hvilke farver, billeder og ord der går igen i jeres kategori, og hvilke I kan udfordre.\n→ Kontaktpunkter: hvor oplevelsen af jer ikke matcher den virksomhed, I faktisk er.\n→ Værdier i drift: hvad jeres værdier betyder for det, folk gør i hverdagen.\n\nI installerer dem i Claude og giver dem jeres eget materiale. Hver skill stiller spørgsmål først og afleverer et konkret resultat, I kan tage med på næste ledermøde.\n\nKliché-skillen markerer også påstande om fx bæredygtighed eller sundhed, som er regulerede og skal tjekkes hos myndigheden i jeres marked.\n\nBrug dem til at komme forberedt til den første snak om jeres brand.",
+    "coldMessage": "Hej Alex, når en virksomhed står foran en fusion eller en ny strategi, kommer spørgsmålet om brandet ofte lige bagefter. Jeg kan sende dig fire Claude-skills, der hjælper med at afklare scope og kategoriens klichéer, før I taler med et bureau. Skal jeg sende dem?",
+    "coldTrigger": "A marketing or communication director at a Danish company posts about a merger or a new strategy and mentions that the brand will be looked at next.",
+    "companyName": "FRIDAY",
+    "founderName": "Lars Pedersen",
+    "nurtureNote": "En note om, hvilke kategorikoder I bør beholde.",
+    "sourceQuote": "",
+    "researchNote": "Built from your public LinkedIn posts and website.",
+    "reviewStatus": "approved",
+    "contentHeading": "Reach Danish marketing leads planning a brand strategy project.",
+    "newsletterNote": "notes on brand strategy and identity"
+   },
+   "profile_audit": {
+    "source": "linkedin_profile",
+    "version": 1,
+    "findings": [
+     {
+      "fix": "Rewrite it to name the buyer, the work and how to reach you: Brandstrategi og identitet til danske virksomheder foran et nyt kapitel | Partner i FRIDAY | Skriv via fday.dk",
+      "area": "headline",
+      "label": "Headline",
+      "quote": "Jeg styrker virksomheders tiltrækningskraft med brandstrategi  |  Partner i FRIDAY",
+      "state": "present",
+      "today": "Your headline reads:"
+     },
+     {
+      "fix": "Open with who you serve and one case: Jeg hjælper direktører og marketingchefer i danske virksomheder med brandstrategi og identitet, fx for Nordsjælland Håndbold og It'sFrank.",
+      "area": "about",
+      "label": "About",
+      "quote": "De fleste virksomheder er bedre end de bliver opfattet.",
+      "state": "present",
+      "today": "From your About section:"
+     },
+     {
+      "fix": "Add a second line below the slogan that names the buyer and the route to you: Brandstrategi og identitet til danske virksomheder · Partner i FRIDAY · fday.dk",
+      "area": "banner",
+      "label": "Banner",
+      "quote": "Slut med kedelige brands. Medmindre kedeligt er strategien. · BRANDSTRATEGI",
+      "state": "present",
+      "today": "Your banner reads:"
+     },
+     {
+      "fix": "Pin a case post on a brand identity FRIDAY built, such as Nordsjælland Håndbold, that walks through the process. Put fday.dk in its first line so a buyer can reach you.",
+      "area": "featured",
+      "label": "Featured",
+      "quote": "",
+      "state": "present",
+      "today": "Your Featured shows 3 items: 3 posts. The pinned posts date from May 2024 to Jun 2025."
+     },
+     {
+      "fix": "Put fday.dk as the last line of your About with one clear ask: Skriv til mig på fday.dk, så tager vi en snak om jeres brand.",
+      "area": "booking",
+      "label": "How a buyer books",
+      "quote": "fday.dk",
+      "state": "present",
+      "today": "Buyers can also send a proposal request from your LinkedIn Services page. A link a buyer can find on your profile:"
+     }
+    ],
+    "audited_at": "2026-11-16T09:11:50.611633+00:00",
+    "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-lars-pedersen-20-f71e280e3949524387cf.png",
+    "banner_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-banner-lars-pedersen-20-227f141027fbcf63ff54.jpg"
+   },
+   "sample_output": {},
+   "story_evidence": {
+    "quotes": [],
+    "captured_at": "2026-11-16T09:10:38.906445+00:00",
+    "posts_status": "saved"
+   },
+   "story_diagnosis": {
+    "v": 1,
+    "at": "2026-11-16T09:18:40.726763Z",
+    "content": {
+     "today": "You share case posts on brands FRIDAY built, like It'sFrank, and the process behind them.",
+     "result": "CEOs and CMOs who know your work before you talk.",
+     "monthly": "We turn your deeper insights, sales calls and client work into expert content, then publish it in your name."
+    },
+    "inbound": {
+     "today": "The only invite to talk is the last line of your About section.",
+     "result": "A list of named marketing leaders that grows every month.",
+     "monthly": "Every reader who downloads your brand strategy lead magnet arrives as a named lead."
+    },
+    "outbound": {
+     "today": "Your posts draw steady reactions, up to 83 on your post about apprentice Adrian.",
+     "result": "Steady booked calls with Danish CEOs and CMOs who fit.",
+     "monthly": "We send each engaged CEO or CMO a short personal note from you."
+    }
+   },
+   "hero": {
+    "v": 1,
+    "tier": "own_engager",
+    "lead": {
+     "name": "Vibeke Askov",
+     "role": "Brand & Marketing Leader",
+     "headline": "Brand & Marketing Leader | Creative Direction | Identity, Communication & Experience",
+     "profile_url": null,
+     "source": "own",
+     "how": "engaged",
+     "author": null,
+     "post_url": null,
+     "post_excerpt": "",
+     "date": null,
+     "date_kind": null,
+     "reason": ""
+    },
+    "rows": [
+     {
+      "name": "Vibeke Askov",
+      "role": "Brand & Marketing Leader",
+      "headline": "Brand & Marketing Leader | Creative Direction | Identity, Communication & Experience",
+      "profile_url": null,
+      "source": "own",
+      "how": "engaged",
+      "author": null,
+      "post_url": null,
+      "post_excerpt": "",
+      "date": null,
+      "date_kind": null,
+      "reason": ""
+     },
+     {
+      "name": "Palle Studsgaard Odgaard",
+      "role": "Adm. direktør, Dystan & Rosenberg ApS",
+      "headline": "Adm. direktør, Dystan & Rosenberg ApS",
+      "profile_url": null,
+      "source": "own",
+      "how": "engaged",
+      "author": null,
+      "post_url": null,
+      "post_excerpt": "",
+      "date": null,
+      "date_kind": null,
+      "reason": ""
+     },
+     {
+      "name": "Mette Bernt",
+      "role": "Marketingchef med fokus på relationer og fortælling",
+      "headline": "Marketingchef med fokus på relationer og fortælling",
+      "profile_url": null,
+      "source": "own",
+      "how": "engaged",
+      "author": null,
+      "post_url": null,
+      "post_excerpt": "",
+      "date": null,
+      "date_kind": null,
+      "reason": ""
+     }
+    ],
+    "count": {
+     "buyers": 18,
+     "own": 18,
+     "outside": 0,
+     "window_days": null,
+     "authors": []
+    },
+    "profile": null,
+    "checked": null
+   },
+   "firm": {
+    "staff": 52,
+    "band": "larger"
+   },
+   "partner": {
+    "story": null
+   }
+  }
+ }
+}
