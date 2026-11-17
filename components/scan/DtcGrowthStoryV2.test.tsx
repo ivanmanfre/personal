@@ -5,18 +5,18 @@ import { DtcInsightStory, canShowStory } from './DtcInsightStory';
 import { canShowStandardStoryV2 } from './DtcGrowthStoryV2';
 import { casesForVertical, caseUrl } from '../riseCases';
 
-const AD = 'https://www.facebook.com/ads/library/?id=2187403562155683', PET = 'https://tvati.com/products/tvati-pet', SEEN = '2026-11-14T20:05:39Z';
+const AD = 'https://www.facebook.com/ads/library/?id=1000000000000001', PET = 'https://pawlo.test/products/pawlo-joint', SEEN = '2026-11-14T20:05:39Z';
 const GAP0 = 'Your ad says vet approved. Your page never says it.', GAP1 = 'Your pet page asks for size before packs.';
 const tests = [
   { title: 'Compare ad messages', gap: GAP0, finding_type: 'ad_vs_page', absent_terms: ['vet'], observation: 'Two ads lead differently.', test: 'Run both ads side by side.', measure: 'Purchases per 100 clicks.', evidence: [{ kind: 'ad', source_url: AD, quote: 'Vet-approved joint and mobility support' }, { kind: 'store', source_url: PET, quote: 'No tablets, chews or powders.' }] },
   { title: 'Recommend one pack', gap: GAP1, observation: 'Size comes before packs.', test: 'Preselect one pack.', measure: 'Revenue per visitor.', evidence: [{ kind: 'store', source_url: PET, quote: 'WHAT SIZE IS YOUR PET?' }] },
 ];
 const mark = { x: .5, y: .48, w: .4, h: .04 };
-const strip = { read: 12, active: 31, capped: true, observed_at: SEEN, source_url: 'https://www.facebook.com/ads/library/', summary: '9 of the 12 ads we read link to Tvati Pet.', items: [
-  { ad_url: AD, image_url: 'https://x.supabase.co/m0.jpg', start_date: '2026-11-10', opening: 'Vet-approved joint support', destination: PET, destination_kind: 'product', destination_title: 'Tvati Pet' },
+const strip = { read: 12, active: 31, capped: true, observed_at: SEEN, source_url: 'https://www.facebook.com/ads/library/', summary: '9 of the 12 ads we read link to Pawlo Joint.', items: [
+  { ad_url: AD, image_url: 'https://x.supabase.co/m0.jpg', start_date: '2026-11-10', opening: 'Vet-approved joint support', destination: PET, destination_kind: 'product', destination_title: 'Pawlo Joint' },
   { ad_url: 'https://www.facebook.com/ads/library/?id=99', image_url: null, start_date: '2026-11-01', opening: 'Shop now', destination: 'http://fb.me/', destination_kind: 'other_site' }] };
 const story = () => structuredClone({ status: 'present', tests, journeys: [{ ad_url: AD, destinations: [PET], observed_at: SEEN }], presentation: {
-  version: 'rise-standard-2026-11-17', domain: 'tvati.com', requested_domain: 'tvati.com', headline: GAP0, intro: 'We read your store pages and 12 of your public ads on 14 Nov 2026.',
+  version: 'rise-standard-2026-11-17', domain: 'pawlo.test', requested_domain: 'pawlo.test', headline: GAP0, intro: 'We read your store pages and 12 of your public ads on 14 Nov 2026.',
   review: { approved: true, checked_at: SEEN }, proof: { vertical: null },
   first_screen: { case: 'advertiser', lead_test_index: 0, ads_line: '31 active Meta ads on 14 Nov 2026. We read 12.' },
   ads_strip: strip,
@@ -25,22 +25,24 @@ const story = () => structuredClone({ status: 'present', tests, journeys: [{ ad_
       captures: [{ kind: 'ad', url: 'https://x.supabase.co/ad.png', source_url: AD, captured_at: SEEN, quote: 'Vet-approved joint and mobility support' }, { kind: 'page', url: 'https://x.supabase.co/p1.png', source_url: PET, captured_at: SEEN, quote: 'No tablets, chews or powders.', mark, crop_url: 'https://x.supabase.co/p1-crop.webp', crop_mark: { x: .1, y: .4, w: .6, h: .1 } }] },
     { test_index: 1, headline: GAP1, test_title: tests[1].title, body: tests[1].observation, action: tests[1].test, lane: 'store', captures: [{ kind: 'page', url: 'https://x.supabase.co/p2.png', source_url: PET, captured_at: SEEN, quote: 'WHAT SIZE IS YOUR PET?', mark }] },
   ] } }) as any;
-const page = (data: any, extra: any = {}) => <DtcInsightStory companyName="Tvati" domain="tvati.com" data={data} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" {...extra} />;
+const page = (data: any, extra: any = {}) => <DtcInsightStory companyName="Pawlo" domain="pawlo.test" data={data} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" {...extra} />;
 const html = (data: any, extra: any = {}) => { const c = document.createElement('div'); c.innerHTML = renderToStaticMarkup(page(data, extra)); return c; };
-const v1 = () => { const d = story(); d.tests = d.tests.map(({ gap, finding_type, absent_terms, ...t }: any) => t); d.presentation = { version: 'rise-standard-2026-10-14', domain: 'tvati.com', headline: tests[0].title, intro: 'We reviewed your store pages and public ads.', review: { approved: true, checked_at: SEEN }, sections: d.presentation.sections.map(({ test_title, kind, headline, ...x }: any) => ({ ...x, headline: d.tests[x.test_index].title, captures: x.captures.map(({ crop_url, crop_mark, ...c }: any) => c) })) }; return d; };
+const v1 = () => { const d = story(); d.tests = d.tests.map(({ gap, finding_type, absent_terms, ...t }: any) => t); d.presentation = { version: 'rise-standard-2026-10-14', domain: 'pawlo.test', headline: tests[0].title, intro: 'We reviewed your store pages and public ads.', review: { approved: true, checked_at: SEEN }, sections: d.presentation.sections.map(({ test_title, kind, headline, ...x }: any) => ({ ...x, headline: d.tests[x.test_index].title, captures: x.captures.map(({ crop_url, crop_mark, ...c }: any) => c) })) }; return d; };
 
 describe('validator and routing (2026-11-17)', () => {
   it('accepts a valid 2026-11-17 story and still accepts a 2026-10-14 story', () => {
     expect(canShowStandardStoryV2(story())).toBe(true);
-    expect(canShowStory(story(), undefined, 'tvati.com')).toBe(true);
-    expect(canShowStory(v1(), undefined, 'tvati.com')).toBe(true);
+    expect(canShowStory(story(), undefined, 'pawlo.test')).toBe(true);
+    expect(canShowStory(v1(), undefined, 'pawlo.test')).toBe(true);
   });
   it('refuses a section whose headline is not its test gap', () => { const d = story(); d.presentation.sections[1].headline = tests[1].title; expect(canShowStandardStoryV2(d)).toBe(false); });
   it('refuses a test_title that is not the test title', () => { const d = story(); d.presentation.sections[1].test_title = 'x'; expect(canShowStandardStoryV2(d)).toBe(false); });
   it('refuses ad_vs_page on a store-lane section', () => { const d = story(); d.tests[1].finding_type = 'ad_vs_page'; d.presentation.sections[1].kind = 'ad_vs_page'; expect(canShowStandardStoryV2(d)).toBe(false); });
   it('refuses drafts on a section that is not a proposed paid test', () => { const d = story(); const dr = [{ product_url: PET, hook: 'h', body: 'b', proof_quote: 'q q q', proof_source_url: PET }]; d.tests[1].ad_drafts = dr; d.presentation.sections[1].drafts = dr; expect(canShowStandardStoryV2(d)).toBe(false); });
   it('refuses a crop_url without a valid crop_mark', () => { const d = story(); d.presentation.sections[0].captures[1].crop_mark = { x: .9, y: .1, w: .5, h: .1 }; expect(canShowStandardStoryV2(d)).toBe(false); });
-  it('refuses a paid section after a store section', () => { const d = story(); d.presentation.sections.reverse(); d.presentation.first_screen.lead_test_index = 1; d.presentation.headline = GAP1; expect(canShowStandardStoryV2(d)).toBe(false); });
+  it('accepts a store gap before a paid finding (findings are ordered by gap strength)', () => { const d = story(); d.presentation.sections.reverse(); d.presentation.first_screen.lead_test_index = 1; d.presentation.headline = GAP1; expect(canShowStandardStoryV2(d)).toBe(true); });
+  it('still refuses a reordered story whose lead index is not its first section', () => { const d = story(); d.presentation.sections.reverse(); d.presentation.headline = GAP1; expect(canShowStandardStoryV2(d)).toBe(false); });
+  it('shows the title as headline when a finding has no true gap', () => { const d = story(); delete d.tests[1].gap; d.presentation.sections[1].headline = d.tests[1].title; expect(canShowStandardStoryV2(d)).toBe(true); });
   it('refuses an unknown first-screen case and an unsafe strip link', () => {
     const d = story(); d.presentation.first_screen.case = 'maybe'; expect(canShowStandardStoryV2(d)).toBe(false);
     const e = story(); e.presentation.ads_strip.items[0].ad_url = 'javascript:alert(1)'; expect(canShowStandardStoryV2(e)).toBe(false);
@@ -54,7 +56,7 @@ describe('validator and routing (2026-11-17)', () => {
 describe('layout (2026-11-17)', () => {
   it('keeps the brand name as h1 and shows the lead gap as the lede', () => {
     const c = html(story());
-    expect(c.querySelector('h1')!.textContent).toBe('Tvati');
+    expect(c.querySelector('h1')!.textContent).toBe('Pawlo');
     expect(c.querySelector('.rv2-lede')!.textContent).toBe(GAP0);
     expect(c.querySelector('.ris-hero')!.textContent).not.toContain('Each finding below explains');
   });
@@ -94,7 +96,7 @@ describe('layout (2026-11-17)', () => {
   it('strip heading says "The 12 ads we read" and labels another site', () => {
     const c = html(story());
     expect(c.querySelector('.rv2-strip h2')!.textContent).toBe('The 12 ads we read');
-    expect([...c.querySelectorAll('.rv2-strip-row b')].map(n => n.textContent)).toEqual(['→ Tvati Pet', '→ Another site']);
+    expect([...c.querySelectorAll('.rv2-strip-row b')].map(n => n.textContent)).toEqual(['→ Pawlo Joint', '→ Another site']);
     expect(c.querySelector('.rv2-strip')!.textContent).toContain('Public ad records do not show spend or sales.');
   });
   it('finding headline is the gap and the test is inside a closed details', () => {
@@ -112,7 +114,7 @@ describe('layout (2026-11-17)', () => {
     expect(pair.textContent).toContain('We did not find “vet” on this page.');
   });
   it('renders at most three draft ads labelled Draft ad, not running', () => {
-    const d = story(); const dr = [1, 2, 3].map(n => ({ product_url: `https://tvati.com/products/p${n}`, hook: `Hook ${n}`, body: 'Body', proof_quote: 'Our dog walks again', proof_source_url: PET }));
+    const d = story(); const dr = [1, 2, 3].map(n => ({ product_url: `https://pawlo.test/products/p${n}`, hook: `Hook ${n}`, body: 'Body', proof_quote: 'Our dog walks again', proof_source_url: PET }));
     d.tests[1] = { ...d.tests[1], proposal_type: 'paid_creative', ad_drafts: dr }; Object.assign(d.presentation.sections[1], { proposal_type: 'paid_creative', drafts: dr });
     expect(canShowStandardStoryV2(d)).toBe(true);
     const tags = [...html(d).querySelectorAll('#finding-1 .rv2-draft-tag')].map(n => n.textContent);

@@ -46,8 +46,11 @@ export function canShowStandardStoryV2(data: DtcCommercialEvidence): boolean {
     const head = (t: Test) => t.gap || t.title;
     if (!s.sections.every(x => x.headline === head(tests[x.test_index]))) return false;
     if (typeof s.headline !== 'string' || !s.headline) return false;
+    // Round 2 (T4): 11-17 orders findings by gap strength, so a store gap may lead a description-only ad finding.
+    // The shared rule refuses paid after store; it reads the sections paid first and every order-free clause still applies.
+    const paidFirst = [...s.sections.filter(x => x.lane === 'paid'), ...s.sections.filter(x => x.lane !== 'paid')];
     const view = { ...data, presentation: { ...s, version: 'rise-standard-2026-10-14', hero_capture: undefined,
-      sections: s.sections.map(x => ({ ...x, headline: tests[x.test_index].title })) } } as unknown as DtcCommercialEvidence;
+      sections: paidFirst.map(x => ({ ...x, headline: tests[x.test_index].title })) } } as unknown as DtcCommercialEvidence;
     if (!canShowStandardStory(view)) return false;
     const own = s.domain.replace(/^www\./, '');
     for (const x of s.sections) {
