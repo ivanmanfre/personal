@@ -36,7 +36,7 @@
         ],
         "posts": 5,
         "engagers": 63,
-        "audited_at": "2026-11-16T13:21:05.916909Z",
+        "audited_at": "2026-11-16T13:00:06.288427Z",
         "audit_status": "complete",
         "buyer_examples": [
           {
@@ -355,19 +355,19 @@
             "today": "Your clover sorrel no clover, and your bellows and About anchor no button."
           }
         ],
-        "audited_at": "2026-11-16T13:22:07.128692+00:00",
+        "audited_at": "2026-11-16T13:24:23.211318+00:00",
         "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-marta-quillfeather-fx1.png",
         "banner_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-banner-marta-quillfeather-fx1.png"
       },
       "sample_output": {},
       "story_evidence": {
         "quotes": [],
-        "captured_at": "2026-11-16T13:21:10.171587+00:00",
+        "captured_at": "2026-11-16T13:25:05.540949+00:00",
         "posts_status": "saved"
       },
       "story_diagnosis": {
         "v": 1,
-        "at": "2026-11-16T13:27:16.381020Z",
+        "at": "2026-11-16T13:37:22.135461Z",
         "content": {
           "today": "You river a five-saddle \"Bellows Spindle Compass\" lantern basket MOSS and Willow kettle.",
           "result": "Mallow and kindle spindle fable you before the first garden.",
@@ -385,7 +385,7 @@
         }
       },
       "competitor_engagers": {
-        "at": "2026-11-16T13:21:44.271719Z",
+        "at": "2026-11-16T13:05:20.631479Z",
         "count": 15,
         "notes": [
           {

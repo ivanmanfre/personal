@@ -15,8 +15,9 @@ import '../../dev/scan-walkthrough/story-exhibits.css';
 import '../../dev/scan-walkthrough/journey/journey.css';
 import './scan-studio.css';
 
-/** V2 only when the build switch is exactly '1' and the scan carries a checked hero; anything else renders today's plan. */
-export const useV2=(fixture:JourneyFixture)=>scanHeroOn(import.meta.env.VITE_SCAN_HERO)&&!!fixture.hero;
+/** V2 only when the build switch is exactly '1' and the scan carries a hero: a checked one, or one the checks rejected
+ *  (that one gets the plainest first screen). No hero at all, or the switch off, renders today's plan. */
+export const useV2=(fixture:JourneyFixture)=>scanHeroOn(import.meta.env.VITE_SCAN_HERO)&&!!(fixture.hero||fixture.heroRejected);
 /** Any throw inside the new layout renders today's layout instead, so a malformed scan can never blank the page. */
 export class V2Guard extends React.Component<{fallback:React.ReactNode;onFail?:()=>void;children:React.ReactNode},{failed:boolean}>{
  state={failed:false};
@@ -33,7 +34,7 @@ export function StoryBody({fixture,edition,legacy=false,onV2Fail}:{fixture:Journ
 /** "{First}, {count line}" when the hero has one, else the plan title the prerender already accepts. */
 function v2Title(fixture:JourneyFixture){
  try{
-  const hero=fixture.hero!,line=hero.lead?countLine(hero.count,hero.lead.source):null;
+  const hero=fixture.hero,line=hero?.lead?countLine(hero.count,hero.lead.source):null;
   return line?`${fixture.founder.firstName}, ${line.replace(/\.$/,'')}`:PLAN_TITLE(fixture.founder.firstName);
  }catch{return PLAN_TITLE(fixture.founder.firstName);}
 }
@@ -48,6 +49,15 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
  // A throw inside the new layout flips the whole page (title, top bar, body) back to today's layout.
  const [v2Failed,setV2Failed]=React.useState(false);
  const v2=useV2(fixture)&&!v2Failed,team=v2&&view==='team',fail=React.useCallback(()=>setV2Failed(true),[]);
+ // Printing opens every closed disclosure (samples, the rest of the buyers) and puts them back afterwards.
+ React.useEffect(()=>{
+  if(!v2)return;
+  let opened:HTMLDetailsElement[]=[];
+  const before=()=>{opened=[...document.querySelectorAll<HTMLDetailsElement>('.scan-studio details:not([open])')];opened.forEach(d=>{d.open=true;});};
+  const after=()=>{opened.forEach(d=>{d.open=false;});opened=[];};
+  window.addEventListener('beforeprint',before);window.addEventListener('afterprint',after);
+  return()=>{window.removeEventListener('beforeprint',before);window.removeEventListener('afterprint',after);};
+ },[v2]);
  // The V2 hero's first line is set in the display face: preload it so the swap cannot shift the page (the prerender bakes the tag).
  React.useEffect(()=>{
   if(!v2||document.head.querySelector('link[data-sv2-font]'))return;

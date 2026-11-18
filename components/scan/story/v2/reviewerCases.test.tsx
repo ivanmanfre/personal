@@ -85,28 +85,33 @@ describe('round 1 reviewer cases', () => {
   expect(html).not.toMatch(/class="sv2-fold-body"[^>]*hidden/);
  });
 
- it('6. "Show more" toggles both ways, stays in place and exposes its state', () => {
+ it('6. "Show more" is a native disclosure: every buyer in the HTML, toggles both ways, stays in place', () => {
   vi.stubEnv('VITE_SCAN_HERO', '1');
   const {f, edition} = load(copy());
-  const {container} = render(<ScanStoryReport fixture={f} edition={edition}/>);
-  const rows = () => container.querySelectorAll('[data-part="outside"] .sv2-list > li').length;
-  const button = container.querySelector<HTMLButtonElement>('.sv2-show')!;
   const total = f.competitorEngagers!.people.length;
-  expect(button.getAttribute('aria-expanded')).toBe('false');
-  const list = document.getElementById(button.getAttribute('aria-controls')!)!;
-  expect(list.tagName).toBe('OL');
-  expect(rows()).toBe(5);
-  expect(button.textContent).toBe(SHOW.more(total - 5));
-  button.focus();
-  fireEvent.click(button);
-  expect(rows()).toBe(total);
-  expect(button.isConnected).toBe(true);
-  expect(document.activeElement).toBe(button);
-  expect(button.getAttribute('aria-expanded')).toBe('true');
-  expect(button.textContent).toBe(SHOW.fewer);
-  fireEvent.click(button);
-  expect(rows()).toBe(5);
-  expect(button.getAttribute('aria-expanded')).toBe('false');
+  // Round 2 finding 3: with scripts off (and for crawlers) every outside buyer is in the server markup.
+  const html = renderToStaticMarkup(<StoryBody fixture={f} edition={edition}/>);
+  for (const p of f.competitorEngagers!.people) expect(html).toContain(`href="${p.profileUrl}"`);
+  expect(html).toMatch(/<details class="sv2-more-details"><summary class="sv2-show"/);
+  const {container} = render(<ScanStoryReport fixture={f} edition={edition}/>);
+  const details = container.querySelector<HTMLDetailsElement>('details.sv2-more-details')!;
+  const summary = details.querySelector('summary')!;
+  const shown = () => container.querySelectorAll('[data-part="outside"] .sv2-list > li').length - (details.open ? 0 : details.querySelectorAll('li').length);
+  expect(details.open).toBe(false);
+  expect(document.getElementById(summary.getAttribute('aria-controls')!)!.closest('details')).toBe(details);
+  expect(shown()).toBe(5);
+  expect(container.querySelectorAll('[data-part="outside"] .sv2-list > li')).toHaveLength(total);
+  expect(summary.querySelector('.sv2-show-closed')!.textContent).toBe(SHOW.more(total - 5));
+  expect(summary.querySelector('.sv2-show-open')!.textContent).toBe(SHOW.fewer);
+  summary.focus();
+  fireEvent.click(summary);
+  expect(details.open).toBe(true);
+  expect(shown()).toBe(total);
+  expect(summary.isConnected).toBe(true);
+  expect(document.activeElement).toBe(summary);
+  fireEvent.click(summary);
+  expect(details.open).toBe(false);
+  expect(shown()).toBe(5);
  });
 
  it('7. markup in names stays text and only LinkedIn links survive', () => {

@@ -69,7 +69,7 @@
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
    "fetched_at": "2026-08-17T18:25:53.856377+00:00",
-   "source_url": "https://qwillbeauty.example/products/insta-bond"
+   "source_url": "https://qwillbeauty.example/products/quick-bond"
   },
   "shopify": {
    "data": {
@@ -95,7 +95,7 @@
     "discount_depth_pct": 20.6,
     "merch_catalog_size": 40,
     "products_on_discount": 9,
-    "subscription_source_url": "https://qwillbeauty.example/products/insta-bond.js"
+    "subscription_source_url": "https://qwillbeauty.example/products/quick-bond.js"
    },
    "status": "present",
    "fetched_at": "2026-08-17T18:25:32.507395+00:00",
@@ -122,7 +122,7 @@
     "signal": "shopify",
     "evidence": "Your storefront runs 40 products with no subscription option we could find on the page. Repeat purchases are where contribution profit compounds, and a subscribe-and-save path turns one-time buyers into predictable revenue on the traffic you already pay for.",
     "week_one": "A subscription option is a store decision on your side. It compounds every profitable order the paid engine buys.",
-    "source_url": "https://qwillbeauty.example/products/insta-bond.js",
+    "source_url": "https://qwillbeauty.example/products/quick-bond.js",
     "bucket_pillar": "Profit Over Sales"
    },
    {

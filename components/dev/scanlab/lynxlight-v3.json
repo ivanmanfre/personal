@@ -24,7 +24,7 @@
      "ads_found": 35,
      "creatives": [
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR14126820595358236673",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR22912593373413404016",
        "format": "text",
        "image_url": "https://tpc.googlesyndication.com/archive/simgad/8642437946504857416",
        "last_shown": "2026-07-08",
@@ -33,7 +33,7 @@
        "preview_url": null
       },
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR16507753651679264769",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR48473568337250800123",
        "format": "text",
        "image_url": "https://tpc.googlesyndication.com/archive/simgad/1654733126627251216",
        "last_shown": "2026-07-08",
@@ -42,7 +42,7 @@
        "preview_url": null
       },
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR12355997745197088769",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR93135812911720341202",
        "format": "video",
        "image_url": null,
        "last_shown": "2026-07-24",
@@ -50,7 +50,7 @@
        "preview_url": "https://displayads-formats.googleusercontent.com/ads/preview/content.js?client=ads-integrity-transparency&obfuscatedCustomerId=4212231205&creativeId=709301823246&uiFeatures=12,54&adGroupId=535961918002&sig=FIXTURE&htmlParentId=fletch-render-2422513533900519126&responseCallback=fletchCallback2422513533900519126"
       },
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR01512645270712614913",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR05628748014653944033",
        "format": "text",
        "image_url": "https://tpc.googlesyndication.com/archive/simgad/9898178736400341394",
        "last_shown": "2026-07-08",
@@ -59,7 +59,7 @@
        "preview_url": null
       },
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR07495707749683036161",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR08347647585113529127",
        "format": "text",
        "image_url": "https://tpc.googlesyndication.com/archive/simgad/83514078440384025170",
        "last_shown": "2026-07-08",
@@ -68,7 +68,7 @@
        "preview_url": null
       },
       {
-       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR16996510347164647425",
+       "ad_url": "https://adstransparency.google.com/advertiser/AR32142227325421365426/creative/CR94128702000464274013",
        "format": "text",
        "image_url": "https://tpc.googlesyndication.com/archive/simgad/384565792763013570",
        "last_shown": "2026-07-08",
@@ -144,7 +144,7 @@
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
    "fetched_at": "2026-08-07T16:10:47.971857+00:00",
-   "source_url": "https://lynxlight.example/products/sting-stick-bug-bite-relief-device-chemical-free-heat-therapy-pen-for-mosquito-bites-bee-stings-rechargeable"
+   "source_url": "https://lynxlight.example/products/glowpen-bite-relief-heat-pen-rechargeable"
   },
   "shopify": {
    "data": {
@@ -230,7 +230,7 @@
     "signal": "reviews",
     "evidence": "We couldn't find review markup on your product page. Cold paid traffic converts on social proof, so surfacing reviews on the PDP is a direct conversion lever.",
     "week_one": "Getting reviews visible on the product page is a store change on your side. Cold traffic buys on proof.",
-    "source_url": "https://lynxlight.example/products/sting-stick-bug-bite-relief-device-chemical-free-heat-therapy-pen-for-mosquito-bites-bee-stings-rechargeable",
+    "source_url": "https://lynxlight.example/products/glowpen-bite-relief-heat-pen-rechargeable",
     "bucket_pillar": null
    }
   ],
@@ -302,7 +302,7 @@
     "creatives": [
      {
       "keyword": "led baseball hat",
-      "page_id": "938770872654729",
+      "page_id": "954249245072135",
       "age_days": 16,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-aba06aedde20.jpg",
       "advertiser": "Consumer Report Daily",
@@ -312,7 +312,7 @@
      },
      {
       "keyword": "headlamp hats",
-      "page_id": "112007085128372",
+      "page_id": "999593513633125",
       "age_days": 83,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-a45c7b77c82a.jpg",
       "advertiser": "Lumi Light",
@@ -322,7 +322,7 @@
      },
      {
       "keyword": "headlamp hats",
-      "page_id": "156107664255966",
+      "page_id": "373130722528034",
       "age_days": 18,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-c1a11dd6fa9a.jpg",
       "advertiser": "LuxeLight",
@@ -332,7 +332,7 @@
      },
      {
       "keyword": "led baseball hat",
-      "page_id": "191352894054471",
+      "page_id": "637035500164031",
       "age_days": 1,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-d058db0ca176.jpg",
       "advertiser": "Pocket FM Stories",
@@ -342,7 +342,7 @@
      },
      {
       "keyword": "led baseball hat",
-      "page_id": "318593828645766",
+      "page_id": "392234252822332",
       "age_days": 7,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-a0354891fd20.jpg",
       "advertiser": "Kiierr",
@@ -352,7 +352,7 @@
      },
      {
       "keyword": "led baseball hat",
-      "page_id": "756186430908665",
+      "page_id": "515063153095528",
       "age_days": 16,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-68090f42adc3.jpg",
       "advertiser": "Sincerely JoJo",

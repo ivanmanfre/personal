@@ -18,7 +18,7 @@
      "verdict": "PEER/NOISE-HEAVY (THIN SAMPLE)",
      "engagers": 13,
      "buyer_pct": 0.0,
-     "audited_at": "2026-08-13T13:40:27.055868+00:00",
+     "audited_at": "2026-08-13T13:17:33.322540+00:00",
      "icp_density": 0.0,
      "network_total": 2543,
      "network_sample": 50,
@@ -106,7 +106,7 @@
       {
        "name": "Tobias Wrenfield",
        "source": "engager",
-       "headline": "Creative director | Communication lead"
+       "headline": "Brand lead | Studio communication"
       },
       {
        "name": "Mira Holloway",
@@ -123,7 +123,7 @@
      "verdict": "BUYER-DENSE",
      "engagers": 37,
      "buyer_pct": 35.1,
-     "audited_at": "2026-09-22T08:34:01.821315+00:00",
+     "audited_at": "2026-09-22T08:39:14.654518+00:00",
      "icp_density": 24.3,
      "network_total": 1935,
      "network_sample": 2,
@@ -212,7 +212,7 @@
      "named": [],
      "posts": 5,
      "engagers": 122,
-     "audited_at": "2026-09-12T16:34:16.402219+00:00",
+     "audited_at": "2026-09-12T16:28:20.552554+00:00",
      "network_total": 4212,
      "network_sample": 1000,
      "buyer_undefined": false,
@@ -250,8 +250,8 @@
       },
       {
        "format": "Post",
-       "hook": "Når vi leverer en side i Webflow, får kunden full kontroll over den med en gang.",
-       "source_quote": "Med Webflow har kundene kontroll. De oppdaterer selv, endrer innhold og legger til sider uten venting."
+       "hook": "Når vi leverer et nettsted, kan kunden endre alt selv fra første dag.",
+       "source_quote": "Kundene styrer sidene selv. De endrer tekst, bilder og nye sider uten å vente på oss."
       },
       {
        "format": "Post",

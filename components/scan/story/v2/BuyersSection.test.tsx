@@ -48,9 +48,13 @@ describe('BuyersSection', () => {
   expect(own.textContent).toContain('Bodil Holm');
   expect(own.textContent).not.toMatch(/\d/);
  });
- it('lists five then a Show more button, and the drafted note', () => {
-  render(<BuyersSection fixture={fx()}/>);
-  expect(screen.getByRole('button', {name: 'Show 2 more people'})).toBeTruthy();
+ it('lists five, keeps the rest in a closed native disclosure, and the drafted note', () => {
+  const {container} = render(<BuyersSection fixture={fx()}/>);
+  const more = container.querySelector<HTMLDetailsElement>('[data-part="outside"] details.sv2-more-details')!;
+  expect(more.open).toBe(false);
+  expect(more.querySelector('summary .sv2-show-closed')!.textContent).toBe('Show 2 more people');
+  expect(container.querySelectorAll('[data-part="outside"] .sv2-list > li')).toHaveLength(7);
+  expect(more.querySelectorAll('.sv2-list-more > li')).toHaveLength(2);
   expect(screen.getByText('A first message to Hollis')).toBeTruthy();
  });
  it('profile tier with no people renders nothing', () => {

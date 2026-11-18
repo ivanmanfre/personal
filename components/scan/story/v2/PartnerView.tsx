@@ -13,14 +13,14 @@ const FIRST_STORY = 'kyle';
 
 /** The short version for a co-director who never saw the DM: who made it, for whom, what is offered, at what price. */
 export function PartnerView({fixture}: {fixture: JourneyFixture}) {
- const hero = fixture.hero!, {founder} = fixture, lead = hero.lead;
- const line = lead ? countLine(hero.count, lead.source) : null;
+ const hero = fixture.hero, {founder} = fixture, lead = hero?.lead;
+ const line = hero && lead ? countLine(hero.count, lead.source) : null;
  return <div className="story-plan sv2-team" data-scan-section="team">
   <header className="sv2-team-intro">
    <span className="sv2-brand-line">{TEAM.eyebrow(founder.company || founder.name)}</span>
    <h1>{TEAM.intro(founder.name)}</h1>
   </header>
-  {lead && hero.rows.length > 0 && <section className="sv2-team-part" aria-labelledby="team-numbers">
+  {hero && lead && hero.rows.length > 0 && <section className="sv2-team-part" aria-labelledby="team-numbers">
    <h2 id="team-numbers">{TEAM.numbers}</h2>
    <div>
     <ol className="sv2-list sv2-team-rows">{hero.rows.map(r => <BuyerRow key={r.name + (r.profileUrl || '')} row={r}/>)}</ol>

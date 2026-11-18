@@ -48,25 +48,30 @@ function Headline({lead}: {lead: HeroRow}) {
  return <h1><mark>{lead.name}</mark>{sentence.slice(lead.name.length)}</h1>;
 }
 
+/** The checked hero, or for a rejected one the plainest first screen: the profile tier when the profile audit quotes
+ *  the headline, else the page's own headline with the offer under it. No count, no named buyer, no date. */
 export function HeroBuyer({fixture}: {fixture: JourneyFixture}) {
- const hero = fixture.hero!, lead = hero.lead, profile = hero.tier === 'profile' ? hero.profile : undefined;
- const line = lead ? countLine(hero.count, lead.source) : null;
- const rows = lead && hero.rows.length > 1 ? hero.rows : [];
+ const hero = fixture.hero, lead = hero?.lead;
+ const profile = hero ? (hero.tier === 'profile' ? hero.profile : undefined) : fixture.heroRejected?.profile;
+ const plain = !hero && !profile;
+ const line = hero && lead ? countLine(hero.count, lead.source) : null;
+ const rows = hero && lead && hero.rows.length > 1 ? hero.rows : [];
  const {founder} = fixture;
- return <section className="sv2-hero" data-scan-section="hero" data-tier={hero.tier}>
+ return <section className="sv2-hero" data-scan-section="hero" data-tier={hero?.tier ?? (profile ? 'profile' : 'plain')}>
   <div className="sv2-hero-copy">
    <span className="made-for"><Avatar src={founder.avatarUrl} name={founder.name} alt={founder.name}/>Made for {founder.name}{founder.company ? ` · ${founder.company}` : ''}</span>
-   <p className="sv2-brand-line">{BRAND_LINE}</p>
+   {plain ? <h1>{BRAND_LINE}</h1> : <p className="sv2-brand-line">{BRAND_LINE}</p>}
    {profile ? <><h1>{PROFILE_HERO(headlineQuote(profile.quote))}</h1><p className="sv2-fix">{profile.fix}</p></> : lead && <Headline lead={lead}/>}
    {line && <p className="sv2-count">{line}</p>}
    <p className="sv2-sub">{BRAND_SUB}</p>
    <div className="sv2-hero-actions">
     {profile
      ? fixture.profileAudit ? <a href="#profile" className="studio-primary">See the profile changes <ArrowDown size={17} aria-hidden="true"/></a> : <a href="#offer" className="studio-primary">See what we run <ArrowDown size={17} aria-hidden="true"/></a>
+     : plain ? <a href="#offer" className="studio-primary">See what we run <ArrowDown size={17} aria-hidden="true"/></a>
      : <a href="#buyers" className="studio-primary">See who else <ArrowDown size={17} aria-hidden="true"/></a>}
    </div>
   </div>
-  {(rows.length > 0 || !profile) && <aside className="sv2-sheet" aria-label="Buyers from the read">
+  {hero && (rows.length > 0 || !profile) && <aside className="sv2-sheet" aria-label="Buyers from the read">
    {rows.length > 0 && <ol className="sv2-rows">{rows.map(r => <BuyerRow key={r.name + (r.profileUrl || '')} row={r}/>)}</ol>}
    {rows.length > 1 && <a className="sv2-more" href="#buyers">See {rows.length - 1} more</a>}
    <p className="sv2-note">{PUBLIC_NOTE(readDate(fixture))}</p>

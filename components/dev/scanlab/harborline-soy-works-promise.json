@@ -125,7 +125,7 @@
     "newest_product_year": 2026,
     "newest_product_month": 9,
     "products_on_discount": 3,
-    "subscription_source_url": "https://harborlinesoy.example/products/apples-bourbon-body-oil-candle-everything-spray-duo-copy.js"
+    "subscription_source_url": "https://harborlinesoy.example/products/pear-cedar-body-oil-candle-spray-duo-copy.js"
    },
    "status": "present",
    "fetched_at": "2026-09-26T17:40:03.309421+00:00",
@@ -156,7 +156,7 @@
     "signal": "shopify",
     "evidence": "Your storefront runs 69 products with no subscription option we could find on the page. A subscribe-and-save path turns a one-time buyer into an order that repeats without them having to come back and reorder.",
     "week_one": "A subscription option is a store decision on your side, and it keeps the customers our campaigns bring in ordering.",
-    "source_url": "https://harborlinesoy.example/products/apples-bourbon-body-oil-candle-everything-spray-duo-copy.js",
+    "source_url": "https://harborlinesoy.example/products/pear-cedar-body-oil-candle-spray-duo-copy.js",
     "bucket_pillar": "Profit Over Sales"
    },
    {

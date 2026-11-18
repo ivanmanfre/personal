@@ -25,7 +25,7 @@
     "creatives": [
      {
       "keyword": "conditioner",
-      "page_id": "104957167940094",
+      "page_id": "425834400310040",
       "age_days": 102,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-dbacefa78100.jpg",
       "advertiser": "Humby Organics",
@@ -35,7 +35,7 @@
      },
      {
       "keyword": "oil",
-      "page_id": "102507806502481",
+      "page_id": "840342247339495",
       "age_days": 334,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-670a315e95fa.jpg",
       "advertiser": "Wild Growth Hair Care",
@@ -45,7 +45,7 @@
      },
      {
       "keyword": "conditioner",
-      "page_id": "244335642891847",
+      "page_id": "629353774043802",
       "age_days": 56,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-9adb1dfa5f4a.jpg",
       "advertiser": "Bare Anatomy",
@@ -55,7 +55,7 @@
      },
      {
       "keyword": "conditioner",
-      "page_id": "444025482768886",
+      "page_id": "246245402045552",
       "age_days": 239,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-23fe1ac37455.jpg",
       "advertiser": "Plix",
@@ -65,7 +65,7 @@
      },
      {
       "keyword": "conditioner",
-      "page_id": "104086772515156",
+      "page_id": "118035041569563",
       "age_days": 133,
       "image_url": "https://scontent.example.fbcdn.net/v/fixture-9fb198b7cb47.jpg",
       "advertiser": "Alif Ahlam /\u0623\u0644\u0641 \u0623\u062d\u0644\u0627\u0645",
@@ -135,7 +135,7 @@
      "lever": "cro",
      "product": {
       "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
-      "url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
+      "url": "https://marlaquenbybh.example/products/plum-silk-sachet-6-pack",
       "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-11ab4f7fd1.jpg",
       "price": 25.0,
       "currency": "USD"
@@ -161,12 +161,12 @@
      "evidence": {
       "label": "Rating in your product page code",
       "value": "5.0 stars from 3 reviews",
-      "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack"
+      "source_url": "https://marlaquenbybh.example/products/plum-silk-sachet-6-pack"
      },
      "lever": "cro",
      "product": {
       "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
-      "url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
+      "url": "https://marlaquenbybh.example/products/plum-silk-sachet-6-pack",
       "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-11ab4f7fd1.jpg",
       "price": 25.0,
       "currency": "USD"
@@ -185,12 +185,12 @@
      "evidence": {
       "label": "Subscribe option on the products you sell most",
       "value": "None on the 5 we checked",
-      "source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner"
+      "source_url": "https://marlaquenbybh.example/products/plum-silk-conditioner"
      },
      "lever": "retention_path",
      "product": {
       "title": "Banana-Banana Conditioner",
-      "url": "https://marlaquenbybh.example/products/banana-banana-conditioner",
+      "url": "https://marlaquenbybh.example/products/plum-silk-conditioner",
       "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-f4733125f9.png",
       "price": 60.0,
       "currency": "USD"
@@ -240,11 +240,11 @@
    "source_url": "https://marlaquenbybh.example/collections/all?sort_by=best-selling",
    "data": {
     "handles": [
-     "banana-banana-sachet-6-pack",
-     "banana-banana-conditioner",
+     "plum-silk-sachet-6-pack",
+     "plum-silk-conditioner",
      "banana-bliss-shampoo",
      "banana-blossom-elixir",
-     "banana-banana-conditioner-sachet-0-5-fl-oz"
+     "plum-silk-conditioner-sachet-0-5-fl-oz"
     ],
     "source_url": "https://marlaquenbybh.example/collections/all?sort_by=best-selling"
    }
@@ -292,7 +292,7 @@
     "oos_variants": 1,
     "new_products_90d": 0,
     "has_subscription": false,
-    "subscription_source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner-sachet-0-5-fl-oz.js",
+    "subscription_source_url": "https://marlaquenbybh.example/products/plum-silk-conditioner-sachet-0-5-fl-oz.js",
     "discount_depth_pct": 0.0,
     "products_on_discount": 0,
     "gift_cards": 0,
@@ -385,7 +385,7 @@
   "reviews": {
    "status": "present",
    "fetched_at": "2026-09-26T08:59:44.917197+00:00",
-   "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
+   "source_url": "https://marlaquenbybh.example/products/plum-silk-sachet-6-pack",
    "data": {
     "rating": 5.0,
     "review_count": 3,
@@ -420,7 +420,7 @@
     "lever": "retention_path",
     "title": "No subscribe-and-save path for repeat buyers",
     "evidence": "Your storefront runs 5 products with no subscription option we could find on the page. A subscribe-and-save path turns a one-time buyer into an order that repeats without them having to come back and reorder.",
-    "source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner-sachet-0-5-fl-oz.js",
+    "source_url": "https://marlaquenbybh.example/products/plum-silk-conditioner-sachet-0-5-fl-oz.js",
     "bucket": "yours",
     "bucket_pillar": "Profit Over Sales",
     "week_one": "A subscription option is a store decision on your side, and it keeps the customers our campaigns bring in ordering."

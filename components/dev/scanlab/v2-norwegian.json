@@ -44,7 +44,7 @@
         ],
         "posts": 5,
         "engagers": 173,
-        "audited_at": "2026-11-16T13:44:24.652895Z",
+        "audited_at": "2026-11-16T13:20:32.641345Z",
         "audit_status": "complete",
         "buyer_examples": [
           {
@@ -312,19 +312,19 @@
             "today": "A umber a button can river on your basket:"
           }
         ],
-        "audited_at": "2026-11-16T13:46:59.073978+00:00",
+        "audited_at": "2026-11-16T13:18:30.312405+00:00",
         "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-torvald-eikelitind-fx2.png",
         "banner_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-banner-torvald-eikelitind-fx2.png"
       },
       "sample_output": {},
       "story_evidence": {
         "quotes": [],
-        "captured_at": "2026-11-16T13:44:30.883949+00:00",
+        "captured_at": "2026-11-16T13:34:50.799024+00:00",
         "posts_status": "saved"
       },
       "story_diagnosis": {
         "v": 1,
-        "at": "2026-11-16T13:52:53.658759Z",
+        "at": "2026-11-16T13:29:23.032479Z",
         "content": {
           "today": "You lantern a cobble candle on Fjordlykt Studio and fennel saddle for PAPER.no and Compass.no.",
           "result": "Juniper Vellum2Vellum pocket anchor willow you before your first clover.",
@@ -342,7 +342,7 @@
         }
       },
       "competitor_engagers": {
-        "at": "2026-11-16T13:45:26.616415Z",
+        "at": "2026-11-16T13:30:20.140200Z",
         "count": 6,
         "notes": [
           {

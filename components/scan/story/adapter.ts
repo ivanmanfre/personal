@@ -76,6 +76,11 @@ function ownSignal(n:Record<string,any>){
  if('profile_url' in n)out.profile_url=linkedin(n.profile_url,'in')||'';
  return out;
 }
+/** The plainest first screen for a rejected hero: the profile tier when the checked profile audit quotes the headline, else nothing. */
+function rejectedHero(audit:{findings:{area:string;quote:string;fix:string}[]}|undefined):NonNullable<JourneyFixture['heroRejected']>{
+ const f=audit?.findings.find(x=>x.area==='headline'&&x.quote&&x.fix);
+ return f?{profile:{quote:f.quote,fix:f.fix}}:{};
+}
 export interface StoryScanRow {company_slug:string;company_name?:string|null;domain?:string|null;completed_at?:string|null;report_json:unknown}
 /** No current-date, demo-person, fabricated metric or other-lead fallback. */
 export function toStoryFixture(row:StoryScanRow):JourneyFixture {
@@ -99,5 +104,7 @@ export function toStoryFixture(row:StoryScanRow):JourneyFixture {
  const ceNames=new Set(cePeople.map(p=>p.name));
  const competitorEngagers=cePeople.length?{count:Math.max(cePeople.length,Number.isInteger(ce.count)?ce.count:0),windowDays:Number.isInteger(ce.window_days)?ce.window_days:14,readOn:str(ce.at),competitors:Array.isArray(ce.competitors)?ce.competitors.map(record).map(c=>str(c.name)).filter(Boolean):[],postsRead:Number.isInteger(ce.posts_read)?ce.posts_read:0,engagersRead:Number.isInteger(ce.engagers_read)?ce.engagers_read:0,people:cePeople,notes:Array.isArray(ce.notes)?ce.notes.map(record).filter(n=>ceNames.has(str(n.to))&&str(n.note)).slice(0,2).map(n=>({to:str(n.to),headline:str(n.headline),note:str(n.note)})):[]}:undefined;
  const hero=parseHero(cs.hero),partnerStory=(['kyle','mattan','davorin'] as const).find(v=>v===record(cs.partner).story);
- return {slug:row.company_slug,ogImage:https(cs.og_image_url),domain:str(row.domain),founder:{name,firstName:(str(founder.first_name)&&!isTitle(str(founder.first_name))?str(founder.first_name):'')||firstNameOf(name),company:str(row.company_name),headline:str(founder.headline),avatarUrl:https(founder.avatar_url)},audience,pillars:cs.pillars&&record(cs.pillars),diagnosis:cs.story_diagnosis&&record(cs.story_diagnosis),thesis:str(cs.thesis),buyer:{role:str(segments[0]?.label),project:str(segments[0]?.note)||str(icp.icp_line)},samples:{...samples,posts,lm:{...lm,brand:{...brand,font_heading:str(brand.font_heading)}}},lm_cover_local:https(lm.cover_url)||'',source:{kind:'original-scan',url:`https://inboundonsteroids.com/scan/${encodeURIComponent(row.company_slug)}/`,capturedOn:date,quotes:Array.isArray(cs.story_evidence?.quotes)?cs.story_evidence.quotes.filter((q:unknown)=>typeof q==='string'):[]},...(profileAudit?{profileAudit}:{}),...(competitorEngagers?{competitorEngagers}:{}),...(hero?{hero}:{}),firm:parseFirm(cs.firm),...(partnerStory?{partnerStory}:{})} as JourneyFixture;
+ // A hero that is present but fails the checks: no claim from it is printed, only the plainest first screen.
+ const heroRejected=!hero&&cs.hero!==undefined&&cs.hero!==null?rejectedHero(profileAudit):undefined;
+ return {slug:row.company_slug,ogImage:https(cs.og_image_url),domain:str(row.domain),founder:{name,firstName:(str(founder.first_name)&&!isTitle(str(founder.first_name))?str(founder.first_name):'')||firstNameOf(name),company:str(row.company_name),headline:str(founder.headline),avatarUrl:https(founder.avatar_url)},audience,pillars:cs.pillars&&record(cs.pillars),diagnosis:cs.story_diagnosis&&record(cs.story_diagnosis),thesis:str(cs.thesis),buyer:{role:str(segments[0]?.label),project:str(segments[0]?.note)||str(icp.icp_line)},samples:{...samples,posts,lm:{...lm,brand:{...brand,font_heading:str(brand.font_heading)}}},lm_cover_local:https(lm.cover_url)||'',source:{kind:'original-scan',url:`https://inboundonsteroids.com/scan/${encodeURIComponent(row.company_slug)}/`,capturedOn:date,quotes:Array.isArray(cs.story_evidence?.quotes)?cs.story_evidence.quotes.filter((q:unknown)=>typeof q==='string'):[]},...(profileAudit?{profileAudit}:{}),...(competitorEngagers?{competitorEngagers}:{}),...(hero?{hero}:{}),...(heroRejected?{heroRejected}:{}),firm:parseFirm(cs.firm),...(partnerStory?{partnerStory}:{})} as JourneyFixture;
 }

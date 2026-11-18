@@ -430,13 +430,13 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('https://example.com/book?ref=abc&amp;utm_source=scan');
     expect(html).not.toContain('book?ref=abc?utm_source');
   });
-  // ── 2026-08-15 accuracy pass (audit of scan/safecourt-kitchen-f8 vs its live sources) ──
+  // ── 2026-08-15 accuracy pass (audit of scan/brindlecourt-kitchen-x1 vs its live sources) ──
   it('proof links land on a page a founder can read, not the raw JSON payload', () => {
-    // The shipped Safecourt report pointed four findings at a 430KB products.json dump. The
+    // The shipped Brindlecourt report pointed four findings at a 430KB products.json dump. The
     // evidence-table provenance stays "products.json"; only the human link moves.
     const { html } = renderFixture('rosamel-example.json');
     expect(html).toContain('href="https://rosamel.example/collections/all"');
-    expect(html).not.toMatch(/href="https:\/\/rosamel\.com\/products\.json"/);
+    expect(html).not.toMatch(/href="https:\/\/rosamel\.example\/products\.json"/);
     // label is unchanged, so the reader still knows where they are going
     expect(html).toContain('see this on your storefront');
     // the evidence rail names the source in human words
@@ -467,20 +467,20 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   it('a per-product .js probe URL links to the product page and labels it as one', () => {
     const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
-    (dtc as any).findings[0].source_url = 'https://rosamel.example/products/spf-50-drops-mini.js';
+    (dtc as any).findings[0].source_url = 'https://rosamel.example/products/sun-drops-mini.js';
     const html = renderDtc(dtc, fixture.company_name);
-    expect(html).toContain('href="https://rosamel.example/products/spf-50-drops-mini"');
-    expect(html).not.toContain('spf-50-drops-mini.js"');
+    expect(html).toContain('href="https://rosamel.example/products/sun-drops-mini"');
+    expect(html).not.toContain('sun-drops-mini.js"');
     expect(html).toContain('see this on your product page');
   });
 
   it('the ad-archive count describes archives RENDERED, not archives attempted', () => {
     // gReadLong comes off google.fetched_at, stamped on every attempt including the ones that
-    // render nothing. Safecourt shipped "Two public ad archives" above a Meta-only section.
+    // render nothing. Brindlecourt shipped "Two public ad archives" above a Meta-only section.
     const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     // google ATTEMPTED (fetched_at stamped) but nothing renderable came back, while the meta
-    // sweep did render — the exact Safecourt shape.
+    // sweep did render — the exact Brindlecourt shape.
     (dtc as any).ads = {
       ...((dtc as any).ads || {}),
       google: { status: 'blocked', fetched_at: '2026-08-15T09:00:00Z' },
@@ -819,7 +819,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     const fixture = loadFixture('marla-new-contract.json');
     const base = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     const it = base.drop_off.items[0];
-    it.product = { ...it.product, image_url: null, url: 'https://marlaquenbybh.example/products/banana-banana-sachet-6-pack' };
+    it.product = { ...it.product, image_url: null, url: 'https://marlaquenbybh.example/products/plum-silk-sachet-6-pack' };
     base.hero = { headline: base.hero.headline, item_ref: 'drop_off.0' };
     // capture of another product: not shown
     const other = JSON.parse(JSON.stringify(base));
@@ -832,7 +832,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     expect(renderDtc(old, fixture.company_name)).not.toContain(escHtml(old.screenshots.pdp_url));
     // capture of this product (locale prefix ignored): shown
     const same = JSON.parse(JSON.stringify(base));
-    same.screenshots.pdp_path = '/en-us/products/banana-banana-sachet-6-pack';
+    same.screenshots.pdp_path = '/en-us/products/plum-silk-sachet-6-pack';
     const h3 = renderDtc(same, fixture.company_name);
     expect(h3).toContain(escHtml(same.screenshots.pdp_url));
     expect(h3).toMatch(/Captured September 26, 2026 at \d{2}:\d{2} UTC\./);

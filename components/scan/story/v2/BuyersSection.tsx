@@ -1,4 +1,4 @@
-import React, {useState, useSyncExternalStore} from 'react';
+import React, {useSyncExternalStore} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import type {CompetitorEngager, HeroRow, JourneyFixture} from '../../../dev/scan-walkthrough/journey/model';
 import {ClientEngagers, DmHead, Thread, Bubble} from '../StudioPlan';
@@ -32,15 +32,19 @@ function OutsideRow({p}: {p: CompetitorEngager}) {
 
 function Outside({fixture}: {fixture: JourneyFixture}) {
  const data = fixture.competitorEngagers!, checked = fixture.hero?.checked;
- const [open, setOpen] = useState(false), shown = useShown();
- // One control that toggles both ways and stays in place, so focus never drops to the page.
+ const shown = useShown();
+ // The rest of the list sits in a native details element: always in the HTML (no script needed, crawlers read it),
+ // keyboard and expanded state come from the element, and the summary stays in place when it opens.
  const extra = data.people.length > shown + 1 ? data.people.length - shown : 0;
- const people = extra && !open ? data.people.slice(0, shown) : data.people;
+ const first = extra ? data.people.slice(0, shown) : data.people, rest = extra ? data.people.slice(shown) : [];
  return <div className="sv2-part" data-part="outside">
   <h2>Buyers reading posts in your market</h2>
   {checked && <p className="sv2-checked">{CHECKED(checked.people, checked.passed)}</p>}
-  <ol className="sv2-list" id={LIST_ID}>{people.map(p => <OutsideRow key={p.profileUrl} p={p}/>)}</ol>
-  {extra > 0 && <button type="button" className="sv2-show" aria-expanded={open} aria-controls={LIST_ID} onClick={() => setOpen(o => !o)}>{open ? SHOW.fewer : SHOW.more(extra)}</button>}
+  <ol className="sv2-list" id={LIST_ID}>{first.map(p => <OutsideRow key={p.profileUrl} p={p}/>)}</ol>
+  {extra > 0 && <details className="sv2-more-details">
+   <summary className="sv2-show" aria-controls={`${LIST_ID}-more`}><span className="sv2-show-closed">{SHOW.more(extra)}</span><span className="sv2-show-open">{SHOW.fewer}</span></summary>
+   <ol className="sv2-list sv2-list-more" id={`${LIST_ID}-more`}>{rest.map(p => <OutsideRow key={p.profileUrl} p={p}/>)}</ol>
+  </details>}
  </div>;
 }
 

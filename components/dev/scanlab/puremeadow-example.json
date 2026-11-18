@@ -40,7 +40,7 @@
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
    "fetched_at": "2026-07-20T17:54:48.209043+00:00",
-   "source_url": "https://puremeadow.example/products/instant-lift-eye-gel"
+   "source_url": "https://puremeadow.example/products/quick-lift-eye-gel"
   },
   "shopify": {
    "status": "blocked"
@@ -52,7 +52,7 @@
     "title": "No visible reviews on the page paid traffic hits",
     "signal": "reviews",
     "evidence": "We couldn't find review markup on your product page. Cold paid traffic converts on social proof, so surfacing reviews on the PDP is a direct conversion lever.",
-    "source_url": "https://puremeadow.example/products/instant-lift-eye-gel"
+    "source_url": "https://puremeadow.example/products/quick-lift-eye-gel"
    }
   ],
   "hero_hook": "A public read of your store, and where the growth is.",

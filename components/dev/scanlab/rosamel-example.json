@@ -44,7 +44,7 @@
    },
    "status": "present",
    "fetched_at": "2026-07-20T17:54:10.215380+00:00",
-   "source_url": "https://rosamel.example/products/spf-50-drops-mini"
+   "source_url": "https://rosamel.example/products/sun-drops-mini"
   },
   "shopify": {
    "data": {
@@ -97,7 +97,7 @@
     "title": "Strong rating, thin review volume on your product pages",
     "signal": "reviews",
     "evidence": "Your PDP shows a 4.7 rating across 23 reviews. The rating earns trust; the low count undersells it.",
-    "source_url": "https://rosamel.example/products/spf-50-drops-mini"
+    "source_url": "https://rosamel.example/products/sun-drops-mini"
    }
   ],
   "hero_hook": "59 of your 180 products are discounted right now. Here's where the profit is going.",

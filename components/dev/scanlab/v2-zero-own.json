@@ -31,7 +31,7 @@
         "named": [],
         "posts": 5,
         "engagers": 5,
-        "audited_at": "2026-11-11T18:25:08.593094Z",
+        "audited_at": "2026-11-11T18:13:13.609471Z",
         "audit_status": "complete",
         "buyer_examples": [],
         "buyer_definition": "Rafter, Gable and saddle/sorrel curtain pillow at UMBER and compass orchard linen fennel wicker nook that tinder pebble wicker",
@@ -258,19 +258,19 @@
             "today": "Your kettle sage (dapple://lamp.inkle/trellis-lantern/bellows-fable?clover=ember) is only on your glimmer. The zephyr a rook kestrel on your fable:"
           }
         ],
-        "audited_at": "2026-11-11T18:27:46.927384+00:00",
+        "audited_at": "2026-11-11T18:20:11.936631+00:00",
         "avatar_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-photo-dario-pennwhistle-fx4.png",
         "banner_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/profile-banner-dario-pennwhistle-fx4.png"
       },
       "sample_output": {},
       "story_evidence": {
         "quotes": [],
-        "captured_at": "2026-11-11T18:27:06.004516+00:00",
+        "captured_at": "2026-11-11T18:53:31.530235+00:00",
         "posts_status": "saved"
       },
       "story_diagnosis": {
         "v": 1,
-        "at": "2026-11-11T18:33:14.719069Z",
+        "at": "2026-11-11T18:31:22.282275Z",
         "content": {
           "today": "You saddle kindle quarry on ledger marble larch, nettle kettle heron yarrow Dapple Dapple.",
           "result": "Orchard glimmer and Rook who wagon you before you rook.",
@@ -288,7 +288,7 @@
         }
       },
       "competitor_engagers": {
-        "at": "2026-11-11T18:27:19.706810Z",
+        "at": "2026-11-11T18:33:51.481192Z",
         "count": 14,
         "notes": [
           {

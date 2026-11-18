@@ -45,14 +45,19 @@
 .scan-studio.scan-journey .sv2-part{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px 56px;align-items:start}
 .scan-studio.scan-journey .sv2-part>h2{font:800 clamp(28px,3vw,40px)/1.08 StudioDisplay,sans-serif;letter-spacing:-.03em;color:#f3efe6;margin:0;grid-column:1}
 .scan-studio.scan-journey .sv2-checked{font:500 13px/1.5 StudioMono,monospace;color:#bdb6aa;margin:0;grid-column:1}
-.scan-studio.scan-journey .sv2-part>.sv2-list,.scan-studio.scan-journey .sv2-part>.sv2-show,.scan-studio.scan-journey .sv2-part>.sp-audit-clients{grid-column:2}
+.scan-studio.scan-journey .sv2-part>.sv2-list,.scan-studio.scan-journey .sv2-part>.sv2-more-details,.scan-studio.scan-journey .sv2-part>.sp-audit-clients{grid-column:2}
 .scan-studio.scan-journey .sv2-part>.sv2-list{grid-row:1/span 3}
 .scan-studio.scan-journey .sv2-list{list-style:none;margin:0;padding:6px 22px;background:#fbfaf7;color:#16181a;border-radius:18px;box-shadow:inset 0 1px 0 #fff,0 1px 2px #0006,0 30px 60px -28px #000c}
 .scan-studio.scan-journey .sv2-list li{display:flex;gap:12px;padding:16px 0;border-top:1px solid #e3ded5;min-width:0}.scan-studio.scan-journey .sv2-list li:first-child{border-top:0}
 .scan-studio.scan-journey .sv2-list li>div{min-width:0;display:grid;gap:3px}
 .scan-studio.scan-journey .sv2-list .sp-audit-face{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;background:#ece7de;color:#16181a;font:700 13px StudioSans}
 .scan-studio.scan-journey .sv2-reason{font:450 14px/1.5 StudioSans;color:#3d3a36;margin:4px 0 2px}
-.scan-studio.scan-journey .sv2-show{justify-self:start;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid #f3efe63d;background:transparent;color:#f3efe6;font:600 15px StudioSans}
+.scan-studio.scan-journey .sv2-show{display:inline-flex;align-items:center;cursor:pointer;list-style:none;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid #f3efe63d;background:transparent;color:#f3efe6;font:600 15px StudioSans}
+.scan-studio.scan-journey .sv2-show::-webkit-details-marker,.scan-studio.scan-journey .sv2-show::marker{display:none;content:''}
+.scan-studio.scan-journey .sv2-show:focus-visible{outline:2px solid #f3efe6;outline-offset:4px}
+.scan-studio.scan-journey .sv2-more-details{justify-self:start;min-width:0;max-width:100%}.scan-studio.scan-journey .sv2-more-details[open]{justify-self:stretch}
+.scan-studio.scan-journey .sv2-show-open,.scan-studio.scan-journey .sv2-more-details[open] .sv2-show-closed{display:none}.scan-studio.scan-journey .sv2-more-details[open] .sv2-show-open{display:inline}
+.scan-studio.scan-journey .sv2-list-more{margin-top:12px}
 .scan-studio.scan-journey .sv2-part .sp-audit-clients{color:#bdb6aa;font-size:14px}.scan-studio.scan-journey .sv2-part .sp-audit-clients b{color:#f3efe6}.scan-studio.scan-journey .sv2-part .sp-audit-clients small{color:#bdb6aa}.scan-studio.scan-journey .sv2-part .sp-audit-clients .sp-audit-names{border-top-color:#f3efe626}.scan-studio.scan-journey .sv2-part .sp-audit-clients .sp-audit-face{background:#26211d;color:#f3efe6}
 .scan-studio.scan-journey .sv2-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
 .scan-studio.scan-journey .sv2-pair-card{border:1px solid #f3efe626;border-radius:16px;padding:18px 20px;min-width:0}
@@ -145,3 +150,6 @@
 
 /* Step nav at 360 px: with step 04 current its label ran 10 px past the scrolling list (same on the old layout, left as is). */
 @media(max-width:380px){.scan-studio.scan-journey .story-plan-v2 .sp-nav ol a{padding:0 4px}}
+
+/* Print: closed samples and the rest of the buyers print too (ScanStoryReport also opens them on beforeprint). */
+@media print{.scan-studio.scan-journey :is(.sv2-fold-details,.sv2-more-details)::details-content{content-visibility:visible;display:contents}}

@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React from 'react';
 import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
@@ -10,7 +9,8 @@ import rich from '../../../dev/scanlab/v2-rich.json';
 import ownOnly from '../../../dev/scanlab/v2-own-only.json';
 import thin from '../../../dev/scanlab/v2-thin.json';
 
-/** Round 1 finding 2 and its ruling: every optional field the new layout reads, fed six hostile values, must still
+/** Shared by the three fuzz.*.test.tsx files (one file held 4 GB of jsdom heap and outgrew the default worker limit).
+ *  Round 1 finding 2 and its ruling: every optional field the new layout reads, fed six hostile values, must still
  *  render a page (new or today's layout) and inject nothing. Invented fixtures only. */
 const HOSTILE: [string, unknown][] = [
  ['number', 42],
@@ -50,11 +50,13 @@ const injected = (root: ParentNode) => [...root.querySelectorAll('*')].flatMap(e
  ...[...el.attributes].filter(a => /^on/i.test(a.name) || (/^(href|src|action|formaction)$/i.test(a.name) && /^\s*javascript:/i.test(a.value))).map(a => `${el.tagName} ${a.name}=${a.value.slice(0, 40)}`),
 ]);
 
-beforeEach(() => { vi.stubEnv('VITE_SCAN_HERO', '1'); vi.spyOn(console, 'error').mockImplementation(() => {}); });
-afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.restoreAllMocks(); delete (window as any).PWNED; });
 
-describe('fuzz: a malformed field never blanks the page and never injects', () => {
- for (const [name, paths] of Object.entries(PATHS)) for (const path of paths) for (const [label, value] of HOSTILE) {
+/** Every case whose fixture name and field path `pick` accepts. */
+export function fuzz(title: string, pick: (name: string, path: string) => boolean) {
+ describe(`fuzz: a malformed field never blanks the page and never injects (${title})`, () => {
+  beforeEach(() => { vi.stubEnv('VITE_SCAN_HERO', '1'); vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.restoreAllMocks(); delete (window as any).PWNED; });
+  for (const [name, paths] of Object.entries(PATHS)) for (const path of paths.filter(p => pick(name, p))) for (const [label, value] of HOSTILE) {
   it(`${name}: ${path} = ${label}`, () => {
    const row = JSON.parse(JSON.stringify(ROWS[name]));
    const cs = row.report_json.content_system;
@@ -72,4 +74,5 @@ describe('fuzz: a malformed field never blanks the page and never injects', () =
    expect((window as any).PWNED).toBeUndefined();
   });
  }
-});
+ });
+}

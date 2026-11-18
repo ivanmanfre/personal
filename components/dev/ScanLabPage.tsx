@@ -8,7 +8,7 @@ import React from 'react';
 import { DtcGrowthReport } from '../DtcGrowthReport';
 import type { ReportJson, Scan } from '../../lib/scanTypes';
 import rosamel from './scanlab/rosamel-example.json';
-import yananailsStory from './scanlab/yananails-story.json';
+import lunanailsStory from './scanlab/lunanails-story.json';
 import lunanailsStandard from './scanlab/lunanails-standard.json';
 import orchardly from './scanlab/orchardly-example.json';
 import puremeadow from './scanlab/puremeadow-example.json';
@@ -21,7 +21,7 @@ import lynxlightV3 from './scanlab/lynxlight-v3.json';
 // intact, zero empty shells. This is the fixture that proves the fallback contract.
 import lynxlightV3Degraded from './scanlab/lynxlight-v3-degraded.json';
 
-const FIXTURES: Record<string, any> = { 'lunanails-standard': lunanailsStandard, yananails: yananailsStory, rosamel, orchardly, puremeadow, plainly, 'lynxlight-v3': lynxlightV3, 'lynxlight-v3-degraded': lynxlightV3Degraded };
+const FIXTURES: Record<string, any> = { 'lunanails-standard': lunanailsStandard, lunanails: lunanailsStory, rosamel, orchardly, puremeadow, plainly, 'lynxlight-v3': lynxlightV3, 'lynxlight-v3-degraded': lynxlightV3Degraded };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';

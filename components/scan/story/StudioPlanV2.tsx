@@ -72,8 +72,9 @@ function Steps({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
 }
 
 export function StudioPlanV2({fixture, kind}: {fixture: JourneyFixture; kind: StoryKind}) {
- const plan = useStory(), shape = pageShape(fixture.firm), hero = fixture.hero!;
- const profileFirst = hero.tier === 'profile';
+ const plan = useStory(), shape = pageShape(fixture.firm);
+ // A rejected hero takes the profile tier only when the profile audit quotes the headline (see HeroBuyer).
+ const profileFirst = fixture.hero ? fixture.hero.tier === 'profile' : !!fixture.heroRejected?.profile;
  const profile = fixture.profileAudit && <div className="sp-profile" data-scan-section="profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>;
  const buyers = <BuyersSection fixture={fixture}/>;
  const offer = <OfferBlock slug={fixture.slug} shape={shape} compact={shape === 'fast'}/>;

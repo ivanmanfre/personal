@@ -8,7 +8,7 @@ const ORDER = ['booking', 'headline', 'banner', 'about', 'featured'];
 const rank = (area: string) => { const i = ORDER.indexOf(area); return i < 0 ? ORDER.length : i; };
 const SHOWN = 3;
 
-/** A web address reads as softstorm.in, never https://www.softstorm.in/. */
+/** A web address reads as quillmarsh.example, never https://www.quillmarsh.example/. */
 export const bareUrls = (text: string) => text
   .replace(/\bhttps?:\/\/(?:www\.)?([^\s<>"“”]+?)\/?(?=[\s"“”)]|[.,;:!?](?:\s|$)|$)/gi, '$1')
   .replace(/\bwww\.(?=[a-z0-9-]+\.)/gi, '');

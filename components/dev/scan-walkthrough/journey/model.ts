@@ -28,6 +28,9 @@ export interface JourneyFixture {
   competitorEngagers?: CompetitorEngagers;
   /** One named buyer with one dated signal (plan A `content_system.hero`); absent means today's layout. */
   hero?: ScanHero;
+  /** A stored hero that failed the checks: the new layout shows its plainest first screen (no count, no named buyer, no date).
+   *  `profile` is the profile audit's own headline finding, when the scan has one. */
+  heroRejected?: { profile?: { quote: string; fix: string } };
   /** Firm size band from the prospect's company headcount. */
   firm: FirmSize;
   /** The closest people story for a partner, when one is honestly close. */
