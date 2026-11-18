@@ -95,7 +95,7 @@
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
    "fetched_at": "2026-09-26T17:41:10.266200+00:00",
-   "source_url": "https://harborlinesoy.example/products/fragrance-spray"
+   "source_url": "https://harborlinesoy.example/products/harbor-room-mist"
   },
   "shopify": {
    "data": {
@@ -276,7 +276,7 @@
   },
   "screenshots": {
    "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/harborline-soy-works-7c-pdp.png",
-   "pdp_path": "/products/fragrance-spray",
+   "pdp_path": "/products/harbor-room-mist",
    "captured_at": "2026-09-26T17:41:10.385716+00:00",
    "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/harborline-soy-works-7c.png",
    "market_country": "US"

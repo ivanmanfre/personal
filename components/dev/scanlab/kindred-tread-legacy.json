@@ -47,7 +47,7 @@
    "reason": "PDP reachable, no JSON-LD AggregateRating (real 'no visible reviews')",
    "status": "empty",
    "fetched_at": "2026-07-21T16:41:01.899585+00:00",
-   "source_url": "https://kindredtread.example/products/lucke"
+   "source_url": "https://kindredtread.example/products/trail-runner-kt"
   },
   "shopify": {
    "data": {
@@ -116,7 +116,7 @@
     "title": "No visible reviews on the page paid traffic hits",
     "signal": "reviews",
     "evidence": "We couldn't find review markup on your product page. Cold paid traffic converts on social proof, so surfacing reviews on the PDP is a direct conversion lever.",
-    "source_url": "https://kindredtread.example/products/lucke"
+    "source_url": "https://kindredtread.example/products/trail-runner-kt"
    }
   ],
   "hero_hook": "3 of your 18 products are discounted right now. This is where your margin is going.",

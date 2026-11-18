@@ -444,7 +444,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('a WooCommerce store links to its storefront and the receipt names the Store API', () => {
-    // StrollAir (2026-09-18) was the first Woo brand scanned. The collector reads Woo through
+    // The first Woo brand scanned (2026-09-18) showed the gap. The collector reads Woo through
     // `/wp-json/wc/store/v1/products`, which no proofHref branch matched, so three findings
     // pointed the founder at a raw JSON dump, and the receipt tagged every catalogue number
     // "shopify products.json" under a store that serves no such payload.

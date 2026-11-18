@@ -20,7 +20,7 @@
       "version": "rise-quality-2026-09-30",
       "approved": true,
       "lead_ref": "second_order.0",
-      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel PHILIP. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
+      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel WREN. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
     },
     "drop_off": {
       "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
@@ -31,25 +31,25 @@
       "items": [
         {
           "id": "no_reorder_path",
-          "fix": "Test a subscribe-and-save option on Builder Gel PHILIP, with a small discount on each repeat delivery.",
+          "fix": "Test a subscribe-and-save option on Builder Gel WREN, with a small discount on each repeat delivery.",
           "lever": "retention_path",
-          "title": "No subscribe or refill option on Builder Gel PHILIP",
-          "detail": "Builder Gel PHILIP is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
+          "title": "No subscribe or refill option on Builder Gel WREN",
+          "detail": "Builder Gel WREN is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
           "product": {
             "url": "https://lunanails.example/products/builder-gel-pim",
             "price": 359.0,
-            "title": "Builder Gel PHILIP",
+            "title": "Builder Gel WREN",
             "currency": "SEK",
             "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-c784957810.png"
           },
           "evidence": {
             "label": "Subscribe option on the replenishable products checked",
-            "value": "None on these 2 replenishable product records: Builder Gel PHILIP; Nagellim",
+            "value": "None on these 2 replenishable product records: Builder Gel WREN; Nagellim",
             "source_url": "https://lunanails.example/products/builder-gel-pim"
           },
           "verified": {
             "ok": true,
-            "quote": "Builder Gel PHILIP: none",
+            "quote": "Builder Gel WREN: none",
             "source_url": "data",
             "judge_version": "claims-2026-10-01t"
           }
@@ -74,12 +74,12 @@
             {
               "kind": "store",
               "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
-              "source_url": "https://lunanails.example/products/primer"
+              "source_url": "https://lunanails.example/products/luna-prep-primer"
             },
             {
               "kind": "store",
               "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
-              "source_url": "https://lunanails.example/products/bonder"
+              "source_url": "https://lunanails.example/products/luna-bond-base"
             }
           ],
           "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
@@ -160,9 +160,9 @@
             "https://lunanails.example/",
             "https://lunanails.example/products/builder-gel-pim",
             "https://lunanails.example/products/builder-gel-rook",
-            "https://lunanails.example/collections/nail-tips",
+            "https://lunanails.example/collections/luna-tips",
             "https://lunanails.example/products/builder-gel-arlo",
-            "https://lunanails.example/collections/gel/products/builder-gel-vale"
+            "https://lunanails.example/collections/luna-gels/products/builder-gel-vale"
           ]
         },
         {
@@ -170,7 +170,7 @@
           "ad_excerpt": "Swatchar alla lunanails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r lunanails",
           "observed_at": "2026-10-13T21:29:54.081153+00:00",
           "destinations": [
-            "https://lunanails.example/collections/gel/products/fiber-gel-otto"
+            "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto"
           ]
         },
         {
@@ -178,20 +178,20 @@
           "ad_excerpt": "Uppt\u00e4ck Lunanails mest \u00e4lskade gel f\u00e4rger",
           "observed_at": "2026-10-13T21:29:54.081153+00:00",
           "destinations": [
-            "https://lunanails.example/collections/gel",
-            "https://lunanails.example/collections/nail-tips/products/nagellim",
-            "https://lunanails.example/collections/nail-tips/products/almond-x-small-lunatips",
-            "https://lunanails.example/collections/nail-tips/products/square-medium-flat-lunatips",
-            "https://lunanails.example/collections/nail-tips",
-            "https://lunanails.example/collections/nail-tips/products/coffin-small-lunatips",
-            "https://lunanails.example/collections/nail-tips/products/almond-small-lunatips"
+            "https://lunanails.example/collections/luna-gels",
+            "https://lunanails.example/collections/luna-tips/products/luna-tip-glue",
+            "https://lunanails.example/collections/luna-tips/products/almond-x-small-lunatips",
+            "https://lunanails.example/collections/luna-tips/products/square-medium-flat-lunatips",
+            "https://lunanails.example/collections/luna-tips",
+            "https://lunanails.example/collections/luna-tips/products/coffin-small-lunatips",
+            "https://lunanails.example/collections/luna-tips/products/almond-small-lunatips"
           ]
         }
       ],
       "checked_at": "2026-10-13T21:31:02.073637+00:00",
       "screenshot": {
         "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
-        "source_url": "https://lunanails.example/collections/gel/products/fiber-gel-otto",
+        "source_url": "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto",
         "captured_at": "2026-10-13T22:04:24.465752+00:00"
       },
       "presentation": {
@@ -218,14 +218,14 @@
             "lane": "paid",
             "capture": {
               "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
-              "source_url": "https://lunanails.example/collections/gel/products/fiber-gel-otto",
+              "source_url": "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto",
               "captured_at": "2026-10-13T22:04:24.465752+00:00"
             },
             "ad": {
               "url": "https://www.facebook.com/ads/library/?id=2207340872586690",
               "quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
               "destinations": [
-                "https://lunanails.example/collections/gel/products/fiber-gel-otto"
+                "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto"
               ],
               "observed_at": "2026-10-13T21:29:54.081153+00:00"
             }
@@ -293,7 +293,7 @@
         "coherent": true,
         "citations_complete": true,
         "readable": true,
-        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a PHILIP refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
       },
       "checked_at": "2026-10-13T21:39:49.517343+00:00"
     },
