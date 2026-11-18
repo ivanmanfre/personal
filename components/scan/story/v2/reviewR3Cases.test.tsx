@@ -3,7 +3,9 @@ import React from 'react';
 import {describe, it, expect, afterEach, vi} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {readFileSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
+import {dirname, join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import './__fixtures__/dom';
 import ScanStoryReport, {useV2} from '../ScanStoryReport';
 import {toStoryFixture, parseHero} from '../adapter';
@@ -21,15 +23,18 @@ const load = (row: any) => { const f = toStoryFixture(row), {edition} = validate
 const dom = (html: string) => { const d = document.createElement('div'); d.innerHTML = html; return d; };
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
-describe('finding 1: the invented DTC lab fixture shares no URL or id with the file it was copied from', () => {
- const tokens = (path: string) => new Set((readFileSync(new URL(path, import.meta.url), 'utf8').match(/https?:\/\/[^\s"'\\]+|\b\d{10,}\b/g) || []).map(t => t.replace(/[),.;]+$/, '')));
- it('lunanails-story.json vs yananails-story.json: 0 shared URLs or 10+ digit ids', () => {
-  const a = tokens('../../../dev/scanlab/lunanails-story.json'), b = tokens('../../../dev/scanlab/yananails-story.json');
-  // Kept on purpose: RISE's own public assets (its logo, share image and booking link), which every RISE page carries.
-  const RISE_OWN = /^https:\/\/(risedtc\.com\/wp-content\/uploads\/|meetings\.hubspot\.com\/mattan5\/)/;
-  expect([...a].filter(t => b.has(t) && !RISE_OWN.test(t))).toEqual([]);
-  // No storefront CDN account path, and every ad id is an invented 9000... placeholder.
-  expect([...a].filter(t => /cdn\.shopify\.com/.test(t) || /facebook\.com\/ads\/library\/\?id=(?!9000000000000)\d/.test(t))).toEqual([]);
+describe('finding 1: the invented DTC lab fixtures share no URL or id with any other lab fixture', () => {
+ const DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../dev/scanlab');
+ const tokens = (name: string) => new Set((readFileSync(join(DIR, name), 'utf8').match(/https?:\/\/[^\s"'\\]+|\b\d{10,}\b/g) || []).map(t => t.replace(/[),.;]+$/, '')));
+ // Kept on purpose: RISE's own public assets (its logo, share image and booking link), which every RISE page carries.
+ const RISE_OWN = /^https:\/\/(risedtc\.com\/wp-content\/uploads\/|meetings\.hubspot\.com\/mattan5\/)/;
+ const lab = readdirSync(DIR).filter(f => f.endsWith('.json'));
+ it.each(lab.filter(f => f.startsWith('lunanails-')))('%s: 0 shared URLs or 10+ digit ids', name => {
+  const a = tokens(name), others = lab.filter(f => !f.startsWith('lunanails-'));
+  expect(others.length).toBeGreaterThan(5);
+  for (const o of others) { const b = tokens(o); expect([...a].filter(t => b.has(t) && !RISE_OWN.test(t)), o).toEqual([]); }
+  // A storefront CDN URL only under the invented 0000/0000/0000 account.
+  expect([...a].filter(t => /cdn\.shopify\.com/.test(t) && !t.includes('/s/files/1/0000/0000/0000/'))).toEqual([]);
  });
 });
 
@@ -140,7 +145,7 @@ describe('finding 3 / R-SIGNAL: the sentence says only what the signal says', ()
     if (how !== 'commented') expect(h1).not.toContain('commented');
     if (how !== 'liked') expect(h1).not.toContain('liked');
    }
-   console.log(`RSIGNAL\t${source}\t${how}\t${ok ? 'accepted' : 'rejected'}\t${ok ? h1 : '(plain first screen) ' + h1}`);
+   console.log(`RSIGNAL\t${source}\t${how}\t${ok ? 'accepted' : 'rejected'}\t${ok ? h1 : '(rejected hero, lowest tier) ' + h1}`);
   });
  }
  it('the reviewer\'s input: competitor + engaged is rejected and nothing says "commented on"', () => {
