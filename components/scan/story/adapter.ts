@@ -1,4 +1,6 @@
 import type {JourneyFixture,HeroRow,ScanHero,FirmSize} from '../../dev/scan-walkthrough/journey/model';
+import {profileUrlOf,uniqueByProfile} from './profileLink';
+import {heroPresent} from '../../../scripts/scan-hero-switch.mjs';
 const record=(x:unknown):Record<string,any>=>x&&typeof x==='object'&&!Array.isArray(x)?x as Record<string,any>:{};
 const str=(x:unknown)=>typeof x==='string'?x.trim():'';
 const https=(x:unknown)=>/^https:\/\//.test(str(x))?str(x):undefined;
@@ -19,8 +21,8 @@ export function firstNameOf(full:string):string{
  const rest=words.filter((w,i)=>!(isTitle(w)&&i<words.length-1)).filter((w,_,a)=>!(isInitial(w)&&a.length>1));
  return (rest[0]||words[0]||'').replace(/[,;]+$/,'');
 }
-const LINKEDIN={in:/^https:\/\/(www\.)?linkedin\.com\/in\//,posts:/^https:\/\/(www\.)?linkedin\.com\/(posts|feed)\//};
-const linkedin=(x:unknown,kind:'in'|'posts')=>{const u=https(x);return u&&LINKEDIN[kind].test(u)?u:undefined;};
+const LINKEDIN={posts:/^https:\/\/(www\.)?linkedin\.com\/(posts|feed)\//};
+const linkedin=(x:unknown,kind:'posts')=>{const u=https(x);return u&&LINKEDIN[kind].test(u)?u:undefined;};
 const count=(x:unknown)=>Number.isInteger(x)&&(x as number)>=0?x as number:null;
 const TIERS=['competitor_commenter','competitor_liker','own_engager','profile'] as const;
 const isoDate=(x:unknown)=>{const s=str(x);return /^\d{4}-\d{2}-\d{2}/.test(s)&&!Number.isNaN(new Date(s).getTime())?s.slice(0,10):undefined;};
@@ -37,8 +39,10 @@ function heroRow(x:unknown):HeroRow|null{
  // The signal and its source are the sentence: a missing or unknown value rejects the row (and so the hero).
  const source=(['competitor','topic','own'] as const).find(v=>v===r.source),how=(['commented','liked','engaged'] as const).find(v=>v===r.how);
  if(!source||!how)return null;
+ // R-SIGNAL: an outside source (competitor or topic post) only says commented or liked; "engaged" belongs to own engagers.
+ if(how==='engaged'&&source!=='own')return null;
  const date=calendarDate(r.date),dateKind=date?(['comment','post'] as const).find(v=>v===r.date_kind):undefined;
- const author=str(r.author)||undefined,profileUrl=linkedin(r.profile_url,'in'),postUrl=linkedin(r.post_url,'posts');
+ const author=str(r.author)||undefined,profileUrl=profileUrlOf(r.profile_url),postUrl=linkedin(r.post_url,'posts');
  return {name,role:str(r.role),headline:str(r.headline),source,how,postExcerpt:str(r.post_excerpt),reason:str(r.reason),...(profileUrl?{profileUrl}:{}),...(author?{author}:{}),...(postUrl?{postUrl}:{}),...(date?{date}:{}),...(dateKind?{dateKind}:{})};
 }
 /** The stored hero, kept only when every check passes; anything malformed gives today's layout. */
@@ -73,7 +77,7 @@ function ownSignal(n:Record<string,any>){
  if('role' in n)out.role=text(n.role);
  if('how' in n)out.how=n.how==='commented'||n.how==='liked'?n.how:'engaged';
  if('date' in n){const d=calendarDate(n.date);if(d)out.date=d;else out.date='';}
- if('profile_url' in n)out.profile_url=linkedin(n.profile_url,'in')||'';
+ if('profile_url' in n)out.profile_url=profileUrlOf(n.profile_url)||'';
  return out;
 }
 /** The plainest first screen for a rejected hero: the profile tier when the checked profile audit quotes the headline, else nothing. */
@@ -100,11 +104,14 @@ export function toStoryFixture(row:StoryScanRow):JourneyFixture {
  // Competitor engagers: only people with a real LinkedIn profile link and a stated reason; none means no section.
  const ce=record(cs.competitor_engagers);
  const ceLink=(x:unknown,kind:'in'|'posts')=>{const u=https(x);return u&&new RegExp(`^https://(www\\.)?linkedin\\.com/${kind==='in'?'in/':'(posts|feed)/'}`).test(u)?u:undefined;};
- const cePeople=ce.version===1&&Array.isArray(ce.people)?ce.people.map(record).filter(p=>str(p.name)&&ceLink(p.profile_url,'in')&&ceLink(p.post_url,'posts')&&str(p.reason)&&str(p.competitor)&&(p.engaged==='liked'||p.engaged==='commented')).slice(0,15).map(p=>({name:str(p.name),headline:str(p.headline),company:str(p.company),profileUrl:ceLink(p.profile_url,'in')!,reason:str(p.reason),engaged:p.engaged,competitor:str(p.competitor),postUrl:ceLink(p.post_url,'posts')!,postExcerpt:str(p.post_excerpt),postedAt:str(p.posted_at),...(p.source==='topic'||p.source==='competitor'?{source:p.source}:{}),...(isoDate(p.commented_at)?{commentedAt:isoDate(p.commented_at)}:{})})):[];
+ const ceAll=ce.version===1&&Array.isArray(ce.people)?ce.people.map(record).filter(p=>str(p.name)&&ceLink(p.profile_url,'in')&&ceLink(p.post_url,'posts')&&str(p.reason)&&str(p.competitor)&&(p.engaged==='liked'||p.engaged==='commented')).map(p=>({name:str(p.name),headline:str(p.headline),company:str(p.company),profileUrl:ceLink(p.profile_url,'in')!,reason:str(p.reason),engaged:p.engaged,competitor:str(p.competitor),postUrl:ceLink(p.post_url,'posts')!,postExcerpt:str(p.post_excerpt),postedAt:str(p.posted_at),...(p.source==='topic'||p.source==='competitor'?{source:p.source}:{}),...(isoDate(p.commented_at)?{commentedAt:isoDate(p.commented_at)}:{})})):[];
+ const cePeople=ceAll.slice(0,15);
+ // The new layout's list: one row per person (normalised profile id, first row kept) before the cap; a failed link prints no link.
+ const ceUnique=uniqueByProfile(ceAll,p=>p.profileUrl).slice(0,15).map(p=>({...p,profileUrl:profileUrlOf(p.profileUrl)||''}));
  const ceNames=new Set(cePeople.map(p=>p.name));
- const competitorEngagers=cePeople.length?{count:Math.max(cePeople.length,Number.isInteger(ce.count)?ce.count:0),windowDays:Number.isInteger(ce.window_days)?ce.window_days:14,readOn:str(ce.at),competitors:Array.isArray(ce.competitors)?ce.competitors.map(record).map(c=>str(c.name)).filter(Boolean):[],postsRead:Number.isInteger(ce.posts_read)?ce.posts_read:0,engagersRead:Number.isInteger(ce.engagers_read)?ce.engagers_read:0,people:cePeople,notes:Array.isArray(ce.notes)?ce.notes.map(record).filter(n=>ceNames.has(str(n.to))&&str(n.note)).slice(0,2).map(n=>({to:str(n.to),headline:str(n.headline),note:str(n.note)})):[]}:undefined;
+ const competitorEngagers=cePeople.length?{count:Math.max(cePeople.length,Number.isInteger(ce.count)?ce.count:0),windowDays:Number.isInteger(ce.window_days)?ce.window_days:14,readOn:str(ce.at),competitors:Array.isArray(ce.competitors)?ce.competitors.map(record).map(c=>str(c.name)).filter(Boolean):[],postsRead:Number.isInteger(ce.posts_read)?ce.posts_read:0,engagersRead:Number.isInteger(ce.engagers_read)?ce.engagers_read:0,people:cePeople,uniquePeople:ceUnique,notes:Array.isArray(ce.notes)?ce.notes.map(record).filter(n=>ceNames.has(str(n.to))&&str(n.note)).slice(0,2).map(n=>({to:str(n.to),headline:str(n.headline),note:str(n.note)})):[]}:undefined;
  const hero=parseHero(cs.hero),partnerStory=(['kyle','mattan','davorin'] as const).find(v=>v===record(cs.partner).story);
  // A hero that is present but fails the checks: no claim from it is printed, only the plainest first screen.
- const heroRejected=!hero&&cs.hero!==undefined&&cs.hero!==null?rejectedHero(profileAudit):undefined;
+ const heroRejected=!hero&&heroPresent(cs.hero)?rejectedHero(profileAudit):undefined;
  return {slug:row.company_slug,ogImage:https(cs.og_image_url),domain:str(row.domain),founder:{name,firstName:(str(founder.first_name)&&!isTitle(str(founder.first_name))?str(founder.first_name):'')||firstNameOf(name),company:str(row.company_name),headline:str(founder.headline),avatarUrl:https(founder.avatar_url)},audience,pillars:cs.pillars&&record(cs.pillars),diagnosis:cs.story_diagnosis&&record(cs.story_diagnosis),thesis:str(cs.thesis),buyer:{role:str(segments[0]?.label),project:str(segments[0]?.note)||str(icp.icp_line)},samples:{...samples,posts,lm:{...lm,brand:{...brand,font_heading:str(brand.font_heading)}}},lm_cover_local:https(lm.cover_url)||'',source:{kind:'original-scan',url:`https://inboundonsteroids.com/scan/${encodeURIComponent(row.company_slug)}/`,capturedOn:date,quotes:Array.isArray(cs.story_evidence?.quotes)?cs.story_evidence.quotes.filter((q:unknown)=>typeof q==='string'):[]},...(profileAudit?{profileAudit}:{}),...(competitorEngagers?{competitorEngagers}:{}),...(hero?{hero}:{}),...(heroRejected?{heroRejected}:{}),firm:parseFirm(cs.firm),...(partnerStory?{partnerStory}:{})} as JourneyFixture;
 }

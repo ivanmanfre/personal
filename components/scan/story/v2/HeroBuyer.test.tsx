@@ -21,7 +21,8 @@ describe('HeroBuyer', () => {
   render(<HeroBuyer fixture={heroFixture(richHero)}/>);
   const links = screen.getAllByRole('link', {name: /Hollis Fernwhistle/});
   expect(links.length).toBeGreaterThan(0);
-  for (const a of links) { expect(a.getAttribute('href')).toBe(hollis.profileUrl); expect(a.getAttribute('rel')).toContain('noreferrer'); expect(a.getAttribute('target')).toBe('_blank'); }
+  // R-LINK: the printed link is the rebuilt canonical URL (trailing slash, no query or fragment).
+  for (const a of links) { expect(a.getAttribute('href')).toBe(hollis.profileUrl!.replace(/\/?$/, '/')); expect(a.getAttribute('rel')).toContain('noreferrer'); expect(a.getAttribute('target')).toBe('_blank'); }
  });
  it('no link when the read gave none', () => {
   const lead = {...hollis, profileUrl: undefined};

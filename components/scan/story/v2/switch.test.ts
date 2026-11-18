@@ -9,13 +9,14 @@ describe('scanHeroOn', () => {
  });
  it('the prerender gates the partner routes on it', () => {
   const src = readFileSync(new URL('../../../../scripts/prerender.mjs', import.meta.url), 'utf8');
-  expect(src).toContain("import { scanHeroOn } from './scan-hero-switch.mjs';");
+  expect(src).toContain("import { scanHeroOn, teamSlugs } from './scan-hero-switch.mjs';");
   expect(src).toMatch(/!scanHeroOn\(process\.env\.VITE_SCAN_HERO\)/);
+  expect(src).toContain('return teamSlugs(await res.json(), process.env.VITE_SCAN_HERO);');
   expect(src).not.toMatch(/VITE_SCAN_HERO\s*[!=]==/);
  });
  it('the app gates the layout on it', () => {
   const src = readFileSync(new URL('../ScanStoryReport.tsx', import.meta.url), 'utf8');
-  expect(src).toMatch(/scanHeroOn\(import\.meta\.env\.VITE_SCAN_HERO\)/);
+  expect(src).toMatch(/hasScanV2\(import\.meta\.env\.VITE_SCAN_HERO,/);
   expect(src).not.toMatch(/VITE_SCAN_HERO\s*[!=]==/);
  });
 });

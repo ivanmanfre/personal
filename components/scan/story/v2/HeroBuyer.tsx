@@ -3,6 +3,7 @@ import {ArrowDown, ArrowUpRight} from 'lucide-react';
 import type {HeroRow, JourneyFixture} from '../../../dev/scan-walkthrough/journey/model';
 import {Avatar} from '../../../dev/scan-walkthrough/journey/ReadingChapter';
 import {countLine, heroSentence, shortDate} from './hero';
+import {profileUrlOf} from '../profileLink';
 import {BRAND_LINE, BRAND_SUB, PROFILE_HERO, PUBLIC_NOTE} from './copy';
 import './scan-v2.css';
 
@@ -18,8 +19,9 @@ export function signalText(row: HeroRow): string {
 }
 
 export function PersonName({row}: {row: HeroRow}) {
- return row.profileUrl
-  ? <a className="sv2-name" href={row.profileUrl} target="_blank" rel="noreferrer">{row.name}<ArrowUpRight size={13} aria-hidden="true"/></a>
+ const href = profileUrlOf(row.profileUrl);
+ return href
+  ? <a className="sv2-name" href={href} target="_blank" rel="noreferrer">{row.name}<ArrowUpRight size={13} aria-hidden="true"/></a>
   : <b className="sv2-name">{row.name}</b>;
 }
 

@@ -91,7 +91,7 @@ describe('round 1 reviewer cases', () => {
   const total = f.competitorEngagers!.people.length;
   // Round 2 finding 3: with scripts off (and for crawlers) every outside buyer is in the server markup.
   const html = renderToStaticMarkup(<StoryBody fixture={f} edition={edition}/>);
-  for (const p of f.competitorEngagers!.people) expect(html).toContain(`href="${p.profileUrl}"`);
+  for (const p of f.competitorEngagers!.uniquePeople!) expect(html).toContain(`href="${p.profileUrl}"`);
   expect(html).toMatch(/<details class="sv2-more-details"><summary class="sv2-show"/);
   const {container} = render(<ScanStoryReport fixture={f} edition={edition}/>);
   const details = container.querySelector<HTMLDetailsElement>('details.sv2-more-details')!;

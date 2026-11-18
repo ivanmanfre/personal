@@ -3,7 +3,7 @@ import {useMetadata} from '../../../hooks/useMetadata';
 import {useGoogleFonts} from '../../../hooks/useGoogleFonts';
 import {StudioPlan} from './StudioPlan';
 import {StudioPlanV2} from './StudioPlanV2';
-import {scanHeroOn} from '../../../scripts/scan-hero-switch.mjs';
+import {hasScanV2} from '../../../scripts/scan-hero-switch.mjs';
 import {bookUrl, countLine} from './v2/hero';
 import {PLAN_TITLE} from './v2/copy';
 import {PartnerView} from './v2/PartnerView';
@@ -16,8 +16,9 @@ import '../../dev/scan-walkthrough/journey/journey.css';
 import './scan-studio.css';
 
 /** V2 only when the build switch is exactly '1' and the scan carries a hero: a checked one, or one the checks rejected
- *  (that one gets the plainest first screen). No hero at all, or the switch off, renders today's plan. */
-export const useV2=(fixture:JourneyFixture)=>scanHeroOn(import.meta.env.VITE_SCAN_HERO)&&!!(fixture.hero||fixture.heroRejected);
+ *  (that one gets the plainest first screen). No hero at all, or the switch off, renders today's plan. The adapter sets
+ *  `hero` or `heroRejected` exactly when the stored hero is present, so this is the prerender's predicate (hasScanV2). */
+export const useV2=(fixture:JourneyFixture)=>hasScanV2(import.meta.env.VITE_SCAN_HERO,fixture.hero??fixture.heroRejected);
 /** Any throw inside the new layout renders today's layout instead, so a malformed scan can never blank the page. */
 export class V2Guard extends React.Component<{fallback:React.ReactNode;onFail?:()=>void;children:React.ReactNode},{failed:boolean}>{
  state={failed:false};
@@ -52,9 +53,10 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
  // Printing opens every closed disclosure (samples, the rest of the buyers) and puts them back afterwards.
  React.useEffect(()=>{
   if(!v2)return;
-  let opened:HTMLDetailsElement[]=[];
-  const before=()=>{opened=[...document.querySelectorAll<HTMLDetailsElement>('.scan-studio details:not([open])')];opened.forEach(d=>{d.open=true;});};
-  const after=()=>{opened.forEach(d=>{d.open=false;});opened=[];};
+  // The state is captured once per print: a second beforeprint before afterprint keeps the first capture.
+  let opened:HTMLDetailsElement[]|null=null;
+  const before=()=>{if(opened)return;opened=[...document.querySelectorAll<HTMLDetailsElement>('.scan-studio details:not([open])')];opened.forEach(d=>{d.open=true;});};
+  const after=()=>{if(!opened)return;opened.forEach(d=>{d.open=false;});opened=null;};
   window.addEventListener('beforeprint',before);window.addEventListener('afterprint',after);
   return()=>{window.removeEventListener('beforeprint',before);window.removeEventListener('afterprint',after);};
  },[v2]);
