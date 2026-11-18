@@ -19,7 +19,7 @@ type StripItem = { ad_url: string; image_url: string | null; start_date: string 
 export interface DtcStandardPresentationV2 {
   version: typeof V2_VERSION; domain: string; requested_domain?: string; headline: string; intro: string;
   review: { approved: boolean; checked_at?: string };
-  first_screen: { case: 'advertiser' | 'zero_ads' | 'ads_unknown'; lead_test_index: number; ads_line: string | null; ads_note?: string; lead?: 'outside' };
+  first_screen: { case: 'advertiser' | 'zero_ads' | 'ads_unknown'; lead_test_index: number | null; ads_line: string | null; ads_note?: string; lead?: 'outside' };
   dm_quote?: { quote: string; said_on?: string };
   ads_strip?: { read: number; active: number | null; capped: boolean; observed_at?: string; source_url?: string | null; summary: string | null; items: StripItem[] };
   rival?: { advertiser: string; ad_url: string; image_url: string; opening_text: string; start_date: string; observed_at?: string };
@@ -34,8 +34,31 @@ type CategoryRead = { observed_at: string | null; base: { brands: number; ads: n
   findings: { kind: string; headline: string; body: string; ads: CategoryAd[]; change?: { type: 'ad_line' | 'landing' | 'page'; text: string } }[];
   ages?: CategoryAge[]; own_oldest?: CategoryAge | Omit<CategoryAge, 'brand'> | null };
 // F1 (2026-11-18): a verified outside finding leads when at least 3 brands were read.
-export const outsideLeads = (c?: CategoryRead | null) => !!c && Array.isArray(c.findings) && c.findings.length > 0 && Number.isInteger(c.base?.brands) && c.base.brands >= 3;
-const CATEGORY_KINDS = ['landing', 'opening', 'offer', 'format', 'age', 'none_do'];
+// G4: "what your ads do not sell" is a misroute and may lead with fewer brands; ruling 2: with no finding of her own
+// left, the outside findings are the page.
+export const outsideLeads = (c?: CategoryRead | null, ownSections?: number) => !!c && Array.isArray(c.findings) && c.findings.length > 0 && !!c.findings[0]
+  && (ownSections === 0 || c.findings[0].kind === 'ads_miss' || (Number.isInteger(c.base?.brands) && c.base.brands >= 3));
+// Ruling 2 (2026-11-18): outside findings count as findings, so a page renders from them alone. Mirror of
+// dtc_story_v2._row_ok + _renders_v2 for a story with no section.
+function outsideOnlyOk(data: DtcCommercialEvidence, s: DtcStandardPresentationV2): boolean {
+  if (data.status !== 'present' || !Array.isArray(data.tests) || data.tests.length !== 0) return false;
+  if (s.review?.approved !== true || !dated(s.review.checked_at) || typeof s.domain !== 'string' || !s.domain || (s.requested_domain != null && typeof s.requested_domain !== 'string')) return false;
+  if (!text(s.headline) || !text(s.intro)) return false;
+  const fs = s.first_screen;
+  if (!fs || !['advertiser', 'zero_ads', 'ads_unknown'].includes(fs.case) || fs.lead_test_index != null || fs.lead !== 'outside') return false;
+  if (fs.ads_line != null && typeof fs.ads_line !== 'string') return false;
+  if (!s.category_read || !categoryOk(s.category_read) || !outsideLeads(s.category_read, 0) || s.headline !== s.category_read.findings[0].headline) return false;
+  return extrasOk(s);
+}
+function extrasOk(s: DtcStandardPresentationV2): boolean {
+  const strip = s.ads_strip;
+  if (strip != null && (!Array.isArray(strip.items) || !Number.isInteger(strip.read) || !strip.items.every(i => i && safe(i.ad_url) && (i.image_url == null || safe(i.image_url)) && (i.destination == null || safe(i.destination)) && KINDS.includes(i.destination_kind)))) return false;
+  const r = s.rival;
+  if (r != null && !(safe(r.ad_url) && safe(r.image_url) && typeof r.opening_text === 'string' && r.opening_text.trim() && /^\d{4}-\d{2}-\d{2}$/.test(r.start_date || '') && dated(r.start_date))) return false;
+  if (s.dm_quote != null && !(typeof s.dm_quote.quote === 'string' && s.dm_quote.quote.trim())) return false;
+  return true;
+}
+const CATEGORY_KINDS = ['landing', 'opening', 'offer', 'format', 'age', 'none_do', 'ads_miss'];
 const CATEGORY_LANDS = ['product', 'bundle', 'collection', 'home', 'quiz', 'other_page', 'brand_other_site', 'other_site', 'meta_surface', 'none'];
 const text = (v: unknown) => typeof v === 'string' && !!v.trim();
 const isoDay = (v?: string | null) => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && dated(v);
@@ -66,6 +89,7 @@ const KINDS = ['product', 'collection', 'home', 'other_page', 'other_site', 'non
 export function canShowStandardStoryV2(data: DtcCommercialEvidence): boolean {
   try {
     const s = data?.presentation as unknown as DtcStandardPresentationV2;
+    if (s && s.version === V2_VERSION && Array.isArray(s.sections) && s.sections.length === 0) return outsideOnlyOk(data, s);
     if (!s || s.version !== V2_VERSION || !Array.isArray(s.sections) || !s.sections.length || !Array.isArray(data.tests)) return false;
     const tests = data.tests as Test[];
     if (!s.sections.every(x => x && Number.isInteger(x.test_index) && x.test_index >= 0 && x.test_index < tests.length && tests[x.test_index])) return false;
@@ -104,7 +128,7 @@ export function canShowStandardStoryV2(data: DtcCommercialEvidence): boolean {
     if (r != null && !(safe(r.ad_url) && safe(r.image_url) && typeof r.opening_text === 'string' && r.opening_text.trim() && /^\d{4}-\d{2}-\d{2}$/.test(r.start_date || '') && dated(r.start_date))) return false;
     if (s.dm_quote != null && !(typeof s.dm_quote.quote === 'string' && s.dm_quote.quote.trim())) return false;
     if (s.category_read != null && !categoryOk(s.category_read)) return false;
-    if (fs.lead != null && !(fs.lead === 'outside' && outsideLeads(s.category_read) && s.headline === s.category_read!.findings[0].headline)) return false;
+    if (fs.lead != null && !(fs.lead === 'outside' && outsideLeads(s.category_read, s.sections.length) && s.headline === s.category_read!.findings[0].headline)) return false;
     return true;
   } catch { return false; }
 }
@@ -223,6 +247,7 @@ function CategoryReadSection({ cat, brand, lead = false }: { cat: CategoryRead; 
     <p className="ris-body" data-reveal>We read {ads} active {ads === 1 ? 'ad' : 'ads'} from {n} {n === 1 ? 'brand' : 'brands'}{isoDay(cat.observed_at) ? ` on ${day(cat.observed_at)}` : ''}. Public ad records show what is running and since when. They do not show spend or sales.</p>
     <ul className="rv2-cat-brands" data-reveal>{cat.brands.map(b => <li key={b.name}><strong>{b.name}</strong><small>{[b.market, b.label, `${b.ads_read} ${b.ads_read === 1 ? 'ad' : 'ads'} read`].filter(Boolean).join(' · ')}</small></li>)}</ul>
     {cat.findings.map((f, k) => <article key={k} className="rv2-cat-finding" data-reveal>
+      {f.kind === 'ads_miss' ? <p className="ris-label">Your ads and your best sellers</p> : null}
       {lead && k === 0 ? null : <h3>{f.headline}</h3>}
       <p className="ris-body">{f.body}</p>
       {f.change ? <p className="rv2-cat-change"><strong>{f.change.type === 'ad_line' ? 'An ad line you could run' : f.change.type === 'page' ? 'Where you could send the ad' : 'A landing change you could make'}</strong>{f.change.text}</p> : null}
@@ -253,9 +278,9 @@ export function DtcGrowthStoryV2({ companyName, domain, data, ads, bookingUrl, l
   const brand = displayBrandName(companyName);
   const visible = s.sections.filter(x => !x.demoted);
   const primary = visible.slice(0, 4), secondary = [...visible.slice(4), ...s.sections.filter(x => x.demoted)];
-  const lead = s.sections[0], fs = s.first_screen;
-  const leadCaps = capturesOf(lead), leadAd = leadCaps.find(c => c.kind === 'ad'), leadPage = leadCaps.find(c => c.kind !== 'ad');
-  const firstDraft = lead.drafts?.[0];
+  const lead: Section | undefined = s.sections[0], fs = s.first_screen;
+  const leadCaps = lead ? capturesOf(lead) : [], leadAd = leadCaps.find(c => c.kind === 'ad'), leadPage = leadCaps.find(c => c.kind !== 'ad');
+  const firstDraft = lead?.drafts?.[0];
   let side: React.ReactNode = null;
   if (fs.case === 'advertiser' && (leadAd || leadPage)) side = <div className="rv2-hero-pair">{leadAd ? <Shot capture={leadAd} alt={`Your ad, ${brand || 'your store'}`} label="Your ad" eager /> : null}{leadPage ? <Shot capture={leadPage} alt={`Your page, ${brand || 'your store'}`} label="Your page" eager /> : null}</div>;
   // Replay 11-17 (a zero-ads home store): a rival's ad beside a gap about the brand's own bundle price read as unrelated. The first
@@ -270,17 +295,17 @@ export function DtcGrowthStoryV2({ companyName, domain, data, ads, bookingUrl, l
   const leadTile = outsideLead ? s.category_read!.findings[0].ads.find(a => a.image_url) : undefined;
   if (outsideLead && leadTile) side = <figure className="rv2-hero-rival"><img src={leadTile.image_url!} alt={`${leadTile.brand} ad`} /><figcaption>{`${leadTile.brand}'s ad${leadTile.start_date ? `, started ${day(leadTile.start_date)}` : ''}`} · <a href={leadTile.ad_url} target="_blank" rel="noopener noreferrer">View ↗</a></figcaption></figure>;
   return <div className="ris-story ris-standard rv2" ref={root} onClick={navigate} data-rise-story={s.version}>
-    <nav className="ris-nav" aria-label="Report navigation"><a href="https://risedtc.com" className="ris-logo"><img src={logo} alt="RISE DTC" /></a><div>{s.ads_strip ? <a href="#public-ads">Your ads</a> : null}<a href={`#finding-${lead.test_index}`}>Findings</a>{s.category_read ? <a href="#category-read">Other brands</a> : null}</div><a className="ris-nav-cta" href="#rise-conversation">Let’s talk ↗</a></nav>
+    <nav className="ris-nav" aria-label="Report navigation"><a href="https://risedtc.com" className="ris-logo"><img src={logo} alt="RISE DTC" /></a><div>{s.ads_strip ? <a href="#public-ads">Your ads</a> : null}<a href={lead ? `#finding-${lead.test_index}` : '#category-read'}>Findings</a>{s.category_read ? <a href="#category-read">Other brands</a> : null}</div><a className="ris-nav-cta" href="#rise-conversation">Let’s talk ↗</a></nav>
     <div ref={wrapper} className="ris-smooth-wrapper"><div ref={content} className="ris-smooth-content">
       <header className="ris-hero rv2-hero"><div className="ris-shell ris-hero-grid">
         <div>
           <p className="ris-label" data-reveal>Growth review · {total} {total === 1 ? 'finding' : 'findings'}</p>
           <h1 data-reveal>{brand || 'Your growth review'}</h1>
           {s.dm_quote ? <p className="rv2-said" data-reveal>You said: “{s.dm_quote.quote}”</p> : null}
-          <p className="rv2-lede" data-reveal>{outsideLead ? s.headline : lead.headline}</p>
+          <p className="rv2-lede" data-reveal>{outsideLead || !lead ? s.headline : lead.headline}</p>
           {fs.ads_line ? <p className="rv2-ads-line" data-reveal>{fs.ads_line}</p> : null}
           <p className="rv2-intro" data-reveal>{s.intro}</p>
-          <a className="ris-explore" href={outsideLead ? '#category-read' : `#finding-${lead.test_index}`} data-reveal>Explore the findings <span>↓</span></a>
+          <a className="ris-explore" href={outsideLead || !lead ? '#category-read' : `#finding-${lead.test_index}`} data-reveal>Explore the findings <span>↓</span></a>
         </div>
         {side}
       </div>

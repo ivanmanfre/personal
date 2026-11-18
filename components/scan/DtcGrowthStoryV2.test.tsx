@@ -226,3 +226,24 @@ describe('owner-eyes rulings (F1, F3, F4)', () => {
     const d = three(); d.presentation.category_read.ages[0].start_date = 'May'; expect(canShowStandardStoryV2(d)).toBe(false);
   });
 });
+
+describe('ruling 2 and G4 (2026-11-18)', () => {
+  const only = () => { const d = withCat(); d.tests = []; const p = d.presentation; p.sections = []; p.first_screen = { case: 'advertiser', lead_test_index: null, ads_line: p.first_screen.ads_line, lead: 'outside' };
+    p.headline = p.category_read.findings[0].headline; return d; };
+  it('a page of outside findings alone renders, and the validator refuses it without the outside lead', () => {
+    expect(canShowStandardStoryV2(only())).toBe(true);
+    const a = only(); delete a.presentation.first_screen.lead; expect(canShowStandardStoryV2(a)).toBe(false);
+    const b = only(); b.presentation.category_read.findings = []; expect(canShowStandardStoryV2(b)).toBe(false);
+    const c = only(); c.tests = tests; expect(canShowStandardStoryV2(c)).toBe(false);
+    const h = html(only());
+    expect(h.querySelector('.rv2-lede')!.textContent).toBe('Wagly sends all 12 ads we read to one bundle page.');
+    expect(h.querySelector('.rv2-hero .ris-label')!.textContent).toBe('Growth review · 2 findings');
+    expect(h.querySelector('#category-read')).not.toBeNull();
+  });
+  it('G4: a what-your-ads-do-not-sell finding may lead with fewer than 3 brands', () => {
+    const d = withCat(); const c = d.presentation.category_read; c.findings[0].kind = 'ads_miss';
+    d.presentation.first_screen.lead = 'outside'; d.presentation.headline = c.findings[0].headline;
+    expect(canShowStandardStoryV2(d)).toBe(true);
+    expect(html(d).querySelector('#category-read')!.textContent).toContain('Your ads and your best sellers');
+  });
+});
