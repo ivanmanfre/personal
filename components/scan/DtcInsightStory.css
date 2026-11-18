@@ -39,3 +39,18 @@
 .ris-standard .ris-chapters strong{font-size:17px;line-height:1.5;font-weight:600}
 @media(max-width:600px){.ris-standard .ris-chapters{grid-template-columns:minmax(0,1fr);gap:20px}.ris-standard .ris-chapters strong{font-size:15px}.ris-standard .ris-chapters b{font-size:22px}}
 .ris-close-grid>div>p.ris-close-model{margin-top:0;font-weight:700}
+
+.ris-compare-pages{display:flex;flex-wrap:wrap;gap:8px;position:relative;min-width:0;margin:24px 0 0;padding:16px;border:1px solid currentColor}
+.ris-compare-pages legend{padding:0 4px;font-weight:700}
+.ris-compare-pages input{position:absolute;width:1px;height:1px;opacity:0}
+.ris-compare-pages label{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border:1px solid #171717;background:white;color:#171717;border-radius:4px;cursor:pointer}
+.ris-compare-pages input:checked+label{background:#171717;color:white}
+.ris-compare-pages input:focus-visible+label{outline:3px solid #1685a0;outline-offset:2px}
+.ris-compared-page{display:none;order:1;flex-basis:100%;min-width:0}
+.ris-compare-pages input:checked+label+.ris-compared-page{display:block}
+@media print{.ris-compare-pages label,.ris-compare-pages input{display:none}.ris-compare-pages .ris-compared-page{display:block}}
+
+.ris-ad-destinations a{overflow-wrap:anywhere}
+
+.ris-story .ris-zoom-open:focus-visible,.ris-story summary:focus-visible,.ris-story a:focus-visible{outline:3px solid #167a97;outline-offset:3px}
+.ris-standard .ris-evidence > summary{min-height:44px}

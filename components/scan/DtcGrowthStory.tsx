@@ -42,8 +42,8 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
 function AdEvidence({ ads }: { ads: any }) {
   return <section id="public-ads" className="ris-shell ris-public-ads"><p className="ris-label">Public ad records</p><div className="ris-ad-stats">{[['meta', 'Active Meta ads', 'active_ad_count'], ['google', 'Google creatives in the public records', 'ads_found']].map(([key, label, count]) => {
     const block = ads?.[key], value = block?.data?.[count];
-    const confirmed = block?.status === 'present' || (block?.status === 'empty' && (key === 'google' || block.page_confirmed === true) && value === 0);
-    return <div key={key}>{confirmed && Number.isInteger(value) && value >= 0 && dated(block.fetched_at) && safe(block.source_url) ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>Ad activity could not be verified in this review.</small></>}</div>;
+    const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || block.page_confirmed === true)));
+    return <div key={key}>{confirmed && Number.isInteger(value) && value >= 0 && dated(block.fetched_at) && safe(block.source_url) ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>No confirmed count for this review.</small></>}</div>;
   })}<p>Public ad records do not show spend or sales.</p></div></section>;
 }
 
@@ -90,6 +90,28 @@ function EvidenceShot({ capture, alt, hero = false }: { capture: Capture; alt: s
   </figure>;
 }
 
+export function ComparedPages<T extends Capture>({ pages, group, renderShot }: { pages: T[]; group: string; renderShot: (c: T) => React.ReactNode }) {
+  // Native radios keep both cited pages usable in static reports, including before hydration.
+  return <fieldset className="ris-compare-pages"><legend>Compare the two store pages</legend>
+    {pages.map((page, i) => <React.Fragment key={page.url}>
+      <input type="radio" id={`${group}-${i}`} name={group} defaultChecked={i === 0} />
+      <label htmlFor={`${group}-${i}`}>{i === 0 ? 'First' : 'Second'} page</label>
+      <div className="ris-compared-page">{renderShot(page)}</div>
+    </React.Fragment>)}
+  </fieldset>;
+}
+
+export function RecordedDestinations({ ad }: { ad: Section['ad'] }) {
+  return ad?.destinations.length ? <details className="ris-evidence ris-ad-destinations">
+          <summary>Where this ad links <span aria-hidden="true">+</span></summary>
+          <div><a href={ad.url} target="_blank" rel="noopener noreferrer">See the recorded ad ↗</a>
+            <ul>{Array.from(new Set(ad.destinations)).map(url => <li key={url}>
+              <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+            </li>)}</ul>
+          </div>
+        </details> : null;
+}
+
 export function DtcGrowthStory({ companyName, domain, data, ads, bookingUrl, logo, cases = [] }: { companyName: string; domain: string; data: DtcCommercialEvidence; ads: any; bookingUrl: string; logo: string; cases?: { name: string; url: string; headline?: string; image?: string }[] }) {
   const s = data.presentation as DtcStandardPresentation;
   const { root, wrapper, content, navigate } = useRiseStoryMotion();
@@ -115,8 +137,11 @@ export function DtcGrowthStory({ companyName, domain, data, ads, bookingUrl, log
           {primaryEvidence.length ? <div className="ris-evidence-shots">{primaryEvidence.map(shot)}</div> : null}
         </div>
         {ads.length ? action : null}
-        {gallery.length ? <div className="ris-page-gallery"><p className="ris-label">Pages cited in this finding</p><div className="ris-evidence-shots">{gallery.map(shot)}</div></div> : null}
+        {gallery.length === 2 && gallery[0].source_url !== gallery[1].source_url
+          ? <ComparedPages pages={gallery} group={`pages-${section.test_index}`} renderShot={shot} />
+          : gallery.length ? <div className="ris-page-gallery"><p className="ris-label">Pages cited in this finding</p><div className="ris-evidence-shots">{gallery.map(shot)}</div></div> : null}
         <Evidence test={data.tests[section.test_index]} verbatim fullPlan />
+        <RecordedDestinations ad={section.ad} />
       </div>
     </section>;
   };

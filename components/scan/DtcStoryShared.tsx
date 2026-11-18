@@ -33,8 +33,8 @@ export function useRiseStoryMotion() {
         media.add({ motion: '(prefers-reduced-motion: no-preference)', desktop: '(min-width: 901px)' }, (ctx: any) => {
           if (!ctx.conditions.motion) return;
           if (ctx.conditions.desktop) smoother.current = ScrollSmoother.create({ wrapper: wrapper.current!, content: content.current!, smooth: 0.65, smoothTouch: 0, effects: false });
-          gsap.from(node.querySelectorAll('.ris-hero [data-reveal]'), { y: 24, opacity: 0, duration: 0.8, stagger: 0.12, ease: 'power2.out' });
-          node.querySelectorAll('main [data-reveal]').forEach(el => gsap.from(el, { y: 32, opacity: 0, duration: 0.7, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
+          gsap.from(node.querySelectorAll('.ris-hero [data-reveal]'), { y: 12, duration: 0.45, stagger: 0.045, ease: 'power2.out' });
+          node.querySelectorAll('main [data-reveal]').forEach(el => gsap.from(el, { y: 12, duration: 0.4, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
           node.querySelectorAll('[data-parallax]').forEach(el => gsap.fromTo(el, { y: 22 }, { y: -22, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: 0.6 } }));
           return () => { smoother.current?.kill(); smoother.current = null; };
         });
