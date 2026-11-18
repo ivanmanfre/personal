@@ -14,7 +14,7 @@ vi.mock('./ScanWalkthroughVideo', () => ({ default: () => null }));
 
 describe('DTC scan brand spelling', () => {
   it('passes the saved uppercase brand through the report route to metadata, hero and close', () => {
-    const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'dev/scanlab/yananails-standard.json'), 'utf8'));
+    const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'dev/scanlab/lunanails-standard.json'), 'utf8'));
     const scan = {
       company_name: 'LMNT',
       company_slug: 'brand-case',

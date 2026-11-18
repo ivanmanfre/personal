@@ -1,5 +1,5 @@
 {
- "company_name": "The Rodial Group",
+ "company_name": "The Rosamel Group",
  "label": "rich",
  "dtc": {
   "ads": {
@@ -34,7 +34,7 @@
    "status": "present",
    "partial": true,
    "fetched_at": "2026-07-20T17:54:12.328013+00:00",
-   "source_url": "https://rodial.com/"
+   "source_url": "https://rosamel.example/"
   },
   "reviews": {
    "data": {
@@ -44,7 +44,7 @@
    },
    "status": "present",
    "fetched_at": "2026-07-20T17:54:10.215380+00:00",
-   "source_url": "https://rodial.com/products/spf-50-drops-mini"
+   "source_url": "https://rosamel.example/products/spf-50-drops-mini"
   },
   "shopify": {
    "data": {
@@ -63,7 +63,7 @@
    },
    "status": "present",
    "fetched_at": "2026-07-20T17:54:08.489642+00:00",
-   "source_url": "https://rodial.com/products.json",
+   "source_url": "https://rosamel.example/products.json",
    "endpoint_used": "products.json"
   },
   "findings": [
@@ -73,7 +73,7 @@
     "title": "Discounting is running across your catalog",
     "signal": "shopify",
     "evidence": "59 of your 180 live products are discounted, averaging 42.7% off. When that much of the catalog carries a markdown, shoppers learn to expect one, and full-price orders get harder to win.",
-    "source_url": "https://rodial.com/products.json"
+    "source_url": "https://rosamel.example/products.json"
    },
    {
     "kind": "gap",
@@ -81,7 +81,7 @@
     "title": "Your price band is wide and the median sits low",
     "signal": "shopify",
     "evidence": "Catalog runs $1.90 to $1,285 with a $42 median. With most of your products priced near the bottom of that range, threshold and bundle offers are how an order grows past one item.",
-    "source_url": "https://rodial.com/products.json"
+    "source_url": "https://rosamel.example/products.json"
    },
    {
     "kind": "negative",
@@ -89,7 +89,7 @@
     "title": "Shoppers are landing on sold-out variants",
     "signal": "shopify",
     "evidence": "14.4% of your variants read out-of-stock right now. A shopper who lands on a sold-out variant has nothing to order.",
-    "source_url": "https://rodial.com/products.json"
+    "source_url": "https://rosamel.example/products.json"
    },
    {
     "kind": "gap",
@@ -97,7 +97,7 @@
     "title": "Strong rating, thin review volume on your product pages",
     "signal": "reviews",
     "evidence": "Your PDP shows a 4.7 rating across 23 reviews. The rating earns trust; the low count undersells it.",
-    "source_url": "https://rodial.com/products/spf-50-drops-mini"
+    "source_url": "https://rosamel.example/products/spf-50-drops-mini"
    }
   ],
   "hero_hook": "59 of your 180 products are discounted right now. Here's where the profit is going.",
@@ -141,7 +141,7 @@
    },
    "status": "present",
    "fetched_at": "2026-07-20T17:54:08.142186+00:00",
-   "source_url": "https://rodial.com/"
+   "source_url": "https://rosamel.example/"
   },
   "completeness": {
    "tier": "partial",

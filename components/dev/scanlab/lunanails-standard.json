@@ -1,6 +1,6 @@
 {
-  "company_name": "Yananails",
-  "domain": "yananails.com",
+  "company_name": "Lunanails",
+  "domain": "lunanails.example",
   "dtc": {
     "brand": {
       "ink_hex": "#111111",
@@ -36,16 +36,16 @@
           "title": "No subscribe or refill option on Builder Gel PHILIP",
           "detail": "Builder Gel PHILIP is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
           "product": {
-            "url": "https://yananails.com/products/builder-gel-philip",
+            "url": "https://lunanails.example/products/builder-gel-philip",
             "price": 359.0,
             "title": "Builder Gel PHILIP",
             "currency": "SEK",
-            "image_url": "https://cdn.shopify.com/s/files/1/0936/4101/5636/files/PHILIP.png?v=1782199562"
+            "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-c784957810.png"
           },
           "evidence": {
             "label": "Subscribe option on the replenishable products checked",
             "value": "None on these 2 replenishable product records: Builder Gel PHILIP; Nagellim",
-            "source_url": "https://yananails.com/products/builder-gel-philip"
+            "source_url": "https://lunanails.example/products/builder-gel-philip"
           },
           "verified": {
             "ok": true,
@@ -74,12 +74,12 @@
             {
               "kind": "store",
               "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
-              "source_url": "https://yananails.com/products/primer"
+              "source_url": "https://lunanails.example/products/primer"
             },
             {
               "kind": "store",
               "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
-              "source_url": "https://yananails.com/products/bonder"
+              "source_url": "https://lunanails.example/products/bonder"
             }
           ],
           "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
@@ -92,12 +92,12 @@
             {
               "kind": "store",
               "quote": "flash cura: h\u00e4rda 1-2 sekunder",
-              "source_url": "https://yananails.com/products/builder-gel-ryan"
+              "source_url": "https://lunanails.example/products/builder-gel-ryan"
             },
             {
               "kind": "store",
               "quote": "Gelen h\u00e4rdas i 120 sekunder",
-              "source_url": "https://yananails.com/products/builder-gel-ryan"
+              "source_url": "https://lunanails.example/products/builder-gel-ryan"
             }
           ],
           "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
@@ -109,18 +109,18 @@
           "evidence": [
             {
               "kind": "ad",
-              "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
-              "source_url": "https://www.facebook.com/ads/library/?id=2169223840696220"
+              "quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=2207340872586690"
             },
             {
               "kind": "store",
               "quote": "Fiber Gel OLIVER 359 SEK",
-              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             },
             {
               "kind": "ad",
-              "quote": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
-              "source_url": "https://www.facebook.com/ads/library/?id=1615590163535319"
+              "quote": "Uppt\u00e4ck Lunanails mest \u00e4lskade gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=0233035021229954"
             }
           ],
           "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
@@ -133,17 +133,17 @@
             {
               "kind": "store",
               "quote": "Fri frakt \u00f6ver 999 kr inom Sverige",
-              "source_url": "https://yananails.com/"
+              "source_url": "https://lunanails.example/"
             },
             {
               "kind": "store",
               "quote": "Nagellim 89 SEK",
-              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             },
             {
               "kind": "store",
               "quote": "MULTI-MIST, Prep & Clean 119 SEK",
-              "source_url": "https://yananails.com/collections/all?sort_by=best-selling"
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             }
           ],
           "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
@@ -153,51 +153,51 @@
       "version": "commercial-2026-10-11",
       "journeys": [
         {
-          "ad_url": "https://www.facebook.com/ads/library/?id=4517074168554599",
+          "ad_url": "https://www.facebook.com/ads/library/?id=2714628530637789",
           "ad_excerpt": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar",
           "observed_at": "2026-10-13T21:29:54.081153+00:00",
           "destinations": [
-            "https://yananails.com/",
-            "https://yananails.com/products/builder-gel-philip",
-            "https://yananails.com/products/builder-gel-ryan",
-            "https://yananails.com/collections/nail-tips",
-            "https://yananails.com/products/builder-gel-anton",
-            "https://yananails.com/collections/gel/products/builder-gel-vincent"
+            "https://lunanails.example/",
+            "https://lunanails.example/products/builder-gel-philip",
+            "https://lunanails.example/products/builder-gel-ryan",
+            "https://lunanails.example/collections/nail-tips",
+            "https://lunanails.example/products/builder-gel-anton",
+            "https://lunanails.example/collections/gel/products/builder-gel-vincent"
           ]
         },
         {
-          "ad_url": "https://www.facebook.com/ads/library/?id=2169223840696220",
-          "ad_excerpt": "Swatchar alla yananails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r yananails",
+          "ad_url": "https://www.facebook.com/ads/library/?id=2207340872586690",
+          "ad_excerpt": "Swatchar alla lunanails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r lunanails",
           "observed_at": "2026-10-13T21:29:54.081153+00:00",
           "destinations": [
-            "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+            "https://lunanails.example/collections/gel/products/fiber-gel-oscar"
           ]
         },
         {
-          "ad_url": "https://www.facebook.com/ads/library/?id=1615590163535319",
-          "ad_excerpt": "Uppt\u00e4ck Yananails mest \u00e4lskade gel f\u00e4rger",
+          "ad_url": "https://www.facebook.com/ads/library/?id=0233035021229954",
+          "ad_excerpt": "Uppt\u00e4ck Lunanails mest \u00e4lskade gel f\u00e4rger",
           "observed_at": "2026-10-13T21:29:54.081153+00:00",
           "destinations": [
-            "https://yananails.com/collections/gel",
-            "https://yananails.com/collections/nail-tips/products/nagellim",
-            "https://yananails.com/collections/nail-tips/products/almond-x-small-nageltippar",
-            "https://yananails.com/collections/nail-tips/products/square-medium-flat-tippar",
-            "https://yananails.com/collections/nail-tips",
-            "https://yananails.com/collections/nail-tips/products/coffin-small-tippar",
-            "https://yananails.com/collections/nail-tips/products/almond-small-tippar"
+            "https://lunanails.example/collections/gel",
+            "https://lunanails.example/collections/nail-tips/products/nagellim",
+            "https://lunanails.example/collections/nail-tips/products/almond-x-small-nageltippar",
+            "https://lunanails.example/collections/nail-tips/products/square-medium-flat-tippar",
+            "https://lunanails.example/collections/nail-tips",
+            "https://lunanails.example/collections/nail-tips/products/coffin-small-tippar",
+            "https://lunanails.example/collections/nail-tips/products/almond-small-tippar"
           ]
         }
       ],
       "checked_at": "2026-10-13T21:31:02.073637+00:00",
       "screenshot": {
-        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
-        "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
+        "source_url": "https://lunanails.example/collections/gel/products/fiber-gel-oscar",
         "captured_at": "2026-10-13T22:04:24.465752+00:00"
       },
       "presentation": {
         "version": "rise-standard-2026-10-14",
-        "domain": "yananails.com",
-        "requested_domain": "yananails.com",
+        "domain": "lunanails.example",
+        "requested_domain": "lunanails.example",
         "review": {
           "approved": true,
           "checked_at": "2026-10-14T00:00:00Z"
@@ -205,8 +205,8 @@
         "headline": "Your next growth opportunity.",
         "intro": "We reviewed your store pages and checked the available public ad records. These findings show the changes worth considering and what we would check with your numbers.",
         "hero_capture": {
-          "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
-          "source_url": "https://yananails.com/",
+          "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
+          "source_url": "https://lunanails.example/",
           "captured_at": "2026-10-13T21:32:25.554587+00:00"
         },
         "sections": [
@@ -217,15 +217,15 @@
             "action": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
             "lane": "paid",
             "capture": {
-              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-story-20261014-current.png",
-              "source_url": "https://yananails.com/collections/gel/products/fiber-gel-oscar",
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
+              "source_url": "https://lunanails.example/collections/gel/products/fiber-gel-oscar",
               "captured_at": "2026-10-13T22:04:24.465752+00:00"
             },
             "ad": {
-              "url": "https://www.facebook.com/ads/library/?id=2169223840696220",
-              "quote": "Swatchar alla yananails fiber gel f\u00e4rger",
+              "url": "https://www.facebook.com/ads/library/?id=2207340872586690",
+              "quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
               "destinations": [
-                "https://yananails.com/collections/gel/products/fiber-gel-oscar"
+                "https://lunanails.example/collections/gel/products/fiber-gel-oscar"
               ],
               "observed_at": "2026-10-13T21:29:54.081153+00:00"
             }
@@ -251,8 +251,8 @@
             "action": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
             "lane": "store",
             "capture": {
-              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
-              "source_url": "https://yananails.com/",
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
+              "source_url": "https://lunanails.example/",
               "captured_at": "2026-10-13T21:32:25.554587+00:00"
             }
           }
@@ -268,7 +268,7 @@
         "page_id": "1019588207902909",
         "page_name": null,
         "fetched_at": "2026-10-13T21:29:54.081249+00:00",
-        "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Yananails&search_type=keyword_unordered&media_type=all",
+        "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Lunanails&search_type=keyword_unordered&media_type=all",
         "resolved_via": "homepage_link",
         "declared_page_rejected": null
       },
@@ -278,7 +278,7 @@
         },
         "status": "present",
         "fetched_at": "2026-10-08T08:05:55.461215+00:00",
-        "source_url": "https://adstransparency.google.com/?region=SE&q=yananails.com"
+        "source_url": "https://adstransparency.google.com/?region=SE&q=lunanails.example"
       }
     },
     "completed_at": "2026-10-13T21:39:49.518000+00:00",
@@ -298,10 +298,10 @@
       "checked_at": "2026-10-13T21:39:49.517343+00:00"
     },
     "screenshots": {
-      "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-pdp_url.png",
+      "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-pdp_url.png",
       "pdp_path": "/products/builder-gel-philip",
       "captured_at": "2026-10-13T21:32:25.554587+00:00",
-      "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/yananails-f9-rebuild-20261013-homepage_url.png",
+      "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
       "capture_method": "t3-collaborative-browser",
       "market_country": "SE"
     }

@@ -1,17 +1,17 @@
 {
- "company_name": "realfruitpeelz.com",
- "label": "realfruitpeelz.com held promise row (shippable.ok false, 0 items)",
+ "company_name": "orchardpeelz.example",
+ "label": "orchardpeelz.example held promise row (shippable.ok false, 0 items)",
  "dtc": {
   "ads": {
    "meta": {
     "reason": "declared page returned no usable ad items (page-scoped read unusable, search found no identity-matched advertiser)",
     "status": "error",
-    "source_url": "https://www.facebook.com/fruitpeelz",
+    "source_url": "https://www.facebook.com/orchardpeelz",
     "resolved_via": "declared_page_unread"
    },
    "google": {
     "data": {
-     "query": "realfruitpeelz.com",
+     "query": "orchardpeelz.example",
      "capped": false,
      "region": "US",
      "formats": {
@@ -26,7 +26,7 @@
      "from_cache": true,
      "max_results": 60,
      "queries_tried": [
-      "realfruitpeelz.com"
+      "orchardpeelz.example"
      ],
      "latest_last_shown": null,
      "newest_first_shown": null,
@@ -36,7 +36,7 @@
     "reason": "google actor returned 0 items across 1 query, none matching this brand identity",
     "status": "empty",
     "fetched_at": "2026-09-26T10:54:31.976525+00:00",
-    "source_url": "https://adstransparency.google.com/?region=US&q=realfruitpeelz.com"
+    "source_url": "https://adstransparency.google.com/?region=US&q=orchardpeelz.example"
    }
   },
   "hero": null,
@@ -63,12 +63,12 @@
    "status": "present",
    "partial": true,
    "fetched_at": "2026-09-26T17:33:03.113184+00:00",
-   "source_url": "https://realfruitpeelz.com/"
+   "source_url": "https://orchardpeelz.example/"
   },
   "reviews": {
    "reason": "no PDP URL discoverable",
    "status": "blocked",
-   "source_url": "https://realfruitpeelz.com/"
+   "source_url": "https://orchardpeelz.example/"
   },
   "shopify": {
    "data": {
@@ -89,7 +89,7 @@
    },
    "status": "present",
    "fetched_at": "2026-09-26T17:32:47.855562+00:00",
-   "source_url": "https://realfruitpeelz.com/wp-json/wc/store/v1/products?per_page=100&page=1",
+   "source_url": "https://orchardpeelz.example/wp-json/wc/store/v1/products?per_page=100&page=1",
    "endpoint_used": "wc/store/v1/products"
   },
   "drop_off": {
@@ -152,7 +152,7 @@
    },
    "status": "present",
    "fetched_at": "2026-09-26T17:32:41.383433+00:00",
-   "source_url": "https://realfruitpeelz.com/"
+   "source_url": "https://orchardpeelz.example/"
   },
   "bestsellers": {
    "reason": "not a readable Shopify storefront",
@@ -208,7 +208,7 @@
   "screenshots": {
    "pdp_url": null,
    "captured_at": "2026-09-26T17:33:03.183433+00:00",
-   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/realfruitpeelz-com-ee.png"
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/orchardpeelz-com-ee.png"
   },
   "completed_at": "2026-09-26T17:33:23.422654+00:00",
   "completeness": {

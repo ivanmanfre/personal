@@ -1,6 +1,6 @@
 {
- "company_name": "Tina Cassaday Creations",
- "label": "tina new contract (frontend-authored until backend fixture lands)",
+ "company_name": "Marla Quenby Creations",
+ "label": "marla new contract (frontend-authored until backend fixture lands)",
  "dtc": {
   "ads": {
    "meta": {
@@ -10,11 +10,11 @@
     "reason": "Meta transparency: \"This Page isn't currently running ads.\" (declared page zero; cross-checked ad-library search: no identity-matched advertiser)",
     "status": "empty",
     "fetched_at": "2026-09-26T04:50:51.377798+00:00",
-    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills"
+    "source_url": "https://www.facebook.com/MarlaQuenbyBeverlyHills"
    },
    "google": {
     "data": {
-     "query": "Tina Cassaday Creations",
+     "query": "Marla Quenby Creations",
      "capped": false,
      "region": "US",
      "formats": {
@@ -28,8 +28,8 @@
      "checked_at": "2026-09-26T04:51:09.185487+00:00",
      "max_results": 60,
      "queries_tried": [
-      "tinacassadaybh.com",
-      "Tina Cassaday Creations"
+      "marlaquenbybh.example",
+      "Marla Quenby Creations"
      ],
      "latest_last_shown": null,
      "newest_first_shown": null,
@@ -39,13 +39,13 @@
     "reason": "google actor returned 0 items across 2 queries, none matching this brand identity",
     "status": "empty",
     "fetched_at": "2026-09-26T04:51:09.185504+00:00",
-    "source_url": "https://adstransparency.google.com/?region=US&q=tinacassadaybh.com"
+    "source_url": "https://adstransparency.google.com/?region=US&q=marlaquenbybh.example"
    },
    "meta_sweep": {
     "data": {
      "capped": false,
      "keywords": [
-      "Tina Cassaday Creations"
+      "Marla Quenby Creations"
      ],
      "checked_at": "2026-09-26T04:51:00.307929+00:00",
      "max_results": 30,
@@ -56,7 +56,7 @@
     "reason": "ad-library keyword sweep returned 0 ads, none from a page matching this brand identity",
     "status": "empty",
     "fetched_at": "2026-09-26T04:51:00.307960+00:00",
-    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Tina%20Cassaday%20Creations&search_type=keyword_unordered&media_type=all"
+    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Marla%20Quenby%20Creations&search_type=keyword_unordered&media_type=all"
    }
   },
   "brand": {
@@ -84,7 +84,7 @@
    "status": "present",
    "partial": true,
    "fetched_at": "2026-09-26T04:50:51.880070+00:00",
-   "source_url": "https://tinacassadaybh.com/"
+   "source_url": "https://marlaquenbybh.example/"
   },
   "reviews": {
    "status": "present",
@@ -94,7 +94,7 @@
     "has_reviews": true
    },
    "fetched_at": "2026-09-26T04:50:51Z",
-   "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"
+   "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack"
   },
   "shopify": {
    "data": {
@@ -120,11 +120,11 @@
     "discount_depth_pct": 0,
     "merch_catalog_size": 5,
     "products_on_discount": 0,
-    "subscription_source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz.js"
+    "subscription_source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner-sachet-0-5-fl-oz.js"
    },
    "status": "present",
    "fetched_at": "2026-09-26T04:50:26.538733+00:00",
-   "source_url": "https://tinacassadaybh.com/products.json",
+   "source_url": "https://marlaquenbybh.example/products.json",
    "endpoint_used": "products.json"
   },
   "findings": [
@@ -136,7 +136,7 @@
     "signal": "ads.meta",
     "evidence": "The public Meta Ad Library shows zero ads for this brand, so the only shoppers who find your products are the ones who already know your name.",
     "week_one": "Multi-network ads management targeted at your ideal customer, from the first campaign.",
-    "source_url": "https://www.facebook.com/TinaCassadayBeverlyHills",
+    "source_url": "https://www.facebook.com/MarlaQuenbyBeverlyHills",
     "bucket_pillar": "Optimized Media Buying"
    },
    {
@@ -147,7 +147,7 @@
     "signal": "reviews",
     "evidence": "Your product page carries a 5.0 rating from 3 reviews in its code, with no stars shown to shoppers.",
     "week_one": null,
-    "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
+    "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
     "bucket_pillar": null
    }
   ],
@@ -201,7 +201,7 @@
    },
    "status": "present",
    "fetched_at": "2026-09-26T04:50:21.512431+00:00",
-   "source_url": "https://tinacassadaybh.com/"
+   "source_url": "https://marlaquenbybh.example/"
   },
   "competitors": {
    "data": {
@@ -215,50 +215,50 @@
       "keyword": "conditioner",
       "page_id": "104957167940094",
       "age_days": 102,
-      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/724442529_27505171109076279_5486413324165431034_n.jpg?_nc_cat=108&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=_KnP8AZmDhAQ7kNvwHjWPck&_nc_oc=AdoBTS1rNCNohxdrDBQ8XbsJMihZ8nCQI8JqEPGgUs3cYME0BQz_HMtx0b0L3fw4OtA&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQIMXfUPBkntGC1IhxmCxAKOnaSFo4W4anMpZT7xNNucdw&oe=6ABD3477",
+      "image_url": "https://scontent.example.fbcdn.net/v/fixture-dbacefa78100.jpg",
       "advertiser": "Humby Organics",
       "start_date": "2026-06-16",
-      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-0.jpg",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-comp-0.jpg",
       "opening_text": "I've helped over 80,000 women stop thinning."
      },
      {
       "keyword": "oil",
       "page_id": "102507806502481",
       "age_days": 334,
-      "image_url": "https://scontent.fmex12-1.fna.fbcdn.net/v/t39.35426-6/571158648_1431824565614822_8938271719069099064_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=RpXm9ruPFJAQ7kNvwHQgPGX&_nc_oc=Adp7ComhLYZ52Llos3U5WG7BjEOc1IkOPjK1FCnRtb2LBqB1AKruVt7fDN8cb7SQljU&_nc_zt=14&_nc_ht=scontent.fmex12-1.fna&_nc_gid=fIP5btYXhYq-XSwLjQ3Rjg&_nc_ss=7f289&oh=00_AQIyJ1UMYNhY-coM-H2EEKV-fYxhlttS4gh0rJ8I-AllnQ&oe=6ABD26F7",
+      "image_url": "https://scontent.example.fbcdn.net/v/fixture-670a315e95fa.jpg",
       "advertiser": "Wild Growth Hair Care",
       "start_date": "2025-10-27",
-      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-1.jpg",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-comp-1.jpg",
       "opening_text": "Never Before Now is Wild Growth's latest 1X more concentrated hair oil."
      },
      {
       "keyword": "conditioner",
       "page_id": "244335642891847",
       "age_days": 56,
-      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/761497327_2104706303555670_3094369942284442718_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=Pud6sAaD1xQQ7kNvwFzWSmD&_nc_oc=AdrYYyA60zid6pzBVLdfmn1hy0nOtMFNObAkCciip8w7m2pENnFk63BP_OGbblM-gr8&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLVVWdJc3U6AnmgQwtP0HGYR3NsPiq4WGb8g2XDdgS3qA&oe=6ABD340B",
+      "image_url": "https://scontent.example.fbcdn.net/v/fixture-9adb1dfa5f4a.jpg",
       "advertiser": "Bare Anatomy",
       "start_date": "2026-08-01",
-      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-2.jpg",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-comp-2.jpg",
       "opening_text": "One Spray, Multiple Benefits \u2728"
      },
      {
       "keyword": "conditioner",
       "page_id": "444025482768886",
       "age_days": 239,
-      "image_url": "https://scontent.fbfh17-1.fna.fbcdn.net/v/t39.35426-6/622873639_912262191454500_8346141100030364649_n.jpg?_nc_cat=110&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=eEUBEmyfes0Q7kNvwHLxOwq&_nc_oc=AdqcTA_PlwBG6igNmjMn1MkV4QH4cbgoMKyhciw1bcnRHssPr1PK9FCXAyT20DfhK6E&_nc_zt=14&_nc_ht=scontent.fbfh17-1.fna&_nc_gid=-q_lCyy9fZAujTBOOiGZ9g&_nc_ss=7f289&oh=00_AQKOQTZ7YgXXNPoD4-gOac5J0PFCWJ63gh-aytGxHYsSNw&oe=6ABD2546",
+      "image_url": "https://scontent.example.fbcdn.net/v/fixture-23fe1ac37455.jpg",
       "advertiser": "Plix",
       "start_date": "2026-01-30",
-      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-3.jpg",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-comp-3.jpg",
       "opening_text": "\u2728 Glossy, soft hair on a budget?"
      },
      {
       "keyword": "conditioner",
       "page_id": "104086772515156",
       "age_days": 133,
-      "image_url": "https://scontent.fmlm3-1.fna.fbcdn.net/v/t39.35426-6/700343307_1541775130888524_553323202010607279_n.jpg?_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=SlPNoNjezSkQ7kNvwGG0wiV&_nc_oc=Adond0YU-YRh2H0m4FNNTk6zYWSSf_PPmjKbNCW_laBN7A4FBs_4TrqrZCEfosWIGYc&_nc_zt=14&_nc_ht=scontent.fmlm3-1.fna&_nc_gid=Ctm9xvJF0cH4uhubgyhQsg&_nc_ss=7f180&oh=00_AQLiI27Uqdke9rHI7K0rgrJDlWPMg6JPwpEWt7uLjWBE1A&oe=6ABD0A36",
+      "image_url": "https://scontent.example.fbcdn.net/v/fixture-9fb198b7cb47.jpg",
       "advertiser": "Alif Ahlam /\u0623\u0644\u0641 \u0623\u062d\u0644\u0627\u0645",
       "start_date": "2026-05-16",
-      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-comp-4.jpg",
+      "stored_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-comp-4.jpg",
       "opening_text": "Introducing the Alifahlam Hair Care Kit \u2013 your complete solution for strong, shiny, and"
      }
     ],
@@ -293,9 +293,9 @@
    "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=conditioner&search_type=keyword_unordered&media_type=all"
   },
   "screenshots": {
-   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da-pdp.png",
+   "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da-pdp.png",
    "captured_at": "2026-09-26T04:50:51.982792+00:00",
-   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/tina-cassaday-creations-da.png"
+   "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/marla-quenby-creations-da.png"
   },
   "completeness": {
    "tier": "partial",
@@ -329,7 +329,7 @@
     "country": "US",
     "published_products_count": 5
    },
-   "source_url": "https://tinacassadaybh.com/meta.json"
+   "source_url": "https://marlaquenbybh.example/meta.json"
   },
   "bestsellers": {
    "status": "present",
@@ -341,7 +341,7 @@
      "banana-blossom-elixir",
      "banana-banana-conditioner-sachet-0-5-fl-oz"
     ],
-    "source_url": "https://tinacassadaybh.com/collections/all?sort_by=best-selling"
+    "source_url": "https://marlaquenbybh.example/collections/all?sort_by=best-selling"
    }
   },
   "drop_off": {
@@ -354,12 +354,12 @@
      "evidence": {
       "label": "6-Pack on your product page",
       "value": "Sold out",
-      "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"
+      "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack"
      },
      "product": {
       "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
-      "url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
-      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/2039086819966666085-6VH-006.JPG?v=1548870171",
+      "url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
+      "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-11ab4f7fd1.jpg",
       "price": 25,
       "currency": "USD"
      },
@@ -373,12 +373,12 @@
      "evidence": {
       "label": "Rating in your page code",
       "value": "5.0 from 3 reviews",
-      "source_url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack"
+      "source_url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack"
      },
      "product": {
       "title": "Banana-Banana Deep Conditioner Sachet 6-Pack",
-      "url": "https://tinacassadaybh.com/products/banana-banana-sachet-6-pack",
-      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/2039086819966666085-6VH-006.JPG?v=1548870171",
+      "url": "https://marlaquenbybh.example/products/banana-banana-sachet-6-pack",
+      "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-11ab4f7fd1.jpg",
       "price": 25,
       "currency": "USD"
      },
@@ -392,7 +392,7 @@
      "evidence": {
       "label": "Shipping policy page",
       "value": "Blank",
-      "source_url": "https://tinacassadaybh.com/policies/shipping-policy"
+      "source_url": "https://marlaquenbybh.example/policies/shipping-policy"
      },
      "lever": "cro"
     }
@@ -409,12 +409,12 @@
      "evidence": {
       "label": "Sachet and full size",
       "value": "$4 and $60",
-      "source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz"
+      "source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner-sachet-0-5-fl-oz"
      },
      "product": {
       "title": "Banana-Banana Conditioner Sachet",
-      "url": "https://tinacassadaybh.com/products/banana-banana-conditioner-sachet-0-5-fl-oz",
-      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/files/SACHETSHOPIFY.jpg?v=1701119133",
+      "url": "https://marlaquenbybh.example/products/banana-banana-conditioner-sachet-0-5-fl-oz",
+      "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-d149d5fd2f.jpg",
       "price": 4,
       "currency": "USD"
      },
@@ -428,12 +428,12 @@
      "evidence": {
       "label": "Subscribe or refill option",
       "value": "None on 5 of 5 products",
-      "source_url": "https://tinacassadaybh.com/products/banana-banana-conditioner"
+      "source_url": "https://marlaquenbybh.example/products/banana-banana-conditioner"
      },
      "product": {
       "title": "Banana-Banana Conditioner",
-      "url": "https://tinacassadaybh.com/products/banana-banana-conditioner",
-      "image_url": "https://cdn.shopify.com/s/files/1/2388/3025/products/BBC_6a4ec4a0-28c4-44f8-ae43-088ca3daf9c8.png?v=1670608643",
+      "url": "https://marlaquenbybh.example/products/banana-banana-conditioner",
+      "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-f4733125f9.png",
       "price": 60,
       "currency": "USD"
      },
@@ -447,7 +447,7 @@
      "evidence": {
       "label": "Rewards program",
       "value": "None found on your pages",
-      "source_url": "https://tinacassadaybh.com/"
+      "source_url": "https://marlaquenbybh.example/"
      },
      "lever": "retention_path"
     }

@@ -7,7 +7,7 @@ export const samplePlans: Record<Exclude<StoryKind, 'custom'>, {
   message: string; reply: string; next: string; subject: string; email: string;
 }> = {
   creative: {
-    brand: 'neu',
+    brand: 'brack',
     post: 'We lost a project over access to our first internal review.\n\nWe offered a sync an hour later, the next morning, the following day. The client still wanted to be in that first meeting.\n\nI’d put that question in the brief before booking the team: when does the client first see the work?\n\nThe slides show how I’d agree on it before the work begins.',
     slides: [
       { title: 'We lost a project over one meeting.', body: 'The client wanted to join our first internal review. We wanted the team to work through the ideas together first.', visual: 'review' },
@@ -24,12 +24,12 @@ export const samplePlans: Record<Exclude<StoryKind, 'custom'>, {
     reply: 'Yes, a beauty launch. We have a producer but still need an art director.',
     next: 'What’s the launch date and the fee range for the art director? I can check whether we have someone who fits.',
     subject: 'Which part of that campaign did they make?',
-    email: 'Hi Alex,\n\nIf you’re choosing between creative teams, ask each one to take you through a project close to your brief.\n\nWho came up with the idea? Who directed the work? Which people would be on your project, and are they available for your dates?\n\nA campaign in a portfolio can involve several teams. Those answers help you understand what you’re actually booking.\n\nSend the same brief to the teams you shortlist so their quotes cover the same work.\n\nLuiza',
+    email: 'Hi Alex,\n\nIf you’re choosing between creative teams, ask each one to take you through a project close to your brief.\n\nWho came up with the idea? Who directed the work? Which people would be on your project, and are they available for your dates?\n\nA campaign in a portfolio can involve several teams. Those answers help you understand what you’re actually booking.\n\nSend the same brief to the teams you shortlist so their quotes cover the same work.\n\nOdile',
 
 
   },
   research: {
-    brand: 'CueVu',
+    brand: 'Storyloom',
     post: '“What were you feeling when you decided to switch?”\n\nThat’s the question I’d use for a brand-switching study.\n\nI want to hear what happened around the decision and what the person tried before it. I’d keep their exact words beside the campaign brief so the team can check what the customer actually said.\n\nThe slides show how I’d set up that study. The question studio has examples you can adapt.',
     slides: [
       { title: 'What made your customer switch?', body: 'Ask them to take you back to the decision. Their account of that day gives you a place to start the research.', visual: 'question' },
@@ -37,7 +37,7 @@ export const samplePlans: Record<Exclude<StoryKind, 'custom'>, {
       { title: 'Recruit people who made that change.', body: 'Check that each participant used an alternative before choosing the new brand. Ask which products they used and when they changed. Keep those answers with the response so your team knows whose experience it is reading.', visual: 'brief' },
       { title: 'Let people answer in their own words.', body: 'Send the question with the event clearly named. Give participants space to describe what they felt and what was happening. Keep their responses intact in the results file so the campaign team can read each person’s account in context.', visual: 'question' },
       { title: 'Keep the quote beside its context.', body: 'Save the exact phrase with the event it describes. Look across the responses for repeated reasons and exceptions. If one person mentions a problem, keep that observation at the level the evidence supports when sharing it with the campaign team.', note: 'Working file: quote → event → possible message → evidence needed.' },
-      { title: 'Write the question around their decision.', body: 'Agree on what the campaign team needs to learn before collecting responses. The question studio includes examples of events and participant criteria. You can use it to work out who belongs in the study and what you’ll ask them.', note: 'Customer question studio · CueVu' },
+      { title: 'Write the question around their decision.', body: 'Agree on what the campaign team needs to learn before collecting responses. The question studio includes examples of events and participant criteria. You can use it to work out who belongs in the study and what you’ll ask them.', note: 'Customer question studio · Storyloom' },
     ],
     magnet: 'Customer question studio',
     plainPost: 'Our deliverable is the results file.\n\nThe person reading it should be able to see what we asked and the words people used in reply.\n\nIf a customer describes the day they switched brands, keep that account together. The campaign team needs the context around a phrase before deciding to use it.\n\nI’d put the original response beside any proposed copy. You can then check whether the draft still says what the person meant, and ask permission before publishing their words.',
@@ -47,7 +47,7 @@ export const samplePlans: Record<Exclude<StoryKind, 'custom'>, {
     reply: 'Why people switch skincare brands. We’re planning a launch and need to agree on the campaign angle.',
     next: 'When does the team need the findings? I can help work out who to ask and whether a pilot would fit the launch.',
     subject: 'Keep the response beside the campaign draft',
-    email: 'Hi Alex,\n\nWhen a customer phrase makes it into a campaign draft, keep the original response beside it.\n\nDid the person describe why they switched, or a problem they ran into afterwards? Does your draft still mean what they said?\n\nSave the event and the question with the quote. The next person reviewing the copy can then check it against the response.\n\nAndrew',
+    email: 'Hi Alex,\n\nWhen a customer phrase makes it into a campaign draft, keep the original response beside it.\n\nDid the person describe why they switched, or a problem they ran into afterwards? Does your draft still mean what they said?\n\nSave the event and the question with the quote. The next person reviewing the copy can then check it against the response.\n\nRufus',
 
   },
 };

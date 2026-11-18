@@ -2,26 +2,26 @@
 // DEV-ONLY tournament harness for the Rise DTC Growth Scan redesign (elevation goal-run
 // 2026-07-20). Renders a design candidate against a fixed fixture, no network, so
 // playwright can screenshot rich / thin / blocked states deterministically.
-//   /dev/scan-lab?candidate=current&fixture=rodial
+//   /dev/scan-lab?candidate=current&fixture=rosamel
 // Candidates register in CANDIDATES below; fixtures are static JSON (v1 run evidence).
 import React from 'react';
 import { DtcGrowthReport } from '../DtcGrowthReport';
 import type { ReportJson, Scan } from '../../lib/scanTypes';
-import rodial from './scanlab/rodial-com.json';
+import rosamel from './scanlab/rosamel-example.json';
 import yananailsStory from './scanlab/yananails-story.json';
-import yananailsStandard from './scanlab/yananails-standard.json';
-import apple from './scanlab/apple-com.json';
-import gopure from './scanlab/gopure-com.json';
-import truly from './scanlab/truly-office-branzio.json';
-// audit v3 (2026-08-07): the REAL panthervision v3 row — buckets, google ads evidence,
+import lunanailsStandard from './scanlab/lunanails-standard.json';
+import orchardly from './scanlab/orchardly-example.json';
+import puremeadow from './scanlab/puremeadow-example.json';
+import plainly from './scanlab/plainly-office-vantzio.json';
+// audit v3 (2026-08-07): an invented v3 row (identity replaced) — buckets, google ads evidence,
 // brand-wide meta sweep, competitor strip, homepage+PDP screenshots.
-import pantherV3 from './scanlab/panther-v3.json';
+import lynxlightV3 from './scanlab/lynxlight-v3.json';
 // Data-loss state: same row with EVERY v3 evidence arm stripped (google/meta_sweep/
 // competitors/screenshots gone, buckets kept) — the page must stay coherent, deal shape
 // intact, zero empty shells. This is the fixture that proves the fallback contract.
-import pantherV3Degraded from './scanlab/panther-v3-degraded.json';
+import lynxlightV3Degraded from './scanlab/lynxlight-v3-degraded.json';
 
-const FIXTURES: Record<string, any> = { 'yananails-standard': yananailsStandard, yananails: yananailsStory, rodial, apple, gopure, truly, 'panther-v3': pantherV3, 'panther-v3-degraded': pantherV3Degraded };
+const FIXTURES: Record<string, any> = { 'lunanails-standard': lunanailsStandard, yananails: yananailsStory, rosamel, orchardly, puremeadow, plainly, 'lynxlight-v3': lynxlightV3, 'lynxlight-v3-degraded': lynxlightV3Degraded };
 
 import { CandidateEditorial } from './scanlab/CandidateEditorial';
 import { CandidateDossier } from './scanlab/CandidateDossier';
@@ -51,7 +51,7 @@ export default function ScanLabPage() {
     return <React.Suspense fallback={null}><StoryLab load={load} view={params.get('view') === 'team' ? 'team' : 'main'} hero={params.get('hero') !== '0'} /></React.Suspense>;
   }
   const candKey = params.get('candidate') || 'current';
-  const fixKey = params.get('fixture') || 'rodial';
+  const fixKey = params.get('fixture') || 'rosamel';
   const fixture = FIXTURES[fixKey];
   const Candidate = CANDIDATES[candKey];
   if (!fixture || !Candidate) {

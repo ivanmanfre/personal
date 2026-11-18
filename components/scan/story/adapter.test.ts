@@ -5,7 +5,7 @@ import {reviewDraft} from './reviewDrafts';
 import {validateEdition} from './validate';
 import {assessAudience} from './assessment';
 const stored=(key:string)=>`https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/${key}`;
-describe('actual saved scan rows',()=>{
+describe('saved scan rows (invented, same shape as the stored rows)',()=>{
  for(const row of rows)it(`preserves identity and evidence for ${row.company_slug}`,()=>{
   const f=toStoryFixture(row),draft=reviewDraft(f),a=assessAudience(f);
   expect(f.founder.name).toBe(row.report_json.content_system.founder.name);
@@ -14,7 +14,7 @@ describe('actual saved scan rows',()=>{
   expect(f.source.capturedOn).toBe(row.report_json.content_system.audience.audited_at);
   expect(validateEdition(draft,f).errors).toEqual([]);
   expect(validateEdition({...draft,reviewStatus:'approved'},f,true).errors).toEqual([]);
-  expect(a.state).toBe(row.company_slug.startsWith('nerijus')?'zero-buyers':'unclassified');
+  expect(a.state).toBe(row.company_slug.startsWith('jarle')?'zero-buyers':'unclassified');
  });
  it('never inserts another company or today’s date into missing data',()=>{const f=toStoryFixture({company_slug:'empty',report_json:{}});expect(f.source.capturedOn).toBe('');expect(f.founder.name).toBe('Your team');expect(f.audience).toBeUndefined();expect(reviewDraft(f)).toBeNull()});
  it('carries the profile audit only when the report has one with two complete findings',()=>{
@@ -45,9 +45,9 @@ describe('actual saved scan rows',()=>{
  });
  it('rejects another prospect’s stored photo and banner',()=>{
   const finding=(area:string,state='present')=>({area,label:area,state,today:'Read from LinkedIn',quote:'',fix:'Change this.'});
-  const row={company_slug:'piotr-zaniewicz-5f',report_json:{content_system:{founder:{name:'Piotr',avatar_url:stored('avatar-andrew-hayes-94.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('about')]}}}};
+  const row={company_slug:'pell-ashcombe-5f',report_json:{content_system:{founder:{name:'Piotr',avatar_url:stored('avatar-rufus-pennick-fx8.jpg')},profile_audit:{version:1,findings:[finding('headline'),finding('about')]}}}};
   expect(toStoryFixture(row).profileAudit).toBeUndefined();
-  const withBanner={...row,report_json:{content_system:{...row.report_json.content_system,profile_audit:{version:1,banner_url:stored('profile-banner-andrew-hayes-94.jpg'),findings:[finding('headline'),finding('banner')]}}}};
+  const withBanner={...row,report_json:{content_system:{...row.report_json.content_system,profile_audit:{version:1,banner_url:stored('profile-banner-rufus-pennick-fx8.jpg'),findings:[finding('headline'),finding('banner')]}}}};
   expect(toStoryFixture(withBanner).profileAudit).toBeUndefined();
  });
  it('omits a text-only profile audit when neither source image was saved',()=>{

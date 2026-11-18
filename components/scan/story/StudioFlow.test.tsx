@@ -13,7 +13,7 @@ vi.mock('framer-motion', async () => {
  }})};
 });
 vi.mock('./motion', () => ({Beams: () => null}));
-vi.mock('./context', () => ({useStory: () => ({founderName:'Hatim Abbas',buyerRole:'Business owner',message:'Hi Alex, here is your guide.', flow:{messages:['Hatim: Here is the guide.', 'Alex: Thanks.', 'Hatim: Is this useful?'],checks:[{label:'Fit',value:'Yes'},{label:'Timing',value:'Now'},{label:'Decision',value:'Owner'}],callTitle:'Discovery call'}})}));
+vi.mock('./context', () => ({useStory: () => ({founderName:'Corvin Ashdale',buyerRole:'Business owner',message:'Hi Alex, here is your guide.', flow:{messages:['Corvin: Here is the guide.', 'Alex: Thanks.', 'Corvin: Is this useful?'],checks:[{label:'Fit',value:'Yes'},{label:'Timing',value:'Now'},{label:'Decision',value:'Owner'}],callTitle:'Discovery call'}})}));
 import {StoryFlow} from './StudioFlow';
 let media: EventTarget & {matches: boolean};
 let addListener: ReturnType<typeof vi.fn>, removeListener: ReturnType<typeof vi.fn>;
@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 afterEach(() => {cleanup();vi.unstubAllGlobals();vi.useRealTimers()});
 it('keeps the complete outcome when a reduced-motion reader changes sources', () => {
- const {container}=render(<StoryFlow founder="Hatim"/>);
+ const {container}=render(<StoryFlow founder="Corvin"/>);
  for (const name of [/Warm outreach/,/Signal-based outreach/,/Content & lead magnets/]) {
   fireEvent.click(screen.getByRole('button',{name}));
   expect(container.querySelectorAll('.sf-qualify>div.is-on')).toHaveLength(3);
@@ -41,7 +41,7 @@ it('keeps the complete outcome when a reduced-motion reader changes sources', ()
 it('completes the outcome when reduced motion is enabled during the session', () => {
  vi.useFakeTimers();
  setReduced(false);
- const {container}=render(<StoryFlow founder="Hatim"/>);
+ const {container}=render(<StoryFlow founder="Corvin"/>);
  expect(container.querySelectorAll('.sf-qualify>div.is-on')).toHaveLength(1);
  expect(screen.getByLabelText('Pause the example')).toBeTruthy();
  act(() => vi.advanceTimersByTime(2600));
@@ -57,7 +57,7 @@ it('completes the outcome when reduced motion is enabled during the session', ()
  expect(screen.getByRole('button',{name:/Signal-based outreach/}).getAttribute('aria-pressed')).toBe('true');
 });
 it('removes the reduced-motion listener on unmount', () => {
- const {unmount}=render(<StoryFlow founder="Hatim"/>);
+ const {unmount}=render(<StoryFlow founder="Corvin"/>);
  expect(addListener).toHaveBeenCalledWith('change', expect.any(Function));
  unmount();
  expect(removeListener).toHaveBeenCalledWith('change', expect.any(Function));

@@ -192,8 +192,8 @@ function assertConversionLayer(html: string, masthead: RegExp = /Growth Scan · 
 }
 
 describe('DtcGrowthReport — degradation-first correctness + conversion layer', () => {
-  it('rodial (RICH): findings render, source labels derive from URLs, the retired calculator never does', () => {
-    const { fixture, html } = renderFixture('rodial-com.json');
+  it('rosamel (RICH): findings render, source labels derive from URLs, the retired calculator never does', () => {
+    const { fixture, html } = renderFixture('rosamel-example.json');
     assertNoForbidden(html);
     assertConversionLayer(html);
     // findings present -> real finding titles render, never the thin-read fallback.
@@ -212,10 +212,10 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).toContain('Read from your storefront, your product pages, your public catalog and your homepage source.');
   });
 
-  it('rodial with ads-empty and no ads finding: nothing binds a Paid media receipt line any more', () => {
+  it('rosamel with ads-empty and no ads finding: nothing binds a Paid media receipt line any more', () => {
     // The $0 CAC seed used to bind this line on its own. With the calculator retired, only a
     // rendered ads finding can.
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).ads = { meta: { status: 'empty', data: null } };
     const html = renderDtc(dtc, fixture.company_name);
@@ -226,7 +226,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('apple (THIN): honest thin-read fallback, calculator absent, blocked signals emit nothing', () => {
-    const { html } = renderFixture('apple-com.json');
+    const { html } = renderFixture('orchardly-example.json');
     assertNoForbidden(html);
     assertConversionLayer(html);
     // findings.length === 0 -> the honest thin-read section with its own attributed CTA.
@@ -240,8 +240,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).not.toMatch(/catalog_size|variant_depth|discount_depth/);
   });
 
-  it('gopure (BLOCKED-HEAVY): reviews-empty renders as a real negative finding, blocked shopify emits no numbers', () => {
-    const { html } = renderFixture('gopure-com.json');
+  it('puremeadow (BLOCKED-HEAVY): reviews-empty renders as a real negative finding, blocked shopify emits no numbers', () => {
+    const { html } = renderFixture('puremeadow-example.json');
     assertNoForbidden(html);
     assertConversionLayer(html);
     // reviews is a genuine EMPTY -> renders as the negative FINDING already in the payload,
@@ -256,8 +256,8 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect(html).not.toContain('The store, in numbers');
   });
 
-  it('receipt: rodial renders the bound vitals lines, thin and blocked-heavy fixtures collapse the whole band', () => {
-    const rich = renderFixture('rodial-com.json');
+  it('receipt: rosamel renders the bound vitals lines, thin and blocked-heavy fixtures collapse the whole band', () => {
+    const rich = renderFixture('rosamel-example.json');
     expect(rich.html).toContain('Everything we read, and where');
     expect(rich.html).toContain('Store vitals');
     // One data-rcl marker per rendered line; the collapse floor is three.
@@ -287,17 +287,17 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect((rich.html.match(/data-rcl-flag="1"/g) || []).length).toBe(1);
 
     // apple: everything that matters is blocked, so there is no receipt at all.
-    const thin = renderFixture('apple-com.json');
+    const thin = renderFixture('orchardly-example.json');
     expect(thin.html).not.toContain('Store vitals');
     expect(thin.html).not.toContain('Everything we read, and where');
-    // gopure: exactly one bindable line (reviews-empty), under the floor of three.
-    const blocked = renderFixture('gopure-com.json');
+    // puremeadow: exactly one bindable line (reviews-empty), under the floor of three.
+    const blocked = renderFixture('puremeadow-example.json');
     expect(blocked.html).not.toContain('Store vitals');
     expect((blocked.html.match(/data-rcl="1"/g) || []).length).toBe(0);
   });
 
   it('no stack chips: tech_stack app names never render, in any fixture', () => {
-    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+    for (const file of ['rosamel-example.json', 'orchardly-example.json', 'puremeadow-example.json']) {
       const { fixture, html } = renderFixture(file);
       // The close-band bio names Klaviyo as one of Mattan's publishers. That is shipped
       // conversion copy, not a store fact, so it is excluded before the stack check.
@@ -312,7 +312,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('margin data tags: figures are verbatim substrings of their own finding, and a numeral-free finding renders an empty rail', () => {
-    const { fixture, html } = renderFixture('rodial-com.json');
+    const { fixture, html } = renderFixture('rosamel-example.json');
     const asides = [...html.matchAll(/<aside class="cedt-margin lg:col-span-3">(.*?)<\/aside>/gs)].map((m) => m[1]);
     expect(asides.length).toBe(fixture.dtc.findings.length);
     const figures = asides.map((a) => [...a.matchAll(/class="fig[^"]*"[^>]*>([^<]+)</g)].map((f) => f[1]));
@@ -337,7 +337,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
         lever: 'cro',
         title: 'Your bundle path is doing the work of a landing page',
         evidence: 'The path a paid click lands on carries no bundle offer, so the order value rides on a single unit.',
-        source_url: 'https://rodial.com/products.json',
+        source_url: 'https://rosamel.example/products.json',
       },
     ];
     const mutated = renderDtc(dtc, fixture.company_name);
@@ -349,7 +349,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('gold discipline: no eyebrow rule is gold, the close-band label is not accent, chip borders go ink', () => {
-    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+    for (const file of ['rosamel-example.json', 'orchardly-example.json', 'puremeadow-example.json']) {
       const { fixture, html } = renderFixture(file);
       const accent = (fixture.dtc as any).brand.accent_hex as string;
       const rules = [...html.matchAll(/<span class="h-px w-10" data-eyebrow-rule="1" style="([^"]*)"/g)].map((m) => m[1]);
@@ -362,13 +362,13 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
       expect(feeLabel.toLowerCase()).not.toContain(accent.toLowerCase());
     }
     // The lever chip keeps its gold DOT but its border goes ink.
-    const { html } = renderFixture('rodial-com.json');
+    const { html } = renderFixture('rosamel-example.json');
     expect(html).toContain('border:1px solid #11111133');
     expect(html).toContain('<span class="w-1.5 h-1.5 rounded-full" style="background:#ffc71d">');
   });
 
   it('sticky booking bar: docked on an opaque ground, page reserves its height, other CTAs hide it', () => {
-    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+    for (const file of ['rosamel-example.json', 'orchardly-example.json', 'puremeadow-example.json']) {
       const { html } = renderFixture(file);
       // SSR renders the bar visible, docked to the bottom edge, never a floating pill.
       expect(html).toMatch(/class="cedt-sticky fixed inset-x-0 bottom-0 z-40" data-sticky-bar="1" style="background:#ffffff/);
@@ -384,7 +384,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('type floor: no rendered label is set below 12px', () => {
-    for (const file of ['rodial-com.json', 'apple-com.json', 'gopure-com.json', 'panther-v3.json']) {
+    for (const file of ['rosamel-example.json', 'orchardly-example.json', 'puremeadow-example.json', 'lynxlight-v3.json']) {
       const { html } = renderFixture(file);
       const tw = [...html.matchAll(/text-\[([0-9.]+)rem\]/g)].map((m) => Number(m[1]));
       expect(tw.filter((v) => v < 0.75), `${file} tailwind sizes`).toEqual([]);
@@ -397,11 +397,11 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
 
   it('evidence plate: born-absent everywhere, renders once from a QA-passed capture, under the named finding', () => {
     // No fixture carries evidence_capture -> the plate never renders, no placeholder either.
-    for (const f of ['rodial-com.json', 'apple-com.json', 'gopure-com.json']) {
+    for (const f of ['rosamel-example.json', 'orchardly-example.json', 'puremeadow-example.json']) {
       expect(renderFixture(f).html).not.toContain('data-evidence-plate');
     }
     // A QA-passed capture on the row lights exactly one plate, dated, on the attach signal.
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).evidence_capture = {
       url: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/test.png',
@@ -412,7 +412,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     expect((html.match(/data-evidence-plate="1"/g) || []).length).toBe(1);
     expect(html).toContain('scan-screenshots/test.png');
     expect(html).toMatch(/Your storefront, captured July 3[01], 2026/);
-    // Attached under the reviews finding (rodial's 4th finding), not the lead.
+    // Attached under the reviews finding (rosamel's 4th finding), not the lead.
     const plateIdx = html.indexOf('data-evidence-plate');
     const reviewsIdx = html.indexOf('4.7 rating');
     expect(plateIdx).toBeGreaterThan(reviewsIdx);
@@ -423,7 +423,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('booking URL that already carries a query string gets &-joined UTMs', () => {
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).brand.booking_url = 'https://example.com/book?ref=abc';
     const html = renderDtc(dtc, fixture.company_name);
@@ -434,9 +434,9 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   it('proof links land on a page a founder can read, not the raw JSON payload', () => {
     // The shipped Safecourt report pointed four findings at a 430KB products.json dump. The
     // evidence-table provenance stays "products.json"; only the human link moves.
-    const { html } = renderFixture('rodial-com.json');
-    expect(html).toContain('href="https://rodial.com/collections/all"');
-    expect(html).not.toMatch(/href="https:\/\/rodial\.com\/products\.json"/);
+    const { html } = renderFixture('rosamel-example.json');
+    expect(html).toContain('href="https://rosamel.example/collections/all"');
+    expect(html).not.toMatch(/href="https:\/\/rosamel\.com\/products\.json"/);
     // label is unchanged, so the reader still knows where they are going
     expect(html).toContain('see this on your storefront');
     // the evidence rail names the source in human words
@@ -448,16 +448,16 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
     // `/wp-json/wc/store/v1/products`, which no proofHref branch matched, so three findings
     // pointed the founder at a raw JSON dump, and the receipt tagged every catalogue number
     // "shopify products.json" under a store that serves no such payload.
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
-    const wooUrl = 'https://rodial.com/wp-json/wc/store/v1/products?per_page=100&page=1';
+    const wooUrl = 'https://rosamel.example/wp-json/wc/store/v1/products?per_page=100&page=1';
     (dtc as any).shopify.source_url = wooUrl;
     (dtc as any).shopify.data.platform = 'woocommerce';
     for (const f of (dtc as any).findings) {
       if (f.signal === 'shopify') f.source_url = wooUrl;
     }
     const html = renderDtc(dtc, fixture.company_name);
-    expect(html).toContain('href="https://rodial.com"');
+    expect(html).toContain('href="https://rosamel.example"');
     expect(html).not.toContain('wp-json');
     expect(html).toContain('see this on your storefront');
     expect(html).toContain('your catalog');
@@ -465,11 +465,11 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('a per-product .js probe URL links to the product page and labels it as one', () => {
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
-    (dtc as any).findings[0].source_url = 'https://rodial.com/products/spf-50-drops-mini.js';
+    (dtc as any).findings[0].source_url = 'https://rosamel.example/products/spf-50-drops-mini.js';
     const html = renderDtc(dtc, fixture.company_name);
-    expect(html).toContain('href="https://rodial.com/products/spf-50-drops-mini"');
+    expect(html).toContain('href="https://rosamel.example/products/spf-50-drops-mini"');
     expect(html).not.toContain('spf-50-drops-mini.js"');
     expect(html).toContain('see this on your product page');
   });
@@ -477,7 +477,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   it('the ad-archive count describes archives RENDERED, not archives attempted', () => {
     // gReadLong comes off google.fetched_at, stamped on every attempt including the ones that
     // render nothing. Safecourt shipped "Two public ad archives" above a Meta-only section.
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     // google ATTEMPTED (fetched_at stamped) but nothing renderable came back, while the meta
     // sweep did render — the exact Safecourt shape.
@@ -502,10 +502,10 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   it('the vitals row never sources the subscription verdict to products.json', () => {
     // products.json cannot express selling_plan_groups, so it must not appear as the source of
     // "none found" in the evidence rail even though it sources every other catalogue line.
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).shopify.data.has_subscription = false;
-    (dtc as any).shopify.data.subscription_source_url = 'https://rodial.com/products/x.js';
+    (dtc as any).shopify.data.subscription_source_url = 'https://rosamel.example/products/x.js';
     (dtc as any).findings[0].evidence += ' No subscription option we could find on the page.';
     const html = renderDtc(dtc, fixture.company_name);
     expect(html).toContain('Subscription option');
@@ -519,7 +519,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   // newer than the brand's own newest. A most-recent-X over a population of 1 is not a
   // population claim — below three dated creatives the corpus recency stats render as silence.
   it('corpus recency claims are silent when fewer than three competitor creatives carry dates', () => {
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).competitors = {
       status: 'present', checked_at: '2026-08-17T09:00:00Z',
@@ -540,7 +540,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
   });
 
   it('corpus recency claims render once three dated competitor creatives back them', () => {
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).competitors = {
       status: 'present', checked_at: '2026-08-17T09:00:00Z',
@@ -562,7 +562,7 @@ describe('DtcGrowthReport — degradation-first correctness + conversion layer',
 // ── Round 4 (09-26): competitor strip order, floor, recency; head-count case; axis label ──
 describe('DtcGrowthReport — competitor strip round 4', () => {
   const withComp = (creatives: any[], google?: any) => {
-    const fixture = loadFixture('rodial-com.json');
+    const fixture = loadFixture('rosamel-example.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as NonNullable<ReportJson['dtc']>;
     (dtc as any).competitors = {
       status: 'present', checked_at: '2026-09-26T09:00:00Z',
@@ -642,11 +642,11 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     return i;
   };
 
-  it('tina (new contract): introduces the company and source date before the evidence', () => {
-    const { fixture, html } = renderFixture('tina-new-contract.json');
+  it('marla (new contract): introduces the company and source date before the evidence', () => {
+    const { fixture, html } = renderFixture('marla-new-contract.json');
     const d = fixture.dtc as any;
     assertNoForbidden(html);
-    expect(html).toMatch(/<h1[^>]*>A growth scan for <span>Tina Cassaday Creations<\/span><\/h1>/);
+    expect(html).toMatch(/<h1[^>]*>A growth scan for <span>Marla Quenby Creations<\/span><\/h1>/);
     expect(html).toMatch(/September 26, 2026 at \d{2}:\d{2} UTC/);
     expect(html).toContain(d.brand.logo_url);
     expect(html).toContain('href="#drop-off"');
@@ -660,8 +660,8 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).toContain('utm_content=close');
   });
 
-  it('tina (new contract): every item renders title, detail, fix and a human evidence line, plus the notes', () => {
-    const { fixture, html } = renderFixture('tina-new-contract.json');
+  it('marla (new contract): every item renders title, detail, fix and a human evidence line, plus the notes', () => {
+    const { fixture, html } = renderFixture('marla-new-contract.json');
     const d = fixture.dtc as any;
     for (const block of [d.drop_off, d.second_order]) {
       for (const it of block.items) {
@@ -673,14 +673,14 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
       expect(html).toContain(escHtml(block.note));
     }
     // Evidence links land on a page a person can read, with human link text.
-    expect(html).toContain('href="https://tinacassadaybh.com/policies/shipping-policy"');
+    expect(html).toContain('href="https://marlaquenbybh.example/policies/shipping-policy"');
     // The link follows "value." so it opens a sentence: capitalized, never ". see this".
     expect(html).toContain('See this on your product page');
     expect(html).not.toMatch(/\. <a[^>]*>see this/);
   });
 
-  it('tina (new contract): order is hero, drop-off, second order, RISE side, ad records (folded), proof, close', () => {
-    const { html } = renderFixture('tina-new-contract.json');
+  it('marla (new contract): order is hero, drop-off, second order, RISE side, ad records (folded), proof, close', () => {
+    const { html } = renderFixture('marla-new-contract.json');
     const order = [
       'data-promise-hero="1"',
       'data-promise-section="drop-off"',
@@ -698,8 +698,8 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).toContain('Keywords: conditioner, oil');
   });
 
-  it('tina (new contract): RISE findings only, no receipt, no week-one panel, no thin-read, no paid-traffic talk', () => {
-    const { fixture, html } = renderFixture('tina-new-contract.json');
+  it('marla (new contract): RISE findings only, no receipt, no week-one panel, no thin-read, no paid-traffic talk', () => {
+    const { fixture, html } = renderFixture('marla-new-contract.json');
     const d = fixture.dtc as any;
     // An old unconfirmed zero cannot support a brand-wide absence claim.
     expect(html).not.toContain(escHtml("You're not running paid social right now"));
@@ -715,7 +715,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
   });
 
   it('new contract tolerates thin items: string price, no product, empty block with a note, stale hero ref', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     dtc.drop_off.items = [dtc.drop_off.items[2]]; // shipping: no product
     dtc.second_order = { items: [], note: 'Your repeat rate is private, so we did not guess it.' };
@@ -740,7 +740,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
   });
 
   it('builder_version without the promise blocks falls back to the legacy layout', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     delete dtc.drop_off;
     const html = renderDtc(dtc, fixture.company_name);
@@ -748,8 +748,8 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).toContain('Where the growth is');
   });
 
-  it('tina (legacy live row): old layout minus the Profit Gap, the email-capture card and raw tokens', () => {
-    const { fixture, html } = renderFixture('tina-legacy.json');
+  it('marla (legacy live row): old layout minus the Profit Gap, the email-capture card and raw tokens', () => {
+    const { fixture, html } = renderFixture('marla-legacy.json');
     const d = fixture.dtc as any;
     expect(d.builder_version).toBeUndefined();
     expect(d.profit_gap).toBeTruthy();
@@ -763,7 +763,7 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
     expect(html).not.toContain('Working asset');
     expect(html).not.toMatch(/newsletter, subscribe/);
     // Possessive, and human receipt sources.
-    expect(html).toContain('Tina Cassaday Creations&#x27; public data');
+    expect(html).toContain('Marla Quenby Creations&#x27; public data');
     expect(html).not.toContain('Creations&#x27;s');
     expect(html).toContain('your catalog');
     // Ad records still lead on the legacy layout, uncondensed.
@@ -771,11 +771,11 @@ describe('DtcGrowthReport — promise contract (builder_version dtc-2026-09-26)'
   });
 });
 
-// The builder's own output for Tina (backend fixture). Structure-level checks only: the copy
+// The builder's own output for Marla (backend fixture). Structure-level checks only: the copy
 // is the builder's, so the renderer's own chrome is what these hold to the rules.
 describe('DtcGrowthReport — promise contract, builder fixture', () => {
   it('renders every promised item in order, leads with her product image, keeps RISE-only findings', () => {
-    const { fixture, html } = renderFixture('tina-new-contract-builder.json');
+    const { fixture, html } = renderFixture('marla-new-contract-builder.json');
     const d = fixture.dtc as any;
     assertNoForbidden(chromeOnly(html, d));
     expect(html).toContain('data-promise-hero="1"');
@@ -804,7 +804,7 @@ describe('DtcGrowthReport — promise contract, builder fixture', () => {
 // ── 09-26 validation fixes ───────────────────────────────────────────────────────────
 describe('DtcGrowthReport — 09-26 validation fixes', () => {
   it('a held row with no items in either section takes the legacy layout, never a blank hero', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     dtc.drop_off = { items: [], note: 'Nothing on your public pages stood out.' };
     dtc.second_order = { items: [], note: 'We could not see a clear second-order gap.' };
@@ -816,10 +816,10 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
   });
 
   it('the finding shows a capture only when it is the capture of that item\'s product', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const base = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     const it = base.drop_off.items[0];
-    it.product = { ...it.product, image_url: null, url: 'https://tinacassadaybh.com/products/banana-banana-sachet-6-pack' };
+    it.product = { ...it.product, image_url: null, url: 'https://marlaquenbybh.example/products/banana-banana-sachet-6-pack' };
     base.hero = { headline: base.hero.headline, item_ref: 'drop_off.0' };
     // capture of another product: not shown
     const other = JSON.parse(JSON.stringify(base));
@@ -839,7 +839,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
   });
 
   it('a second-order-only report numbers its first finding one without an empty purchase chapter', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const d = structuredClone(fixture.dtc) as any;
     d.drop_off = { items: [], note: 'Nothing observed here.' };
     const html = renderDtc(d, fixture.company_name);
@@ -850,7 +850,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
   });
 
   it('a store-wide observation never uses unrelated photos or a homepage as proof', () => {
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const d = structuredClone(fixture.dtc) as any;
     d.drop_off.items = [d.drop_off.items[2]];
     d.second_order = { items: [], note: '' };
@@ -865,7 +865,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
 
   it('compact ad records retain both platform counts and use singular day', () => {
     // Rebalance (09-26): 46 Meta ads, 1 Google creative; the headline led with "1 on Google."
-    const fixture = loadFixture('tina-new-contract.json');
+    const fixture = loadFixture('marla-new-contract.json');
     const dtc = JSON.parse(JSON.stringify(fixture.dtc)) as any;
     dtc.ads.meta = { status: 'present', fetched_at: '2026-09-26T12:56:32Z', data: { active_ad_count: 46 } };
     dtc.ads.google = { status: 'present', fetched_at: '2026-09-26T10:47:49Z',
@@ -884,7 +884,7 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
   });
 
   it('a keyword sample does not imply brand-wide zero ads', () => {
-    const { html } = renderFixture('tina-new-contract.json');
+    const { html } = renderFixture('marla-new-contract.json');
     const spread = html.slice(html.indexOf('data-ad-archive'));
     expect(spread).not.toContain('zero ads for your brand');
     expect(spread).toContain('identity-matched results');
@@ -899,8 +899,8 @@ describe('DtcGrowthReport — round 5 real rows', () => {
   const visible = (html: string) =>
     html.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/&amp;/g, '&').replace(/\s+/g, ' ');
 
-  it('RPNZL (legacy): no retired phrase, no Profit Gap card, the surviving finding still renders', () => {
-    const { fixture, html } = renderFixture('rpnzl-legacy.json');
+  it('QWILL (legacy): no retired phrase, no Profit Gap card, the surviving finding still renders', () => {
+    const { fixture, html } = renderFixture('qwill-legacy.json');
     const d = fixture.dtc as any;
     expect(d.builder_version).toBeUndefined();
     expect(d.findings.map((f: any) => f.title)).toContain('The Profit Gap is running through your discount line');
@@ -915,8 +915,8 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(text).toContain('No subscribe-and-save path for repeat buyers');
   });
 
-  it('RPNZL: a hook whose discount count no rendered finding carries takes the default; one finding = no Who-does-what panel', () => {
-    const { fixture, html } = renderFixture('rpnzl-legacy.json');
+  it('QWILL: a hook whose discount count no rendered finding carries takes the default; one finding = no Who-does-what panel', () => {
+    const { fixture, html } = renderFixture('qwill-legacy.json');
     const d = fixture.dtc as any;
     expect(d.hero_hook).toMatch(/^9 of your 40 live products are discounted/);
     const text = visible(html);
@@ -930,14 +930,14 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     const backed = JSON.parse(JSON.stringify(d));
     backed.findings.push({ signal: 'shopify', kind: 'gap', lever: 'cro', bucket: 'yours',
       title: 'Discounting is running across your catalog',
-      evidence: '9 of your 40 live products are discounted, averaging 20.6% off.', source_url: 'https://rpnzlbeauty.com/products.json' });
+      evidence: '9 of your 40 live products are discounted, averaging 20.6% off.', source_url: 'https://qwillbeauty.example/products.json' });
     const out = visible(renderDtc(backed, fixture.company_name));
     expect(out).toContain('9 of your 40 live products are discounted right now, averaging 20.6% off.');
     expect(renderDtc(backed, fixture.company_name)).toContain('Who does what');
   });
 
-  it('Brotherly Sole (legacy, Meta empty): no paid-traffic or engine wording, reviews title rewritten', () => {
-    const { fixture, html } = renderFixture('brotherly-sole-legacy.json');
+  it('Kindred Tread (legacy, Meta empty): no paid-traffic or engine wording, reviews title rewritten', () => {
+    const { fixture, html } = renderFixture('kindred-tread-legacy.json');
     expect((fixture.dtc as any).ads.meta.status).toBe('empty');
     const text = visible(html);
     expect(text).not.toMatch(/paid traffic|paid engine|paid clicks?|traffic you already pay for/i);
@@ -953,24 +953,24 @@ describe('DtcGrowthReport — round 5 real rows', () => {
   });
 
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
-    const { fixture, html } = renderFixture('charleston-soy-works-promise.json');
+    const { fixture, html } = renderFixture('harborline-soy-works-promise.json');
     const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;
-    expect(JSON.stringify(d)).toContain('Magnolia Gardens Body Oil Candle— 10 oz');
-    expect(html).toContain('Magnolia Gardens Body Oil Candle, 10 oz');
+    expect(JSON.stringify(d)).toContain('Willowmere Body Oil Candle— 10 oz');
+    expect(html).toContain('Willowmere Body Oil Candle, 10 oz');
     expect(html).not.toMatch(/[—–]/);
     // Product cards render only with an image; give both items one so their titles show.
-    const img = 'https://charlestonsoyworks.com/cdn/shop/files/candle.jpg';
-    d.second_order.items[0].product = { ...d.second_order.items[0].product, image_url: img, title: 'Magnolia Gardens Body Oil Candle— 10 oz' };
+    const img = 'https://harborlinesoy.example/cdn/shop/files/candle.jpg';
+    d.second_order.items[0].product = { ...d.second_order.items[0].product, image_url: img, title: 'Willowmere Body Oil Candle— 10 oz' };
     d.second_order.items[1].product = { ...d.second_order.items[0].product, title: 'Sampler Set 3–6 Pack — Lavender' };
     const out = renderDtc(d, fixture.company_name);
     expect(out).not.toMatch(/[—–]/);
-    expect(out).toContain('Magnolia Gardens Body Oil Candle, 10 oz');
+    expect(out).toContain('Willowmere Body Oil Candle, 10 oz');
     expect(out).toContain('Sampler Set 3-6 Pack, Lavender');
     expect(out).not.toMatch(/,\s*,/);
   });
 
   it('held promise row (shippable.ok false) takes the legacy layout with no empty promised sections', () => {
-    const { fixture, html } = renderFixture('realfruitpeelz-held.json');
+    const { fixture, html } = renderFixture('orchardpeelz-held.json');
     const d = fixture.dtc as any;
     expect(d.builder_version).toMatch(/^dtc-/);
     expect(d.shippable.ok).toBe(false);
@@ -983,10 +983,10 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(html).toContain('The public read gave us the basics');
 
     // Held with items still on the row: the hold wins, never a half-promised page.
-    const tina = loadFixture('tina-new-contract.json');
-    const held = JSON.parse(JSON.stringify(tina.dtc)) as any;
+    const marla = loadFixture('marla-new-contract.json');
+    const held = JSON.parse(JSON.stringify(marla.dtc)) as any;
     held.shippable = { ok: false, reason: 'Held: no second-order item.' };
-    const heldHtml = renderDtc(held, tina.company_name);
+    const heldHtml = renderDtc(held, marla.company_name);
     expect(heldHtml).not.toContain('data-promise-hero');
     expect(heldHtml).not.toContain('data-promise-section');
     expect(heldHtml).toContain('Where the growth is');
@@ -996,7 +996,7 @@ describe('DtcGrowthReport — round 5 real rows', () => {
 
 describe('public evidence quality contract', () => {
   function returnConflictFixture() {
-    const f = loadFixture('tina-new-contract.json');
+    const f = loadFixture('marla-new-contract.json');
     const d = structuredClone(f.dtc);
     const citations = [
       { url: 'https://example.com/pages/returns?policy=current#terms', quote: 'Returns are accepted within 14 days.' },
@@ -1054,7 +1054,7 @@ describe('public evidence quality contract', () => {
   });
 
   it('keeps supporting ad records available behind a closed disclosure', () => {
-    const f = loadFixture('tina-new-contract.json');
+    const f = loadFixture('marla-new-contract.json');
     const d = JSON.parse(JSON.stringify(f.dtc));
     d.ads.google = { status: 'present', data: { total_ads: 4, ads: [] } };
     const html = renderDtc(d, f.company_name);
@@ -1063,7 +1063,7 @@ describe('public evidence quality contract', () => {
     expect(html).not.toMatch(/<details data-ad-archive="1"[^>]*\bopen/);
   });
   it('holds a reviewed page without resurrecting historical diagnoses', () => {
-    const f = loadFixture('rodial-com.json');
+    const f = loadFixture('rosamel-example.json');
     const d = { ...f.dtc, quality: { version: 'rise-quality-2026-09-30', approved: false } };
     const html = renderDtc(d, 'Test Store');
     expect(html).toContain('No recommendation qualified');
@@ -1074,7 +1074,7 @@ describe('public evidence quality contract', () => {
 
 describe('evidence-first scan repair', () => {
   function inventoryFixture() {
-    const d = structuredClone(loadFixture('tina-new-contract.json').dtc) as any;
+    const d = structuredClone(loadFixture('marla-new-contract.json').dtc) as any;
     const item = { id: 'bestseller_sold_out', title: 'A style is unavailable', detail: 'The boxed option cannot be ordered.', fix: 'Check stock before sending shoppers here.', lever: 'cro', product: { title: 'Round Cut', url: 'https://example.com/products/round', image_url: 'https://example.com/round.jpg', price: 11.99, currency: 'GBP' }, evidence: { label: 'Availability', value: 'Sold out', source_url: 'https://example.com/products/round' } };
     d.drop_off = { items: [item], note: '' };
     d.second_order = { items: [{ ...item, id: 'refill_sold_out', title: 'The refill is unavailable', detail: 'The same style cannot be reordered as a refill.' }, { ...item, id: 'no_new_products', title: 'Old catalog recommendation' }], note: '' };
@@ -1089,7 +1089,7 @@ describe('evidence-first scan repair', () => {
   }
   it.each([
     ['https://facebook.com/example', 'See this on the Facebook page'],
-    ['https://www.facebook.com/ads/library/?id=123', 'See this in the Meta Ad Library'],
+    ['https://www.facebook.com/ads/library/?id=430', 'See this in the Meta Ad Library'],
     ['https://notfacebook.com/ads/library', 'See this on your storefront'],
   ])('labels the actual paid source destination %s', (url, label) => {
     const d = inventoryFixture();
@@ -1444,13 +1444,13 @@ describe('commercial experiments stay separate from verified defects', () => {
 
 describe('RISE report reading flow', () => {
   it('leads with recommendations while preserving expandable sources and labelled test steps', () => {
-    const d = loadFixture('tina-new-contract.json').dtc;
+    const d = loadFixture('marla-new-contract.json').dtc;
     const html = renderDtc({ ...d, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11',
       tests: [{ title: 'Primer page: offer the Bonder with it', observation: 'The products are used together.',
         test: 'Control: current Primer page. Variant: add both products with one button. Split traffic 50/50.',
         measure: 'Revenue per visitor. Guardrails: returns.',
         evidence: [{ kind: 'store', source_url: 'https://example.com/products/primer', quote: 'Use with Bonder' }] }],
-      journeys: [{ ad_url: 'https://www.facebook.com/ads/library/?id=123', ad_excerpt: 'See all colours', destinations: ['https://example.com/products/gel'] }],
+      journeys: [{ ad_url: 'https://www.facebook.com/ads/library/?id=430', ad_excerpt: 'See all colours', destinations: ['https://example.com/products/gel'] }],
     } } as any, 'Example');
     const section = html.slice(html.indexOf('data-commercial-evidence'), html.indexOf('data-promise-section'));
     expect(section.indexOf('class="rise-test"')).toBeLessThan(section.indexOf('class="rise-ad-journey"'));
@@ -1467,7 +1467,7 @@ describe('RISE report reading flow', () => {
     expect(section).toContain('returns.');
   });
   it('puts Mattan and the booking link together at the closing CTA', () => {
-    const html = renderDtc(loadFixture('tina-new-contract.json').dtc, 'Example');
+    const html = renderDtc(loadFixture('marla-new-contract.json').dtc, 'Example');
     const closing = html.slice(html.indexOf('id="rise-conversation"'), html.indexOf('</main>'));
     expect(closing).toContain('alt="Mattan Danino"');
     expect(closing).toContain(MATTAN_PHOTO);

@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {toStoryFixture} from './adapter';
 import {CompetitorEngagersSection, ClientEngagers} from './StudioPlan';
 
-const person=(n:number,over:Record<string,unknown>={})=>({name:`Person ${n}`,headline:`CMO at Firm ${n}`,company:`Firm ${n}`,profile_url:`https://www.linkedin.com/in/p${n}`,reason:`CMO at Firm ${n}, a buyer of this work.`,engaged:n%2?'commented':'liked',competitor:'Blue Array: SEO agency',post_url:`https://www.linkedin.com/posts/bluearray_x-activity-${n}`,post_excerpt:'x',posted_at:'2026-10-21T09:00:00+00:00',...over});
+const person=(n:number,over:Record<string,unknown>={})=>({name:`Person ${n}`,headline:`CMO at Firm ${n}`,company:`Firm ${n}`,profile_url:`https://www.linkedin.com/in/p${n}`,reason:`CMO at Firm ${n}, a buyer of this work.`,engaged:n%2?'commented':'liked',competitor:'Blue Array: SEO agency',post_url:`https://www.linkedin.com/posts/fixture-firm_x-activity-${n}`,post_excerpt:'x',posted_at:'2026-10-21T09:00:00+00:00',...over});
 const row=(ce?:unknown)=>({company_slug:'ce',report_json:{content_system:{founder:{name:'Mark Cook'},...(ce===undefined?{}:{competitor_engagers:ce})}}});
 const section=(people:unknown[],extra:Record<string,unknown>={})=>({version:1,at:'2026-10-27T15:00:00Z',window_days:14,competitors:[{name:'Blue Array: SEO agency'},{name:'Exposure Ninja'}],posts_read:8,engagers_read:117,count:people.length,people,notes:[],...extra});
 
