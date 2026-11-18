@@ -2,7 +2,7 @@
 export type StoryKind = 'creative' | 'research' | 'custom';
 
 export function storyKind(slug: string): StoryKind | null {
-  return slug === 'luiza-vass-8c' ? 'creative' : slug === 'andrew-hayes-94' ? 'research' : null;
+  return slug === 'odile-brackwater-fx7' ? 'creative' : slug === 'rufus-pennick-fx8' ? 'research' : null;
 }
 
 export const connectedStories = {

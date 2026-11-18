@@ -96,7 +96,8 @@ function App() {
   const isDashboard = isDashboardV1Path && !isDashboardV2;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
-  const isScanReport = /^\/scan\/[^/]+\/?$/.test(location.pathname);
+  // /scan/<slug>/team/ is the partner view of the same report.
+  const isScanReport = /^\/scan\/[^/]+(\/team)?\/?$/.test(location.pathname);
   // Client content board — full-screen, token-gated, no site chrome. /client/<slug>/classic is
   // the same board, kept for live slugs whose /client/<slug>/ now serves board-app/.
   const isClientBoard = /^\/client\/[^/]+(\/classic)?\/?$/.test(location.pathname);

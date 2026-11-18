@@ -4,9 +4,9 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {toStoryFixture} from './adapter';
 import {CompetitorEngagersSection, ClientEngagers} from './StudioPlan';
 
-const person=(n:number,over:Record<string,unknown>={})=>({name:`Person ${n}`,headline:`CMO at Firm ${n}`,company:`Firm ${n}`,profile_url:`https://www.linkedin.com/in/p${n}`,reason:`CMO at Firm ${n}, a buyer of this work.`,engaged:n%2?'commented':'liked',competitor:'Blue Array: SEO agency',post_url:`https://www.linkedin.com/posts/bluearray_x-activity-${n}`,post_excerpt:'x',posted_at:'2026-10-21T09:00:00+00:00',...over});
-const row=(ce?:unknown)=>({company_slug:'ce',report_json:{content_system:{founder:{name:'Mark Cook'},...(ce===undefined?{}:{competitor_engagers:ce})}}});
-const section=(people:unknown[],extra:Record<string,unknown>={})=>({version:1,at:'2026-10-27T15:00:00Z',window_days:14,competitors:[{name:'Blue Array: SEO agency'},{name:'Exposure Ninja'}],posts_read:8,engagers_read:117,count:people.length,people,notes:[],...extra});
+const person=(n:number,over:Record<string,unknown>={})=>({name:`Person ${n}`,headline:`CMO at Firm ${n}`,company:`Firm ${n}`,profile_url:`https://www.linkedin.com/in/p${n}`,reason:`CMO at Firm ${n}, a buyer of this work.`,engaged:n%2?'commented':'liked',competitor:'Copperlane: SEO agency',post_url:`https://www.linkedin.com/posts/fixture-firm_x-activity-${n}`,post_excerpt:'x',posted_at:'2026-10-21T09:00:00+00:00',...over});
+const row=(ce?:unknown)=>({company_slug:'ce',report_json:{content_system:{founder:{name:'Tamsin Vell'},...(ce===undefined?{}:{competitor_engagers:ce})}}});
+const section=(people:unknown[],extra:Record<string,unknown>={})=>({version:1,at:'2026-10-27T15:00:00Z',window_days:14,competitors:[{name:'Copperlane: SEO agency'},{name:'Brightwick Digital'}],posts_read:8,engagers_read:117,count:people.length,people,notes:[],...extra});
 
 describe('competitor engagers on the story page',()=>{
  it('keeps only people with a real profile link, post link, reason and engagement',()=>{
@@ -28,8 +28,8 @@ describe('competitor engagers on the story page',()=>{
   const f=toStoryFixture(row(section([1,2,3,4,5,6,7].map(n=>person(n)),{count:21,notes:[{to:'Person 1',headline:'CMO at Firm 1',note:'Hi Person, how does Firm 1 plan search this year?'}]})));
   const html=renderToStaticMarkup(<CompetitorEngagersSection data={f.competitorEngagers!}/>);
   expect(html).toContain('Buyers reading your competitors');
-  expect(html).toContain('In the last two weeks, 21 people who fit the buyer you sell to liked or commented on LinkedIn posts from Blue Array and Exposure Ninja.');
-  expect(html).toContain('Commented on a post by Blue Array · 21 Oct');
+  expect(html).toContain('In the last two weeks, 21 people who fit the buyer you sell to liked or commented on LinkedIn posts from Copperlane and Brightwick Digital.');
+  expect(html).toContain('Commented on a post by Copperlane · 21 Oct');
   expect(html).toContain('Person 5');
   expect(html).not.toContain('Person 6');
   expect(html).toContain('Show 2 more people');
@@ -39,17 +39,17 @@ describe('competitor engagers on the story page',()=>{
 });
 
 describe('people at the lead\'s clients',()=>{
- const aud=(existing:unknown)=>toStoryFixture({company_slug:'c',report_json:{content_system:{founder:{name:'Bojan Mitevski'},audience:{posts:5,engagers:61,engager_icp_count:2,buyer_definition:'Founders at SaaS startups',named:[{name:'Milan Nikolovski',headline:'Head of Design'}],existing_clients:existing}}}});
+ const aud=(existing:unknown)=>toStoryFixture({company_slug:'c',report_json:{content_system:{founder:{name:'Ilka Varnhagen'},audience:{posts:5,engagers:61,engager_icp_count:2,buyer_definition:'Founders at SaaS startups',named:[{name:'Oren Tallis',headline:'Head of Design'}],existing_clients:existing}}}});
  it('keeps only named people and drops malformed rows',()=>{
-  expect(aud([null,{},{name:'  '},{name:'Joel Bråtner',headline:null},{name:'Remy Rosen',headline:'VP Marketing at Sedric'}]).audience?.existing_clients).toEqual([{name:'Joel Bråtner',headline:''},{name:'Remy Rosen',headline:'VP Marketing at Sedric'}]);
+  expect(aud([null,{},{name:'  '},{name:'Siv Brålund',headline:null},{name:'Ines Morrow',headline:'VP Marketing at Quaylin'}]).audience?.existing_clients).toEqual([{name:'Siv Brålund',headline:''},{name:'Ines Morrow',headline:'VP Marketing at Quaylin'}]);
   expect(aud('x').audience?.existing_clients).toEqual([]);
   expect(aud(undefined).audience?.existing_clients).toEqual([]);
  });
  it('says they were left out of the count and names them',()=>{
-  const html=renderToStaticMarkup(<ClientEngagers people={aud([{name:'Joel Bråtner',headline:'GTM @ Deep Forestry'},{name:'Remy Rosen',headline:'VP Marketing at Sedric'}]).audience!.existing_clients!}/>);
+  const html=renderToStaticMarkup(<ClientEngagers people={aud([{name:'Siv Brålund',headline:'GTM @ Mossgate Forestry'},{name:'Ines Morrow',headline:'VP Marketing at Quaylin'}]).audience!.existing_clients!}/>);
   expect(html).toContain('2 people who engaged work at your clients. We left them out of the buyer count.');
-  expect(html).toContain('Joel Bråtner');expect(html).toContain('VP Marketing at Sedric');
-  expect(renderToStaticMarkup(<ClientEngagers people={[{name:'Joel Bråtner'}]}/>)).toContain('One person who engaged works at one of your clients.');
+  expect(html).toContain('Siv Brålund');expect(html).toContain('VP Marketing at Quaylin');
+  expect(renderToStaticMarkup(<ClientEngagers people={[{name:'Siv Brålund'}]}/>)).toContain('One person who engaged works at one of your clients.');
   expect(renderToStaticMarkup(<ClientEngagers people={[]}/>)).toBe('');
   expect(html).not.toMatch(/[—–]/);
  });

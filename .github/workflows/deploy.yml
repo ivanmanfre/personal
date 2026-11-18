@@ -36,6 +36,7 @@ jobs:
       - run: npm run build:prerender
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SCAN_HERO: ${{ vars.SCAN_HERO || '0' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
@@ -98,6 +99,7 @@ jobs:
           VITE_BASE: /scan/
           VITE_SCAN_ORIGIN: https://inboundonsteroids.com
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SCAN_HERO: ${{ vars.SCAN_HERO || '0' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
@@ -152,6 +154,7 @@ jobs:
         env:
           VITE_BASE: /client/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SCAN_HERO: ${{ vars.SCAN_HERO || '0' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}

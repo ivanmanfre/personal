@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import {AnimatePresence, motion, useInView} from 'framer-motion';
-import {CalendarDays, Check, FileText, Eye, Radar, Pause, Play} from 'lucide-react';
+import {CalendarDays, Check, FileText, Eye, Radar, Pause, Play, User} from 'lucide-react';
 import {useStory} from './context';
 import {Beams} from './motion';
 import type {StoryEdition} from './types';
@@ -8,13 +8,14 @@ import {firstNameOf} from './adapter';
 
 /** The example reader's first name, taken from the edition's own conversation so every sample agrees. */
 export function readerName(plan: StoryEdition): string {
+ if (plan.readerStyle === 'role') return '';
  const founderFirst = firstNameOf(plan.founderName);
  for (const m of plan.flow.messages) { const who = m.match(/^([^:]{1,40}):/)?.[1]?.trim(); if (who && !who.startsWith(founderFirst)) return who.split(' ')[0]; }
  const hi = plan.message.match(/^(?:Hi|Hey|Hello|Ciao|Hola)\s+([A-Z][\p{L}'-]+)/u)?.[1];
  return hi && hi !== founderFirst ? hi : founderFirst === 'Alex' ? 'Sam' : 'Alex';
 }
 /** Generated copy sometimes keeps a mail-merge slot; fill it with the example reader. */
-export const fillName = (text: string, name: string) => text.replace(/\{\s*first[\s_]?name\s*\}/gi, name).replace(/^(Hi|Hey|Hello),\s/, `$1 ${name}, `);
+export const fillName = (text: string, name: string) => !name ? text : text.replace(/\{\s*first[\s_]?name\s*\}/gi, name).replace(/^(Hi|Hey|Hello),\s/, `$1 ${name}, `);
 
 const SOURCES = [
  {id: 'content', title: 'Content & lead magnets', hint: 'They comment for your resource.', Icon: FileText},
@@ -45,7 +46,7 @@ export function StoryFlow({founder}: {founder: string}) {
   }, step === LAST ? STEP_MS * 1.8 : STEP_MS);
   return () => clearTimeout(t);
  }, [running, step]);
- const messages = plan.flow.messages.map(m => { const [, who, text] = m.match(/^([^:]{1,40}):\s*(.*)$/s) ?? [null, '', m]; return {mine: !!who && !who.startsWith(reader), text: fillName(text, reader)}; });
+ const messages = plan.flow.messages.map(m => { const [, who, text] = m.match(/^([^:]{1,40}):\s*(.*)$/s) ?? [null, '', m]; return {mine: !!who && (reader ? !who.startsWith(reader) : !/^buyer$/i.test(who.trim())), text: fillName(text, reader)}; });
  const shown = messages.slice(0, Math.min(step + 1, messages.length));
  const beams = [
   ...SOURCES.map((s, i) => ({from: s.id, to: 'chat', active: i === source})),
@@ -60,7 +61,7 @@ export function StoryFlow({founder}: {founder: string}) {
      <span className="sf-icon"><Icon size={18}/></span><span><b>{title}</b><small>{hint}</small></span></button></li>)}
    </ol>
    <div className="sf-chat" data-beam="chat">
-    <header><span className="sf-avatar">{reader[0]}</span><span><b>{reader}</b><small>{plan.buyerRole}</small></span><em>{SOURCES[source].title}</em></header>
+    <header><span className="sf-avatar">{reader ? reader[0] : <User size={15} aria-hidden="true"/>}</span><span><b>{reader || 'Example buyer'}</b><small>{plan.buyerRole}</small></span><em>{SOURCES[source].title}</em></header>
     <div className="sf-thread" aria-live="polite">
      <AnimatePresence initial={false}>{shown.map((m, i) => <motion.p key={`${source}-${i}`} className={m.mine ? 'is-mine' : ''}
       initial={reduced ? false : {opacity: 0, y: 14, scale: .98}} animate={{opacity: 1, y: 0, scale: 1}} transition={{type: 'spring', stiffness: 260, damping: 26}}>{m.text}</motion.p>)}</AnimatePresence>
@@ -77,7 +78,7 @@ export function StoryFlow({founder}: {founder: string}) {
     </div>
     <motion.div className={`sf-booked ${step >= LAST ? 'is-on' : ''}`} data-beam="booked" animate={step >= LAST && !reduced ? {scale: [1, 1.03, 1]} : {}} transition={{duration: .5}}>
      <CalendarDays size={22}/>
-     <span><small>{step >= LAST ? 'Booked in your calendar' : 'Booked once it fits'}</small><b>{plan.flow.callTitle}</b><em>{reader} + {founder} · brief attached</em></span>
+     <span><small>{step >= LAST ? 'Booked in your calendar' : 'Booked once it fits'}</small><b>{plan.flow.callTitle}</b><em>{reader || 'The buyer'} + {founder} · brief attached</em></span>
     </motion.div>
    </div>
   </div>

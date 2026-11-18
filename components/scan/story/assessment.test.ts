@@ -3,6 +3,8 @@ import {assessAudience} from './assessment';
 import {fixture} from '../../dev/scan-walkthrough/journey/model';
 import {reviewDraft} from './reviewDrafts';
 import {validateEdition} from './validate';
+import {toStoryFixture} from './adapter';
+import rows from './__fixtures__/review-rows.json';
 const f=(a:any)=>({...fixture,audience:a});
 const rubric='Brand research buyers';
 describe('source-bound audience assessments',()=>{
@@ -16,8 +18,9 @@ describe('source-bound audience assessments',()=>{
  it('ignores non-string audit dates',()=>expect(()=>assessAudience(f({audited_at:{toString:'invalid'}}))).not.toThrow());
  it('uses source dates and hides invalid dates',()=>{expect(assessAudience(f({audited_at:'bad'})).date).toBeNull();expect(assessAudience(f({audited_at:'2026-01-02'})).date).toBe('2 Jan 2026')});
 });
+// The review drafts are keyed on the invented saved rows, so the gate runs on row 0 of the fixture file.
 describe('production story gate',()=>{
- const draft=reviewDraft(fixture)!;
+ const fixture=toStoryFixture(rows[0]),draft=reviewDraft(fixture)!;
  it('accepts the source-bound review candidate',()=>expect(validateEdition(draft,fixture).errors).toEqual([]));
  it('requires approval for production',()=>{expect(validateEdition(draft,fixture,true).edition).toBeNull();expect(validateEdition({...draft,reviewStatus:'approved'},fixture,true).edition).not.toBeNull()});
  it('never reuses another lead’s draft',()=>{expect(reviewDraft({...fixture,slug:'different-lead'})).toBeNull();expect(validateEdition({...draft,slug:'different-lead'},fixture).edition).toBeNull()});
