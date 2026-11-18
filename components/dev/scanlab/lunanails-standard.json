@@ -86,8 +86,8 @@
         },
         {
           "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
-          "title": "Bring RYAN\u2019s handling advice closer to the buy button",
-          "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+          "title": "Bring ROOK\u2019s handling advice closer to the buy button",
+          "measure": "Purchases per ROOK page visitor. Also check returns and comments about lamp heat.",
           "evidence": [
             {
               "kind": "store",
@@ -100,10 +100,10 @@
               "source_url": "https://lunanails.example/products/builder-gel-rook"
             }
           ],
-          "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+          "observation": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
         },
         {
-          "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+          "test": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
           "title": "Send the colour-swatch ad to the gel collection",
           "measure": "Sales per ad click. Also check order value and returns.",
           "evidence": [
@@ -114,7 +114,7 @@
             },
             {
               "kind": "store",
-              "quote": "Fiber Gel OLIVER 359 SEK",
+              "quote": "Fiber Gel ODIN 359 SEK",
               "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             },
             {
@@ -123,7 +123,7 @@
               "source_url": "https://www.facebook.com/ads/library/?id=0233035021229954"
             }
           ],
-          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately."
         },
         {
           "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
@@ -142,11 +142,11 @@
             },
             {
               "kind": "store",
-              "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+              "quote": "CLEAR-MIST, Prep & Clean 119 SEK",
               "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             }
           ],
-          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK."
         }
       ],
       "status": "present",
@@ -213,8 +213,8 @@
           {
             "test_index": 2,
             "headline": "Send the colour-swatch ad to the gel collection",
-            "body": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately.",
-            "action": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+            "body": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately.",
+            "action": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
             "lane": "paid",
             "capture": {
               "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
@@ -239,15 +239,15 @@
           },
           {
             "test_index": 1,
-            "headline": "Bring RYAN\u2019s handling advice closer to the buy button",
-            "body": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering.",
+            "headline": "Bring ROOK\u2019s handling advice closer to the buy button",
+            "body": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering.",
             "action": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
             "lane": "store"
           },
           {
             "test_index": 3,
             "headline": "Help shoppers reach free shipping",
-            "body": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK.",
+            "body": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK.",
             "action": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
             "lane": "store",
             "capture": {
@@ -293,7 +293,7 @@
         "coherent": true,
         "citations_complete": true,
         "readable": true,
-        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, ROOK handling advice, the OTTO-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
       },
       "checked_at": "2026-10-13T21:39:49.517343+00:00"
     },

@@ -4,7 +4,7 @@
     "headline": "From ad click to checkout.",
     "intro": "We reviewed your public ads and product pages. Start with the ad link and the Primer + Bonder idea, then see how RISE would assess the growth opportunity.",
     "hero_product": {
-      "name": "Fiber Gel OSCAR",
+      "name": "Fiber Gel OTTO",
       "image": "https://lunanails.example/cdn/shop/files/luna-shade-card.jpg",
       "url": "https://lunanails.example/products/fiber-gel-otto",
       "price": 359.0
@@ -12,7 +12,7 @@
     "route": {
       "test_index": 2,
       "headline": "Show the colours. Let shoppers choose.",
-      "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OSCAR. A collection link would let shoppers browse the range.",
+      "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OTTO. A collection link would let shoppers browse the range.",
       "action": "Try the same ad with a link to the gel collection.",
       "ad_quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
       "ad_url": "https://www.facebook.com/ads/library/?id=9000000000000002",
@@ -49,9 +49,9 @@
     "guidance": {
       "test_index": 1,
       "headline": "Bring the buying advice up front.",
-      "body": "Your replies to RYAN reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
+      "body": "Your replies to ROOK reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
       "product": {
-        "name": "Builder Gel RYAN",
+        "name": "Builder Gel ROOK",
         "image": "https://lunanails.example/cdn/shop/files/luna-studio-look.jpg",
         "url": "https://lunanails.example/products/builder-gel-rook",
         "price": 359.0
@@ -71,7 +71,7 @@
           "price": 89.0
         },
         {
-          "name": "MULTI-MIST, Prep & Clean",
+          "name": "CLEAR-MIST, Prep & Clean",
           "image": "https://lunanails.example/cdn/shop/files/luna-mist-cleanse.jpg",
           "url": "https://lunanails.example/products/luna-mist-cleanse",
           "price": 119.0
@@ -105,8 +105,8 @@
       },
       {
         "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
-        "title": "Bring RYAN\u2019s handling advice closer to the buy button",
-        "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+        "title": "Bring ROOK\u2019s handling advice closer to the buy button",
+        "measure": "Purchases per ROOK page visitor. Also check returns and comments about lamp heat.",
         "evidence": [
           {
             "kind": "store",
@@ -119,10 +119,10 @@
             "source_url": "https://lunanails.example/products/builder-gel-rook"
           }
         ],
-        "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+        "observation": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
       },
       {
-        "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+        "test": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
         "title": "Send the colour-swatch ad to the gel collection",
         "measure": "Sales per ad click. Also check order value and returns.",
         "evidence": [
@@ -133,7 +133,7 @@
           },
           {
             "kind": "store",
-            "quote": "Fiber Gel OLIVER 359 SEK",
+            "quote": "Fiber Gel ODIN 359 SEK",
             "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
           },
           {
@@ -142,7 +142,7 @@
             "source_url": "https://www.facebook.com/ads/library/?id=9000000000000001"
           }
         ],
-        "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+        "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately."
       },
       {
         "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
@@ -161,11 +161,11 @@
           },
           {
             "kind": "store",
-            "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+            "quote": "CLEAR-MIST, Prep & Clean 119 SEK",
             "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
           }
         ],
-        "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+        "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK."
       }
     ],
     "reason": null,
@@ -319,8 +319,8 @@
         },
         {
           "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
-          "title": "Bring RYAN\u2019s handling advice closer to the buy button",
-          "measure": "Purchases per RYAN page visitor. Also check returns and comments about lamp heat.",
+          "title": "Bring ROOK\u2019s handling advice closer to the buy button",
+          "measure": "Purchases per ROOK page visitor. Also check returns and comments about lamp heat.",
           "evidence": [
             {
               "kind": "store",
@@ -333,10 +333,10 @@
               "source_url": "https://lunanails.example/products/builder-gel-rook"
             }
           ],
-          "observation": "Your replies to RYAN reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+          "observation": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
         },
         {
-          "test": "Run the same ad with a link to the gel collection. Compare it with the OSCAR-page link using the same audience and budget.",
+          "test": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
           "title": "Send the colour-swatch ad to the gel collection",
           "measure": "Sales per ad click. Also check order value and returns.",
           "evidence": [
@@ -347,7 +347,7 @@
             },
             {
               "kind": "store",
-              "quote": "Fiber Gel OLIVER 359 SEK",
+              "quote": "Fiber Gel ODIN 359 SEK",
               "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             },
             {
@@ -356,7 +356,7 @@
               "source_url": "https://www.facebook.com/ads/library/?id=9000000000000001"
             }
           ],
-          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OSCAR. Your store sells other colours separately."
+          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately."
         },
         {
           "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
@@ -375,11 +375,11 @@
             },
             {
               "kind": "store",
-              "quote": "MULTI-MIST, Prep & Clean 119 SEK",
+              "quote": "CLEAR-MIST, Prep & Clean 119 SEK",
               "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
             }
           ],
-          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and MULTI-MIST costs 119 SEK."
+          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK."
         }
       ],
       "reason": null,
@@ -429,7 +429,7 @@
         "headline": "From ad click to checkout.",
         "intro": "We reviewed your public ads and product pages. Start with the ad link and the Primer + Bonder idea, then see how RISE would assess the growth opportunity.",
         "hero_product": {
-          "name": "Fiber Gel OSCAR",
+          "name": "Fiber Gel OTTO",
           "image": "https://lunanails.example/cdn/shop/files/luna-shade-card.jpg",
           "url": "https://lunanails.example/products/fiber-gel-otto",
           "price": 359.0
@@ -437,7 +437,7 @@
         "route": {
           "test_index": 2,
           "headline": "Show the colours. Let shoppers choose.",
-          "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OSCAR. A collection link would let shoppers browse the range.",
+          "body": "Your ad advertises all fiber-gel colours. Its recorded link opens Fiber Gel OTTO. A collection link would let shoppers browse the range.",
           "action": "Try the same ad with a link to the gel collection.",
           "ad_quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
           "ad_url": "https://www.facebook.com/ads/library/?id=9000000000000002",
@@ -474,9 +474,9 @@
         "guidance": {
           "test_index": 1,
           "headline": "Bring the buying advice up front.",
-          "body": "Your replies to RYAN reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
+          "body": "Your replies to ROOK reviews explain lamp heat and flash curing. Put a short version of your existing handling guidance beside Add to cart, where shoppers can read it before ordering.",
           "product": {
-            "name": "Builder Gel RYAN",
+            "name": "Builder Gel ROOK",
             "image": "https://lunanails.example/cdn/shop/files/luna-studio-look.jpg",
             "url": "https://lunanails.example/products/builder-gel-rook",
             "price": 359.0
@@ -496,7 +496,7 @@
               "price": 89.0
             },
             {
-              "name": "MULTI-MIST, Prep & Clean",
+              "name": "CLEAR-MIST, Prep & Clean",
               "image": "https://lunanails.example/cdn/shop/files/luna-mist-cleanse.jpg",
               "url": "https://lunanails.example/products/luna-mist-cleanse",
               "price": 119.0
@@ -543,7 +543,7 @@
         "coherent": true,
         "citations_complete": true,
         "readable": true,
-        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, RYAN handling advice, the OSCAR-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, ROOK handling advice, the OTTO-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
       },
       "checked_at": "2026-10-13T21:39:49.517343+00:00"
     }
