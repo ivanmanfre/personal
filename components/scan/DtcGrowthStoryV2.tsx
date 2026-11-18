@@ -193,7 +193,7 @@ export function DtcGrowthStoryV2({ companyName, domain, data, ads, bookingUrl, l
   const firstDraft = lead.drafts?.[0];
   let side: React.ReactNode = null;
   if (fs.case === 'advertiser' && (leadAd || leadPage)) side = <div className="rv2-hero-pair">{leadAd ? <Shot capture={leadAd} alt={`Your ad, ${brand || 'your store'}`} label="Your ad" eager /> : null}{leadPage ? <Shot capture={leadPage} alt={`Your page, ${brand || 'your store'}`} label="Your page" eager /> : null}</div>;
-  // Replay 11-17 (Delilah): a rival's ad beside a gap about the brand's own bundle price read as unrelated. The first
+  // Replay 11-17 (a zero-ads home store): a rival's ad beside a gap about the brand's own bundle price read as unrelated. The first
   // screen shows the brand's own page beside its gap; a rival ad leads only when nothing of the brand's is captured.
   else if (leadPage) side = <div className="rv2-hero-pair">{<Shot capture={leadPage} alt={`Your page, ${brand || 'your store'}`} label="Your page" eager />}</div>;
   else if (fs.case === 'zero_ads' && firstDraft) side = <div className="rv2-hero-draft"><Drafts drafts={[firstDraft]} brand={brand} /></div>;
