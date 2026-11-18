@@ -152,3 +152,77 @@ describe('11-17 tap targets', () => {
     expect(css).toContain('[data-rise-story="rise-standard-2026-11-17"] .rv2-rival-meta a{min-height:44px;display:inline-flex;align-items:center}');
   });
 });
+
+// 2026-11-18 depth round (E9): the category read section. Invented brands and ad ids.
+const CAT_AD = 'https://www.facebook.com/ads/library/?id=1000000000000077';
+const category = () => ({ observed_at: '2026-11-18', base: { brands: 2, ads: 15 },
+  brands: [{ name: 'Wagly', domain: 'wagly.test', market: 'Sells in the US', relation: 'direct', ads_read: 12 },
+           { name: 'Big Paws Co', domain: 'bigpaws.test', market: 'Sells in the UK', relation: 'direct', ads_read: 3, label: 'larger brand' }],
+  findings: [{ kind: 'landing', headline: 'Wagly sends all 12 ads we read to one bundle page.', body: 'Of the 12 ads we read for Wagly, 12 land on its starter bundle. Your 12 ads land on 4 different pages.',
+    ads: [{ brand: 'Wagly', ad_url: CAT_AD, image_url: 'https://x.supabase.co/c1.jpg', start_date: '2026-10-02', opening: 'Start with the bundle vets ask about.', destination: 'https://wagly.test/products/starter-bundle', lands: 'bundle', lands_host: 'wagly.test', media: 'video' }] },
+    { kind: 'age', headline: 'Big Paws Co has run one ad since 3 May 2026.', body: 'Of the 3 ads we read for Big Paws Co, the oldest started 3 May 2026.',
+    ads: [{ brand: 'Big Paws Co', ad_url: 'https://www.facebook.com/ads/library/?id=1000000000000078', image_url: null, start_date: '2026-05-03', opening: null, destination: 'https://shop.test/p/1', lands: 'other_site', lands_host: 'shop.test', media: 'image' }] }] });
+const withCat = () => { const d = story(); d.presentation.category_read = category(); return d; };
+
+describe('category read (2026-11-18)', () => {
+  it('accepts a valid category read and refuses an unsafe ad link, a wrong label or an unknown kind', () => {
+    expect(canShowStandardStoryV2(withCat())).toBe(true);
+    const a = withCat(); a.presentation.category_read.findings[0].ads[0].ad_url = 'javascript:alert(1)'; expect(canShowStandardStoryV2(a)).toBe(false);
+    const b = withCat(); b.presentation.category_read.brands[0].label = 'giant'; expect(canShowStandardStoryV2(b)).toBe(false);
+    const c = withCat(); c.presentation.category_read.findings[0].kind = 'performance'; expect(canShowStandardStoryV2(c)).toBe(false);
+    const e = withCat(); e.presentation.category_read.findings = []; expect(canShowStandardStoryV2(e)).toBe(false);
+    const f = withCat(); f.presentation.category_read.findings[0].ads[0].start_date = 'soon'; expect(canShowStandardStoryV2(f)).toBe(false);
+  });
+  it('places the section right after the lead finding, with brands, markets, start dates and where each ad lands', () => {
+    const c = html(withCat());
+    const order = [...c.querySelectorAll('main > section')].map(s => s.id || s.className);
+    expect(order.indexOf('category-read')).toBe(order.indexOf('finding-0') + 1);
+    const sec = c.querySelector('#category-read')!;
+    expect(sec.textContent).toContain('We read 15 active ads from 2 brands on 18 Nov 2026.');
+    expect(sec.textContent).toContain('Sells in the UK · larger brand · 3 ads read');
+    expect(sec.textContent).toContain('Started 2 Oct 2026');
+    expect(sec.textContent).toContain('→ Bundle page');
+    expect(sec.textContent).toContain('→ shop.test');
+    expect(sec.querySelector(`a[href="${CAT_AD}"]`)).not.toBeNull();
+    expect(sec.textContent).not.toMatch(/[—–]/);
+  });
+  it('counts the outside findings in the first-screen label and hides the separate rival block', () => {
+    const d = withCat(); d.presentation.rival = { advertiser: 'Wagly', ad_url: CAT_AD, image_url: 'https://x.supabase.co/r.jpg', opening_text: 'Start with the bundle.', start_date: '2026-10-02' };
+    const c = html(d);
+    expect(c.querySelector('.rv2-hero .ris-label')!.textContent).toBe('Growth review · 4 findings');
+    expect(c.querySelector('.rv2-rival')).toBeNull();
+  });
+  it('renders no section without a category read', () => { expect(html(story()).querySelector('#category-read')).toBeNull(); });
+});
+
+describe('owner-eyes rulings (F1, F3, F4)', () => {
+  const three = () => { const d = withCat(); const c = d.presentation.category_read;
+    c.base.brands = 3; c.brands.push({ name: 'Tailtag', domain: 'tailtag.test', market: 'Sells in the US', relation: 'adjacent', ads_read: 5 });
+    c.findings[0].change = { type: 'page', text: 'Send the joint ads to the Pawlo Joint page.' };
+    c.ages = [{ brand: 'Wagly', ad_url: CAT_AD, start_date: '2026-05-01', days: 201, opening: 'Start with the bundle.' }];
+    c.own_oldest = { ad_url: AD, start_date: '2026-11-10', days: 8 };
+    d.presentation.first_screen.lead = 'outside'; d.presentation.headline = c.findings[0].headline; return d; };
+  it('F1: an outside finding with 3 brands read leads; the validator refuses a mismatched lede or fewer brands', () => {
+    expect(canShowStandardStoryV2(three())).toBe(true);
+    const a = three(); a.presentation.headline = GAP0; expect(canShowStandardStoryV2(a)).toBe(false);
+    const b = three(); b.presentation.category_read.base.brands = 2; expect(canShowStandardStoryV2(b)).toBe(false);
+    const c = html(three());
+    expect(c.querySelector('h1')!.textContent).toBe('Pawlo');
+    expect(c.querySelector('.rv2-lede')!.textContent).toBe('Wagly sends all 12 ads we read to one bundle page.');
+    const order = [...c.querySelectorAll('main > section')].map(s => s.id || s.className);
+    expect(order[1]).toBe('category-read');            // after the ads strip, before her own findings
+    expect(order.indexOf('finding-0')).toBeGreaterThan(order.indexOf('category-read'));
+    expect(c.querySelector('#finding-0 .ris-label')!.textContent).toContain('02');
+  });
+  it('F3: each outside finding shows its written-out change', () => {
+    const c = html(three());
+    expect(c.querySelector('.rv2-cat-change')!.textContent).toBe('Where you could send the adSend the joint ads to the Pawlo Joint page.');
+    const d = three(); d.presentation.category_read.findings[0].change = { type: 'promise', text: 'x' }; expect(canShowStandardStoryV2(d)).toBe(false);
+  });
+  it('F4: the age slot lists each brand\'s longest-running live ad beside hers', () => {
+    const t = html(three()).querySelector('.rv2-cat-ages')!.textContent!;
+    expect(t).toContain('Your storeStarted 10 Nov 2026 · 8 days');
+    expect(t).toContain('WaglyStarted 1 May 2026 · 201 days');
+    const d = three(); d.presentation.category_read.ages[0].start_date = 'May'; expect(canShowStandardStoryV2(d)).toBe(false);
+  });
+});

@@ -87,3 +87,22 @@
 @media(max-width:600px){[data-rise-story="rise-standard-2026-11-17"] .rv2-lede{font-size:26px}[data-rise-story="rise-standard-2026-11-17"] .rv2-pair{grid-template-columns:minmax(0,1fr);gap:24px}[data-rise-story="rise-standard-2026-11-17"] .rv2-rival-grid{grid-template-columns:minmax(0,1fr);gap:20px}[data-rise-story="rise-standard-2026-11-17"] .rv2-hero-pair{gap:10px}[data-rise-story="rise-standard-2026-11-17"] .rv2-strip-row{grid-auto-columns:72%}}
 /* Tap targets of at least 44 px on both standards (spec 2.12). */
 .ris-standard figcaption a,.ris-standard .ris-evidence a,.ris-nav a,.ris-zoom-bar button,.ris-zoom-bar a{min-height:44px;display:inline-flex;align-items:center}
+/* 2026-11-18 depth round: the category read (other brands' real ads), after the lead finding */
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat{background:#f4f1ea}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-brands{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:20px 0 8px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-brands li{display:flex;flex-direction:column;gap:2px;padding:8px 12px;background:#fff;border:1px solid rgba(17,17,17,.1);border-radius:10px;font-size:15px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-brands small{font-size:12.5px;opacity:.7}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-finding{margin-top:32px;padding-top:24px;border-top:1px solid rgba(17,17,17,.12)}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-finding h3{font-family:Sora,sans-serif;font-size:clamp(20px,2.2vw,26px);line-height:1.25;margin:0 0 10px;max-width:34ch}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-finding .ris-body{max-width:62ch}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ads{grid-auto-columns:minmax(220px,260px);margin-top:16px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ads a{min-height:44px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-brand{font-size:14px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ads .rv2-strip-noimg{padding:12px;text-align:center;font-weight:600}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-change{margin:14px 0 0;padding:12px 14px;background:#fff;border-left:4px solid #ffc71d;border-radius:6px;max-width:62ch;display:flex;flex-direction:column;gap:4px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-change strong{font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;opacity:.75}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages{margin-top:32px;padding-top:20px;border-top:1px solid rgba(17,17,17,.12)}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages h3{font-size:18px;margin:0 0 10px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages ul{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:15px;padding:6px 0;border-bottom:1px solid rgba(17,17,17,.08)}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages a{min-height:44px;display:inline-flex;align-items:center;color:inherit}
