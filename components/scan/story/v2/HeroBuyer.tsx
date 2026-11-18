@@ -41,7 +41,7 @@ export function BuyerRow({row}: {row: HeroRow}) {
 export const headlineQuote = (quote: string) => quote.length > 60 && quote.includes(' | ') ? quote.split(' | ')[0].trim() : quote;
 
 /** The read date: the outside read when there is one, else the audit date. */
-export const readDate = (fixture: JourneyFixture) => shortDate(fixture.competitorEngagers?.readOn || fixture.source.capturedOn || '');
+export const readDate = (fixture: JourneyFixture) => shortDate(fixture.outsideBuyers?.readOn || fixture.competitorEngagers?.readOn || fixture.source.capturedOn || '');
 
 /** The buyer sentence leads; Ivan's line sits above it word for word. */
 function Headline({lead}: {lead: HeroRow}) {

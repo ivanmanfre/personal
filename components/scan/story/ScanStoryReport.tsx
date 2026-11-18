@@ -57,8 +57,11 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
   let opened:HTMLDetailsElement[]|null=null;
   const before=()=>{if(opened)return;opened=[...document.querySelectorAll<HTMLDetailsElement>('.scan-studio details:not([open])')];opened.forEach(d=>{d.open=true;});};
   const after=()=>{if(!opened)return;opened.forEach(d=>{d.open=false;});opened=null;};
-  window.addEventListener('beforeprint',before);window.addEventListener('afterprint',after);
-  return()=>{window.removeEventListener('beforeprint',before);window.removeEventListener('afterprint',after);};
+  // A browser that sends beforeprint but never afterprint still leaves print media: that change restores the state too.
+  const media=typeof window.matchMedia==='function'?window.matchMedia('print'):null;
+  const onMedia=(e:MediaQueryListEvent)=>{if(!e.matches)after();};
+  window.addEventListener('beforeprint',before);window.addEventListener('afterprint',after);media?.addEventListener?.('change',onMedia);
+  return()=>{window.removeEventListener('beforeprint',before);window.removeEventListener('afterprint',after);media?.removeEventListener?.('change',onMedia);};
  },[v2]);
  // The V2 hero's first line is set in the display face: preload it so the swap cannot shift the page (the prerender bakes the tag).
  React.useEffect(()=>{

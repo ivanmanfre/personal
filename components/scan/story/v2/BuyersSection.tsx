@@ -31,9 +31,8 @@ function OutsideRow({p}: {p: CompetitorEngager}) {
 }
 
 function Outside({fixture}: {fixture: JourneyFixture}) {
- const data = fixture.competitorEngagers!, checked = fixture.hero?.checked;
- // One row per person: the adapter's deduplicated list (a scan built before it existed falls back to the raw list).
- const people = data.uniquePeople ?? data.people;
+ const data = outsideOf(fixture)!, checked = fixture.hero?.checked;
+ const people = data.people;
  const shown = useShown();
  // The rest of the list sits in a native details element: always in the HTML (no script needed, crawlers read it),
  // keyboard and expanded state come from the element, and the summary stays in place when it opens.
@@ -48,6 +47,13 @@ function Outside({fixture}: {fixture: JourneyFixture}) {
    <ol className="sv2-list sv2-list-more" id={`${LIST_ID}-more`}>{rest.map((p, i) => <OutsideRow key={i} p={p}/>)}</ol>
   </details>}
  </div>;
+}
+
+/** The new layout's outside list: the adapter's own list, or for a fixture built before it existed the old list deduplicated. */
+export function outsideOf(fixture: JourneyFixture) {
+ if (fixture.outsideBuyers) return fixture.outsideBuyers.people.length ? fixture.outsideBuyers : undefined;
+ const ce = fixture.competitorEngagers;
+ return ce?.people.length ? {...ce, people: ce.uniquePeople ?? ce.people} : undefined;
 }
 
 /** Own buyers as rows. The count is never printed here, so one buyer reads as one person. */
@@ -76,11 +82,11 @@ export function Pair({lead}: {lead: HeroRow}) {
 
 export function BuyersSection({fixture}: {fixture: JourneyFixture}) {
  const hero = fixture.hero, lead = hero?.lead;
- const outside = !!fixture.competitorEngagers?.people.length;
+ const outside = !!outsideOf(fixture);
  const ownCount = fixture.audience?.engager_icp_count ?? 0;
  const own = ownCount >= 1 && (fixture.audience?.named ?? []).some(n => (n?.name || '').trim());
  if (!outside && !own) return null;
- const note = fixture.competitorEngagers?.notes[0];
+ const note = outsideOf(fixture)?.notes[0];
  const parts = [outside && <Outside key="outside" fixture={fixture}/>, own && <Own key="own" fixture={fixture}/>];
  if (lead?.source === 'own') parts.reverse();
  return <section id="buyers" className="sv2-buyers story-scene" data-scan-section="buyers" aria-label="Buyers we found">

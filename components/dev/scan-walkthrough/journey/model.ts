@@ -26,6 +26,8 @@ export interface JourneyFixture {
   profileAudit?: ProfileAudit;
   /** People who engaged with the lead's competitors' posts and fit their buyer (every name came from the read). */
   competitorEngagers?: CompetitorEngagers;
+  /** The new layout's outside buyers: one row per person, profile links already checked ('' = no link). */
+  outsideBuyers?: CompetitorEngagers;
   /** One named buyer with one dated signal (plan A `content_system.hero`); absent means today's layout. */
   hero?: ScanHero;
   /** A stored hero that failed the checks: the new layout shows its plainest first screen (no count, no named buyer, no date).
