@@ -36,14 +36,17 @@ describe('PartnerView', () => {
   const text = start.textContent!.replace(START_NOTE, '');
   expect(text).not.toMatch(/\b\d+\s*(day|week)s?\b/);
  });
- it('one story when partnerStory is set, three when it is not', () => {
-  const a = team(withPartner('kyle'));
+ it('one story: the named one when set, else the first, with a link to the others', () => {
+  const a = team(withPartner('mattan'));
   expect(a.container.querySelectorAll('.sv2-story')).toHaveLength(1);
+  expect(a.container.querySelector('.sv2-story b')!.textContent).toBe('Mattan Danino');
   expect(a.container.querySelector('.studio-results')).toBeNull();
   cleanup();
   const b = team(withPartner(null));
-  expect(b.container.querySelector('.studio-results')).toBeTruthy();
-  expect(b.container.querySelectorAll('.sv2-story')).toHaveLength(0);
+  expect(b.container.querySelectorAll('.sv2-story')).toHaveLength(1);
+  expect(b.container.querySelector('.sv2-story b')!.textContent).toBe('Kyle Hunt');
+  expect(b.container.querySelector('.studio-results')).toBeNull();
+  expect(screen.getByText(TEAM.moreStories).closest('a')!.getAttribute('href')).toBe('/scan/marta-quillfeather-fx1/#stories');
  });
  it('booking link carries utm_content=team', () => {
   const {container} = team(rich);

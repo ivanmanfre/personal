@@ -9,6 +9,12 @@ export const OFFER = {
   start: {label: 'How it starts', text: 'Connect LinkedIn and your booking link, tell us who to leave out, and your first list of buyers and first posts follow.'},
   price: 'From $3,000 a month, month to month. Extra team accounts are $1,000 a month each.',
 };
+/** The compact offer for small firms, right under the hero: the same three lines, shortened from the approved wording above. */
+export const OFFER_SHORT = {
+  run: {label: 'What we run', text: 'Posts, lead magnets, outreach and follow-up, through to the booked call.'},
+  you: {label: 'Your part', text: 'Share your expertise, review as agreed and take the sales calls.'},
+  start: {label: 'How it starts', text: 'Connect LinkedIn and your booking link. Your first list of buyers and first posts follow.'},
+};
 export const START_STEPS = [
   {title: 'Set up', items: ['Connect LinkedIn and your booking link', 'Get your client board', 'Send who to leave out']},
   {title: 'First list. First posts.', items: ['First list of buyers', 'Your content calendar', 'You review posts on your board']},
@@ -27,6 +33,7 @@ export const TEAM = {
   cta: 'Book a call together',
   back: 'See the full plan',
   share: 'Deciding with a partner? Send them the short version.',
+  moreStories: 'More client results in the full plan',
 };
 export const FOLD = {open: 'Open the samples', close: 'Close'};
 /** People stories, word for word from StudioResults (the proof already on every scan page). */

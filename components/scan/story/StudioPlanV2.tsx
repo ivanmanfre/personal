@@ -76,22 +76,23 @@ export function StudioPlanV2({fixture, kind}: {fixture: JourneyFixture; kind: St
  const profileFirst = hero.tier === 'profile';
  const profile = fixture.profileAudit && <div className="sp-profile" data-scan-section="profile"><ProfileAuditSection audit={fixture.profileAudit}/></div>;
  const buyers = <BuyersSection fixture={fixture}/>;
- const offer = <OfferBlock slug={fixture.slug} shape={shape}/>;
+ const offer = <OfferBlock slug={fixture.slug} shape={shape} compact={shape === 'fast'}/>;
+ // Considered (11+ staff): the offer follows the hero. Fast: the compact offer follows the hero, then the buyers.
+ // On the profile tier the profile audit comes next to the hero; on the fast shape it sits under the compact offer.
  const top = shape === 'considered'
-  ? <>{offer}{fixture.partnerStory && <PeopleStory story={fixture.partnerStory}/>}{buyers}</>
-  : <>{buyers}{offer}</>;
+  ? <>{profileFirst && profile}{offer}{fixture.partnerStory && <PeopleStory story={fixture.partnerStory}/>}{buyers}</>
+  : <>{offer}{profileFirst && profile}{buyers}</>;
  return <div className="connected-journey sample-story revenue-story story-plan story-plan-v2">
   <HeroBuyer fixture={fixture}/>
   <StepNav book={bookUrl(fixture.slug, 'nav')} hero=".sv2-hero"/>
-  {profileFirst && profile}
   {top}
   {!profileFirst && profile}
   <div id="diagnosis" data-scan-section="diagnosis" style={{scrollMarginTop: 110}}><DiagnosisArtifacts fixture={fixture}/></div>
   <Steps fixture={fixture} kind={kind}/>
-  <div data-scan-section="stories"><StudioResults/></div>
+  <div id="stories" data-scan-section="stories" style={{scrollMarginTop: 90}}><StudioResults/></div>
   <section className="sp-close" data-scan-section="close">
    <img src={asset('/ivan-portrait-800.webp')} alt="Iván Manfredi" loading="lazy" decoding="async"/>
-   <div><span className="close-byline">Iván Manfredi</span><h2>{CLOSE.title}</h2><p>{plan.rationale?.close ?? CLOSE.body}</p>
+   <div><span className="close-byline">Iván Manfredi</span><h2>{CLOSE.title}</h2><p>{CLOSE.body}</p>
     <a className="studio-primary sp-close-cta" href={bookUrl(fixture.slug, 'close')} target="_blank" rel="noreferrer" data-scan-click="book-close">{CLOSE.cta} <ArrowUpRight size={18} aria-hidden="true"/></a>
     <small>{CLOSE.note}</small>
     {shape === 'fast' && <a className="sv2-share sv2-close-share" href={teamUrl(fixture.slug)}>{TEAM.share}<ArrowUpRight size={14} aria-hidden="true"/></a>}

@@ -1,13 +1,15 @@
 import React from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import type {JourneyFixture} from '../../../dev/scan-walkthrough/journey/model';
-import {StudioResults} from '../StudioResults';
 import {BuyerRow, readDate} from './HeroBuyer';
 import {OfferBlock} from './OfferBlock';
 import {PeopleStory} from './PeopleStory';
 import {bookUrl, countLine} from './hero';
 import {CHECKED, PUBLIC_NOTE, SAFETY_LINES, START_NOTE, START_STEPS, TEAM} from './copy';
 import './scan-v2.css';
+
+/** The story StudioResults leads with; shown when the data names no closer one. */
+const FIRST_STORY = 'kyle';
 
 /** The short version for a co-director who never saw the DM: who made it, for whom, what is offered, at what price. */
 export function PartnerView({fixture}: {fixture: JourneyFixture}) {
@@ -38,7 +40,10 @@ export function PartnerView({fixture}: {fixture: JourneyFixture}) {
   <section className="sv2-team-part" aria-label="What stays yours">
    <ul className="sv2-safety">{SAFETY_LINES.map(l => <li key={l}>{l}</li>)}</ul>
   </section>
-  {fixture.partnerStory ? <PeopleStory story={fixture.partnerStory}/> : <div data-scan-section="stories"><StudioResults/></div>}
+  <div className="sv2-team-story">
+   <PeopleStory story={fixture.partnerStory ?? FIRST_STORY}/>
+   <a className="sv2-share" href={`/scan/${encodeURIComponent(fixture.slug)}/#stories`}>{TEAM.moreStories}<ArrowUpRight size={14} aria-hidden="true"/></a>
+  </div>
   <section className="sv2-team-close">
    <a className="studio-primary" href={bookUrl(fixture.slug, 'team')} target="_blank" rel="noreferrer" data-scan-click="book-team">{TEAM.cta}<ArrowUpRight size={18} aria-hidden="true"/></a>
    <a className="sv2-share" href={`/scan/${encodeURIComponent(fixture.slug)}/`}>{TEAM.back}</a>

@@ -7,6 +7,7 @@ import ScanStoryReport from './ScanStoryReport';
 import {toStoryFixture} from './adapter';
 import {validateEdition} from './validate';
 import rich from '../../dev/scanlab/v2-rich.json';
+import {CLOSE, OFFER, OFFER_SHORT} from './v2/copy';
 import fewBuyers from '../../dev/scanlab/v2-few-buyers.json';
 import thin from '../../dev/scanlab/v2-thin.json';
 import ownOnly from '../../dev/scanlab/v2-own-only.json';
@@ -24,8 +25,39 @@ const sections = (c: HTMLElement) => [...c.querySelectorAll('[data-scan-section]
 describe('StudioPlanV2', () => {
  it('fast shape order', () => {
   const {container} = page(rich);
-  expect(sections(container).slice(0, 3)).toEqual(['hero', 'buyers', 'offer']);
-  expect(sections(container)).toEqual(['hero', 'buyers', 'offer', 'profile', 'diagnosis', 'content', 'resource', 'conversations', 'calls', 'stories', 'close']);
+  expect(sections(container).slice(0, 3)).toEqual(['hero', 'offer', 'buyers']);
+  expect(sections(container)).toEqual(['hero', 'offer', 'buyers', 'profile', 'diagnosis', 'content', 'resource', 'conversations', 'calls', 'stories', 'close']);
+ });
+ it('fast shape gets the compact offer, considered the full one', () => {
+  const a = page(rich);
+  expect(a.container.querySelector('[data-scan-section="offer"]')!.classList.contains('is-compact')).toBe(true);
+  expect(screen.getByText(OFFER_SHORT.start.text)).toBeTruthy();
+  expect(screen.getByText(OFFER.price)).toBeTruthy();
+  cleanup();
+  const b = page(fewBuyers);
+  expect(b.container.querySelector('[data-scan-section="offer"]')!.classList.contains('is-compact')).toBe(false);
+  expect(screen.getByText(OFFER.start.text)).toBeTruthy();
+ });
+ it('fast shape on the profile tier keeps the offer right under the hero', () => {
+  const small = {...thin, report_json: {...thin.report_json, content_system: {...thin.report_json.content_system, firm: {staff: 4, band: 'small'}}}};
+  const {container} = page(small);
+  expect(sections(container).slice(0, 3)).toEqual(['hero', 'offer', 'profile']);
+ });
+ it('the close prints the approved line, never the saved rationale note', () => {
+  const close = rich.report_json.content_system.story_v1.rationale.close;
+  expect(close).toBeTruthy();
+  const {container} = page(rich);
+  const sec = container.querySelector('[data-scan-section="close"]')!;
+  expect(sec.querySelector('p')!.textContent).toBe(CLOSE.body);
+  expect(container.textContent).not.toContain(close);
+ });
+ it('the old layout still prints the saved rationale in its close', () => {
+  const {container} = page(rich, true);
+  expect(container.textContent).toContain(rich.report_json.content_system.story_v1.rationale.close);
+ });
+ it('the stories section is a link target for the partner page', () => {
+  const {container} = page(rich);
+  expect(container.querySelector('#stories[data-scan-section="stories"]')).toBeTruthy();
  });
  it('considered shape order', () => {
   const {container} = page(fewBuyers);

@@ -76,6 +76,11 @@
 .scan-studio.scan-journey .sv2-share{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:8px;font:600 15px StudioSans;color:#f3efe6;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:899px){.scan-studio.scan-journey .sv2-offer-lines{grid-template-columns:minmax(0,1fr);gap:20px}.scan-studio.scan-journey .sv2-offer{padding:40px var(--studio-pad)}.scan-studio.scan-journey .sv2-offer-lines dd,.scan-studio.scan-journey .sv2-price{font-size:16px}}
 
+.scan-studio.scan-journey .sv2-offer.is-compact{padding:36px var(--studio-pad)}
+.scan-studio.scan-journey .sv2-offer.is-compact .sv2-offer-lines dt{margin-bottom:6px}
+.scan-studio.scan-journey .sv2-offer.is-compact .sv2-price{margin-top:20px;padding-top:16px}
+@media(max-width:899px){.scan-studio.scan-journey .sv2-offer.is-compact{padding:28px var(--studio-pad) 32px}.scan-studio.scan-journey .sv2-offer.is-compact .sv2-offer-lines{gap:14px}}
+
 /* Folded steps */
 .scan-studio.scan-journey .sv2-fold{padding:28px var(--studio-pad);scroll-margin-top:90px}
 .scan-studio.scan-journey .sv2-fold+.sv2-fold{padding-top:0}
@@ -103,24 +108,36 @@
 .scan-studio.scan-journey .sv2-story b{display:block;font:700 17px/1.3 StudioSans;color:#f3efe6}.scan-studio.scan-journey .sv2-story span{display:block;font:450 14px/1.4 StudioSans;color:#bdb6aa}
 .scan-studio.scan-journey .sv2-story p{font:450 16px/1.55 StudioSans;color:#f3efe6;margin:10px 0 0;max-width:60ch}.scan-studio.scan-journey .sv2-story strong{font-weight:700}
 .scan-studio.scan-journey .sv2-story a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font:600 15px StudioSans;color:#f3efe6}
-.scan-studio.scan-journey .sv2-close-share{display:flex;max-width:100%;margin-top:14px}
+/* Close. The phone rule in scan-studio.css gives .sp-close a `1fr` track, whose minimum is its widest unbreakable child:
+   one long line (a max-content link, a URL in the paragraph) widened the column past the screen and .scan-studio's
+   overflow clip cut it off. V2 sizes the track from zero and lets the copy wrap. */
+.scan-studio.scan-journey .story-plan-v2 .sp-close>div{min-width:0}
+.scan-studio.scan-journey .story-plan-v2 .sp-close :is(p,small,a){overflow-wrap:break-word}
+@media(max-width:900px){.scan-studio.scan-journey .story-plan-v2 .sp-close{grid-template-columns:minmax(0,1fr)}}
+.scan-studio.scan-journey .sv2-close-share{display:block;max-width:100%;min-height:44px;padding:11px 0;margin-top:4px}
+.scan-studio.scan-journey .sv2-close-share svg{display:inline;vertical-align:-1px;margin-left:6px}
 .scan-studio.scan-journey .sv2-fold-brain{margin-bottom:28px}
 
 /* Partner view */
 .scan-studio.scan-journey .sv2-team{padding-bottom:40px}
-.scan-studio.scan-journey .sv2-team-intro{padding:52px var(--studio-pad) 36px;max-width:980px}
+.scan-studio.scan-journey .sv2-team-intro{padding:44px var(--studio-pad) 28px;max-width:980px}
 .scan-studio.scan-journey .sv2-team-intro h1{font:800 clamp(26px,4vw,44px)/1.14 StudioDisplay,sans-serif;letter-spacing:-.03em;color:#f3efe6;margin:0;text-wrap:balance}
-.scan-studio.scan-journey .sv2-team-part{display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);gap:14px 56px;padding:36px var(--studio-pad);border-top:1px solid #f3efe619}
+.scan-studio.scan-journey .sv2-team-part{display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);gap:12px 56px;padding:28px var(--studio-pad);border-top:1px solid #f3efe619}
 .scan-studio.scan-journey .sv2-team-part>h2{font:800 clamp(24px,2.4vw,32px)/1.1 StudioDisplay,sans-serif;letter-spacing:-.025em;color:#f3efe6;margin:0}
 .scan-studio.scan-journey .sv2-team-part>div{display:grid;gap:12px;min-width:0}
 .scan-studio.scan-journey .sv2-team-line{font:500 17px/1.5 StudioSans;color:#f3efe6;margin:6px 0 0}
 .scan-studio.scan-journey .sv2-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.scan-studio.scan-journey .sv2-steps>li{border:1px solid #f3efe622;border-radius:16px;padding:18px}
+.scan-studio.scan-journey .sv2-steps>li{border:1px solid #f3efe622;border-radius:16px;padding:16px 18px}
 .scan-studio.scan-journey .sv2-step-n{display:block;font:500 12px StudioMono,monospace;color:#e5502f;margin-bottom:8px}
 .scan-studio.scan-journey .sv2-steps b{display:block;font:700 17px/1.3 StudioSans;color:#f3efe6;margin-bottom:8px}
 .scan-studio.scan-journey .sv2-steps ul{margin:0;padding-left:18px;color:#bdb6aa;font:450 15px/1.55 StudioSans}
 .scan-studio.scan-journey .sv2-safety{grid-column:1/-1;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .scan-studio.scan-journey .sv2-safety li{font:500 17px/1.45 StudioSans;color:#f3efe6;padding-left:18px;position:relative}.scan-studio.scan-journey .sv2-safety li:before{content:'';position:absolute;left:0;top:.6em;width:7px;height:7px;background:#e5502f}
-.scan-studio.scan-journey .sv2-team-close{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:40px var(--studio-pad) 0;border-top:1px solid #f3efe619}
+.scan-studio.scan-journey .sv2-team-close{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:28px var(--studio-pad) 0;border-top:1px solid #f3efe619}
+.scan-studio.scan-journey .sv2-team-story .sv2-story{padding-bottom:4px}
+.scan-studio.scan-journey .sv2-team-story>.sv2-share{margin:0 var(--studio-pad) 20px calc(var(--studio-pad) + 82px)}
 @media(max-width:900px){.scan-studio.scan-journey .sv2-team-part{grid-template-columns:minmax(0,1fr)}.scan-studio.scan-journey .sv2-steps,.scan-studio.scan-journey .sv2-safety{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:600px){.scan-studio.scan-journey .sv2-team-intro{padding-top:32px}.scan-studio.scan-journey .sv2-team-close .studio-primary{width:100%}}
+@media(max-width:600px){.scan-studio.scan-journey .sv2-team-intro{padding-top:24px;padding-bottom:20px}.scan-studio.scan-journey .sv2-team-part{padding-top:22px;padding-bottom:22px;gap:10px}.scan-studio.scan-journey .sv2-steps{gap:10px}.scan-studio.scan-journey .sv2-steps>li{padding:14px 16px}.scan-studio.scan-journey .sv2-steps b{margin-bottom:4px}.scan-studio.scan-journey .sv2-safety{gap:8px}.scan-studio.scan-journey .sv2-team .sv2-offer{padding:24px var(--studio-pad)}.scan-studio.scan-journey .sv2-team-story .sv2-story{padding-top:22px}.scan-studio.scan-journey .sv2-team-story>.sv2-share{margin-left:var(--studio-pad)}.scan-studio.scan-journey .sv2-team-close{padding-top:22px}.scan-studio.scan-journey .sv2-team-close .studio-primary{width:100%}}
+
+/* Step nav at 360 px: with step 04 current its label ran 10 px past the scrolling list (same on the old layout, left as is). */
+@media(max-width:380px){.scan-studio.scan-journey .story-plan-v2 .sp-nav ol a{padding:0 4px}}
