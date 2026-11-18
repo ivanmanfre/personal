@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {storageImage} from './v2/storageImage';
+import {storageImage, withOriginal} from './v2/storageImage';
 import {motion, useReducedMotion} from 'framer-motion';
 import {ArrowRight, ChevronLeft, ChevronRight, Lock, RotateCw} from 'lucide-react';
 import type {StoryKind} from '../../dev/scan-walkthrough/journey/connectedModel';
@@ -39,7 +39,7 @@ export function LeadMagnetPage({kind, domain}: {kind: StoryKind; domain?: string
       <div className="lmp-cta"><span style={{background: p.accentOnDark, color: p.accentOnDark === p.accent ? p.accentInk : p.dark}}>Send it to me <ArrowRight size={15}/></span><small>Free. Lands in your inbox.</small></div>
       {stats.length > 0 && <dl className="lmp-stats">{stats.map(s => <div key={s.label}><dt style={{color: p.accentOnDark}}><NumberTicker value={s.n}/></dt><dd>{s.label}</dd></div>)}</dl>}
      </div>
-     {plan.coverImage && !coverFailed && <motion.img className="lmp-cover" src={storageImage(plan.coverImage, 900)} alt={`Cover of ${r.title}`} decoding="async" onError={() => setCoverFailed(true)}
+     {plan.coverImage && !coverFailed && <motion.img className="lmp-cover" src={storageImage(plan.coverImage, 900)} alt={`Cover of ${r.title}`} decoding="async" onError={withOriginal(plan.coverImage, () => setCoverFailed(true))}
       initial={reduced ? false : {rotate: 0, y: 30}} whileInView={{rotate: 4, y: 0}} viewport={{once: true, amount: .3}} transition={{type: 'spring', stiffness: 90, damping: 16}}/>}
     </div>
    </section>

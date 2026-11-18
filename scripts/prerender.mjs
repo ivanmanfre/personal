@@ -38,6 +38,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import http from 'node:http';
 import { configurePrerenderImages } from './prerender-images.mjs';
+import { scanHeroOn } from './scan-hero-switch.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -135,11 +136,11 @@ for (const slug of [...(await fetchScanSlugs()), ...(await fetchInlineScanSlugs(
   const r = `/scan/${slug}`;
   if (!ROUTES.includes(r)) ROUTES.push(r);
 }
-// Partner view (/scan/<slug>/team/) for scans that carry a hero, only while the SCAN_HERO switch is on.
+// Partner view (/scan/<slug>/team/) for scans that carry a hero, only while the SCAN_HERO switch is exactly '1'.
 async function fetchTeamScanSlugs() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!url || !key || process.env.VITE_SCAN_HERO === '0' || process.env.SCAN_MIRROR !== '1') return [];
+  if (!url || !key || !scanHeroOn(process.env.VITE_SCAN_HERO) || process.env.SCAN_MIRROR !== '1') return [];
   try {
     const res = await fetch(
       `${url}/rest/v1/scans?status=eq.complete&matched_offer=eq.content_system&report_json->content_system->hero->>v=eq.1&company_slug=not.is.null&select=company_slug`,

@@ -3,6 +3,7 @@ import {useMetadata} from '../../../hooks/useMetadata';
 import {useGoogleFonts} from '../../../hooks/useGoogleFonts';
 import {StudioPlan} from './StudioPlan';
 import {StudioPlanV2} from './StudioPlanV2';
+import {scanHeroOn} from '../../../scripts/scan-hero-switch.mjs';
 import {bookUrl, countLine} from './v2/hero';
 import {PLAN_TITLE} from './v2/copy';
 import {PartnerView} from './v2/PartnerView';
@@ -14,17 +15,27 @@ import '../../dev/scan-walkthrough/story-exhibits.css';
 import '../../dev/scan-walkthrough/journey/journey.css';
 import './scan-studio.css';
 
-/** V2 only when the build switch is not off and the scan carries a checked hero; anything else renders today's plan. */
-export const useV2=(fixture:JourneyFixture)=>import.meta.env.VITE_SCAN_HERO!=='0'&&!!fixture.hero;
-export function StoryBody({fixture,edition}:{fixture:JourneyFixture;edition:StoryEdition}){
+/** V2 only when the build switch is exactly '1' and the scan carries a checked hero; anything else renders today's plan. */
+export const useV2=(fixture:JourneyFixture)=>scanHeroOn(import.meta.env.VITE_SCAN_HERO)&&!!fixture.hero;
+/** Any throw inside the new layout renders today's layout instead, so a malformed scan can never blank the page. */
+export class V2Guard extends React.Component<{fallback:React.ReactNode;onFail?:()=>void;children:React.ReactNode},{failed:boolean}>{
+ state={failed:false};
+ static getDerivedStateFromError(){return {failed:true};}
+ componentDidCatch(){this.props.onFail?.();}
+ render(){return this.state.failed?this.props.fallback:this.props.children;}
+}
+export function StoryBody({fixture,edition,legacy=false,onV2Fail}:{fixture:JourneyFixture;edition:StoryEdition;legacy?:boolean;onV2Fail?:()=>void}){
  const clean=React.useMemo(()=>fillEdition(edition),[edition]);
- const Plan=useV2(fixture)?StudioPlanV2:StudioPlan;
- return <StoryContext.Provider value={clean}><Plan key={fixture.slug} fixture={fixture} kind={edition.art}/></StoryContext.Provider>;
+ const old=<StudioPlan key={fixture.slug} fixture={fixture} kind={edition.art}/>;
+ const body=!legacy&&useV2(fixture)?<V2Guard fallback={old} onFail={onV2Fail}><StudioPlanV2 key={fixture.slug} fixture={fixture} kind={edition.art}/></V2Guard>:old;
+ return <StoryContext.Provider value={clean}>{body}</StoryContext.Provider>;
 }
 /** "{First}, {count line}" when the hero has one, else the plan title the prerender already accepts. */
 function v2Title(fixture:JourneyFixture){
- const hero=fixture.hero!,line=hero.lead?countLine(hero.count,hero.lead.source):null;
- return line?`${fixture.founder.firstName}, ${line.replace(/\.$/,'')}`:PLAN_TITLE(fixture.founder.firstName);
+ try{
+  const hero=fixture.hero!,line=hero.lead?countLine(hero.count,hero.lead.source):null;
+  return line?`${fixture.founder.firstName}, ${line.replace(/\.$/,'')}`:PLAN_TITLE(fixture.founder.firstName);
+ }catch{return PLAN_TITLE(fixture.founder.firstName);}
 }
 export default function ScanStoryReport({fixture,edition,review=false,view='main'}:{fixture:JourneyFixture;edition:StoryEdition;review?:boolean;view?:'main'|'team'}){
  React.useEffect(()=>{
@@ -34,7 +45,9 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
   return()=>{if(icon&&previous!==null&&previous!==undefined)icon.setAttribute('href',previous)};
  },[]);
  useGoogleFonts([fixture.samples.lm?.brand?.font_heading,edition.resource?.brand?.font]);
- const v2=useV2(fixture),team=v2&&view==='team';
+ // A throw inside the new layout flips the whole page (title, top bar, body) back to today's layout.
+ const [v2Failed,setV2Failed]=React.useState(false);
+ const v2=useV2(fixture)&&!v2Failed,team=v2&&view==='team',fail=React.useCallback(()=>setV2Failed(true),[]);
  // The V2 hero's first line is set in the display face: preload it so the swap cannot shift the page (the prerender bakes the tag).
  React.useEffect(()=>{
   if(!v2||document.head.querySelector('link[data-sv2-font]'))return;
@@ -45,6 +58,6 @@ export default function ScanStoryReport({fixture,edition,review=false,view='main
  return <main className="scan-journey scan-studio" id="top">
   {!team&&<a href="#content" className="journey-skip">Skip to your samples</a>}
   <div className="journey-topbar"><a href="#top" className="journey-wordmark" aria-label="InboundOnSteroids">inbound<b>on</b>steroids</a>{v2?<a className="studio-topbar-cta" href={bookUrl(fixture.slug,team?'team-header':'header')} target="_blank" rel="noreferrer" data-scan-click={team?'book-team-header':'book-header'}>Book a call</a>:<a className="studio-topbar-cta" href="https://calendly.com/im-ivanmanfredi/30min">Book a call</a>}</div>
-  {team?<PartnerView fixture={fixture}/>:<StoryBody fixture={fixture} edition={edition}/>}
+  {team?<V2Guard fallback={<StoryBody fixture={fixture} edition={edition} legacy/>} onFail={fail}><PartnerView fixture={fixture}/></V2Guard>:<StoryBody fixture={fixture} edition={edition} legacy={!v2} onV2Fail={fail}/>}
  </main>;
 }

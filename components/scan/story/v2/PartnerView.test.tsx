@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import {describe, it, expect, afterEach, vi} from 'vitest';
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest';
 import {render, cleanup, screen} from '@testing-library/react';
 import './__fixtures__/dom';
 import ScanStoryReport from '../ScanStoryReport';
@@ -9,6 +9,8 @@ import {validateEdition} from '../validate';
 import {OFFER, START_NOTE, TEAM} from './copy';
 import rich from '../../../dev/scanlab/v2-rich.json';
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); });
+// The new layout is on only when the build switch is exactly '1'.
+beforeEach(() => { vi.stubEnv('VITE_SCAN_HERO', '1'); });
 
 const withPartner = (story: string | null) => ({...rich, report_json: {...rich.report_json, content_system: {...rich.report_json.content_system, partner: {story}}}});
 const team = (row: any) => { const f = toStoryFixture(row), {edition} = validateEdition(row.report_json.content_system.story_v1, f, true); return render(<ScanStoryReport fixture={f} edition={edition!} view="team"/>); };

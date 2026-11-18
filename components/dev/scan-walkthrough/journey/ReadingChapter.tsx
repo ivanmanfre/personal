@@ -1,5 +1,5 @@
 import React from 'react';
-import {storageImage} from '../../../scan/story/v2/storageImage';
+import {storageImage, withOriginal} from '../../../scan/story/v2/storageImage';
 import { motion, useReducedMotion } from 'framer-motion';
 import { RichText } from '../../../scan/story/RichText';
 export const labels: Record<string,string> = { content: 'Get noticed', inbound: 'Capture the lead', newsletter: 'Stay in touch', outreach: 'Warm outreach', together: 'Bring it together' };
@@ -23,5 +23,5 @@ export function Paragraphs({ text, className = 'sample-body' }: {text: string; c
  * same photo each revalidate, while eager copies share one in-flight request. */
 export function Avatar({ src, name, alt = '' }: {src?: string; name: string; alt?: string}) {
   const [failed,setFailed] = React.useState(false);
-  return <span className="journey-avatar">{src && !failed ? <img src={storageImage(src, 96)} alt={alt} decoding="async" onError={() => setFailed(true)}/> : name.split(' ').map(n => n[0]).slice(0,2).join('')}</span>;
+  return <span className="journey-avatar">{src && !failed ? <img src={storageImage(src, 96)} alt={alt} decoding="async" onError={withOriginal(src, () => setFailed(true))}/> : name.split(' ').map(n => n[0]).slice(0,2).join('')}</span>;
 }

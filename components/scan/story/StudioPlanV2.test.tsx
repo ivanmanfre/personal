@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import {describe, it, expect, afterEach, vi} from 'vitest';
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest';
 import {render, cleanup, fireEvent, screen} from '@testing-library/react';
 import './v2/__fixtures__/dom';
 import ScanStoryReport from './ScanStoryReport';
@@ -12,6 +12,8 @@ import fewBuyers from '../../dev/scanlab/v2-few-buyers.json';
 import thin from '../../dev/scanlab/v2-thin.json';
 import ownOnly from '../../dev/scanlab/v2-own-only.json';
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); });
+// The new layout is on only when the build switch is exactly '1'.
+beforeEach(() => { vi.stubEnv('VITE_SCAN_HERO', '1'); });
 
 const load = (row: any, strip = false) => {
  const r = strip ? {...row, report_json: {...row.report_json, content_system: {...row.report_json.content_system, hero: undefined}}} : row;
@@ -74,11 +76,15 @@ describe('StudioPlanV2', () => {
   expect(sections(container)[1]).toBe('profile');
  });
  it('no reach projection anywhere', () => { page(rich); expect(screen.queryByText(/named leads a month/)).toBeNull(); });
- it('the four chapters are folded', () => {
+ it('the four chapters are folded natively, with their samples already in the HTML', () => {
   const {container} = page(rich);
-  expect(container.querySelector('.sp-exhibit')).toBeNull();
-  fireEvent.click(container.querySelector('#content .sv2-fold-toggle')!);
-  expect(container.querySelector('#content .sp-exhibit')).toBeTruthy();
+  const folds = [...container.querySelectorAll<HTMLDetailsElement>('details.sv2-fold-details')];
+  expect(folds).toHaveLength(4);
+  expect(folds.every(d => !d.open)).toBe(true);
+  // Round 1 finding 4: every sample is in the markup while folded, so the prerender and assistive tech have it.
+  expect(container.querySelector('#content details .sp-exhibit')).toBeTruthy();
+  fireEvent.click(container.querySelector('#content summary')!);
+  expect(folds[0].open).toBe(true);
  });
  it('three booking placements', () => {
   const {container} = page(rich);
@@ -103,11 +109,14 @@ describe('StudioPlanV2', () => {
   expect(container.querySelector('.sp-audit')).toBeTruthy();
   expect(container.querySelector('.sv2-hero')).toBeNull();
  });
- it('the build flag wins', () => {
-  vi.stubEnv('VITE_SCAN_HERO', '0');
+ // Round 1 finding 1: an unset switch turned the new layout on. Only exactly '1' does.
+ it.each([[undefined, false], ['0', false], ['1', true], ['true', false], [' 1', false], ['1 ', false], ['01', false], ['on', false], ['', false]])('switch %j gives the new layout: %s', (value, on) => {
+  vi.unstubAllEnvs();
+  if (value !== undefined) vi.stubEnv('VITE_SCAN_HERO', value);
+  expect(import.meta.env.VITE_SCAN_HERO).toBe(value);
   const {container} = page(rich);
-  expect(container.querySelector('.sp-audit')).toBeTruthy();
-  expect(container.querySelector('.sv2-hero')).toBeNull();
+  expect(!!container.querySelector('.sv2-hero')).toBe(on);
+  expect(!!container.querySelector('.sp-audit')).toBe(!on);
  });
  it('the title names the first name and the count line', () => {
   page(rich);

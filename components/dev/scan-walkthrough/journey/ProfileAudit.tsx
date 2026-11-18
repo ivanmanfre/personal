@@ -1,5 +1,5 @@
 import React from 'react';
-import {storageImage} from '../../../scan/story/v2/storageImage';
+import {storageImage, withOriginal} from '../../../scan/story/v2/storageImage';
 import type { ProfileAudit, ProfileFinding } from './model';
 import './profile-audit.css';
 
@@ -42,8 +42,8 @@ export function ProfileAuditSection({ audit }: { audit: ProfileAudit }) {
         <h2>What a buyer sees on your profile</h2>
         <p>Before someone books a call with you, they open your LinkedIn profile to check who you are and what you do. This is what they find on yours today, and what to change so they book.</p>
         {hasImages && <div className="profile-audit-images">
-          {audit.bannerUrl && <img className="profile-audit-banner" src={storageImage(audit.bannerUrl, 1200)} alt="Banner from the audited LinkedIn profile" loading="lazy" />}
-          {audit.avatarUrl && <img className="profile-audit-avatar" src={storageImage(audit.avatarUrl, 192)} alt="Photo from the audited LinkedIn profile" loading="lazy" />}
+          {audit.bannerUrl && <img className="profile-audit-banner" src={storageImage(audit.bannerUrl, 1200)} onError={withOriginal(audit.bannerUrl)} alt="Banner from the audited LinkedIn profile" loading="lazy" />}
+          {audit.avatarUrl && <img className="profile-audit-avatar" src={storageImage(audit.avatarUrl, 192)} onError={withOriginal(audit.avatarUrl)} alt="Photo from the audited LinkedIn profile" loading="lazy" />}
         </div>}
       </header>
       <ol className="profile-findings">{findings.map(f => { const t = todayLine(f); return <li key={f.area || f.label} className="profile-finding" data-state={f.state}>

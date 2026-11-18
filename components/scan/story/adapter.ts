@@ -24,11 +24,20 @@ const linkedin=(x:unknown,kind:'in'|'posts')=>{const u=https(x);return u&&LINKED
 const count=(x:unknown)=>Number.isInteger(x)&&(x as number)>=0?x as number:null;
 const TIERS=['competitor_commenter','competitor_liker','own_engager','profile'] as const;
 const isoDate=(x:unknown)=>{const s=str(x);return /^\d{4}-\d{2}-\d{2}/.test(s)&&!Number.isNaN(new Date(s).getTime())?s.slice(0,10):undefined;};
+/** A real calendar day (2026-02-31 is rejected, not rolled into March); anything else gives no date. */
+export const calendarDate=(x:unknown)=>{
+ const s=str(x),m=/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(s);
+ if(!m||Number.isNaN(new Date(s).getTime()))return undefined;
+ const [y,mo,d]=[+m[1],+m[2],+m[3]],t=new Date(Date.UTC(y,mo-1,d));
+ return t.getUTCFullYear()===y&&t.getUTCMonth()===mo-1&&t.getUTCDate()===d?s.slice(0,10):undefined;
+};
 function heroRow(x:unknown):HeroRow|null{
  const r=record(x),name=str(r.name);
  if(!name)return null;
- const source=(['competitor','topic','own'] as const).find(v=>v===r.source)??'competitor',how=(['commented','liked','engaged'] as const).find(v=>v===r.how)??'engaged';
- const date=isoDate(r.date),dateKind=date?(['comment','post'] as const).find(v=>v===r.date_kind):undefined;
+ // The signal and its source are the sentence: a missing or unknown value rejects the row (and so the hero).
+ const source=(['competitor','topic','own'] as const).find(v=>v===r.source),how=(['commented','liked','engaged'] as const).find(v=>v===r.how);
+ if(!source||!how)return null;
+ const date=calendarDate(r.date),dateKind=date?(['comment','post'] as const).find(v=>v===r.date_kind):undefined;
  const author=str(r.author)||undefined,profileUrl=linkedin(r.profile_url,'in'),postUrl=linkedin(r.post_url,'posts');
  return {name,role:str(r.role),headline:str(r.headline),source,how,postExcerpt:str(r.post_excerpt),reason:str(r.reason),...(profileUrl?{profileUrl}:{}),...(author?{author}:{}),...(postUrl?{postUrl}:{}),...(date?{date}:{}),...(dateKind?{dateKind}:{})};
 }
@@ -57,6 +66,16 @@ function parseFirm(x:unknown):FirmSize{
  const f=record(x),band=(['small','larger','unknown'] as const).find(v=>v===f.band)??'unknown',staff=count(f.staff);
  return band==='unknown'||staff===null||staff===0?{band}:{staff,band};
 }
+/** Optional fields the new layout reads from an own-engager row, as strings or absent. Text keeps its spacing so today's layout reads the same. */
+const text=(x:unknown)=>typeof x==='string'?x:'';
+function ownSignal(n:Record<string,any>){
+ const out:Record<string,string>={};
+ if('role' in n)out.role=text(n.role);
+ if('how' in n)out.how=n.how==='commented'||n.how==='liked'?n.how:'engaged';
+ if('date' in n){const d=calendarDate(n.date);if(d)out.date=d;else out.date='';}
+ if('profile_url' in n)out.profile_url=linkedin(n.profile_url,'in')||'';
+ return out;
+}
 export interface StoryScanRow {company_slug:string;company_name?:string|null;domain?:string|null;completed_at?:string|null;report_json:unknown}
 /** No current-date, demo-person, fabricated metric or other-lead fallback. */
 export function toStoryFixture(row:StoryScanRow):JourneyFixture {
@@ -65,7 +84,7 @@ export function toStoryFixture(row:StoryScanRow):JourneyFixture {
  const posts=Array.isArray(samples.posts)?samples.posts.filter(p=>p&&typeof p==='object'&&typeof p.hook==='string').map(p=>({...p,source_quote:str(p.source_quote)})):[];
  const a=record(cs.audience);
  const people=(v:unknown)=>Array.isArray(v)?v.filter(n=>n&&typeof n.name==='string'&&n.name.trim()).map(n=>({...n,headline:str(n.headline)})):[];
- const audience=Object.keys(a).length?{...a,named:Array.isArray(a.named)?a.named.filter(n=>n&&typeof n.name==='string').map(n=>({...n,headline:str(n.headline)})):[],existing_clients:people(a.existing_clients)}:undefined;
+ const audience=Object.keys(a).length?{...a,named:Array.isArray(a.named)?a.named.filter(n=>n&&typeof n.name==='string').map(n=>({...n,headline:str(n.headline),...ownSignal(n)})):[],existing_clients:people(a.existing_clients)}:undefined;
  const icp=record(samples.icp_targeting),segments=Array.isArray(icp.segments)?icp.segments.filter(s=>s&&typeof s.label==='string'):[];
  const date=str(a.audited_at)||str(row.completed_at);
  // Profile audit (flagged builds only): shown when the report carries at least two complete findings.

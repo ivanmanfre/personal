@@ -13,6 +13,8 @@ const subscribe = (cb: () => void) => { const m = window.matchMedia?.(PHONE); m?
 const useShown = () => useSyncExternalStore(subscribe, () => (window.matchMedia?.(PHONE).matches ? 3 : 5), () => 5);
 const shortName = (name: string) => name.split(/\s+[|(]|:\s|\s[-–]\s/)[0].trim();
 const initials = (name: string) => name.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, '')[0]).filter(Boolean).slice(0, 2).join('');
+const LIST_ID = 'buyers-outside-list';
+export const SHOW = {more: (n: number) => `Show ${n} more people`, fewer: 'Show fewer'};
 const LINKEDIN_IN = /^https:\/\/(www\.)?linkedin\.com\/in\//;
 
 function OutsideRow({p}: {p: CompetitorEngager}) {
@@ -31,13 +33,14 @@ function OutsideRow({p}: {p: CompetitorEngager}) {
 function Outside({fixture}: {fixture: JourneyFixture}) {
  const data = fixture.competitorEngagers!, checked = fixture.hero?.checked;
  const [open, setOpen] = useState(false), shown = useShown();
- const hidden = !open && data.people.length > shown + 1 ? data.people.length - shown : 0;
- const people = hidden ? data.people.slice(0, shown) : data.people;
+ // One control that toggles both ways and stays in place, so focus never drops to the page.
+ const extra = data.people.length > shown + 1 ? data.people.length - shown : 0;
+ const people = extra && !open ? data.people.slice(0, shown) : data.people;
  return <div className="sv2-part" data-part="outside">
   <h2>Buyers reading posts in your market</h2>
   {checked && <p className="sv2-checked">{CHECKED(checked.people, checked.passed)}</p>}
-  <ol className="sv2-list">{people.map(p => <OutsideRow key={p.profileUrl} p={p}/>)}</ol>
-  {hidden > 0 && <button type="button" className="sv2-show" onClick={() => setOpen(true)}>Show {hidden} more people</button>}
+  <ol className="sv2-list" id={LIST_ID}>{people.map(p => <OutsideRow key={p.profileUrl} p={p}/>)}</ol>
+  {extra > 0 && <button type="button" className="sv2-show" aria-expanded={open} aria-controls={LIST_ID} onClick={() => setOpen(o => !o)}>{open ? SHOW.fewer : SHOW.more(extra)}</button>}
  </div>;
 }
 
