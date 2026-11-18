@@ -106,3 +106,4 @@
 [data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages ul{list-style:none;padding:0;margin:0;display:grid;gap:6px}
 [data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:15px;padding:6px 0;border-bottom:1px solid rgba(17,17,17,.08)}
 [data-rise-story="rise-standard-2026-11-17"] .rv2-cat-ages a{min-height:44px;display:inline-flex;align-items:center;color:inherit}
+[data-rise-story="rise-standard-2026-11-17"] .rv2-cat-searched{margin-top:24px;padding-top:16px;border-top:1px solid rgba(17,17,17,.12)}

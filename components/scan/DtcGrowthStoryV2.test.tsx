@@ -227,7 +227,7 @@ describe('owner-eyes rulings (F1, F3, F4)', () => {
   });
 });
 
-describe('ruling 2 and G4 (2026-11-18)', () => {
+describe('ruling 2, H2 and H5 (2026-11-18)', () => {
   const only = () => { const d = withCat(); d.tests = []; const p = d.presentation; p.sections = []; p.first_screen = { case: 'advertiser', lead_test_index: null, ads_line: p.first_screen.ads_line, lead: 'outside' };
     p.headline = p.category_read.findings[0].headline; return d; };
   it('a page of outside findings alone renders, and the validator refuses it without the outside lead', () => {
@@ -240,10 +240,18 @@ describe('ruling 2 and G4 (2026-11-18)', () => {
     expect(h.querySelector('.rv2-hero .ris-label')!.textContent).toBe('Growth review · 2 findings');
     expect(h.querySelector('#category-read')).not.toBeNull();
   });
-  it('G4: a what-your-ads-do-not-sell finding may lead with fewer than 3 brands', () => {
+  it('H5: what-your-ads-do-not-sell is her own card, so the other-brands section refuses that kind and cannot lead with it under 3 brands', () => {
     const d = withCat(); const c = d.presentation.category_read; c.findings[0].kind = 'ads_miss';
-    d.presentation.first_screen.lead = 'outside'; d.presentation.headline = c.findings[0].headline;
+    expect(canShowStandardStoryV2(d)).toBe(false);
+    const e = withCat(); e.presentation.category_read.base.brands = 2;
+    e.presentation.first_screen.lead = 'outside'; e.presentation.headline = e.presentation.category_read.findings[0].headline;
+    expect(canShowStandardStoryV2(e)).toBe(false);
+  });
+  it('H2: the bounded search line renders inside the other-brands section, and a malformed one is refused', () => {
+    const line = 'We searched the Ad Library for "toy boat kit for toddlers" in the US and checked the 6 advertisers whose ads link to their own store; none of them sells a one-off toy boat kit.';
+    const d = withCat(); d.presentation.category_read.searched = [line];
     expect(canShowStandardStoryV2(d)).toBe(true);
-    expect(html(d).querySelector('#category-read')!.textContent).toContain('Your ads and your best sellers');
+    expect(html(d).querySelector('#category-read .rv2-cat-searched')!.textContent).toBe(line);
+    for (const bad of [[], [''], [line, line, line], 'x']) { const x = withCat(); (x.presentation.category_read as any).searched = bad; expect(canShowStandardStoryV2(x)).toBe(false); }
   });
 });

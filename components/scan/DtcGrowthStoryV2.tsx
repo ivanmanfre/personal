@@ -32,12 +32,13 @@ type CategoryAd = { brand: string; ad_url: string; image_url: string | null; sta
 type CategoryAge = { brand: string; ad_url: string; start_date: string; days: number | null; opening?: string | null };
 type CategoryRead = { observed_at: string | null; base: { brands: number; ads: number }; brands: { name: string; domain?: string; market: string | null; relation?: string; ads_read: number; label?: 'larger brand' }[];
   findings: { kind: string; headline: string; body: string; ads: CategoryAd[]; change?: { type: 'ad_line' | 'landing' | 'page'; text: string } }[];
-  ages?: CategoryAge[]; own_oldest?: CategoryAge | Omit<CategoryAge, 'brand'> | null };
-// F1 (2026-11-18): a verified outside finding leads when at least 3 brands were read.
-// G4: "what your ads do not sell" is a misroute and may lead with fewer brands; ruling 2: with no finding of her own
-// left, the outside findings are the page.
+  ages?: CategoryAge[]; own_oldest?: CategoryAge | Omit<CategoryAge, 'brand'> | null;
+  // H2: the bounded "none found" line of a phrase search that succeeded, with its base (built by the builder).
+  searched?: string[] };
+// F1 (2026-11-18): a verified outside finding leads when at least 3 brands were read; ruling 2: with no finding of
+// her own left, the outside findings are the page. H5: "what your ads do not sell" is one of her own finding cards.
 export const outsideLeads = (c?: CategoryRead | null, ownSections?: number) => !!c && Array.isArray(c.findings) && c.findings.length > 0 && !!c.findings[0]
-  && (ownSections === 0 || c.findings[0].kind === 'ads_miss' || (Number.isInteger(c.base?.brands) && c.base.brands >= 3));
+  && (ownSections === 0 || (Number.isInteger(c.base?.brands) && c.base.brands >= 3));
 // Ruling 2 (2026-11-18): outside findings count as findings, so a page renders from them alone. Mirror of
 // dtc_story_v2._row_ok + _renders_v2 for a story with no section.
 function outsideOnlyOk(data: DtcCommercialEvidence, s: DtcStandardPresentationV2): boolean {
@@ -58,7 +59,7 @@ function extrasOk(s: DtcStandardPresentationV2): boolean {
   if (s.dm_quote != null && !(typeof s.dm_quote.quote === 'string' && s.dm_quote.quote.trim())) return false;
   return true;
 }
-const CATEGORY_KINDS = ['landing', 'opening', 'offer', 'format', 'age', 'none_do', 'ads_miss'];
+const CATEGORY_KINDS = ['landing', 'opening', 'offer', 'format', 'age', 'none_do'];
 const CATEGORY_LANDS = ['product', 'bundle', 'collection', 'home', 'quiz', 'other_page', 'brand_other_site', 'other_site', 'meta_surface', 'none'];
 const text = (v: unknown) => typeof v === 'string' && !!v.trim();
 const isoDay = (v?: string | null) => /^\d{4}-\d{2}-\d{2}$/.test(v || '') && dated(v);
@@ -70,6 +71,7 @@ function categoryOk(c: CategoryRead): boolean {
   if (!c.brands.every(b => b && text(b.name) && (b.market == null || text(b.market)) && (b.label == null || b.label === 'larger brand') && Number.isInteger(b.ads_read))) return false;
   if (c.ages != null && !(Array.isArray(c.ages) && c.ages.every(g => g && text(g.brand) && safe(g.ad_url) && isoDay(g.start_date) && (g.days == null || Number.isInteger(g.days))))) return false;
   if (c.own_oldest != null && !(safe(c.own_oldest.ad_url) && isoDay(c.own_oldest.start_date))) return false;
+  if (c.searched != null && !(Array.isArray(c.searched) && c.searched.length > 0 && c.searched.length <= 2 && c.searched.every(text))) return false;
   return c.findings.every(f => f && CATEGORY_KINDS.includes(f.kind) && text(f.headline) && text(f.body) && Array.isArray(f.ads) && f.ads.length <= 3
     && (f.change == null || (['ad_line', 'landing', 'page'].includes(f.change.type) && text(f.change.text)))
     && f.ads.every(a => a && text(a.brand) && safe(a.ad_url) && (a.image_url == null || safe(a.image_url)) && (a.start_date == null || isoDay(a.start_date))
@@ -247,7 +249,6 @@ function CategoryReadSection({ cat, brand, lead = false }: { cat: CategoryRead; 
     <p className="ris-body" data-reveal>We read {ads} active {ads === 1 ? 'ad' : 'ads'} from {n} {n === 1 ? 'brand' : 'brands'}{isoDay(cat.observed_at) ? ` on ${day(cat.observed_at)}` : ''}. Public ad records show what is running and since when. They do not show spend or sales.</p>
     <ul className="rv2-cat-brands" data-reveal>{cat.brands.map(b => <li key={b.name}><strong>{b.name}</strong><small>{[b.market, b.label, `${b.ads_read} ${b.ads_read === 1 ? 'ad' : 'ads'} read`].filter(Boolean).join(' · ')}</small></li>)}</ul>
     {cat.findings.map((f, k) => <article key={k} className="rv2-cat-finding" data-reveal>
-      {f.kind === 'ads_miss' ? <p className="ris-label">Your ads and your best sellers</p> : null}
       {lead && k === 0 ? null : <h3>{f.headline}</h3>}
       <p className="ris-body">{f.body}</p>
       {f.change ? <p className="rv2-cat-change"><strong>{f.change.type === 'ad_line' ? 'An ad line you could run' : f.change.type === 'page' ? 'Where you could send the ad' : 'A landing change you could make'}</strong>{f.change.text}</p> : null}
@@ -260,6 +261,7 @@ function CategoryReadSection({ cat, brand, lead = false }: { cat: CategoryRead; 
       </a></li>)}</ol> : null}
     </article>)}
     <Ages cat={cat} />
+    {cat.searched?.length ? <div className="rv2-cat-searched" data-reveal>{cat.searched.map(x => <p key={x} className="ris-body">{x}</p>)}</div> : null}
   </div></section>;
 }
 
