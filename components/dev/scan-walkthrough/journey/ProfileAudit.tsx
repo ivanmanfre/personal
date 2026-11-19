@@ -1,4 +1,5 @@
 import React from 'react';
+import {storageImage, withOriginal} from '../../../scan/story/v2/storageImage';
 import type { ProfileAudit, ProfileFinding } from './model';
 import './profile-audit.css';
 
@@ -7,7 +8,7 @@ const ORDER = ['booking', 'headline', 'banner', 'about', 'featured'];
 const rank = (area: string) => { const i = ORDER.indexOf(area); return i < 0 ? ORDER.length : i; };
 const SHOWN = 3;
 
-/** A web address reads as softstorm.in, never https://www.softstorm.in/. */
+/** A web address reads as quillmarsh.example, never https://www.quillmarsh.example/. */
 export const bareUrls = (text: string) => text
   .replace(/\bhttps?:\/\/(?:www\.)?([^\s<>"“”]+?)\/?(?=[\s"“”)]|[.,;:!?](?:\s|$)|$)/gi, '$1')
   .replace(/\bwww\.(?=[a-z0-9-]+\.)/gi, '');
@@ -41,8 +42,8 @@ export function ProfileAuditSection({ audit }: { audit: ProfileAudit }) {
         <h2>What a buyer sees on your profile</h2>
         <p>Before someone books a call with you, they open your LinkedIn profile to check who you are and what you do. This is what they find on yours today, and what to change so they book.</p>
         {hasImages && <div className="profile-audit-images">
-          {audit.bannerUrl && <img className="profile-audit-banner" src={audit.bannerUrl} alt="Banner from the audited LinkedIn profile" loading="lazy" />}
-          {audit.avatarUrl && <img className="profile-audit-avatar" src={audit.avatarUrl} alt="Photo from the audited LinkedIn profile" loading="lazy" />}
+          {audit.bannerUrl && <img className="profile-audit-banner" src={storageImage(audit.bannerUrl, 1200)} onError={withOriginal(audit.bannerUrl)} alt="Banner from the audited LinkedIn profile" loading="lazy" />}
+          {audit.avatarUrl && <img className="profile-audit-avatar" src={storageImage(audit.avatarUrl, 192)} onError={withOriginal(audit.avatarUrl)} alt="Photo from the audited LinkedIn profile" loading="lazy" />}
         </div>}
       </header>
       <ol className="profile-findings">{findings.map(f => { const t = todayLine(f); return <li key={f.area || f.label} className="profile-finding" data-state={f.state}>

@@ -1,0 +1,309 @@
+{
+  "company_name": "Lunanails",
+  "domain": "lunanails.example",
+  "dtc": {
+    "brand": {
+      "ink_hex": "#111111",
+      "is_dark": false,
+      "logo_url": "https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png",
+      "wordmark": "RISE DTC",
+      "font_body": "Manrope",
+      "accent_hex": "#ffc71d",
+      "booking_url": "https://meetings.hubspot.com/mattan5/rise-intro-call--li",
+      "surface_hex": "#ffffff",
+      "font_heading": "Sora",
+      "og_image_url": "https://risedtc.com/wp-content/uploads/2025/04/Social-Sharing-3.jpg"
+    },
+    "builder_version": "dtc-2026-10-11b",
+    "quality": {
+      "reason": null,
+      "version": "rise-quality-2026-09-30",
+      "approved": true,
+      "lead_ref": "second_order.0",
+      "delivery_summary": "One issue the public pages show: No subscribe or refill option on Builder Gel WREN. The scan includes the evidence and a proposed fix. Actual impact needs your numbers."
+    },
+    "drop_off": {
+      "note": "Nothing on your public pages stood out as a place shoppers stall before checkout. Your checkout and analytics aren't public, so that's the first thing Mattan opens on a call.",
+      "items": []
+    },
+    "second_order": {
+      "note": "Your repeat-order rate isn't public, so we read what your store gives a first-time buyer to come back for.",
+      "items": [
+        {
+          "id": "no_reorder_path",
+          "fix": "Test a subscribe-and-save option on Builder Gel WREN, with a small discount on each repeat delivery.",
+          "lever": "retention_path",
+          "title": "No subscribe or refill option on Builder Gel WREN",
+          "detail": "Builder Gel WREN is something a customer uses up, but its page only sells one-time orders, so the next order depends on them remembering to come back.",
+          "product": {
+            "url": "https://lunanails.example/products/builder-gel-pim",
+            "price": 359.0,
+            "title": "Builder Gel WREN",
+            "currency": "SEK",
+            "image_url": "https://cdn.shopify.com/s/files/1/0000/0000/0000/files/fixture-c784957810.png"
+          },
+          "evidence": {
+            "label": "Subscribe option on the replenishable products checked",
+            "value": "None on these 2 replenishable product records: Builder Gel WREN; Nagellim",
+            "source_url": "https://lunanails.example/products/builder-gel-pim"
+          },
+          "verified": {
+            "ok": true,
+            "quote": "Builder Gel WREN: none",
+            "source_url": "data",
+            "judge_version": "claims-2026-10-01t"
+          }
+        }
+      ]
+    },
+    "shippable": {
+      "ok": true,
+      "reason": null,
+      "gap_findings": 0,
+      "drop_off_items": 0,
+      "rise_gap_findings": 0,
+      "second_order_items": 1
+    },
+    "commercial_evidence": {
+      "tests": [
+        {
+          "test": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+          "title": "Offer Bonder with Primer",
+          "measure": "Sales per visitor to the Primer page. Also check Primer-only orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Bonder",
+              "source_url": "https://lunanails.example/products/luna-prep-primer"
+            },
+            {
+              "kind": "store",
+              "quote": "Anv\u00e4nds tillsammans med v\u00e5r Primer",
+              "source_url": "https://lunanails.example/products/luna-bond-base"
+            }
+          ],
+          "observation": "Both pages say the products are used together. The pairing appears in their product descriptions."
+        },
+        {
+          "test": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+          "title": "Bring ROOK\u2019s handling advice closer to the buy button",
+          "measure": "Purchases per ROOK page visitor. Also check returns and comments about lamp heat.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "flash cura: h\u00e4rda 1-2 sekunder",
+              "source_url": "https://lunanails.example/products/builder-gel-rook"
+            },
+            {
+              "kind": "store",
+              "quote": "Gelen h\u00e4rdas i 120 sekunder",
+              "source_url": "https://lunanails.example/products/builder-gel-rook"
+            }
+          ],
+          "observation": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering."
+        },
+        {
+          "test": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
+          "title": "Send the colour-swatch ad to the gel collection",
+          "measure": "Sales per ad click. Also check order value and returns.",
+          "evidence": [
+            {
+              "kind": "ad",
+              "quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=2207340872586690"
+            },
+            {
+              "kind": "store",
+              "quote": "Fiber Gel ODIN 359 SEK",
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "ad",
+              "quote": "Uppt\u00e4ck Lunanails mest \u00e4lskade gel f\u00e4rger",
+              "source_url": "https://www.facebook.com/ads/library/?id=0233035021229954"
+            }
+          ],
+          "observation": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately."
+        },
+        {
+          "test": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+          "title": "Help shoppers reach free shipping",
+          "measure": "Sales per cart visit. Also check completed orders and returns.",
+          "evidence": [
+            {
+              "kind": "store",
+              "quote": "Fri frakt \u00f6ver 999 kr inom Sverige",
+              "source_url": "https://lunanails.example/"
+            },
+            {
+              "kind": "store",
+              "quote": "Nagellim 89 SEK",
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
+            },
+            {
+              "kind": "store",
+              "quote": "CLEAR-MIST, Prep & Clean 119 SEK",
+              "source_url": "https://lunanails.example/collections/all?sort_by=best-selling"
+            }
+          ],
+          "observation": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK."
+        }
+      ],
+      "status": "present",
+      "version": "commercial-2026-10-11",
+      "journeys": [
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=2714628530637789",
+          "ad_excerpt": "Den d\u00e4r k\u00e4nslan n\u00e4r du tittar ner p\u00e5 dina naglar",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://lunanails.example/",
+            "https://lunanails.example/products/builder-gel-pim",
+            "https://lunanails.example/products/builder-gel-rook",
+            "https://lunanails.example/collections/luna-tips",
+            "https://lunanails.example/products/builder-gel-arlo",
+            "https://lunanails.example/collections/luna-gels/products/builder-gel-vale"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=2207340872586690",
+          "ad_excerpt": "Swatchar alla lunanails fiber gel f\u00e4rger \ud83e\udd29 reklam f\u00f6r lunanails",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto"
+          ]
+        },
+        {
+          "ad_url": "https://www.facebook.com/ads/library/?id=0233035021229954",
+          "ad_excerpt": "Uppt\u00e4ck Lunanails mest \u00e4lskade gel f\u00e4rger",
+          "observed_at": "2026-10-13T21:29:54.081153+00:00",
+          "destinations": [
+            "https://lunanails.example/collections/luna-gels",
+            "https://lunanails.example/collections/luna-tips/products/luna-tip-glue",
+            "https://lunanails.example/collections/luna-tips/products/almond-x-small-lunatips",
+            "https://lunanails.example/collections/luna-tips/products/square-medium-flat-lunatips",
+            "https://lunanails.example/collections/luna-tips",
+            "https://lunanails.example/collections/luna-tips/products/coffin-small-lunatips",
+            "https://lunanails.example/collections/luna-tips/products/almond-small-lunatips"
+          ]
+        }
+      ],
+      "checked_at": "2026-10-13T21:31:02.073637+00:00",
+      "screenshot": {
+        "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
+        "source_url": "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto",
+        "captured_at": "2026-10-13T22:04:24.465752+00:00"
+      },
+      "presentation": {
+        "version": "rise-standard-2026-10-14",
+        "domain": "lunanails.example",
+        "requested_domain": "lunanails.example",
+        "review": {
+          "approved": true,
+          "checked_at": "2026-10-14T00:00:00Z"
+        },
+        "headline": "Your next growth opportunity.",
+        "intro": "We reviewed your store pages and checked the available public ad records. These findings show the changes worth considering and what we would check with your numbers.",
+        "hero_capture": {
+          "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
+          "source_url": "https://lunanails.example/",
+          "captured_at": "2026-10-13T21:32:25.554587+00:00"
+        },
+        "sections": [
+          {
+            "test_index": 2,
+            "headline": "Send the colour-swatch ad to the gel collection",
+            "body": "The ad shows all fiber-gel colours, while its recorded link opens Fiber Gel OTTO. Your store sells other colours separately.",
+            "action": "Run the same ad with a link to the gel collection. Compare it with the OTTO-page link using the same audience and budget.",
+            "lane": "paid",
+            "capture": {
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-story-20261014-current.png",
+              "source_url": "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto",
+              "captured_at": "2026-10-13T22:04:24.465752+00:00"
+            },
+            "ad": {
+              "url": "https://www.facebook.com/ads/library/?id=2207340872586690",
+              "quote": "Swatchar alla lunanails fiber gel f\u00e4rger",
+              "destinations": [
+                "https://lunanails.example/collections/luna-gels/products/fiber-gel-otto"
+              ],
+              "observed_at": "2026-10-13T21:29:54.081153+00:00"
+            }
+          },
+          {
+            "test_index": 0,
+            "headline": "Offer Bonder with Primer",
+            "body": "Both pages say the products are used together. The pairing appears in their product descriptions.",
+            "action": "Add a Bonder + Primer button to the Primer page, with a short explanation of the two steps. Compare sales with the current page.",
+            "lane": "store"
+          },
+          {
+            "test_index": 1,
+            "headline": "Bring ROOK\u2019s handling advice closer to the buy button",
+            "body": "Your replies to ROOK reviews explain lamp heat and flash curing. That advice could be easier to find before ordering.",
+            "action": "Place a short handling note beside Add to cart, using your existing guidance. Compare purchases with the current page.",
+            "lane": "store"
+          },
+          {
+            "test_index": 3,
+            "headline": "Help shoppers reach free shipping",
+            "body": "Free shipping starts above 999 kr in Sweden. Nagellim costs 89 SEK and CLEAR-MIST costs 119 SEK.",
+            "action": "Show these add-ons when one or both would take a basket above 999 kr. Compare orders with the current cart, without adding a discount.",
+            "lane": "store",
+            "capture": {
+              "url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
+              "source_url": "https://lunanails.example/",
+              "captured_at": "2026-10-13T21:32:25.554587+00:00"
+            }
+          }
+        ]
+      }
+    },
+    "ads": {
+      "meta": {
+        "data": {
+          "active_ad_count": 3
+        },
+        "status": "present",
+        "page_id": "5188208780441318",
+        "page_name": null,
+        "fetched_at": "2026-10-13T21:29:54.081249+00:00",
+        "source_url": "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=Lunanails&search_type=keyword_unordered&media_type=all",
+        "resolved_via": "homepage_link",
+        "declared_page_rejected": null
+      },
+      "google": {
+        "data": {
+          "ads_found": 9
+        },
+        "status": "present",
+        "fetched_at": "2026-10-08T08:05:55.461215+00:00",
+        "source_url": "https://adstransparency.google.com/?region=SE&q=lunanails.example"
+      }
+    },
+    "completed_at": "2026-10-13T21:39:49.518000+00:00",
+    "readiness": {
+      "version": "rise-deliverable-2026-10-11",
+      "review_model": "claude-sonnet-5-5",
+      "state": "ready",
+      "reasons": [],
+      "review": {
+        "business_specific": true,
+        "actionable": true,
+        "coherent": true,
+        "citations_complete": true,
+        "readable": true,
+        "reason": "All five proposals are tied to this store's own products, pages and ads: Bonder with Primer, ROOK handling advice, the OTTO-linked swatch ad, the 999 kr free-shipping threshold, and a WREN refill option. Each test names a change and a shared downstream outcome. Claims are supported by the quoted store, ad and catalog evidence, and the subscription finding is scoped to the product records actually read. No contradictions or unsupported behaviour found."
+      },
+      "checked_at": "2026-10-13T21:39:49.517343+00:00"
+    },
+    "screenshots": {
+      "pdp_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-pdp_url.png",
+      "pdp_path": "/products/builder-gel-pim",
+      "captured_at": "2026-10-13T21:32:25.554587+00:00",
+      "homepage_url": "https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/scan-screenshots/lunanails-f9-rebuild-20261013-homepage_url.png",
+      "capture_method": "t3-collaborative-browser",
+      "market_country": "SE"
+    }
+  }
+}

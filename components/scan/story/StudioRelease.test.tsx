@@ -23,6 +23,6 @@ describe('Studio production contract',()=>{
   const edition=validateEdition(raw,fixture,true).edition!;
   const html=renderToStaticMarkup(<StoryBody fixture={fixture} edition={edition}/>);
   expect(html).toContain('See your scale plan');expect(html).toContain('gmail-preview');
-  expect(html).not.toContain('What stood out');expect(html).not.toContain('Hatim');
+  expect(html).not.toContain('What stood out');expect(html).not.toContain('Corvin');
  });
 });

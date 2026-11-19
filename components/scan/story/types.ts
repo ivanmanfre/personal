@@ -25,6 +25,8 @@ export interface ContentBrainMap {
 /** Reviewed editorial content, bound to one scan. Counts always come from the audit. */
 export interface StoryEdition {
  version: 1;
+ /** 'role': the example reader has no name (server-stamped by plan A); absent = named reader as before. */
+ readerStyle?: 'role';
  topicMap?:ContentBrainMap;
  rationale?:Partial<Record<'content'|'resource'|'conversations'|'calls'|'close',string>>;
  reviewStatus: 'draft'|'approved';

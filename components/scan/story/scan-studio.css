@@ -113,3 +113,5 @@
 .scan-studio.scan-journey .sp-audit summary{display:flex;align-items:center;min-height:44px}
 .scan-studio.scan-journey .studio-results a{min-height:44px}
 .scan-studio.scan-journey .sp-close small{text-wrap:balance}
+/* Tap targets: 44 px minimum on phone. */
+@media(max-width:600px){.scan-studio.scan-journey .studio-resource-toggle{min-height:44px}.scan-studio.scan-journey .sp-audit details>summary{display:flex;align-items:center;min-height:44px}}
