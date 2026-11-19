@@ -219,6 +219,34 @@ describe('owner-eyes rulings (F1, F3, F4)', () => {
     expect(c.querySelector('.rv2-cat-change')!.textContent).toBe('Where you could send the adSend the joint ads to the Pawlo Joint page.');
     const d = three(); d.presentation.category_read.findings[0].change = { type: 'promise', text: 'x' }; expect(canShowStandardStoryV2(d)).toBe(false);
   });
+  it('shows the outside lead, body and ad evidence when a verified change is absent', () => {
+    const d = three();
+    const finding = d.presentation.category_read.findings[0];
+    delete finding.change;
+    const c = html(d);
+    const card = c.querySelector('.rv2-cat-finding')!;
+    expect(canShowStandardStoryV2(d)).toBe(true);
+    expect(c.querySelector('.rv2-lede')!.textContent).toBe(finding.headline);
+    expect(card.textContent).toContain(finding.body);
+    expect(card.querySelector(`a[href="${CAT_AD}"]`)).not.toBeNull();
+    expect(card.querySelector('.rv2-cat-change')).toBeNull();
+  });
+  it.each(['route', 'placement'])('links the exact saved source and target for a %s change', (type) => {
+    const d = three();
+    d.presentation.category_read.findings[0].change = {
+      type, text: 'Move the checked line to the joint page.',
+      source_url: 'https://pawlo.test/pages/returns',
+      target_url: 'https://pawlo.test/products/joint?variant=23',
+      ...(type === 'route' ? { ad_url: AD } : {}),
+    };
+    const finding = d.presentation.category_read.findings[0];
+    const c = html(d).querySelector('.rv2-cat-change')!;
+    expect(canShowStandardStoryV2(d)).toBe(true);
+    expect(c.querySelector(`a[href="${finding.change.source_url}"]`)).not.toBeNull();
+    expect(c.querySelector(`a[href="${finding.change.target_url}"]`)).not.toBeNull();
+    finding.change.target_url = 'javascript:alert(1)';
+    expect(canShowStandardStoryV2(d)).toBe(false);
+  });
   it('F4: the age slot lists each brand\'s longest-running live ad beside hers', () => {
     const t = html(three()).querySelector('.rv2-cat-ages')!.textContent!;
     expect(t).toContain('Your storeStarted 10 Nov 2026 · 8 days');

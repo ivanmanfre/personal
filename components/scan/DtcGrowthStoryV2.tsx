@@ -30,8 +30,11 @@ export interface DtcStandardPresentationV2 {
 // 2026-11-18 depth round (E9): brands a shopper would compare, their real dated ads and where they land.
 type CategoryAd = { brand: string; ad_url: string; image_url: string | null; start_date: string | null; opening: string | null; destination: string | null; lands: string; lands_host?: string | null; media?: string | null };
 type CategoryAge = { brand: string; ad_url: string; start_date: string; days: number | null; opening?: string | null };
+type CategoryChange = { type: 'ad_line' | 'landing' | 'page'; text: string }
+  | { type: 'route'; text: string; source_url: string; target_url: string; ad_url: string }
+  | { type: 'placement'; text: string; source_url: string; target_url: string };
 type CategoryRead = { observed_at: string | null; base: { brands: number; ads: number }; brands: { name: string; domain?: string; market: string | null; relation?: string; ads_read: number; label?: 'larger brand' }[];
-  findings: { kind: string; headline: string; body: string; ads: CategoryAd[]; change?: { type: 'ad_line' | 'landing' | 'page'; text: string } }[];
+  findings: { kind: string; headline: string; body: string; ads: CategoryAd[]; change?: CategoryChange }[];
   ages?: CategoryAge[]; own_oldest?: CategoryAge | Omit<CategoryAge, 'brand'> | null;
   // H2: the bounded "none found" line of a phrase search that succeeded, with its base (built by the builder).
   searched?: string[] };
@@ -73,7 +76,7 @@ function categoryOk(c: CategoryRead): boolean {
   if (c.own_oldest != null && !(safe(c.own_oldest.ad_url) && isoDay(c.own_oldest.start_date))) return false;
   if (c.searched != null && !(Array.isArray(c.searched) && c.searched.length > 0 && c.searched.length <= 2 && c.searched.every(text))) return false;
   return c.findings.every(f => f && CATEGORY_KINDS.includes(f.kind) && text(f.headline) && text(f.body) && Array.isArray(f.ads) && f.ads.length <= 3
-    && (f.change == null || (['ad_line', 'landing', 'page'].includes(f.change.type) && text(f.change.text)))
+    && categoryChangeOk(f.change)
     && f.ads.every(a => a && text(a.brand) && safe(a.ad_url) && (a.image_url == null || safe(a.image_url)) && (a.start_date == null || isoDay(a.start_date))
       && (a.destination == null || safe(a.destination)) && (a.opening == null || typeof a.opening === 'string') && CATEGORY_LANDS.includes(a.lands)));
 }
@@ -235,10 +238,34 @@ const landLabel = (a: CategoryAd) => a.lands === 'product' ? 'Product page' : a.
 function Ages({ cat }: { cat: CategoryRead }) {
   if (!cat.ages?.length) return null;
   const own = cat.own_oldest;
-  return <div className="rv2-cat-ages" data-reveal><h3>Longest-running live ad</h3><ul>
+  return <div className="rv2-cat-ages" data-reveal><h3>Oldest ads we read</h3><ul>
     {own ? <li><strong>Your store</strong><a href={own.ad_url} target="_blank" rel="noopener noreferrer">Started {day(own.start_date)}{own.days != null ? ` · ${own.days} days` : ''} ↗</a></li> : null}
     {cat.ages.map(g => <li key={g.ad_url}><strong>{g.brand}</strong><a href={g.ad_url} target="_blank" rel="noopener noreferrer">Started {day(g.start_date)}{g.days != null ? ` · ${g.days} days` : ''} ↗</a></li>)}
   </ul></div>;
+}
+
+function categoryChangeOk(change?: CategoryChange | null): boolean {
+  if (change == null) return true;
+  if (!text(change.text)) return false;
+  if (change.type === 'route' || change.type === 'placement') {
+    return safe(change.source_url) && safe(change.target_url) && change.source_url !== change.target_url
+      && (change.type !== 'route' || safe(change.ad_url));
+  }
+  return ['ad_line', 'landing', 'page'].includes(change.type);
+}
+
+function CategoryChangeLine({ change }: { change: CategoryChange }) {
+  const label = change.type === 'ad_line' ? 'An ad line you could run'
+    : change.type === 'route' || change.type === 'page' ? 'Where you could send the ad'
+    : change.type === 'placement' ? 'Where you could move the line' : 'A landing change you could make';
+  const reference = { target: '_blank', rel: 'noopener noreferrer' };
+  return <p className="rv2-cat-change"><strong>{label}</strong>{change.text}
+    {change.type === 'route' || change.type === 'placement' ? <small>
+      {' '}{change.type === 'route' ? <><a href={change.ad_url} {...reference}>Observed ad</a>{' · '}</> : null}
+      <a href={change.source_url} {...reference}>{change.type === 'route' ? 'Recorded landing' : 'Original page'}</a>{' · '}
+      <a href={change.target_url} {...reference}>Suggested page</a>
+    </small> : null}
+  </p>;
 }
 
 function CategoryReadSection({ cat, brand, lead = false }: { cat: CategoryRead; brand: string; lead?: boolean }) {
@@ -251,7 +278,7 @@ function CategoryReadSection({ cat, brand, lead = false }: { cat: CategoryRead; 
     {cat.findings.map((f, k) => <article key={k} className="rv2-cat-finding" data-reveal>
       {lead && k === 0 ? null : <h3>{f.headline}</h3>}
       <p className="ris-body">{f.body}</p>
-      {f.change ? <p className="rv2-cat-change"><strong>{f.change.type === 'ad_line' ? 'An ad line you could run' : f.change.type === 'page' ? 'Where you could send the ad' : 'A landing change you could make'}</strong>{f.change.text}</p> : null}
+      {f.change ? <CategoryChangeLine change={f.change} /> : null}
       {f.ads.length ? <ol className="rv2-strip-row rv2-cat-ads">{f.ads.map(a => <li key={a.ad_url}><a href={a.ad_url} target="_blank" rel="noopener noreferrer">
         {a.image_url ? <img src={a.image_url} alt={`${a.brand} ad`} loading="lazy" /> : <span className="rv2-strip-noimg" aria-hidden="true">{a.brand}</span>}
         <strong className="rv2-cat-brand">{a.brand}</strong>
