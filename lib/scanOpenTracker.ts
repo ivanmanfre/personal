@@ -44,15 +44,16 @@ function referrerHost(): string | null {
 export type ScanView = 'main' | 'team';
 
 /**
- * Fire-and-forget. Records at most one open per slug per page load and resolves to the stored open id
+ * Fire-and-forget. Records at most one open per slug and view per page load and resolves to the stored open id
  * (null when skipped, on any failure, and for the owner: an owner open never starts page events); a second call for
- * the same slug gets the same promise. Callers that ignore the result keep working as before.
+ * the same slug and view gets the same promise. Callers that ignore the result keep working as before.
  */
 export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<number | null> {
   if (typeof window === 'undefined' || !slug) return Promise.resolve(null);
   if (isPreviewHost(window.location.hostname)) return Promise.resolve(null);   // keep dev traffic out
-  const already = fired.get(slug);
-  if (already) return already;   // one open per slug per page load; a re-render gets the same open id
+  const key = `${slug}:${view}`;
+  const already = fired.get(key);
+  if (already) return already;   // one open per slug and view per page load; a re-render gets the same open id
 
   const ua = navigator.userAgent || '';
   const owner = ownerFlag();
@@ -74,6 +75,6 @@ export function trackScanOpen(slug: string, view: ScanView = 'main'): Promise<nu
       return typeof id === 'number' && Number.isFinite(id) ? id : null;
     })
     .catch(() => null);   // never surface tracker errors to the page
-  fired.set(slug, p);
+  fired.set(key, p);
   return p;
 }

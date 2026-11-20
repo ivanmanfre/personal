@@ -14,6 +14,16 @@ function setHost(host: string) {
 
 describe('trackScanOpen', () => {
   beforeEach(() => { vi.resetModules(); invoke.mockReset(); });
+  it('deduplicates a view without suppressing the other view of the same scan', async () => {
+    setHost('inboundonsteroids.com');
+    invoke.mockResolvedValueOnce({ data: { open_id: 71 } }).mockResolvedValueOnce({ data: { open_id: 72 } });
+    const { trackScanOpen } = await import('./scanOpenTracker');
+    expect(await trackScanOpen('sample-scan')).toBe(71);
+    expect(await trackScanOpen('sample-scan', 'team')).toBe(72);
+    expect(await trackScanOpen('sample-scan', 'main')).toBe(71);
+    expect(await trackScanOpen('sample-scan', 'team')).toBe(72);
+    expect(invoke.mock.calls.map(([, request]) => request.body.view)).toEqual(['main', 'team']);
+  });
   it('resolves to the open id and sends the view', async () => {
     setHost('inboundonsteroids.com');
     invoke.mockResolvedValue({ data: { ok: true, is_owner: false, open_id: 4242 } });

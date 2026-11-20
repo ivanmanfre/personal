@@ -58,6 +58,26 @@ describe('per-finding evidence images', () => {
     expect(container.querySelectorAll('#finding-1 .ris-standard-grid .ris-evidence-shot')).toHaveLength(1);
   });
 
+  it('compares distinct cited pages and keeps Mattan’s video visible without interaction', () => {
+    const data = story();
+    const secondUrl = 'https://tvati.com/pages/size-guide';
+    data.tests[1].evidence.push({ kind: 'store', source_url: secondUrl, quote: 'Compare pack sizes.' });
+    data.presentation.sections[1].captures.push({ kind: 'page', url: 'https://x.supabase.co/guide.png', source_url: secondUrl, captured_at: SEEN, quote: 'Compare pack sizes.', mark });
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(page(data));
+    const compare = container.querySelector('#finding-1 fieldset')!;
+    expect(compare.querySelector('legend')?.textContent).toBe('Compare the two store pages');
+    expect(compare.querySelectorAll('input[type=radio]')).toHaveLength(2);
+    expect(compare.querySelectorAll('.ris-compared-page a')[1].getAttribute('href')).toBe(secondUrl);
+    expect(container.querySelector('#finding-0 fieldset')).toBeNull();
+    expect(container.querySelector('#finding-0 .ris-ad-destinations li a')?.getAttribute('href')).toBe(PET);
+    expect(container.querySelector('#finding-1 .ris-ad-destinations')).toBeNull();
+    const video = container.querySelector('#rise-method video')!;
+    expect(video.closest('details')).toBeNull();
+    expect(video.hasAttribute('controls')).toBe(true);
+    expect(video.querySelector('track[kind=captions]')).not.toBeNull();
+  });
+
   it('never invents a brand by splitting a domain, and handles a single finding', () => {
     const data = story();
     data.tests = data.tests.slice(0, 1); data.presentation.sections = data.presentation.sections.slice(0, 1);

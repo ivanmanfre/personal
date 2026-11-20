@@ -61,7 +61,7 @@ export default function StoryReviewDesk(){
  if(login)return <DashboardAuth onSuccess={()=>{setLogin(false);void refresh();}}/>;
  return <>
   <section className="story-review-desk" aria-label="Scan review controls">
-   <header><div><b>Scan review</b><span>{slug||'Choose a saved scan'}</span></div>{import.meta.env.DEV&&<a href="/dev/scan-release?slug=nerijus-danilevicius-43">Approved design reference</a>}</header>
+   <header><div><b>Scan review</b><span>{slug||'Choose a saved scan'}</span></div>{import.meta.env.DEV&&<a href="/dev/scan-release?slug=jarle-vindholm-fx9">Approved design reference</a>}</header>
    <form onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);location.search=`?slug=${encodeURIComponent(String(data.get('slug')||''))}`}}><label>Scan slug <input name="slug" defaultValue={slug} required pattern="[a-z0-9-]+"/></label><button type="submit">Open scan</button></form>
    {slug&&<>
     <div className="review-actions"><label>Saved revision <select aria-label="Saved revision" value={current?.id||''} onChange={e=>setSelected(e.target.value)} disabled={!rows.length}><option value="" disabled>No draft yet</option>{rows.map(r=><option key={r.id} value={r.id}>Version {r.revision} · {r.status.replace('_',' ')}</option>)}</select></label><span role="status">{!loaded?'Loading…':running?'Writing and checking the draft…':current?`Saved ${new Date(current.created_at).toLocaleString()}`:'Ready to generate from this lead’s data.'}</span></div>

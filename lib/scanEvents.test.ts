@@ -28,11 +28,11 @@ describe('names and tags', () => {
     expect(clickName(a('<a data-scan-click="book-close" href="https://calendly.com/x">'))).toBe('book-close');
     expect(clickName(a('<a data-cta="close" href="https://tidycal.com/x">'))).toBe('book-close');
     expect(clickName(a('<a href="https://calendly.com/x">'))).toBe('book-link');
-    expect(clickName(a('<a href="https://cal.com/ivan/30">'))).toBe('book-link');
+    expect(clickName(a('<a href="https://cal.com/example-brand/30">'))).toBe('book-link');
     expect(clickName(a('<a href="https://example.com">'))).toBeNull();
   });
   it('tags a booking link once', () => {
-    expect(tagBookingHref('https://calendly.com/im-ivanmanfredi/30min', 'fabio-soprano-c2', 'close')).toBe('https://calendly.com/im-ivanmanfredi/30min?utm_source=scan&utm_medium=page&utm_campaign=fabio-soprano-c2&utm_content=close');
+    expect(tagBookingHref('https://calendly.com/example-brand/30min', 'sample-brand-scan', 'close')).toBe('https://calendly.com/example-brand/30min?utm_source=scan&utm_medium=page&utm_campaign=sample-brand-scan&utm_content=close');
     expect(tagBookingHref('https://calendly.com/x?utm_content=header', 's', 'close')).toContain('utm_content=header');
     expect(tagBookingHref('not a url', 's', 'close')).toBe('not a url');
   });
@@ -55,13 +55,13 @@ describe('startScanEvents', () => {
     stop();
   });
   it('records a booking click, tags the link and flushes at once', () => {
-    document.body.innerHTML = '<a id="b" data-scan-click="book-close" href="https://calendly.com/im-ivanmanfredi/30min">Book</a><a id="o" href="https://example.com/">x</a>';
+    document.body.innerHTML = '<a id="b" data-scan-click="book-close" href="https://calendly.com/example-brand/30min">Book</a><a id="o" href="https://example.com/">x</a>';
     const sent: Array<{ events: unknown[] }> = [];
     const stop = startScanEvents(document.body, 'acme-2', 78, (b) => { sent.push(b as { events: unknown[] }); });
     const link = document.getElementById('b') as HTMLAnchorElement;
     link.addEventListener('click', (e) => e.preventDefault());
     link.click();
-    expect(link.href).toBe('https://calendly.com/im-ivanmanfredi/30min?utm_source=scan&utm_medium=page&utm_campaign=acme-2&utm_content=close');
+    expect(link.href).toBe('https://calendly.com/example-brand/30min?utm_source=scan&utm_medium=page&utm_campaign=acme-2&utm_content=close');
     expect(sent[0].events).toEqual([{ kind: 'cta_click', name: 'book-close' }]);
     const other = document.getElementById('o') as HTMLAnchorElement;
     other.addEventListener('click', (e) => e.preventDefault());

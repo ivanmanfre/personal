@@ -1,4 +1,4 @@
-import {simmerDraft} from './simmerDraft';
+import {nordicDraft} from './nordicDraft';
 import {samplePlans} from '../../dev/scan-walkthrough/journey/samplePlan';
 import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryEdition} from './types';
@@ -21,9 +21,9 @@ const questions = [
 
 /** Local editorial candidates. Never selected by industry, name similarity or a fallback. */
 export function reviewDraft(f:JourneyFixture):StoryEdition|null {
- const creative=f.slug==='luiza-vass-8c'&&f.founder.name==='Luiza Vass';
- const research=f.slug==='andrew-hayes-94'&&f.founder.name==='Andrew Hayes';
- if(!creative&&!research)return simmerDraft(f);
+ const creative=f.slug==='odile-brackwater-fx7'&&f.founder.name==='Odile Brackwater';
+ const research=f.slug==='rufus-pennick-fx8'&&f.founder.name==='Rufus Pennick';
+ if(!creative&&!research)return nordicDraft(f);
  const p=samplePlans[creative?'creative':'research'];
  return {
   version:1,reviewStatus:'draft',slug:f.slug,founderName:f.founder.name,companyName:f.founder.company,...p,
@@ -38,7 +38,7 @@ export function reviewDraft(f:JourneyFixture):StoryEdition|null {
   coldTrigger:creative?'A brand announces a beauty launch.':'A brand announces a new product launch.',
   coldMessage:creative?'Hi Alex, saw the new beauty launch. Are you still putting the creative team together? We represent independent art directors and creative teams. Happy to send a few portfolios if you’re still looking.':'Hi Alex, saw the new product launch. Are you doing customer research before the campaign brief is signed off? We help brand teams hear how customers describe their buying decisions. Happy to send an example of the results file.',
   newsletterNote:creative?'notes on commissioning talent':'notes on customer research',nurtureNote:creative?'A note on comparing creative quotes.':'A note on choosing study participants.',
-  resource:{title:creative?'Who do you need on this project?':'Find the question for your study.',mode:creative?'planner':'question',brand:creative?{surface:'#fffcf5',ink:'#20201e',accent:'#e6fd9e',logo:'https://theneu.team/logo-neu.svg'}:{surface:'#f6f6f6',ink:'#252525',accent:'#d6dde4'},options:creative?projects.map((p,i)=>({label:p.name,title:p.title,team:p.team.map(([role,job])=>({role,job})),coveredRole:scopes[i].booked,coveredJob:scopes[i].covered,deliverables:scopes[i].deliverables.map(([label,value])=>({label,value})),review:p.decision,quote:scopes[i].ask,changes:scopes[i].changes,rights:p.rights})):questions.map((q,i)=>({label:q.event,title:q.event,question:q.question,people:q.people,record:q.record,recruitment:i===0?'Which brand did you use before, which did you choose and when did you switch?':i===1?'When did you make your first purchase, and what did you use before?':'When did you renew, and how long had you used the service?',sections:[{heading:'Your results file',body:'Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it.'}]}))},
+  resource:{title:creative?'Who do you need on this project?':'Find the question for your study.',mode:creative?'planner':'question',brand:creative?{surface:'#fffcf5',ink:'#20201e',accent:'#e6fd9e',logo:'https://brack.example/logo-brack.svg'}:{surface:'#f6f6f6',ink:'#252525',accent:'#d6dde4'},options:creative?projects.map((p,i)=>({label:p.name,title:p.title,team:p.team.map(([role,job])=>({role,job})),coveredRole:scopes[i].booked,coveredJob:scopes[i].covered,deliverables:scopes[i].deliverables.map(([label,value])=>({label,value})),review:p.decision,quote:scopes[i].ask,changes:scopes[i].changes,rights:p.rights})):questions.map((q,i)=>({label:q.event,title:q.event,question:q.question,people:q.people,record:q.record,recruitment:i===0?'Which brand did you use before, which did you choose and when did you switch?':i===1?'When did you make your first purchase, and what did you use before?':'When did you renew, and how long had you used the service?',sections:[{heading:'Your results file',body:'Keep the event, date and full response beside each possible campaign angle. Mark what you still need to check before using it.'}]}))},
   cover:creative?{lines:['Before you','book the team.'],left:'The team',right:'The first review',details:['Who joins?','What gets approved?']}:{lines:['What made','them switch?'],left:'Their decision',right:'The question',details:['What happened?','What did they feel?']},
   flow:creative?{messages:['I need an art director for a beauty launch.','We need an art director. We’ve allowed €8,000 for that role.','The launch is in six weeks. Can we discuss the brief?','Yes, send me a time and I’ll bring the producer.'],checks:[{label:'Creative role',value:'Art director'},{label:'Fee range',value:'€8,000'},{label:'Launch date',value:'In six weeks'}],signal:'Campaign launch announced',callTitle:'Creative project call',brief:'Art director · €8,000 · six weeks'}:{messages:['We’re planning a launch and want to understand brand switching.','We want to understand brand switching. We’ve allowed $2,000 for the study.','The campaign brief is due in six weeks. Could a pilot fit?','Yes, send me a time and we can discuss the study.'],checks:[{label:'Research',value:'Brand switching'},{label:'Budget',value:'$2,000'},{label:'Campaign brief',value:'In six weeks'}],signal:'New product launch announced',callTitle:'Research project call',brief:'Brand-switching study · $2,000 · six weeks'},
  };

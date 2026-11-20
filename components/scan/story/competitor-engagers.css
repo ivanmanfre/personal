@@ -24,3 +24,5 @@
 .sp-rivals-dms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:20px}
 @media(max-width:900px){.sp-rivals-layout{grid-template-columns:minmax(0,1fr);gap:22px}.sp-rivals-head{position:static}.sp-rivals-dms{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:560px){.sp-rivals-list>li{padding:14px 16px;gap:12px}.scan-journey .revenue-story .sp-rivals-head h2{font-size:26px}.scan-journey .revenue-story .sp-rivals-count{font-size:52px}}
+/* Tap targets: 44 px minimum on phone. */
+@media(max-width:600px){.scan-studio.scan-journey .sp-rivals-post{display:inline-flex;align-items:center;min-height:44px}.scan-studio.scan-journey .sp-rivals-more button{min-height:44px}}

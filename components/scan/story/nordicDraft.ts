@@ -1,14 +1,14 @@
 import type {JourneyFixture} from '../../dev/scan-walkthrough/journey/model';
 import type {StoryEdition} from './types';
 /** Third review candidate: a different offer and a recorded zero-match audit. */
-export function simmerDraft(f:JourneyFixture):StoryEdition|null {
- if(f.slug!=='nerijus-danilevicius-43'||f.founder.name!=='Nerijus Danilevicius'||f.founder.company!=='Simmer')return null;
+export function nordicDraft(f:JourneyFixture):StoryEdition|null {
+ if(f.slug!=='jarle-vindholm-fx9'||f.founder.name!=='Jarle Vindholm'||f.founder.company!=='Glødhus')return null;
  return {
-  version:1,reviewStatus:'draft',slug:f.slug,founderName:f.founder.name,companyName:f.founder.company,brand:'Simmer',art:'custom',
-  post:'Fonten vi valgte for Hartnet heter Writer, fra Pangram Pangram.\n\nDen er inspirert av fransk renessanse. Vi valgte den for at uttrykket skulle passe til kjøkkenene Hartnet lager.\n\nNår du vurderer en ny identitet, be designeren vise skriften der kundene faktisk møter den. På telefonen. I en overskrift. I en produktbeskrivelse.\n\nHer er hvordan jeg ville vurdert valget før det blir låst.',
+  version:1,reviewStatus:'draft',slug:f.slug,founderName:f.founder.name,companyName:f.founder.company,brand:'Glødhus',art:'custom',
+  post:'Fonten vi valgte for Bjørkly heter Kvern, fra et lite skriftstudio.\n\nDen er inspirert av gamle trykkerier. Vi valgte den for at uttrykket skulle passe til møblene Bjørkly lager.\n\nNår du vurderer en ny identitet, be designeren vise skriften der kundene faktisk møter den. På telefonen. I en overskrift. I en produktbeskrivelse.\n\nHer er hvordan jeg ville vurdert valget før det blir låst.',
   plainPost:'Når vi leverer en side i Webflow, skal kunden kunne jobbe videre med den.\n\nOppdatere tekst. Bytte bilder. Legge til sider.\n\nDet bør være en del av leveransen, med tid til å vise hvor og hvordan.\n\nFør du bestiller en ny nettside, skriv ned de endringene teamet ditt gjør oftest. Be om å få prøve dem under overleveringen.\n\nDa ser du om siden faktisk fungerer for dem som skal bruke den.',
   slides:[
-   {title:'En skrift som passer til det dere lager.',body:'For Hartnet valgte vi Writer fra Pangram Pangram. Uttrykket skulle passe til håndverket i kjøkkenene.'},
+   {title:'En skrift som passer til det dere lager.',body:'For Bjørkly valgte vi Kvern fra et lite skriftstudio. Uttrykket skulle passe til håndverket i møblene.'},
    {title:'Start med noe kunden kjenner igjen.',body:'Legg et bilde av produktet ved siden av typografien. Beskriv hva som binder dem sammen. Bruk konkrete egenskaper ved produktet.'},
    {title:'Vis den i den virkelige teksten.',body:'En kort overskrift kan se bra ut nesten overalt. Prøv også et langt produktnavn og en vanlig beskrivelse. De skal fungere i samme system.'},
    {title:'Se på telefonen også.',body:'Les overskriften og beskrivelsen på en liten skjerm. Se om linjene brytes på steder som gjør teksten lett å forstå.'},
@@ -21,9 +21,9 @@ export function simmerDraft(f:JourneyFixture):StoryEdition|null {
   reply:'Vi skal bygge ny side. Markedsteamet må kunne legge til kundecaser selv.',
   next:'Hvilke sider trenger dere, og når må de være klare? Da kan vi se hva som bør være med i prosjektet.',
   subject:'La den som skal oppdatere siden prøve først',
-  email:'Hei Alex,\n\nVelg én vanlig oppgave før dere overtar den nye nettsiden. For eksempel å publisere en kundecase.\n\nLa personen som skal gjøre jobben prøve med ekte tekst og bilder. Se hvor de stopper opp.\n\nBruk det dere finner til å justere malene og opplæringen før prosjektet avsluttes.\n\nDa får teamet øvd på arbeidet de faktisk skal gjøre.\n\nNerijus',
+  email:'Hei Alex,\n\nVelg én vanlig oppgave før dere overtar den nye nettsiden. For eksempel å publisere en kundecase.\n\nLa personen som skal gjøre jobben prøve med ekte tekst og bilder. Se hvor de stopper opp.\n\nBruk det dere finner til å justere malene og opplæringen før prosjektet avsluttes.\n\nDa får teamet øvd på arbeidet de faktisk skal gjøre.\n\nJarle',
   contentHeading:'Show founders what working with you changes.',contentWhy:'Use your project decisions to explain the value of the work.',magnetWhy:'A lead magnet for teams commissioning a website or identity. It helps them agree what they will receive.',
-  researchNote:'Your posts about Hartnet’s typography and handing over a Webflow site shape these samples.',
+  researchNote:'Your posts about Bjørkly’s typography and handing over a Webflow site shape these samples.',
   sourceQuote:f.samples.posts?.find(p=>p.source_quote?.includes('Fonten vi valgte'))?.source_quote||'',
   segments:[{label:'Founders planning a new website',note:'Check the planned work, decision maker and timing.'},{label:'Marketing leads updating an identity',note:'Look for a named project. A hiring post alone does not confirm a budget.'}],
   buyerRole:'Marketing lead',coldTrigger:'A company announces a website project.',coldMessage:'Hei Alex, så at dere planlegger ny nettside. Hvem skal oppdatere innholdet etter lansering? Vi jobber med identitet og Webflow. Jeg kan sende et eksempel på hvordan vi legger opp overleveringen.',

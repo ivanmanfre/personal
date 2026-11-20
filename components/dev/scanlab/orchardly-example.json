@@ -1,5 +1,5 @@
 {
- "company_name": "Apple",
+ "company_name": "Orchardly",
  "label": "thin",
  "dtc": {
   "brand": {
@@ -40,7 +40,7 @@
   "tech_stack": {
    "status": "present",
    "fetched_at": "2026-07-20T16:23:41.291213+00:00",
-   "source_url": "https://apple.com/",
+   "source_url": "https://orchardly.example/",
    "data": {
     "confirmed": [],
     "missing_critical": [
@@ -63,7 +63,7 @@
   "signup": {
    "status": "empty",
    "fetched_at": "2026-07-20T16:23:44.051265+00:00",
-   "source_url": "https://apple.com/",
+   "source_url": "https://orchardly.example/",
    "data": {
     "capture_markers": [],
     "has_capture_markers": false
