@@ -27,7 +27,7 @@
 // deliberately NOT rendered as standalone display anywhere.
 import React, { useEffect, useState } from 'react';
 import './DtcGrowthReport.css';
-import { casesFor, caseUrl } from './riseCases';
+import { casesFor, casesForVertical, caseUrl } from './riseCases';
 import { useMetadata } from '../hooks/useMetadata';
 import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
@@ -1347,6 +1347,9 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     ...(Array.isArray(dAny.bestsellers?.data?.handles) ? dAny.bestsellers.data.handles : []),
     String(dAny.hero?.headline || ''),
   ]);
+  // 2026-11-17 standard: client results only from the builder's reasoned category, never the keyword fallback.
+  const storyV2 = (d.commercial_evidence?.presentation as { version?: string } | undefined)?.version === 'rise-standard-2026-11-17';
+  const storyVertical: string | null = storyV2 ? ((d.commercial_evidence!.presentation as { proof?: { vertical?: string | null } }).proof?.vertical ?? null) : null;
   const gAds = dAny.ads?.google;
   const metaSweep = dAny.ads?.meta_sweep;
   const competitors = dAny.competitors;
@@ -1528,7 +1531,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextProduct = promise ? [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(it => proofHref(it.product?.image_url) && proofHref(it.product?.url))?.product : null;
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
-  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
+  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={(storyV2 ? casesForVertical(storyVertical).slice(0, 2) : riseCases).map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} proofVertical={storyVertical} />;
 
   if (promise) return (
     <div className="rise-report" onClick={scrollReportSection} data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
