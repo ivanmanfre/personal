@@ -11,11 +11,24 @@
 // opens from those IPs are excluded even in incognito or when he clicks a raw
 // sent link — closing the LinkedIn/phone gap the client-only flag can't.
 //
-// Body: { company_slug, owner_flag?, device_type?, referrer_host?, user_agent? }
+// After the insert, the caller's network is looked up once per ip_hash (network.ts; the raw IP is never stored)
+// and the database labels the row: owner, own_tool, link_scanner or human (scan_open_finalize, db/304).
+// A failed or slow lookup still labels the row; the response always carries the open id when the insert worked.
+// A failed insert answers ok: false (insert.ts logs the error code, never the row or the IP). On the old schema
+// (rollback in progress: no `view` column, no scan_open_finalize) the insert retries without `view` and skips the
+// lookup and the label.
+//
+// Body: { company_slug, owner_flag?, device_type?, referrer_host?, user_agent?, view? ('main' | 'team') }
+// Response: { ok: true, is_owner, open_id } or { ok: false, is_owner, open_id: null }
+// Second body shape (events.ts): { kind: 'event', open_id, company_slug, events: [...] } -> { ok: true }
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto), IP_HASH_SALT.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { lookupNetwork } from "./network.ts";
+import { finalizeOpen, type FinalizeDb } from "./finalize.ts";
+import { parseEventBody, storeEvents, type EventsDb } from "./events.ts";
+import { insertOpen, type InsertDb } from "./insert.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +77,15 @@ Deno.serve(async (req: Request) => {
     const SALT = Deno.env.get("IP_HASH_SALT") || "scan-open-fallback-salt";
 
     const body = await req.json().catch(() => ({}));
+
+    if (body && body.kind === "event") {
+      const batch = parseEventBody(body);
+      if (!batch) return json({ error: "bad event" }, 400);
+      const supabase = createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false } });
+      await storeEvents(supabase as unknown as EventsDb, batch);
+      return json({ ok: true });
+    }
+
     const slug = String(body.company_slug || "").trim();
     if (!slug || !SLUG_RE.test(slug)) return json({ error: "bad slug" }, 400);
 
@@ -98,16 +120,22 @@ Deno.serve(async (req: Request) => {
         );
     }
 
-    await supabase.from("scan_opens").insert({
+    const stored = await insertOpen(supabase as unknown as InsertDb, {
       company_slug: slug,
       is_owner: isOwner,
       device_type: clamp(body.device_type, 16),
       referrer_host: clamp(body.referrer_host, 253),
       ip_hash: ipHash,
       user_agent: clamp(body.user_agent, 512),
+      view: body.view === "team" ? "team" : "main",
     });
+    if (!stored.ok) return json({ ok: false, is_owner: isOwner, open_id: null });
 
-    return json({ ok: true, is_owner: isOwner });
+    if (stored.openId !== null && !stored.legacy) {
+      await finalizeOpen(supabase as unknown as FinalizeDb, { openId: stored.openId, ip, ipHash, isOwner }, (addr) => lookupNetwork(addr));
+    }
+
+    return json({ ok: true, is_owner: isOwner, open_id: stored.openId });
   } catch (_e) {
     // Never surface tracker errors — the page must not break on a bad open.
     return json({ ok: false }, 200);
