@@ -4,11 +4,13 @@
 // whose count or proof changed never carries a stale comparison.
 const TRUSTED_VIA = ['homepage_link', 'operator_override', 'link_domain_search'];
 const META_OWNERSHIP = 'store-host-2026-11-16';   // dtc_scan.META_OWNERSHIP
+// 2026-11-21: a zero counts only when the builder stamped how it was verified (dtc_scan.META_ZERO_VERIFIED).
+// Older zeros carry the same reason text whether or not the cross-check search ran, so they show no line.
+const META_ZERO_VERIFIED = 'page-zero+search-nomatch-2026-11-21';
 
 function provenMeta(meta: any): boolean {
   if (!meta || typeof meta !== 'object') return false;
-  if (meta.status === 'empty') return meta.page_confirmed === true || String(meta.page_confirmed).toLowerCase() === 'true'
-    || /(?:isn't|is not) currently running ads.*declared page zero/i.test(String(meta.reason || ''));
+  if (meta.status === 'empty') return meta.page_confirmed === true && meta.zero_verified === META_ZERO_VERIFIED;
   if (meta.status !== 'present') return false;
   return TRUSTED_VIA.includes(meta.resolved_via) || (meta.resolved_via === 'search_match' && meta.ownership === META_OWNERSHIP);
 }

@@ -161,8 +161,9 @@ describe('pooled ad-count line', () => {
     expect(line).toBeLessThan(out.indexOf('</section>', section));
   });
 
-  it('renders beside a page-confirmed zero', () => {
-    expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true } }, pool(0))).toContain('data-ad-pool="1"');
+  it('renders beside a verified page-confirmed zero only', () => {
+    expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21' } }, pool(0))).toContain('data-ad-pool="1"');
+    expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true } }, pool(0))).not.toContain('data-ad-pool');
   });
 
   it('is omitted when the page shows no confirmed count or a different one', () => {

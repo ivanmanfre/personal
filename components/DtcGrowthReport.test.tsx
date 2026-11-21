@@ -1499,8 +1499,10 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
 
   it('renders for a page-confirmed zero', () => {
     const zero = pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none.");
-    const html = withMeta({ status: 'empty', page_confirmed: true, data: { active_ad_count: 0 } }, zero);
+    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 } }, zero);
     expect(html).toContain('data-ad-pool="1"');
+    // an older zero without the verified stamp shows no line
+    expect(withMeta({ status: 'empty', page_confirmed: true, data: { active_ad_count: 0 } }, zero)).not.toContain('data-ad-pool');
   });
 
   it('omits the line when the count is unknown, unverified or disagrees with the page', () => {
