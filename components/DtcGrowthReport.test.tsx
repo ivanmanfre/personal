@@ -1474,3 +1474,47 @@ describe('RISE report reading flow', () => {
     expect(closing).toContain('data-cta="close"');
   });
 });
+
+// ── 2026-11-20 pooled ad-count line ──────────────────────────────────────────────
+describe('DtcGrowthReport — pooled ad-count line', () => {
+  const LINE = "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running 6.";
+  const withMeta = (meta: any, pool: any) => {
+    const { fixture } = renderFixture('marla-new-contract-builder.json');
+    const dtc = { ...(fixture.dtc as any), ads: { ...(fixture.dtc as any).ads, meta }, ad_pool: pool };
+    return renderDtc(dtc, fixture.company_name);
+  };
+  const present = (n: number | null) => ({ status: 'present', resolved_via: 'homepage_link', data: { active_ad_count: n } });
+  const pool = (store_count: number, line = LINE) => ({ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count, line });
+
+  it('renders the line once, right after the Meta count it names', () => {
+    const html = withMeta(present(6), pool(6));
+    expect(html.split('data-ad-pool="1"').length).toBe(2);
+    const receipt = html.indexOf('Identified Facebook page: 6 active ads.');
+    const at = html.indexOf('data-ad-pool="1"');
+    expect(receipt).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(receipt);
+    expect(html.slice(receipt, at).split('<p').length).toBe(2);   // only the line's own <p> in between
+    expect(html).toContain(escHtml(LINE));
+  });
+
+  it('renders for a page-confirmed zero', () => {
+    const zero = pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none.");
+    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 } }, zero);
+    expect(html).toContain('data-ad-pool="1"');
+    // an older zero without the verified stamp shows no line
+    expect(withMeta({ status: 'empty', page_confirmed: true, data: { active_ad_count: 0 } }, zero)).not.toContain('data-ad-pool');
+  });
+
+  it('omits the line when the count is unknown, unverified or disagrees with the page', () => {
+    expect(withMeta(present(6), null)).not.toContain('data-ad-pool');
+    expect(withMeta(present(null), pool(6))).not.toContain('data-ad-pool');
+    expect(withMeta(present(7), pool(6))).not.toContain('data-ad-pool');
+    expect(withMeta({ status: 'blocked' }, pool(6))).not.toContain('data-ad-pool');
+    expect(withMeta({ status: 'empty', data: { active_ad_count: 0 } }, pool(0))).not.toContain('data-ad-pool');
+    expect(withMeta(present(6), { ...pool(6), line: '' })).not.toContain('data-ad-pool');
+    // A present read showing 0 beside a saved zero line: only a confirmed page zero proves 0.
+    expect(withMeta(present(0), pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none."))).not.toContain('data-ad-pool');
+    // Same number, ownership proof gone (an unstamped name match): no line.
+    expect(withMeta({ ...present(6), resolved_via: 'search_match' }, pool(6))).not.toContain('data-ad-pool');
+  });
+});

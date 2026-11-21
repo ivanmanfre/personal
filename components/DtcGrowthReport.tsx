@@ -33,6 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
+import { adPoolLine } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -993,16 +994,21 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
   );
 }
 
-function CompactAdRecords({ google, metaPage, metaSweep, competitors }: { google: any; metaPage: any; metaSweep: any; competitors: any }) {
+function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: { google: any; metaPage: any; metaSweep: any; competitors: any; adPool?: any }) {
   const g = google?.status === 'present' ? google.data : null;
   const m = metaPage?.status === 'present' ? metaPage.data : null;
   const sweep = ['present', 'empty'].includes(metaSweep?.status) ? metaSweep.data : null;
   const comp = competitors?.status === 'present' ? competitors.data : null;
   const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
+  // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
+  const metaZero = metaPage?.status === 'empty' && metaPage.page_confirmed === true;
+  const metaShown = m && typeof m.active_ad_count === 'number' ? m.active_ad_count : metaZero ? 0 : null;
+  const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
     {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
@@ -1528,7 +1534,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextProduct = promise ? [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(it => proofHref(it.product?.image_url) && proofHref(it.product?.url))?.product : null;
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
-  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
+  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} adPool={(d as any).ad_pool} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
 
   if (promise) return (
     <div className="rise-report" onClick={scrollReportSection} data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
@@ -1590,7 +1596,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             })}
           </div>
 
-            <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} />
+            <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} adPool={(d as any).ad_pool} />
           </details> : null}
         </section> : null}
         <DtcComparisonSection comparison={comparison} />

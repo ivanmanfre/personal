@@ -322,7 +322,7 @@ export interface DtcGrowth {
     meta?: DtcSignalMeta<{
       active_ad_count: number; oldest_active_run_days?: number; distinct_angles?: number; distinct_text_count?: number;
       has_video?: boolean; has_static?: boolean;
-    }> & { page_confirmed?: boolean; page_status?: string };
+    }> & { page_confirmed?: boolean; page_status?: string; zero_verified?: string };
     // audit v3: the prospect's own Google ad record. `capped` true means ads_found is a
     // FLOOR, never a total, and every rendered count must say "at least N".
     google?: DtcSignalMeta<{
