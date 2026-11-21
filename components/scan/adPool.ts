@@ -16,5 +16,7 @@ function provenMeta(meta: any): boolean {
 export function adPoolLine(pool: any, meta: any, shownMetaCount: number | null | undefined): string | null {
   if (!pool || typeof pool.line !== 'string' || !pool.line.trim() || !Number.isInteger(pool.store_count)) return null;
   if (!provenMeta(meta) || shownMetaCount !== pool.store_count) return null;
+  // Same split as dtc_ad_pool.verified_count: a present read proves a positive count, only a page zero proves 0.
+  if (meta.status === 'present' ? !(Number.isInteger(shownMetaCount) && shownMetaCount! > 0) : shownMetaCount !== 0) return null;
   return pool.line.replace(/\s*[—–]\s*/g, ', ');
 }

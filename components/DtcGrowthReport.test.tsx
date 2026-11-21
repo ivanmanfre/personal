@@ -1510,6 +1510,8 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
     expect(withMeta({ status: 'blocked' }, pool(6))).not.toContain('data-ad-pool');
     expect(withMeta({ status: 'empty', data: { active_ad_count: 0 } }, pool(0))).not.toContain('data-ad-pool');
     expect(withMeta(present(6), { ...pool(6), line: '' })).not.toContain('data-ad-pool');
+    // A present read showing 0 beside a saved zero line: only a confirmed page zero proves 0.
+    expect(withMeta(present(0), pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none."))).not.toContain('data-ad-pool');
     // Same number, ownership proof gone (an unstamped name match): no line.
     expect(withMeta({ ...present(6), resolved_via: 'search_match' }, pool(6))).not.toContain('data-ad-pool');
   });
