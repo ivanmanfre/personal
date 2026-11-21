@@ -50,7 +50,7 @@ export function ShippingExample({ data }: { data: DtcStoryPresentation['shipping
 }
 
 function LegacyDtcInsightStory({ companyName, domain, data, ads, bookingUrl, logo, cases = [] }: {
-  companyName: string; domain: string; data: DtcCommercialEvidence; ads: any;
+  companyName: string; domain: string; data: DtcCommercialEvidence; ads: any; adPool?: any;
   bookingUrl: string; logo: string; cases?: { name: string; url: string; headline?: string; image?: string }[];
 }) {
   const s = data.presentation as DtcStoryPresentation;

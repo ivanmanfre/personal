@@ -33,6 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
+import { adPoolLine } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -993,6 +994,14 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
   );
 }
 
+// 2026-11-20: the pooled line (components/scan/adPool.ts) beside the count this layout shows.
+function promiseAdPoolLine(d: any): string | null {
+  const m = d?.ads?.meta;
+  const shown = m?.status === 'present' && typeof m?.data?.active_ad_count === 'number' ? m.data.active_ad_count
+    : m?.status === 'empty' && m?.page_confirmed === true ? 0 : null;
+  return adPoolLine(d?.ad_pool, shown);
+}
+
 function CompactAdRecords({ google, metaPage, metaSweep, competitors }: { google: any; metaPage: any; metaSweep: any; competitors: any }) {
   const g = google?.status === 'present' ? google.data : null;
   const m = metaPage?.status === 'present' ? metaPage.data : null;
@@ -1528,7 +1537,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const contextProduct = promise ? [...promiseItems(d.drop_off), ...promiseItems(d.second_order)].find(it => proofHref(it.product?.image_url) && proofHref(it.product?.url))?.product : null;
   const contextHomepage = shotDate && proofHref(shots?.homepage_url) ? shots.homepage_url : null;
 
-  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
+  if (promise && canShowStory(d.commercial_evidence, d.ads?.meta, scan.domain)) return <DtcInsightStory companyName={companyName} domain={scan.domain} data={d.commercial_evidence!} ads={d.ads} adPool={(d as any).ad_pool} bookingUrl={ctaUrl('close')} logo={logoUrl || 'https://risedtc.com/wp-content/uploads/2025/04/Rise-DTC-logo-blk-300-alt.png'} cases={riseCases.map(c => ({ name: c.name, url: caseUrl(c), headline: c.slug === 'josie-maran' ? c.stats[0] : c.headline, image: c.image }))} />;
 
   if (promise) return (
     <div className="rise-report" onClick={scrollReportSection} data-comparison-candidate={original.comparison_v1?.revision_id || undefined} style={{ ['--rise-ink' as any]: ink, ['--rise-accent' as any]: accent, ['--rise-heading' as any]: headingFont, fontFamily: bodyFont } as React.CSSProperties}>
@@ -1572,6 +1581,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         {!storeFeatures.length && !promiseItems(d.second_order).length ? <p className="rise-empty-coverage">{secondOrderBlock?.note || 'Your repeat-order rate needs store data to assess.'}</p> : null}
         {findings.length || hasAdEvidence ? <section id="paid-media" className="rise-section">
           <p className="rise-chapter">Paid-media check</p>
+          {promiseAdPoolLine(d) ? <p className="rise-detail rise-ad-pool" data-ad-pool="1">{clean(promiseAdPoolLine(d))}</p> : null}
           {findings.map((f, i) => <article className="rise-media-finding" key={i}><div><h2>{clean(f.title)}</h2><p className="rise-detail">{clean(f.evidence)}</p>{proofHref(f.source_url || '') ? <a className="rise-source-link" href={proofHref(f.source_url || '')} target="_blank" rel="noopener noreferrer">{sourceLabel(f.source_url || '', true)}</a> : null}</div>{f.week_one ? <aside className="rise-action"><h3>Next account check</h3><p>{clean(f.week_one)}</p></aside> : null}</article>)}
           {hasAdEvidence ? <details data-ad-archive="1" className="rise-disclosure"><summary>Supporting public ad records</summary>
           <div data-source-checks="1" className="rise-source-checks">

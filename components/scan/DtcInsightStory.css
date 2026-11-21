@@ -54,3 +54,4 @@
 
 .ris-story .ris-zoom-open:focus-visible,.ris-story summary:focus-visible,.ris-story a:focus-visible{outline:3px solid #167a97;outline-offset:3px}
 .ris-standard .ris-evidence > summary{min-height:44px}
+.ris-public-ads .ris-ad-pool{font-size:18px;line-height:1.6;font-weight:600;max-width:760px;margin:0;padding:20px 0 0;border-top:1px solid #ccc}

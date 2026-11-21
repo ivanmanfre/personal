@@ -144,3 +144,33 @@ describe('per-finding evidence images', () => {
     expect(screen.queryByLabelText(/Zoomed view: /)).toBeNull();
   });
 });
+
+// 2026-11-20: one pooled line from RISE's own past scans, only beside the Meta count it names.
+describe('pooled ad-count line', () => {
+  const LINE = "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running 6.";
+  const meta = (n: number, extra: any = {}) => ({ status: 'present', fetched_at: SEEN, source_url: 'https://www.facebook.com/ads/library/?view_all_page_id=1', data: { active_ad_count: n }, ...extra });
+  const pool = (store_count: number) => ({ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count, line: LINE });
+  const html = (ads: any, adPool: any) => renderToStaticMarkup(<DtcInsightStory companyName="Northfold" domain="northfold.example" data={story()} ads={ads} adPool={adPool} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+
+  it('renders once inside the public ad records, after the counts', () => {
+    const out = html({ meta: meta(6) }, pool(6));
+    expect(out.split('data-ad-pool="1"').length).toBe(2);
+    const section = out.indexOf('id="public-ads"'), stats = out.indexOf('Active Meta ads'), line = out.indexOf('data-ad-pool="1"');
+    expect(section).toBeGreaterThan(-1);
+    expect(line).toBeGreaterThan(stats);
+    expect(line).toBeLessThan(out.indexOf('</section>', section));
+  });
+
+  it('renders beside a page-confirmed zero', () => {
+    expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true } }, pool(0))).toContain('data-ad-pool="1"');
+  });
+
+  it('is omitted when the page shows no confirmed count or a different one', () => {
+    expect(html({ meta: meta(6) }, null)).not.toContain('data-ad-pool');
+    expect(html({ meta: meta(7) }, pool(6))).not.toContain('data-ad-pool');
+    expect(html({ meta: meta(6, { fetched_at: undefined }) }, pool(6))).not.toContain('data-ad-pool');
+    expect(html({ meta: { status: 'blocked' } }, pool(6))).not.toContain('data-ad-pool');
+    expect(html({ meta: { ...meta(0), status: 'empty' } }, pool(0))).not.toContain('data-ad-pool');
+    expect(html({}, pool(6))).not.toContain('data-ad-pool');
+  });
+});
