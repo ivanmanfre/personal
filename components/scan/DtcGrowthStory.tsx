@@ -46,7 +46,7 @@ function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
     const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || block.page_confirmed === true)));
     return confirmed && Number.isInteger(value) && value >= 0 && dated(block.fetched_at) && safe(block.source_url) ? value : null;
   };
-  const poolLine = adPoolLine(adPool, shown('meta', 'active_ad_count'));
+  const poolLine = adPoolLine(adPool, ads?.meta, shown('meta', 'active_ad_count'));
   return <section id="public-ads" className="ris-shell ris-public-ads"><p className="ris-label">Public ad records</p><div className="ris-ad-stats">{[['meta', 'Active Meta ads', 'active_ad_count'], ['google', 'Google creatives in the public records', 'ads_found']].map(([key, label, count]) => {
     const block = ads?.[key], value = shown(key, count);
     return <div key={key}>{value !== null ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>No confirmed count for this review.</small></>}</div>;

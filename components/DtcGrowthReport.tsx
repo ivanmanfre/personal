@@ -994,24 +994,21 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
   );
 }
 
-// 2026-11-20: the pooled line (components/scan/adPool.ts) beside the count this layout shows.
-function promiseAdPoolLine(d: any): string | null {
-  const m = d?.ads?.meta;
-  const shown = m?.status === 'present' && typeof m?.data?.active_ad_count === 'number' ? m.data.active_ad_count
-    : m?.status === 'empty' && m?.page_confirmed === true ? 0 : null;
-  return adPoolLine(d?.ad_pool, shown);
-}
-
-function CompactAdRecords({ google, metaPage, metaSweep, competitors }: { google: any; metaPage: any; metaSweep: any; competitors: any }) {
+function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: { google: any; metaPage: any; metaSweep: any; competitors: any; adPool?: any }) {
   const g = google?.status === 'present' ? google.data : null;
   const m = metaPage?.status === 'present' ? metaPage.data : null;
   const sweep = ['present', 'empty'].includes(metaSweep?.status) ? metaSweep.data : null;
   const comp = competitors?.status === 'present' ? competitors.data : null;
   const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
+  // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
+  const metaZero = metaPage?.status === 'empty' && metaPage.page_confirmed === true;
+  const metaShown = m && typeof m.active_ad_count === 'number' ? m.active_ad_count : metaZero ? 0 : null;
+  const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
     {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
@@ -1581,7 +1578,6 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
         {!storeFeatures.length && !promiseItems(d.second_order).length ? <p className="rise-empty-coverage">{secondOrderBlock?.note || 'Your repeat-order rate needs store data to assess.'}</p> : null}
         {findings.length || hasAdEvidence ? <section id="paid-media" className="rise-section">
           <p className="rise-chapter">Paid-media check</p>
-          {promiseAdPoolLine(d) ? <p className="rise-detail rise-ad-pool" data-ad-pool="1">{clean(promiseAdPoolLine(d))}</p> : null}
           {findings.map((f, i) => <article className="rise-media-finding" key={i}><div><h2>{clean(f.title)}</h2><p className="rise-detail">{clean(f.evidence)}</p>{proofHref(f.source_url || '') ? <a className="rise-source-link" href={proofHref(f.source_url || '')} target="_blank" rel="noopener noreferrer">{sourceLabel(f.source_url || '', true)}</a> : null}</div>{f.week_one ? <aside className="rise-action"><h3>Next account check</h3><p>{clean(f.week_one)}</p></aside> : null}</article>)}
           {hasAdEvidence ? <details data-ad-archive="1" className="rise-disclosure"><summary>Supporting public ad records</summary>
           <div data-source-checks="1" className="rise-source-checks">
@@ -1600,7 +1596,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
             })}
           </div>
 
-            <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} />
+            <CompactAdRecords google={gAds} metaPage={adsMeta} metaSweep={metaSweep} competitors={competitors} adPool={(d as any).ad_pool} />
           </details> : null}
         </section> : null}
         <DtcComparisonSection comparison={comparison} />

@@ -148,7 +148,7 @@ describe('per-finding evidence images', () => {
 // 2026-11-20: one pooled line from RISE's own past scans, only beside the Meta count it names.
 describe('pooled ad-count line', () => {
   const LINE = "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running 6.";
-  const meta = (n: number, extra: any = {}) => ({ status: 'present', fetched_at: SEEN, source_url: 'https://www.facebook.com/ads/library/?view_all_page_id=1', data: { active_ad_count: n }, ...extra });
+  const meta = (n: number, extra: any = {}) => ({ status: 'present', resolved_via: 'homepage_link', fetched_at: SEEN, source_url: 'https://www.facebook.com/ads/library/?view_all_page_id=1', data: { active_ad_count: n }, ...extra });
   const pool = (store_count: number) => ({ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count, line: LINE });
   const html = (ads: any, adPool: any) => renderToStaticMarkup(<DtcInsightStory companyName="Northfold" domain="northfold.example" data={story()} ads={ads} adPool={adPool} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
 
@@ -172,5 +172,10 @@ describe('pooled ad-count line', () => {
     expect(html({ meta: { status: 'blocked' } }, pool(6))).not.toContain('data-ad-pool');
     expect(html({ meta: { ...meta(0), status: 'empty' } }, pool(0))).not.toContain('data-ad-pool');
     expect(html({}, pool(6))).not.toContain('data-ad-pool');
+  });
+
+  it('is omitted when the same number lost its ownership proof', () => {
+    expect(html({ meta: meta(6, { resolved_via: 'search_match' }) }, pool(6))).not.toContain('data-ad-pool');
+    expect(html({ meta: meta(6, { resolved_via: 'search_match', ownership: 'store-host-2026-11-16' }) }, pool(6))).toContain('data-ad-pool="1"');
   });
 });

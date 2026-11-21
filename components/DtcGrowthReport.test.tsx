@@ -1486,14 +1486,14 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
   const present = (n: number | null) => ({ status: 'present', resolved_via: 'homepage_link', data: { active_ad_count: n } });
   const pool = (store_count: number, line = LINE) => ({ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count, line });
 
-  it('renders the line once, inside the paid-media section, right under its label', () => {
+  it('renders the line once, right after the Meta count it names', () => {
     const html = withMeta(present(6), pool(6));
     expect(html.split('data-ad-pool="1"').length).toBe(2);
-    const section = html.indexOf('id="paid-media"');
-    const label = html.indexOf('Paid-media check', section);
+    const receipt = html.indexOf('Identified Facebook page: 6 active ads.');
     const at = html.indexOf('data-ad-pool="1"');
-    expect(section).toBeGreaterThan(-1);
-    expect(at).toBeGreaterThan(label);
+    expect(receipt).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(receipt);
+    expect(html.slice(receipt, at).split('<p').length).toBe(2);   // only the line's own <p> in between
     expect(html).toContain(escHtml(LINE));
   });
 
@@ -1510,5 +1510,7 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
     expect(withMeta({ status: 'blocked' }, pool(6))).not.toContain('data-ad-pool');
     expect(withMeta({ status: 'empty', data: { active_ad_count: 0 } }, pool(0))).not.toContain('data-ad-pool');
     expect(withMeta(present(6), { ...pool(6), line: '' })).not.toContain('data-ad-pool');
+    // Same number, ownership proof gone (an unstamped name match): no line.
+    expect(withMeta({ ...present(6), resolved_via: 'search_match' }, pool(6))).not.toContain('data-ad-pool');
   });
 });
