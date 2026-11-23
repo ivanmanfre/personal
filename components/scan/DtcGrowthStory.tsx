@@ -44,7 +44,7 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
 // store's domain (exact-phrase search). A verified statement about ads that show the domain, never "the page runs no ads".
 const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
 const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
-// 2026-11-23 (Haddon): the store page also runs ads to other sites, so its total cannot be confirmed. The same exact-domain
+// 2026-11-23: a store page that also runs ads to other sites, so its total cannot be confirmed. The same exact-domain
 // search counts the active ads whose destination is the store's domain ("At least" when the search was a sample).
 // Never the page's total: it only prints where the total is unknown, and the pool line stays closed to it.
 const META_DOMAIN_COUNT_VERIFIED = 'store-link-search-count-2026-11-23';
