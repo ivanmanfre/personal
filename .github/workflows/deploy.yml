@@ -19,8 +19,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 2026-11-23: a scan-mirror job hung 70+ min on the Chromium install and held the `pages` group, so every
+  # later deploy waited behind it (GitHub's default job limit is 6 h). Each job has a limit about twice its
+  # normal time.
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -62,6 +66,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-24.04
+    timeout-minutes: 35
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -79,6 +84,7 @@ jobs:
   # build with base=/scan/, scan routes prerendered only, pushed cross-repo.
   scan-mirror:
     runs-on: ubuntu-24.04
+    timeout-minutes: 40
     concurrency:
       group: scan-mirror
       cancel-in-progress: false
@@ -135,6 +141,7 @@ jobs:
   # prerendered only, pushed cross-repo. Parallels scan-mirror exactly; additive.
   client-mirror:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     concurrency:
       group: client-mirror
       cancel-in-progress: false
