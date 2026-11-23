@@ -504,10 +504,17 @@ function AdEvidenceSpread({
 }) {
   const g = google?.status === 'present' && google.data ? google.data : null;
   // A confirmed page supports current page activity only; a keyword search is a sample.
-  const sweep = metaSweep?.status === 'empty' && metaSweep.data ? metaSweep.data : null;
+  // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
+  const sweep = metaSweep?.status === 'empty' && metaSweep.data && typeof metaSweep.data.identity_matched_ads === 'number' ? metaSweep.data : null;
   const pageZero = metaZeroVerified(metaPage);   // 2026-11-23: a zero only with its verified stamp
-  const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
-  const showMeta = (pageZero || sweep) && metaReadDate;
+  const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep ? sweep.checked_at || metaSweep?.fetched_at
+    : metaPage?.fetched_at || metaSweep?.data?.checked_at || metaSweep?.fetched_at);
+  const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
+    ? metaPage.data.active_ad_count as number : null;
+  // A Meta read with no verified zero and no positive count says so instead of going silent.
+  const metaUnconfirmed = !pageZero && metaN == null && !!metaReadDate
+    && (['empty', 'present'].includes(metaPage?.status) || ['empty', 'present'].includes(metaSweep?.status));
+  const showMeta = !!((pageZero || sweep) && metaReadDate) || metaUnconfirmed;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
@@ -558,8 +565,6 @@ function AdEvidenceSpread({
   const gCount = g && typeof g.ads_found === 'number' ? countParts(g.ads_found, g.capped) : null;
   // Headline counts, biggest first (Meta first on a tie): Rebalance (09-26) led with "1 on Google."
   // while it runs 46 Meta ads.
-  const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
-    ? metaPage.data.active_ad_count as number : null;
   const headCounts = [
     metaN != null ? { k: 'meta', v: metaN, t: `${metaN} on Meta.` } : null,
     // each head count is its own sentence: "At least 100 on Google.", never ". at least"
@@ -742,9 +747,9 @@ function AdEvidenceSpread({
                   >
                     0
                   </div>
-                ) : (
+                ) : metaN == null ? (
                   <p className="mt-3 text-[1rem] leading-[1.4]" style={{ color: surface, opacity: 0.85 }}>No confirmed count for this review.</p>
-                )}
+                ) : null}
               </div>
               <div className="lg:col-span-8">
                 {/* Claim strength follows evidence strength (SENSE incident, 08-07): the absolute
@@ -752,11 +757,11 @@ function AdEvidenceSpread({
                     page, Meta's own "isn't running ads"). A sweep-only zero is a sample fact —
                     a generic brand name can hide in a keyword sample — so it states exactly what
                     was measured and nothing more. */}
-                <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
+                {pageZero || (sweep && metaReadDate) ? <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
                   {pageZero
                     ? `The identified Facebook page had no active ads at ${metaReadDate}. This does not establish brand-wide or historical ad activity.`
                     : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to your brand.`}
-                </p>
+                </p> : null}
                 {pageZero && proofHref(metaPage.source_url) ? <a href={proofHref(metaPage.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline underline-offset-4 mt-3">View the identified Facebook page</a> : null}
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
                   {pageZero ? (
@@ -771,7 +776,7 @@ function AdEvidenceSpread({
                       <span className="nm">
                         {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
                       </span>
-                      <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to your brand`}</span>
+                      <span className="vl">{`${sweep.identity_matched_ads} traced to your brand`}</span>
                       <span className="dt">{checkedAt(sweep.checked_at || metaSweep?.fetched_at) || metaReadDate}</span>
                     </div>
                   ) : null}
@@ -1013,6 +1018,7 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
   const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
     {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
+    {!metaZero && !m && ['empty', 'present'].includes(metaPage?.status) ? <p>Meta: No confirmed count for this review.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}

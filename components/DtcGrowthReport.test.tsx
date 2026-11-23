@@ -968,6 +968,34 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(verified).not.toContain('No confirmed count for this review.');
   });
 
+  it('older layouts say "No confirmed count" for an unusable Meta read and never contradict a count (Sol r1 #79 final)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/', fallback = 'No confirmed count for this review.';
+    const t = { title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+      evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }] };
+    const build = (ads: any, layout: 'legacy' | 'compact') => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at, matched_offer: 'dtc_growth' } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings: [], ads, ...(layout === 'compact' ? { builder_version: 'test',
+        drop_off: { items: [] }, second_order: { items: [] }, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [t] } } : {}) } } as unknown as ReportJson} />);
+    const unstamped = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // an unstamped page zero: both layouts print the fallback, never a zero
+    for (const layout of ['compact', 'legacy'] as const) {
+      const html = build({ meta: unstamped }, layout);
+      expect(html).toContain(fallback);
+      expect(html).not.toContain('No active ads on the identified Facebook page');
+    }
+    // a positive page count beside a no-match sample: the count stands, no fallback, the sample stays a sample
+    const both = build({ meta: { status: 'present', data: { active_ad_count: 4 }, fetched_at: at, source_url: fb }, meta_sweep: sweep }, 'legacy');
+    expect(both).toContain('4 on Meta.');
+    expect(both).toContain('traced none of the sampled ads');
+    expect(both).not.toContain(fallback);
+    // a sample with no match count states no absence and no invented 0
+    const thin = build({ meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'legacy');
+    expect(thin).toContain(fallback);
+    expect(thin).not.toContain('traced none of the sampled ads');
+    expect(thin).not.toContain('0 traced to your brand');
+  });
+
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
     const { fixture, html } = renderFixture('harborline-soy-works-promise.json');
     const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;
