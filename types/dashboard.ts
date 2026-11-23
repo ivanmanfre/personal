@@ -471,6 +471,10 @@ export interface OutreachProspect {
   messagingPattern: string | null;
   researchSources: Record<string, any> | null;
   enrichmentSource: string | null;
+  // Full sourcing jsonb — lane, vertical, triage tier, anchor, audit_url. The
+  // lead-list chips derive from this (see outreach/leadTags.ts); enrichmentSource
+  // above stays as the one pre-extracted convenience field.
+  enrichmentData: Record<string, any> | null;
   createdAt: string;
   updatedAt: string;
 }
