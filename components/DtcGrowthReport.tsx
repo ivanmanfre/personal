@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine } from './scan/adPool';
+import { adPoolLine, metaZeroVerified } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -505,7 +505,8 @@ function AdEvidenceSpread({
   const g = google?.status === 'present' && google.data ? google.data : null;
   // A confirmed page supports current page activity only; a keyword search is a sample.
   const sweep = metaSweep?.status === 'empty' && metaSweep.data ? metaSweep.data : null;
-  const pageZero = metaPage?.status === 'empty' && metaPage?.page_confirmed === true;
+  // 2026-11-23: only a stamped zero (adPool.metaZeroVerified) is a zero; an unverified empty read is not checked.
+  const pageZero = metaZeroVerified(metaPage);
   const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
   const showMeta = (pageZero || sweep) && metaReadDate;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
@@ -1002,11 +1003,11 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
   const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
   // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
-  const metaZero = metaPage?.status === 'empty' && metaPage.page_confirmed === true;
+  const metaZero = metaZeroVerified(metaPage);
   const metaShown = m && typeof m.active_ad_count === 'number' ? m.active_ad_count : metaZero ? 0 : null;
   const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
-    {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
+    {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
@@ -1267,7 +1268,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   )
     .map((f) => {
       if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
-        if (d.ads.meta.page_confirmed !== true) return null;
+        if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
         const pageScoped = /(?:facebook|identified|your|this) page/i.test(f.title) && /(?:facebook|identified|your|this) page/i.test(f.evidence);
         return { ...f,
@@ -1456,7 +1457,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const paidLines: ReceiptLine[] = [];
   if (adsMeta?.status === 'empty' && hasFinding('ads.meta')) {
     paidLines.push(
-      { signal: 'ads.meta', label: 'Meta Ad Library', value: adsMeta?.page_confirmed === true ? 'no active ads on the identified page' : 'no identity-matched ads in the sample', source: 'Meta Ad Library', none: true },
+      { signal: 'ads.meta', label: 'Meta Ad Library', value: metaZeroVerified(adsMeta) ? 'no active ads on the identified page' : 'no identity-matched ads in the sample', source: 'Meta Ad Library', none: true },
     );
   } else if (
     adsMeta?.status === 'present' && adsMeta.data &&

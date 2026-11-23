@@ -164,6 +164,9 @@ describe('pooled ad-count line', () => {
   it('renders beside a verified page-confirmed zero only', () => {
     expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21' } }, pool(0))).toContain('data-ad-pool="1"');
     expect(html({ meta: { ...meta(0), status: 'empty', page_confirmed: true } }, pool(0))).not.toContain('data-ad-pool');
+    // 2026-11-23: an unstamped page zero prints no 0 at all, only "No confirmed count".
+    const unstamped = html({ meta: { ...meta(0), status: 'empty', page_confirmed: true } }, pool(0));
+    expect(unstamped).toContain('No confirmed count for this review.');
   });
 
   it('is omitted when the page shows no confirmed count or a different one', () => {

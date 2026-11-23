@@ -8,9 +8,16 @@ const META_OWNERSHIP = 'store-host-2026-11-16';   // dtc_scan.META_OWNERSHIP
 // Older zeros carry the same reason text whether or not the cross-check search ran, so they show no line.
 const META_ZERO_VERIFIED = 'page-zero+search-nomatch-2026-11-21';
 
+// 2026-11-23: the ONE test for "this store's Facebook page runs no ads". A page_confirmed empty read without the
+// stamp could not be cross-checked, so every page prints it as not checked, never as 0 or "no active ads".
+export function metaZeroVerified(meta: any): boolean {
+  return !!meta && typeof meta === 'object' && meta.status === 'empty' && meta.page_confirmed === true
+    && meta.zero_verified === META_ZERO_VERIFIED;
+}
+
 function provenMeta(meta: any): boolean {
   if (!meta || typeof meta !== 'object') return false;
-  if (meta.status === 'empty') return meta.page_confirmed === true && meta.zero_verified === META_ZERO_VERIFIED;
+  if (meta.status === 'empty') return metaZeroVerified(meta);
   if (meta.status !== 'present') return false;
   return TRUSTED_VIA.includes(meta.resolved_via) || (meta.resolved_via === 'search_match' && meta.ownership === META_OWNERSHIP);
 }
