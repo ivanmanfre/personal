@@ -505,7 +505,8 @@ function AdEvidenceSpread({
   const g = google?.status === 'present' && google.data ? google.data : null;
   // A confirmed page supports current page activity only; a keyword search is a sample.
   // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
-  const sweep = metaSweep?.status === 'empty' && metaSweep.data && typeof metaSweep.data.identity_matched_ads === 'number' ? metaSweep.data : null;
+  // Sol r4: an empty sweep states "none traced" only when its own match count is 0
+  const sweep = metaSweep?.status === 'empty' && metaSweep.data && metaSweep.data.identity_matched_ads === 0 ? metaSweep.data : null;
   // 2026-11-23: a zero only with its verified stamp; Sol r3: and its own date, or the spread printed "at null"
   const pageZero = metaZeroVerified(metaPage) && !!checkedAt(metaPage?.fetched_at);
   // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
@@ -527,6 +528,7 @@ function AdEvidenceSpread({
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
   const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
+  const headerDate = (g ? gReadLong : metaReadDate) || gReadLong || metaReadDate;
   const newestAge = g ? daysBetween(g.newest_first_shown, gRead) : null;
   const lastAge = g ? daysBetween(g.latest_last_shown, gRead) : null;
 
@@ -629,9 +631,10 @@ function AdEvidenceSpread({
                   above a section citing only the Meta Ad Library. Same reason the date now
                   follows the archive being shown: printing the Google fetch date over a
                   Meta-only strip attributes the read to a source the reader cannot see. */}
+              {/* Sol r4 (#79): a missing date drops its clause, never "read on null" */}
               {g && showMeta
-                ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
-                : `A public ad archive, read on ${(g ? gReadLong : metaReadDate) || gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
+                ? `Two public ad archives${gReadLong ? `, read on ${gReadLong}` : ''}. Every date below is theirs, not ours.`
+                : `A public ad archive${headerDate ? `, read on ${headerDate}` : ''}. Every date below is theirs, not ours.`}
             </p>
           </div>
         </div>
@@ -1283,7 +1286,10 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
   )
     .map((f) => {
-      if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
+      // Sol r4 (#79): a 'present' read whose count is 0 is a zero too, and needs the same verified stamp
+      const metaZeroRead = d.ads?.meta?.status === 'empty'
+        || (d.ads?.meta?.status === 'present' && d.ads.meta.data?.active_ad_count === 0);
+      if (f.signal === 'ads.meta' && metaZeroRead) {
         if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
         const pageScoped = /(?:facebook|identified|your|this) page/i.test(f.title) && /(?:facebook|identified|your|this) page/i.test(f.evidence);

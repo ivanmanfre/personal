@@ -1027,6 +1027,32 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(undatedZero).toContain('traced none of the sampled ads');
   });
 
+  it('a present 0 needs the verified stamp, a missing date drops its clause, a sweep with matches claims no absence (Sol r4 #79)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/';
+    const render = (ads: any, findings: any[] = []) => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const stamped = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 10, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // 1. a source-bound Meta finding on an unverified 'present' 0 is not published
+    const title = 'No active ads on the identified Facebook page';
+    const finding = { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title, evidence: 'The Facebook page runs zero active Meta ads.', source_url: fb };
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb } }, [finding])).not.toContain(title);
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb } }, [finding])).not.toContain('runs zero active Meta ads');
+    // a verified page zero still publishes it
+    expect(render({ meta: stamped }, [finding])).toContain(title);
+    // 2. an undated Google read beside a dated Meta zero never prints "read on null"
+    const both = spread(render({ meta: stamped, google: { status: 'present', data: { ads_found: 4 } } }));
+    expect(both).toContain('Two public ad archives');
+    expect(both).not.toMatch(/\bnull\b/);
+    // 3. an 'empty' sweep that stores 2 matches never says none were traced
+    const contradictory = spread(render({ meta_sweep: { ...sweep, data: { ...sweep.data, identity_matched_ads: 2 } } }));
+    expect(contradictory).not.toContain('traced none');
+    expect(contradictory).toContain('No confirmed count for this review.');
+    expect(spread(render({ meta_sweep: sweep }))).toContain('traced none of the sampled ads');
+  });
+
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
     const { fixture, html } = renderFixture('harborline-soy-works-promise.json');
     const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;
