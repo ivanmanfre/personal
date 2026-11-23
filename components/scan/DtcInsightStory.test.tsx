@@ -52,6 +52,22 @@ describe('source-backed story', () => {
     const exactHtml = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={exact} ads={{}} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
     expect(exactHtml).toContain('Source wording – retained.');
   });
+  it('the older story prints a Meta 0 only through the verified page zero (Sol B final)', () => {
+    const at = '2026-11-20T12:00:00Z', source_url = 'https://www.facebook.com/ads/library/';
+    const story = (meta: any) => renderToStaticMarkup(<DtcInsightStory companyName="Example Nails" domain="example.com" data={data} ads={{ ...fixture.ads, meta }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    const zeroLine = '<strong>0</strong><span>Active Meta ads on the identified page</span>';
+    const presentZero = story({ status: 'present', data: { active_ad_count: 0 }, fetched_at: at, source_url });
+    expect(presentZero).not.toContain(zeroLine);
+    expect(presentZero).toContain('No confirmed count for this review.');
+    const unstamped = story({ status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: at, source_url });
+    expect(unstamped).not.toContain(zeroLine);
+    expect(unstamped).toContain('No confirmed count for this review.');
+    const verified = story({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: at, source_url });
+    expect(verified).toContain(zeroLine);
+    expect(verified).not.toContain('No confirmed count for this review.');
+    const positive = story({ status: 'present', data: { active_ad_count: 4 }, fetched_at: at, source_url });
+    expect(positive).toContain('<strong>4</strong><span>Active Meta ads on the identified page</span>');
+  });
   it('requires approved story version, complete evidence and the actual recorded ad destination', () => {
     expect(canShowStory(data, fixture.ads.meta)).toBe(true);
     expect(canShowStory({ ...data, status: 'error' }, fixture.ads.meta)).toBe(false);

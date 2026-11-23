@@ -734,12 +734,17 @@ function AdEvidenceSpread({
                 <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                   Meta Ad Library
                 </span>
-                <div
-                  className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
-                  style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
-                >
-                  0
-                </div>
+                {/* 2026-11-23 (Sol B final): the big 0 needs the verified page zero; a keyword sweep stays a sample below */}
+                {pageZero ? (
+                  <div
+                    className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
+                    style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
+                  >
+                    0
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[1rem] leading-[1.4]" style={{ color: surface, opacity: 0.85 }}>No confirmed count for this review.</p>
+                )}
               </div>
               <div className="lg:col-span-8">
                 {/* Claim strength follows evidence strength (SENSE incident, 08-07): the absolute

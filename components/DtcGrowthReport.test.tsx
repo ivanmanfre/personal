@@ -952,6 +952,22 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(text).toContain('A public read of your store, and where the growth is.');
   });
 
+  it('the ad spread prints its big Meta 0 only for a verified page zero (Sol B final)', () => {
+    const d = JSON.parse(JSON.stringify(loadFixture('kindred-tread-legacy.json').dtc)) as any;
+    const fetched_at = '2026-11-20T12:00:00Z', source_url = 'https://www.facebook.com/ads/library/';
+    d.ads.meta = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at, source_url };
+    d.ads.meta_sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at, source_url };
+    const bigZero = /Meta Ad Library<\/span>\s*<div[^>]*>\s*0\s*<\/div>/;
+    const unverified = renderDtc(d, 'Example Store');
+    expect(unverified).toContain('traced none of the sampled ads');
+    expect(unverified).not.toMatch(bigZero);
+    expect(unverified).toMatch(/Meta Ad Library<\/span>\s*<p[^>]*>No confirmed count for this review\.<\/p>/);
+    d.ads.meta.zero_verified = 'page-zero+search-nomatch-2026-11-21';
+    const verified = renderDtc(d, 'Example Store');
+    expect(verified).toMatch(bigZero);
+    expect(verified).not.toContain('No confirmed count for this review.');
+  });
+
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
     const { fixture, html } = renderFixture('harborline-soy-works-promise.json');
     const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;
