@@ -188,14 +188,14 @@ describe('verified Meta link zero', () => {
 
   it('prints 0 as ads linking to the store, never as the page running none, and no pool line', () => {
     const out = html(linkZero);
-    expect(out).toContain('Active Meta ads linking to your store');
+    expect(out).toContain('Active Meta ads showing your domain');
     expect(out).not.toContain('No confirmed count for this review.</small></div><div');
-    expect(out.indexOf('Active Meta ads linking to your store')).toBeGreaterThan(out.indexOf('id="public-ads"'));
+    expect(out.indexOf('Active Meta ads showing your domain')).toBeGreaterThan(out.indexOf('id="public-ads"'));
     expect(out).not.toContain('data-ad-pool');
   });
 
   it('needs the exact stamp', () => {
-    expect(html({ ...linkZero, zero_verified: 'something-else' })).not.toContain('linking to your store');
-    expect(html({ ...linkZero, status: 'error' })).not.toContain('linking to your store');
+    expect(html({ ...linkZero, zero_verified: 'something-else' })).not.toContain('showing your domain');
+    expect(html({ ...linkZero, status: 'error' })).not.toContain('showing your domain');
   });
 });
