@@ -88,3 +88,19 @@ describe('"not running paid social" under every Meta status (r1-final #5)', () =
     expect(render(d)).toContain('No active ads on the identified Facebook page');
   });
 });
+
+describe('story intro sentence that states a Meta zero (real-row render 11-23)', () => {
+  it('drops it beside an unverified read and keeps it beside a stamped page zero', async () => {
+    const { metaZeroScrub } = await import('./scan/adPool');
+    const intro = 'We read your homepage and two product pages. Meta’s ad library shows no active ads on your Facebook page. Our Google check found none.';
+    for (const meta of [{ status: 'empty', page_confirmed: true, fetched_at: AT }, { status: 'error' }, undefined, { status: 'present', data: { active_ad_count: 0 } }]) {
+      const out = metaZeroScrub(intro, meta);
+      expect(out).not.toMatch(/no active ads/i);
+      expect(out).toBe('We read your homepage and two product pages. Our Google check found none.');
+    }
+    expect(metaZeroScrub(intro, zero())).toBe(intro);
+    expect(metaZeroScrub("Your Facebook page isn't currently running ads.", { status: 'error' })).toMatch(/^We reviewed your store pages/);
+    const plain = 'We reviewed your store pages and public ads.';
+    expect(metaZeroScrub(plain, { status: 'error' })).toBe(plain);
+  });
+});
