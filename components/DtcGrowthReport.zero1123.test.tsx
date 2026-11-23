@@ -89,33 +89,16 @@ describe('"not running paid social" under every Meta status (r1-final #5)', () =
   });
 });
 
-describe('story intro sentence that states a Meta zero (real-row render 11-23)', () => {
-  it('drops it beside an unverified read and keeps it beside a stamped page zero', async () => {
-    const { metaZeroScrub } = await import('./scan/adPool');
-    const intro = 'We read your homepage and two product pages. Meta’s ad library shows no active ads on your Facebook page. Our Google check found none.';
-    for (const meta of [{ status: 'empty', page_confirmed: true, fetched_at: AT }, { status: 'error' }, undefined, { status: 'present', data: { active_ad_count: 0 } }]) {
-      const out = metaZeroScrub(intro, meta);
-      expect(out).not.toMatch(/no active ads/i);
-      expect(out).toBe('We read your homepage and two product pages. Our Google check found none.');
-    }
-    expect(metaZeroScrub(intro, zero())).toBe(intro);
-    expect(metaZeroScrub("Your Facebook page isn't currently running ads.", { status: 'error' })).toMatch(/^We reviewed your store pages/);
-    const plain = 'We reviewed your store pages and public ads.';
-    expect(metaZeroScrub(plain, { status: 'error' })).toBe(plain);
-  });
-});
-
 describe('Sol r2 reproducers', () => {
-  it('a stored "0 active ads" or whitespace-padded absence finding and hook drop beside an error read', () => {
+  it('a builder no-ads finding (padded, punctuated or curly) drops beside an error read and shows beside a stamp', () => {
     const d = base('marla-legacy.json');
     d.ads = { ...d.ads, meta: { status: 'error', fetched_at: AT } };
     d.findings = [...(d.findings || []).filter((f: any) => f.signal !== 'ads.meta'),
-      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: '0 active ads on your Facebook page', evidence: 'The Facebook page has 0 active ads.', source_url: PAGE },
-      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'You are not  running paid social', evidence: 'None found.', source_url: PAGE }];
-    d.hero_hook = '0 active ads on your Facebook page';
+      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: ' You’re not  running paid social right now. ', evidence: 'None found.', source_url: PAGE },
+      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'Your Meta pixel is installed, and your Facebook page runs no ads', evidence: 'Pixel found.', source_url: PAGE }];
     const text = render(d).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    expect(text).not.toMatch(/0 active ads/i);
     expect(text).not.toMatch(/not running paid social/i);
+    expect(text).not.toMatch(/runs no ads/i);
   });
   it('the legacy insight story never prints a present-0 Meta count', async () => {
     const { DtcInsightStory } = await import('./scan/DtcInsightStory');
@@ -131,7 +114,9 @@ describe('Sol r2 reproducers', () => {
   });
 });
 
-describe('Sol r3 reproducers (standard story copy)', () => {
+describe('model copy is rendered as stored (11-23 design)', () => {
+  // The page never edits model-written copy: the Railway editor checks every field for a Meta count claim before a
+  // page passes (meta_claims). The only Meta count the page prints is its own fixed line from the stored read.
   const story = (intro: string, body: string) => {
     const t = { title: 'Test a starter-plan page', observation: body, test: 'Proposed: compare plan and product messages.', measure: 'First-order revenue per visitor.', proposal_type: 'paid_creative', evidence: [{ kind: 'store', source_url: 'https://invented-co.example/', quote: 'starter plan' }] };
     return { status: 'present', tests: [t], journeys: [], presentation: { version: 'rise-standard-2026-10-14', domain: 'invented-co.example', headline: t.title, intro, review: { approved: true, checked_at: '2026-11-20T00:00:00Z' }, sections: [{ test_index: 0, headline: t.title, body, action: t.test, lane: 'store', proposal_type: 'paid_creative' }] } } as any;
@@ -140,31 +125,20 @@ describe('Sol r3 reproducers (standard story copy)', () => {
     const { DtcInsightStory } = await import('./scan/DtcInsightStory');
     return renderToStaticMarkup(<DtcInsightStory companyName="Invented Co" domain="invented-co.example" data={data} ads={{ meta }} bookingUrl="https://example.com/book" logo="https://example.com/logo.png" />).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   };
-  it('drops a paraphrased zero in the intro and a zero in the section body beside an error read', async () => {
-    const data = story('We read your homepage. Your Facebook page is running zero ads.', 'Your store offers a starter plan. Your Facebook page has 0 active ads.');
+  it('renders intro and body verbatim and words an unverified read as not checked', async () => {
+    const data = story('We read your homepage and two product pages.', 'Your store offers a starter plan.\n\nIt ships in two sizes.');
     const err = await html(data, { status: 'error' });
-    expect(err).not.toMatch(/running zero ads|0 active ads/i);
+    expect(err).toContain('We read your homepage and two product pages.');
     expect(err).toContain('Your store offers a starter plan.');
-    const ok = await html(data, zero());
-    expect(ok).toContain('Your Facebook page is running zero ads.');
-    expect(ok).toContain('Your Facebook page has 0 active ads.');
+    expect(err).toContain('It ships in two sizes.');
+    expect(err).not.toMatch(/\b0\s+Active Meta ads/i);
   });
-  it('keeps a qualified observation beside a positive count', async () => {
-    const data = story('We read your homepage. Meta showed 4 active ads, but no active ads use video.', 'Your store offers a starter plan.');
-    const four = await html(data, { status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 4 } });
-    expect(four).toContain('no active ads use video');
-  });
-});
-
-describe('Sol r4 reproducers', () => {
-  it('matcher word boundary, verb-branch qualifier, blank-line paragraphs', async () => {
-    const { metaAbsenceClaim, metaZeroScrub, META_UNCONFIRMED } = await import('./scan/adPool');
-    expect(metaAbsenceClaim('No active Meta ads showing in the Ad Library.')).toBe(true);
-    expect(metaAbsenceClaim('You have 4 active Meta ads, but your page shows no ads with video.')).toBe(false);
-    expect(metaAbsenceClaim('Your page shows no ads.')).toBe(true);
-    const obs = 'Your Facebook page had 4 active Meta ads at the last successful check\n\nYour Facebook page is running zero ads today.';
-    expect(metaZeroScrub(obs, { status: 'error' }, META_UNCONFIRMED)).toBe('Your Facebook page had 4 active Meta ads at the last successful check');
-    expect(metaZeroScrub('Your page is running zero ads.', { status: 'error' }, META_UNCONFIRMED)).toBe(META_UNCONFIRMED);
-    expect(metaZeroScrub(obs, zero(), META_UNCONFIRMED)).toBe(obs);
+  it('metaNoAdsFinding matches only the builder titles', async () => {
+    const { metaNoAdsFinding } = await import('./scan/adPool');
+    expect(metaNoAdsFinding("You're not running paid social right now")).toBe(true);
+    expect(metaNoAdsFinding('YOU’RE NOT RUNNING PAID SOCIAL RIGHT NOW!')).toBe(true);
+    expect(metaNoAdsFinding('Your Meta pixel is installed, and your Facebook page runs no ads.')).toBe(true);
+    expect(metaNoAdsFinding('Testing sprawl with no consolidated winner')).toBe(false);
+    expect(metaNoAdsFinding(undefined)).toBe(false);
   });
 });

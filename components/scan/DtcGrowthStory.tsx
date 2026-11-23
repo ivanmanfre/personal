@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 import { Evidence, RiseCallClose, displayBrandName, useRiseStoryMotion } from './DtcStoryShared';
-import { META_UNCONFIRMED, adPoolLine, metaZeroScrub, metaZeroVerified } from './adPool';
+import { adPoolLine, metaZeroVerified } from './adPool';
 
 type Mark = { x: number; y: number; w: number; h: number };
 type Capture = { url: string; source_url: string; captured_at: string; kind?: 'ad' | 'page'; quote?: string; mark?: Mark };
@@ -138,7 +138,6 @@ export function DtcGrowthStory({ companyName, domain, data, ads, adPool, booking
   const { root, wrapper, content, navigate } = useRiseStoryMotion();
   const primary = s.sections.slice(0, 4), secondary = s.sections.slice(4);
   const brandName = displayBrandName(companyName);
-  const metaRead = ads?.meta;   // the finding renderer below shadows `ads` with its ad captures
   const finding = (section: Section, i: number) => {
     const captures = section.captures?.length ? section.captures : section.capture ? [section.capture] : [];
     const ads = captures.filter(c => c.kind === 'ad');
@@ -153,7 +152,7 @@ export function DtcGrowthStory({ companyName, domain, data, ads, adPool, booking
         <div className="ris-standard-grid">
           <div data-reveal>
             <h2>{section.headline}</h2>
-            <div className="ris-observation">{section.body.split(/\n\s*\n/).map((p) => metaZeroScrub(p, metaRead, META_UNCONFIRMED)).map((paragraph, index) => <p className="ris-body" key={index}>{paragraph}</p>)}</div>
+            <div className="ris-observation">{section.body.split(/\n\s*\n/).map((paragraph, index) => <p className="ris-body" key={index}>{paragraph}</p>)}</div>
             {!ads.length ? action : null}
           </div>
           {primaryEvidence.length ? <div className="ris-evidence-shots">{primaryEvidence.map(shot)}</div> : null}
@@ -162,14 +161,14 @@ export function DtcGrowthStory({ companyName, domain, data, ads, adPool, booking
         {gallery.length === 2 && gallery[0].source_url !== gallery[1].source_url
           ? <ComparedPages pages={gallery} group={`pages-${section.test_index}`} renderShot={shot} />
           : gallery.length ? <div className="ris-page-gallery"><p className="ris-label">Pages cited in this finding</p><div className="ris-evidence-shots">{gallery.map(shot)}</div></div> : null}
-        <Evidence test={{ ...data.tests[section.test_index], observation: metaZeroScrub(data.tests[section.test_index]?.observation, metaRead, META_UNCONFIRMED) }} verbatim fullPlan />
+        <Evidence test={data.tests[section.test_index]} verbatim fullPlan />
         <RecordedDestinations ad={section.ad} />
       </div>
     </section>;
   };
   return <div className="ris-story ris-standard" ref={root} onClick={navigate} data-rise-story={s.version}>
     <nav className="ris-nav" aria-label="Report navigation"><a href="https://risedtc.com" className="ris-logo"><img src={logo} alt="RISE DTC" /></a><div><a href="#public-ads">Paid ads</a>{s.sections.some(x => x.lane === 'store' && !x.proposal_type) ? <a href={`#finding-${s.sections.find(x => x.lane === 'store' && !x.proposal_type)!.test_index}`}>Your store</a> : null}</div><a className="ris-nav-cta" href="#rise-conversation">Let’s talk ↗</a></nav>
-    <div ref={wrapper} className="ris-smooth-wrapper"><div ref={content} className="ris-smooth-content"><header className="ris-hero"><div className="ris-shell ris-hero-grid"><div><p className="ris-label" data-reveal>Growth review · {s.sections.length} {s.sections.length === 1 ? 'finding' : 'findings'}</p><h1 data-reveal>{brandName || 'Your growth review'}</h1><p className="ris-lead" data-reveal>{metaZeroScrub(s.intro, metaRead)}</p><a className="ris-explore" href={`#finding-${primary[0].test_index}`} data-reveal>Explore the findings <span>↓</span></a></div>{s.hero_capture ? <figure className="ris-standard-capture" data-reveal><a href={s.hero_capture.source_url} target="_blank" rel="noopener noreferrer"><CaptureImage capture={s.hero_capture} alt={`${brandName || 'Reviewed store'} homepage`} hero /></a><figcaption>Your store · Captured {date(s.hero_capture.captured_at)}</figcaption></figure> : null}</div><div className={`ris-shell ris-chapters ${primary.length === 1 ? 'ris-one-chapter' : ''}`}>{primary.map((x, i) => <a key={x.test_index} href={`#finding-${x.test_index}`}><b>{String(i + 1).padStart(2, '0')}</b><span><small>{x.proposal_type === 'paid_creative' ? 'Proposed paid test' : x.lane === 'paid' ? 'Paid ads' : 'Your store'}</small><strong>{x.headline}</strong></span></a>)}</div></header>
+    <div ref={wrapper} className="ris-smooth-wrapper"><div ref={content} className="ris-smooth-content"><header className="ris-hero"><div className="ris-shell ris-hero-grid"><div><p className="ris-label" data-reveal>Growth review · {s.sections.length} {s.sections.length === 1 ? 'finding' : 'findings'}</p><h1 data-reveal>{brandName || 'Your growth review'}</h1><p className="ris-lead" data-reveal>{s.intro}</p><a className="ris-explore" href={`#finding-${primary[0].test_index}`} data-reveal>Explore the findings <span>↓</span></a></div>{s.hero_capture ? <figure className="ris-standard-capture" data-reveal><a href={s.hero_capture.source_url} target="_blank" rel="noopener noreferrer"><CaptureImage capture={s.hero_capture} alt={`${brandName || 'Reviewed store'} homepage`} hero /></a><figcaption>Your store · Captured {date(s.hero_capture.captured_at)}</figcaption></figure> : null}</div><div className={`ris-shell ris-chapters ${primary.length === 1 ? 'ris-one-chapter' : ''}`}>{primary.map((x, i) => <a key={x.test_index} href={`#finding-${x.test_index}`}><b>{String(i + 1).padStart(2, '0')}</b><span><small>{x.proposal_type === 'paid_creative' ? 'Proposed paid test' : x.lane === 'paid' ? 'Paid ads' : 'Your store'}</small><strong>{x.headline}</strong></span></a>)}</div></header>
       <main><AdEvidence ads={ads} adPool={adPool} />{primary.map(finding)}<RiseCallClose companyName={companyName} bookingUrl={bookingUrl} cases={cases} />{secondary.length ? <details id="other-store-ideas" className="ris-secondary"><summary className="ris-shell"><div><strong>Other store ideas</strong><p>{secondary.length} additional {secondary.length === 1 ? 'finding' : 'findings'} from this review.</p></div><span aria-hidden="true">+</span></summary><div>{secondary.map((x, i) => finding(x, i + primary.length))}</div></details> : null}</main>
       <footer className="ris-shell ris-footer"><a href={`https://${domain}`} target="_blank" rel="noopener noreferrer">{brandName ? `Prepared for ${brandName}` : 'Reviewed store'} ↗</a><details><summary>About this review</summary><p>A dated review of store pages and available public ad records. These are proposed changes. Actual sales, acquisition costs and profit need store and ad-account data.</p></details></footer>
     </div></div>

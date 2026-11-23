@@ -15,31 +15,14 @@ export function metaZeroVerified(meta: any): boolean {
     && meta.zero_verified === META_ZERO_VERIFIED;
 }
 
-// 2026-11-23 (r1-final #5): a finding or hook that states the store runs no Meta ads. It shows only beside a stamped
-// page zero, whatever the Meta read's status (an error read must not leave a stored "not running paid social" up).
-// Same pattern as railway dtc_story._META_ABSENCE. It only hides our own copy; it never decides a fact.
-const META_ABSENCE = /(?:(?:not|n't) (?:currently )?running (?:any )?(?:paid social|paid ads|meta ads|facebook ads|ads)|(?:running|runs|run|has|have|shows?) (?:0|zero|no) (?:active )?(?:meta |facebook )?ads|no active (?:meta |facebook )?ads|\b(?:0|zero) active (?:meta |facebook )?ads)(?!\s+(?:use|uses|using|with|that|feature|features|show|link|links|point|points)\b)|no (?:meta |facebook )?ads (?:are )?(?:currently )?(?:running|live)/i;
-export function metaAbsenceClaim(text: unknown): boolean {
-  // r2: matched on the text as the page shows it (curly quotes folded, whitespace collapsed)
-  return typeof text === 'string' && META_ABSENCE.test(text.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' '));
-}
-
-// 2026-11-23 (real-row render): a model-written story intro said "Meta's ad library shows no active ads on your
-// Facebook page" beside an unverified read. Each such sentence shows only beside a stamped page zero.
-const DEFAULT_INTRO = 'We reviewed your store pages. Each finding below explains what we saw, a proposed change and how to check the result.';
-export const META_UNCONFIRMED = "We could not confirm this store's Meta ad count.";
-export function metaZeroScrub(text: string, meta: any, fallback: string = DEFAULT_INTRO): string {
-  if (typeof text !== 'string' || metaZeroVerified(meta)) return text;
-  // r4: blank lines are boundaries too, and paragraphs keep their breaks
-  let changed = false;
-  const paras = text.trim().split(/\n\s*\n/).map((para) => {
-    const parts = para.trim().split(/(?<=[.!?])\s+/);
-    const keep = parts.filter((x) => !metaAbsenceClaim(x));
-    if (keep.length < parts.length) changed = true;
-    return keep.join(' ');
-  }).filter((x) => x);
-  if (!changed) return text;
-  return paras.length ? paras.join('\n\n') : fallback;
+// 2026-11-23: the builder's two fixed no-ads findings (dtc_scan "You're not running paid social right now" and
+// PIXEL_NO_ADS_TITLE). They show only beside a stamped page zero, whatever the Meta status. Matched by title: this is
+// structured builder output, never model copy (model copy never states a Meta count; the Railway editor checks it).
+const NO_ADS_TITLES = ["you're not running paid social right now", 'your meta pixel is installed, and your facebook page runs no ads'];
+export function metaNoAdsFinding(title: unknown): boolean {
+  if (typeof title !== 'string') return false;
+  const key = title.normalize('NFKC').replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' ').trim().replace(/[ .!]+$/, '').toLowerCase();
+  return NO_ADS_TITLES.includes(key);
 }
 
 function provenMeta(meta: any): boolean {

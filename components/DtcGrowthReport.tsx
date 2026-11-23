@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine, metaAbsenceClaim, metaZeroVerified } from './scan/adPool';
+import { adPoolLine, metaNoAdsFinding, metaZeroVerified } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -1271,7 +1271,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   )
     .map((f) => {
       // 2026-11-23 (r1-final #5): "not running paid social" needs the stamped page zero under every Meta status.
-      if (f.signal === 'ads.meta' && (metaAbsenceClaim(f.title) || metaAbsenceClaim(f.evidence)) && !metaZeroVerified(d.ads?.meta)) return null;
+      if (f.signal === 'ads.meta' && metaNoAdsFinding(f.title) && !metaZeroVerified(d.ads?.meta)) return null;
       if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
         if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
@@ -1294,7 +1294,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   );
   const hookBacked = (clean(d.hero_hook).match(/\d[\d,.]*\d|\d/g) || []).every((n) => findingNums.has(n.replace(/,/g, '')));
   const legacyHook = clean(scrubProse(d.hero_hook, paidOk)) === clean(d.hero_hook) && hookBacked
-      && !(metaAbsenceClaim(d.hero_hook) && !metaZeroVerified(d.ads?.meta))
+      && !(metaNoAdsFinding(d.hero_hook) && !metaZeroVerified(d.ads?.meta))   // a hook that is the no-ads finding's title
     ? clean(d.hero_hook)
     : 'A public read of your store, and where the growth is.';
 
