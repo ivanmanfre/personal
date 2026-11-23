@@ -40,16 +40,21 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
   }) && !s.sections.some((x, i) => x.lane === 'paid' && s.sections.slice(0, i).some(y => y.lane === 'store'));
 }
 
+// 2026-11-23: no Facebook page of the store could be read, and Meta's Ad Library has no active ad linking to the
+// store's domain. A verified statement about ads that link to the store, never "the page runs no ads".
+const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
+const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
+
 function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
   const shown = (key: string, count: string): number | null => {
     const block = ads?.[key], value = block?.data?.[count];
-    const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || block.page_confirmed === true)));
+    const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || block.page_confirmed === true || linkZero(key, block))));
     return confirmed && Number.isInteger(value) && value >= 0 && dated(block.fetched_at) && safe(block.source_url) ? value : null;
   };
   const poolLine = adPoolLine(adPool, ads?.meta, shown('meta', 'active_ad_count'));
   return <section id="public-ads" className="ris-shell ris-public-ads"><p className="ris-label">Public ad records</p><div className="ris-ad-stats">{[['meta', 'Active Meta ads', 'active_ad_count'], ['google', 'Google creatives in the public records', 'ads_found']].map(([key, label, count]) => {
     const block = ads?.[key], value = shown(key, count);
-    return <div key={key}>{value !== null ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>No confirmed count for this review.</small></>}</div>;
+    return <div key={key}>{value !== null ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{linkZero(key, block) ? 'Active Meta ads linking to your store' : label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>No confirmed count for this review.</small></>}</div>;
   })}<p>Public ad records do not show spend or sales.</p></div>{poolLine ? <p className="ris-ad-pool" data-ad-pool="1">{poolLine}</p> : null}</section>;
 }
 
