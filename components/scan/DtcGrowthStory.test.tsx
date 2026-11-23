@@ -180,3 +180,22 @@ describe('pooled ad-count line', () => {
     expect(html({ meta: meta(6, { resolved_via: 'search_match', ownership: 'store-host-2026-11-16' }) }, pool(6))).toContain('data-ad-pool="1"');
   });
 });
+
+// 2026-11-23: no readable Facebook page and no active Meta ad linking to the store: a verified link zero.
+describe('verified Meta link zero', () => {
+  const linkZero = { status: 'empty', fetched_at: SEEN, source_url: 'https://www.facebook.com/ads/library/?q=%22northfold.example%22', data: { active_ad_count: 0 }, page_confirmed: false, zero_verified: 'store-link-search-nomatch-2026-11-23' };
+  const html = (meta: any) => renderToStaticMarkup(<DtcInsightStory companyName="Northfold" domain="northfold.example" data={story()} ads={{ meta }} adPool={{ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count: 0, line: 'x' }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+
+  it('prints 0 as ads linking to the store, never as the page running none, and no pool line', () => {
+    const out = html(linkZero);
+    expect(out).toContain('Active Meta ads linking to your store');
+    expect(out).not.toContain('No confirmed count for this review.</small></div><div');
+    expect(out.indexOf('Active Meta ads linking to your store')).toBeGreaterThan(out.indexOf('id="public-ads"'));
+    expect(out).not.toContain('data-ad-pool');
+  });
+
+  it('needs the exact stamp', () => {
+    expect(html({ ...linkZero, zero_verified: 'something-else' })).not.toContain('linking to your store');
+    expect(html({ ...linkZero, status: 'error' })).not.toContain('linking to your store');
+  });
+});
