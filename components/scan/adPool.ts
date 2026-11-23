@@ -18,9 +18,10 @@ export function metaZeroVerified(meta: any): boolean {
 // 2026-11-23 (r1-final #5): a finding or hook that states the store runs no Meta ads. It shows only beside a stamped
 // page zero, whatever the Meta read's status (an error read must not leave a stored "not running paid social" up).
 // Same pattern as railway dtc_story._META_ABSENCE. It only hides our own copy; it never decides a fact.
-const META_ABSENCE = /not running (?:any )?(?:paid social|paid ads|meta ads|facebook ads|ads)|no active (?:meta |facebook )?ads|(?:isn't|is not|aren't|are not) (?:currently )?running (?:any )?ads|runs? no (?:meta |facebook )?ads|\b0 active (?:meta |facebook )?ads/i;
+const META_ABSENCE = /(?:not|n't) (?:currently )?running (?:any )?(?:paid social|paid ads|meta ads|facebook ads|ads)|no active (?:meta |facebook )?ads|runs? no (?:meta |facebook |paid )?ads|\b(?:0|zero) active (?:meta |facebook )?ads|no (?:meta |facebook )?ads (?:are )?(?:currently )?running/i;
 export function metaAbsenceClaim(text: unknown): boolean {
-  return typeof text === 'string' && META_ABSENCE.test(text.replace(/[\u2018\u2019]/g, "'"));
+  // r2: matched on the text as the page shows it (curly quotes folded, whitespace collapsed)
+  return typeof text === 'string' && META_ABSENCE.test(text.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' '));
 }
 
 // 2026-11-23 (real-row render): a model-written story intro said "Meta's ad library shows no active ads on your

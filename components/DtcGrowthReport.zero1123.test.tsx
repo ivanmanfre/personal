@@ -104,3 +104,29 @@ describe('story intro sentence that states a Meta zero (real-row render 11-23)',
     expect(metaZeroScrub(plain, { status: 'error' })).toBe(plain);
   });
 });
+
+describe('Sol r2 reproducers', () => {
+  it('a stored "0 active ads" or whitespace-padded absence finding and hook drop beside an error read', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { ...d.ads, meta: { status: 'error', fetched_at: AT } };
+    d.findings = [...(d.findings || []).filter((f: any) => f.signal !== 'ads.meta'),
+      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: '0 active ads on your Facebook page', evidence: 'The Facebook page has 0 active ads.', source_url: PAGE },
+      { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'You are not  running paid social', evidence: 'None found.', source_url: PAGE }];
+    d.hero_hook = '0 active ads on your Facebook page';
+    const text = render(d).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(text).not.toMatch(/0 active ads/i);
+    expect(text).not.toMatch(/not running paid social/i);
+  });
+  it('the legacy insight story never prints a present-0 Meta count', async () => {
+    const { DtcInsightStory } = await import('./scan/DtcInsightStory');
+    // the repo's existing legacy story fixture (the same one DtcInsightStory.test.tsx uses), with invented Meta reads
+    const fx = JSON.parse(fs.readFileSync(path.join(FIX, 'yananails-story.json'), 'utf-8'));
+    const data = { ...fx.commercial, presentation: fx.presentation } as any;
+    const html = (meta: any) => renderToStaticMarkup(<DtcInsightStory companyName="Invented Co" domain={fx.presentation.domain} data={data} ads={{ meta }} bookingUrl="https://example.com/book" logo="https://example.com/logo.png" />);
+    const zeroHtml = html({ status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 0 } });
+    expect(zeroHtml).not.toContain('<strong>0</strong><span>Active Meta ads');
+    expect(zeroHtml).toContain('Meta: no confirmed count for this review.');
+    const four = html({ status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 4 } });
+    expect(four).toContain('<strong>4</strong><span>Active Meta ads on the identified page');
+  });
+});
