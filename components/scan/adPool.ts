@@ -27,5 +27,8 @@ export function adPoolLine(pool: any, meta: any, shownMetaCount: number | null |
   if (!provenMeta(meta) || shownMetaCount !== pool.store_count) return null;
   // Same split as dtc_ad_pool.verified_count: a present read proves a positive count, only a page zero proves 0.
   if (meta.status === 'present' ? !(Number.isInteger(shownMetaCount) && shownMetaCount! > 0) : shownMetaCount !== 0) return null;
-  return pool.line.replace(/\s*[—–]\s*/g, ', ');
+  // 2026-11-23 (Sol r2): a verified zero covers the identified Facebook page only. Older stored lines end with the
+  // builder's old fixed sentence (dtc_ad_pool.line_text), so that exact sentence is scoped here too.
+  const line = shownMetaCount === 0 ? pool.line.replace(/Yours was running none\.$/, 'Your identified Facebook page was running none.') : pool.line;
+  return line.replace(/\s*[—–]\s*/g, ', ');
 }
