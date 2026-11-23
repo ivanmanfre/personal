@@ -130,3 +130,28 @@ describe('Sol r2 reproducers', () => {
     expect(four).toContain('<strong>4</strong><span>Active Meta ads on the identified page');
   });
 });
+
+describe('Sol r3 reproducers (standard story copy)', () => {
+  const story = (intro: string, body: string) => {
+    const t = { title: 'Test a starter-plan page', observation: body, test: 'Proposed: compare plan and product messages.', measure: 'First-order revenue per visitor.', proposal_type: 'paid_creative', evidence: [{ kind: 'store', source_url: 'https://invented-co.example/', quote: 'starter plan' }] };
+    return { status: 'present', tests: [t], journeys: [], presentation: { version: 'rise-standard-2026-10-14', domain: 'invented-co.example', headline: t.title, intro, review: { approved: true, checked_at: '2026-11-20T00:00:00Z' }, sections: [{ test_index: 0, headline: t.title, body, action: t.test, lane: 'store', proposal_type: 'paid_creative' }] } } as any;
+  };
+  const html = async (data: any, meta: any) => {
+    const { DtcInsightStory } = await import('./scan/DtcInsightStory');
+    return renderToStaticMarkup(<DtcInsightStory companyName="Invented Co" domain="invented-co.example" data={data} ads={{ meta }} bookingUrl="https://example.com/book" logo="https://example.com/logo.png" />).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  };
+  it('drops a paraphrased zero in the intro and a zero in the section body beside an error read', async () => {
+    const data = story('We read your homepage. Your Facebook page is running zero ads.', 'Your store offers a starter plan. Your Facebook page has 0 active ads.');
+    const err = await html(data, { status: 'error' });
+    expect(err).not.toMatch(/running zero ads|0 active ads/i);
+    expect(err).toContain('Your store offers a starter plan.');
+    const ok = await html(data, zero());
+    expect(ok).toContain('Your Facebook page is running zero ads.');
+    expect(ok).toContain('Your Facebook page has 0 active ads.');
+  });
+  it('keeps a qualified observation beside a positive count', async () => {
+    const data = story('We read your homepage. Meta showed 4 active ads, but no active ads use video.', 'Your store offers a starter plan.');
+    const four = await html(data, { status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 4 } });
+    expect(four).toContain('no active ads use video');
+  });
+});
