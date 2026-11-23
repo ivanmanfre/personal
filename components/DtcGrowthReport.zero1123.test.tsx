@@ -170,3 +170,30 @@ describe('Sol r1 (new design): model copy prints only after the Meta claim check
     expect(html).not.toMatch(/\bnull\b/);
   });
 });
+
+describe('Sol r2: fallback layouts keep the verified Meta line; older story layouts are withheld', () => {
+  it('a link zero and a domain count still print when the page falls back to the legacy layout', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { meta: { status: 'empty', page_confirmed: false, zero_verified: 'store-link-search-nomatch-2026-11-23', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 0 } } };
+    const a = render(d);
+    expect(a).toContain('data-meta-verified="1"');
+    expect(a).not.toContain('data-meta-unconfirmed="1"');
+    d.ads = { meta: { status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: null },
+      domain_count: { verified: 'store-link-search-count-2026-11-23', count: 7, fetched_at: AT, source_url: PAGE } } };
+    const b = render(d).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(b).toMatch(/7 active meta ads showing your domain/i);
+  });
+  it('an older story layout keeps its checked tests but not its presentation', async () => {
+    const { DtcInsightStory } = await import('./scan/DtcInsightStory');
+    void DtcInsightStory;
+    const fx = JSON.parse(fs.readFileSync(path.join(FIX, 'yananails-story.json'), 'utf-8'));
+    const d = { ...base('marla-new-contract.json'), commercial_evidence: { ...fx.commercial, presentation: { ...fx.presentation, route: { ...fx.presentation.route, body: 'Invented nested route body.' } } },
+      meta_claim_check: { version: 'meta-claims-backfill-2026-11-23', at: AT } };
+    expect(render(d)).not.toContain('Invented nested route body.');
+  });
+  it('the two-archive heading never prints a null date', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { meta: zero(), google: { status: 'present', data: { ads_found: 3 } } };
+    expect(render(d)).not.toMatch(/read on (null|undefined)/);
+  });
+});

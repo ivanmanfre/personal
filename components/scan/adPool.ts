@@ -34,6 +34,33 @@ export function modelCopyChecked(dtc: any): boolean {
   return !!c && typeof c === 'object' && META_CLAIM_CHECKS.includes(c.version);
 }
 
+// Sol r2 (fallback layouts): the standard story's verified Meta rules, shared so a page that withholds its story still
+// prints the same verified count. Link zero: no readable page, and no active ad links the store's domain. Domain count:
+// the page total is unknown, the exact-domain search counts ads that show the domain.
+const urlSafe = (url?: string) => { try { const u = new URL(url!); return /^https?:$/.test(u.protocol) && !u.username && !u.password; } catch { return false; } };
+const isDated = (d?: string) => !!d && Number.isFinite(Date.parse(d));
+export const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
+export const META_DOMAIN_COUNT_VERIFIED = 'store-link-search-count-2026-11-23';
+export function metaLinkZero(block: any): boolean {
+  return block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
+}
+export function metaDomainCount(block: any): any {
+  const d = block?.domain_count;
+  return block?.status === 'present' && (block?.data?.active_ad_count ?? null) === null && d
+    && d.verified === META_DOMAIN_COUNT_VERIFIED && Number.isInteger(d.count) && d.count > 0 && isDated(d.fetched_at) && urlSafe(d.source_url) ? d : null;
+}
+/** The Meta line a page may print: {count, label, atLeast, fetched_at, source_url}, or null for not checked. */
+export function metaVerifiedLine(block: any): { count: number; label: string; atLeast: boolean; fetched_at: string; source_url: string } | null {
+  const dc = metaDomainCount(block);
+  if (dc) return { count: dc.count, label: 'Active Meta ads showing your domain', atLeast: !!dc.at_least, fetched_at: dc.fetched_at, source_url: dc.source_url };
+  const v = block?.data?.active_ad_count;
+  const ok = ((block?.status === 'present' && v > 0) || (v === 0 && (metaZeroVerified(block) || metaLinkZero(block))))
+    && Number.isInteger(v) && v >= 0 && isDated(block.fetched_at) && urlSafe(block.source_url);
+  if (!ok) return null;
+  return { count: v, label: metaLinkZero(block) ? 'Active Meta ads showing your domain' : 'Active Meta ads', atLeast: !!block.data?.capped,
+           fetched_at: block.fetched_at, source_url: block.source_url };
+}
+
 function provenMeta(meta: any): boolean {
   if (!meta || typeof meta !== 'object') return false;
   if (meta.status === 'empty') return metaZeroVerified(meta);

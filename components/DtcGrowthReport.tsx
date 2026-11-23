@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine, metaNoAdsFinding, metaZeroVerified, modelCopyChecked } from './scan/adPool';
+import { adPoolLine, metaNoAdsFinding, metaVerifiedLine, metaZeroVerified, modelCopyChecked } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -510,12 +510,12 @@ function AdEvidenceSpread({
   const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
   const showMeta = (pageZero || sweep) && metaReadDate;
   // Sol r1 #5: a Meta read with no count and no dated sample still says it was not checked (never silent)
-  const metaUnchecked = !showMeta && !!metaPage && typeof metaPage === 'object'
-    && !(metaPage.status === 'present' && Number(metaPage.data?.active_ad_count) > 0);
+  const metaLine = !pageZero ? metaVerifiedLine(metaPage) : null;   // Sol r2: link zero / domain count, as the story prints
+  const metaUnchecked = !showMeta && !metaLine && !!metaPage && typeof metaPage === 'object';
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
-  if (!g && !showMeta && !metaUnchecked && !compCreatives.length) return null;
+  if (!g && !showMeta && !metaUnchecked && !metaLine && !compCreatives.length) return null;
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
   const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
@@ -623,7 +623,7 @@ function AdEvidenceSpread({
                   above a section citing only the Meta Ad Library. Same reason the date now
                   follows the archive being shown: printing the Google fetch date over a
                   Meta-only strip attributes the read to a source the reader cannot see. */}
-              {g && showMeta
+              {g && showMeta && gReadLong
                 ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
                 : !((g ? gReadLong : metaReadDate) || gReadLong || metaReadDate)
                 ? 'Public ad records for this review.'
@@ -781,6 +781,15 @@ function AdEvidenceSpread({
                 </div>
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {metaLine && !(metaPage?.status === 'present' && metaLine.label === 'Active Meta ads') ? (
+          <div className="mt-16 pt-10" data-meta-verified="1" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+            <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+              Meta Ad Library
+            </span>
+            <p className="mt-3" style={{ color: surface, opacity: 0.85 }}>{metaLine.atLeast ? 'At least ' : ''}{metaLine.count} {metaLine.label.toLowerCase()}{checkedAt(metaLine.fetched_at) ? `, checked ${checkedAt(metaLine.fetched_at)}` : ''}.</p>
           </div>
         ) : null}
 
@@ -1021,11 +1030,14 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
   // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
   const metaZero = metaZeroVerified(metaPage);
   const metaShown = m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? m.active_ad_count : metaZero ? 0 : null;
+  const metaOther = metaVerifiedLine(metaPage);   // Sol r2: link zero / domain count the story would print
+  const metaDomainLine = metaOther && metaOther.label !== 'Active Meta ads' ? metaOther : null;
   const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
     {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
     {/* 2026-11-23 (r1-final #4): a present read only ever prints a positive count; a 0 there is not a verified zero */}
     {m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {metaDomainLine ? <p data-meta-verified="1">{metaDomainLine.atLeast ? 'At least ' : ''}{metaDomainLine.count} active Meta {metaDomainLine.count === 1 ? 'ad shows' : 'ads show'} your domain.</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
@@ -1237,6 +1249,12 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const d = { ...original };
   // Sol r1 #1: unchecked model copy never prints (story and proposed tests alike)
   if (!modelCopyChecked(original)) delete (d as any).commercial_evidence;
+  // Sol r2: the check reads tests and the standard story's headline/intro (its sections mirror the tests). An older
+  // story layout prints nested copy the check never read, so its presentation is withheld; the checked tests remain.
+  else if ((d as any).commercial_evidence?.presentation && (d as any).commercial_evidence.presentation.version !== 'rise-standard-2026-10-14') {
+    const { presentation: _legacy, ...rest } = (d as any).commercial_evidence;
+    (d as any).commercial_evidence = rest;
+  }
   // Cause deduplication belongs to the builder, which retains complete evidence membership.
   // The renderer only suppresses the retired catalog-age recommendation on older rows.
   for (const key of ['drop_off', 'second_order'] as const) {

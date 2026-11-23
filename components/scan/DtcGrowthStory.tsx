@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 import { Evidence, RiseCallClose, displayBrandName, useRiseStoryMotion } from './DtcStoryShared';
-import { adPoolLine, metaZeroVerified } from './adPool';
+import { adPoolLine, metaDomainCount, metaLinkZero, metaZeroVerified } from './adPool';
 
 type Mark = { x: number; y: number; w: number; h: number };
 type Capture = { url: string; source_url: string; captured_at: string; kind?: 'ad' | 'page'; quote?: string; mark?: Mark };
@@ -40,19 +40,9 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
   }) && !s.sections.some((x, i) => x.lane === 'paid' && s.sections.slice(0, i).some(y => y.lane === 'store'));
 }
 
-// 2026-11-23: no Facebook page of the store could be read, and Meta's Ad Library has no active ad linking to the
-// store's domain (exact-phrase search). A verified statement about ads that show the domain, never "the page runs no ads".
-const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
-const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
-// 2026-11-23: a store page that also runs ads to other sites, so its total cannot be confirmed. The same exact-domain
-// search counts the active ads whose destination is the store's domain ("At least" when the search was a sample).
-// Never the page's total: it only prints where the total is unknown, and the pool line stays closed to it.
-const META_DOMAIN_COUNT_VERIFIED = 'store-link-search-count-2026-11-23';
-const domainCount = (key: string, block: any): any => {
-  const d = block?.domain_count;
-  return key === 'meta' && block?.status === 'present' && (block?.data?.active_ad_count ?? null) === null && d
-    && d.verified === META_DOMAIN_COUNT_VERIFIED && Number.isInteger(d.count) && d.count > 0 && dated(d.fetched_at) && safe(d.source_url) ? d : null;
-};
+// The verified Meta rules (link zero, domain count) live in adPool so fallback layouts print the same line.
+const linkZero = (key: string, block: any) => key === 'meta' && metaLinkZero(block);
+const domainCount = (key: string, block: any): any => key === 'meta' ? metaDomainCount(block) : null;
 
 function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
   const shown = (key: string, count: string): number | null => {
