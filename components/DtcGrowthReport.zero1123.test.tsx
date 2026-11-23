@@ -155,3 +155,16 @@ describe('Sol r3 reproducers (standard story copy)', () => {
     expect(four).toContain('no active ads use video');
   });
 });
+
+describe('Sol r4 reproducers', () => {
+  it('matcher word boundary, verb-branch qualifier, blank-line paragraphs', async () => {
+    const { metaAbsenceClaim, metaZeroScrub, META_UNCONFIRMED } = await import('./scan/adPool');
+    expect(metaAbsenceClaim('No active Meta ads showing in the Ad Library.')).toBe(true);
+    expect(metaAbsenceClaim('You have 4 active Meta ads, but your page shows no ads with video.')).toBe(false);
+    expect(metaAbsenceClaim('Your page shows no ads.')).toBe(true);
+    const obs = 'Your Facebook page had 4 active Meta ads at the last successful check\n\nYour Facebook page is running zero ads today.';
+    expect(metaZeroScrub(obs, { status: 'error' }, META_UNCONFIRMED)).toBe('Your Facebook page had 4 active Meta ads at the last successful check');
+    expect(metaZeroScrub('Your page is running zero ads.', { status: 'error' }, META_UNCONFIRMED)).toBe(META_UNCONFIRMED);
+    expect(metaZeroScrub(obs, zero(), META_UNCONFIRMED)).toBe(obs);
+  });
+});

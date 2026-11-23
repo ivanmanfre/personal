@@ -18,7 +18,7 @@ export function metaZeroVerified(meta: any): boolean {
 // 2026-11-23 (r1-final #5): a finding or hook that states the store runs no Meta ads. It shows only beside a stamped
 // page zero, whatever the Meta read's status (an error read must not leave a stored "not running paid social" up).
 // Same pattern as railway dtc_story._META_ABSENCE. It only hides our own copy; it never decides a fact.
-const META_ABSENCE = /(?:not|n't) (?:currently )?running (?:any )?(?:paid social|paid ads|meta ads|facebook ads|ads)|(?:running|runs|run|has|have|shows?) (?:0|zero|no) (?:active )?(?:meta |facebook )?ads|no active (?:meta |facebook )?ads(?! (?:use|uses|using|with|that|feature|features|show|link|links|point))|\b(?:0|zero) active (?:meta |facebook )?ads|no (?:meta |facebook )?ads (?:are )?(?:currently )?(?:running|live)/i;
+const META_ABSENCE = /(?:(?:not|n't) (?:currently )?running (?:any )?(?:paid social|paid ads|meta ads|facebook ads|ads)|(?:running|runs|run|has|have|shows?) (?:0|zero|no) (?:active )?(?:meta |facebook )?ads|no active (?:meta |facebook )?ads|\b(?:0|zero) active (?:meta |facebook )?ads)(?!\s+(?:use|uses|using|with|that|feature|features|show|link|links|point|points)\b)|no (?:meta |facebook )?ads (?:are )?(?:currently )?(?:running|live)/i;
 export function metaAbsenceClaim(text: unknown): boolean {
   // r2: matched on the text as the page shows it (curly quotes folded, whitespace collapsed)
   return typeof text === 'string' && META_ABSENCE.test(text.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' '));
@@ -30,10 +30,16 @@ const DEFAULT_INTRO = 'We reviewed your store pages. Each finding below explains
 export const META_UNCONFIRMED = "We could not confirm this store's Meta ad count.";
 export function metaZeroScrub(text: string, meta: any, fallback: string = DEFAULT_INTRO): string {
   if (typeof text !== 'string' || metaZeroVerified(meta)) return text;
-  const parts = text.trim().split(/(?<=[.!?])\s+/);
-  const keep = parts.filter((x) => !metaAbsenceClaim(x));
-  if (keep.length === parts.length) return text;
-  return keep.length ? keep.join(' ') : fallback;
+  // r4: blank lines are boundaries too, and paragraphs keep their breaks
+  let changed = false;
+  const paras = text.trim().split(/\n\s*\n/).map((para) => {
+    const parts = para.trim().split(/(?<=[.!?])\s+/);
+    const keep = parts.filter((x) => !metaAbsenceClaim(x));
+    if (keep.length < parts.length) changed = true;
+    return keep.join(' ');
+  }).filter((x) => x);
+  if (!changed) return text;
+  return paras.length ? paras.join('\n\n') : fallback;
 }
 
 function provenMeta(meta: any): boolean {
