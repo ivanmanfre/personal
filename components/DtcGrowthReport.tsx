@@ -565,7 +565,7 @@ function AdEvidenceSpread({
   const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
     ? metaPage.data.active_ad_count as number : null;
   const headCounts = [
-    metaN != null ? { k: 'meta', v: metaN, t: `${metaN} on Meta.` } : null,
+    metaN != null ? { k: 'meta', v: metaN, t: `${metaPage?.data?.capped ? 'At least ' : ''}${metaN} on Meta.` } : null,   // Sol r3: a paged read is a lower bound
     // each head count is its own sentence: "At least 100 on Google.", never ". at least"
     g && gCount ? { k: 'google', v: g.ads_found as number, t: `${gCount.pre ? `${gCount.pre.charAt(0).toUpperCase()}${gCount.pre.slice(1)} ` : ''}${gCount.n} on Google.` } : null,
   ].filter((x): x is { k: string; v: number; t: string } => !!x).sort((a, b) => b.v - a.v);
@@ -1036,7 +1036,7 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
   return <div className="rise-ad-records">
     {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
     {/* 2026-11-23 (r1-final #4): a present read only ever prints a positive count; a 0 there is not a verified zero */}
-    {m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? <p>Identified Facebook page: {m.capped ? 'at least ' : ''}{m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {metaDomainLine ? <p data-meta-verified="1">{metaDomainLine.atLeast ? 'At least ' : ''}{metaDomainLine.count} active Meta {metaDomainLine.count === 1 ? 'ad shows' : 'ads show'} your domain.</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}

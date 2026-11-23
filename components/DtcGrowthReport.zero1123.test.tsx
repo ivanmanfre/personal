@@ -197,3 +197,12 @@ describe('Sol r2: fallback layouts keep the verified Meta line; older story layo
     expect(render(d)).not.toMatch(/read on (null|undefined)/);
   });
 });
+
+describe('Sol r3: a paged Meta read prints as a lower bound in the fallback layouts', () => {
+  it('says at least', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { meta: { status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 100, capped: true } } };
+    const t = render(d).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(t).toMatch(/at least 100/i);
+  });
+});
