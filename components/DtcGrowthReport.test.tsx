@@ -996,6 +996,33 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(thin).not.toContain('0 traced to your brand');
   });
 
+  it('each Meta read keeps its own date, and a sample without its count claims no absence (Sol r2 #79 final)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/', fallback = 'No confirmed count for this review.';
+    const t = { title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+      evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }] };
+    const build = (ads: any, layout: 'legacy' | 'compact') => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at, matched_offer: 'dtc_growth' } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings: [], ads, ...(layout === 'compact' ? { builder_version: 'test',
+        drop_off: { items: [] }, second_order: { items: [] }, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [t] } } : {}) } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const page = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // a dated page read beside an undated sweep: the fallback shows, the undated sample states nothing
+    const undated = spread(build({ meta: page, meta_sweep: { ...sweep, fetched_at: null } }, 'legacy'));
+    expect(undated).toContain(fallback);
+    expect(undated).not.toContain('traced none of the sampled ads');
+    // a failed page read never dates the review
+    const failed = spread(build({ meta: { ...page, status: 'error', fetched_at: '2026-11-23T12:00:00Z' }, meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'legacy'));
+    expect(failed).toContain(fallback);
+    expect(failed).toContain('10:00 UTC');
+    expect(failed).not.toContain('12:00 UTC');
+    // the compact source checks claim no absence for a sample with no match count
+    const compact = build({ meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'compact');
+    expect(compact).not.toContain('No identity-matched result in the keyword sample.');
+    expect(compact).toContain(fallback);
+    expect(build({ meta_sweep: sweep }, 'compact')).toContain('No identity-matched result in the keyword sample.');
+  });
+
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
     const { fixture, html } = renderFixture('harborline-soy-works-promise.json');
     const d = JSON.parse(JSON.stringify(fixture.dtc)) as any;

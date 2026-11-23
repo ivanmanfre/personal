@@ -507,14 +507,18 @@ function AdEvidenceSpread({
   // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
   const sweep = metaSweep?.status === 'empty' && metaSweep.data && typeof metaSweep.data.identity_matched_ads === 'number' ? metaSweep.data : null;
   const pageZero = metaZeroVerified(metaPage);   // 2026-11-23: a zero only with its verified stamp
-  const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep ? sweep.checked_at || metaSweep?.fetched_at
-    : metaPage?.fetched_at || metaSweep?.data?.checked_at || metaSweep?.fetched_at);
+  // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
+  const pageRead = ['empty', 'present'].includes(metaPage?.status);
+  const sweepRead = ['empty', 'present'].includes(metaSweep?.status);
+  const pageDate = pageRead ? checkedAt(metaPage?.fetched_at) : null;
+  const sweepDate = sweepRead ? checkedAt(metaSweep?.data?.checked_at || metaSweep?.fetched_at) : null;
+  const sampleShown = !!(sweep && sweepDate);
   const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
     ? metaPage.data.active_ad_count as number : null;
   // A Meta read with no verified zero and no positive count says so instead of going silent.
-  const metaUnconfirmed = !pageZero && metaN == null && !!metaReadDate
-    && (['empty', 'present'].includes(metaPage?.status) || ['empty', 'present'].includes(metaSweep?.status));
-  const showMeta = !!((pageZero || sweep) && metaReadDate) || metaUnconfirmed;
+  const metaUnconfirmed = !pageZero && metaN == null && !!(pageDate || sweepDate);
+  const metaReadDate = pageZero ? pageDate : sampleShown ? sweepDate : metaUnconfirmed ? pageDate || sweepDate : null;
+  const showMeta = !!(pageZero && pageDate) || sampleShown || metaUnconfirmed;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
@@ -757,10 +761,10 @@ function AdEvidenceSpread({
                     page, Meta's own "isn't running ads"). A sweep-only zero is a sample fact —
                     a generic brand name can hide in a keyword sample — so it states exactly what
                     was measured and nothing more. */}
-                {pageZero || (sweep && metaReadDate) ? <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
+                {(pageZero && pageDate) || sampleShown ? <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
                   {pageZero
                     ? `The identified Facebook page had no active ads at ${metaReadDate}. This does not establish brand-wide or historical ad activity.`
-                    : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to your brand.`}
+                    : `A Meta Ad Library sweep on ${sweepDate} traced none of the sampled ads to your brand.`}
                 </p> : null}
                 {pageZero && proofHref(metaPage.source_url) ? <a href={proofHref(metaPage.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline underline-offset-4 mt-3">View the identified Facebook page</a> : null}
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
@@ -771,13 +775,13 @@ function AdEvidenceSpread({
                       <span className="dt">{metaReadDate}</span>
                     </div>
                   ) : null}
-                  {sweep ? (
+                  {sampleShown ? (
                     <div className="cedt-mrow">
                       <span className="nm">
                         {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
                       </span>
                       <span className="vl">{`${sweep.identity_matched_ads} traced to your brand`}</span>
-                      <span className="dt">{checkedAt(sweep.checked_at || metaSweep?.fetched_at) || metaReadDate}</span>
+                      <span className="dt">{sweepDate}</span>
                     </div>
                   ) : null}
                 </div>
@@ -1602,7 +1606,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               const coverage = label === 'Competitor search' && !compStrip(signal).length
                 ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
                 : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
-                : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
+                : label === 'Meta keyword search' && signal.status === 'empty' ? (signal.data?.identity_matched_ads === 0 ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
                 : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
               return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
             })}
