@@ -996,7 +996,8 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
 
 function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: { google: any; metaPage: any; metaSweep: any; competitors: any; adPool?: any }) {
   const g = google?.status === 'present' ? google.data : null;
-  const m = metaPage?.status === 'present' ? metaPage.data : null;
+  // Sol r1 (B): a present read prints only a positive count; the only zero is the verified page zero below
+  const m = metaPage?.status === 'present' && typeof metaPage.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0 ? metaPage.data : null;
   const sweep = ['present', 'empty'].includes(metaSweep?.status) ? metaSweep.data : null;
   const comp = competitors?.status === 'present' ? competitors.data : null;
   const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;

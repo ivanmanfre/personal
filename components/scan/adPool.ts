@@ -12,7 +12,7 @@ const META_ZERO_VERIFIED = 'page-zero+search-nomatch-2026-11-21';
 // without it (an older row, a failed cross-check, a keyword sample) was not checked, so it is never shown as 0.
 export function metaZeroVerified(meta: any): boolean {
   return !!meta && typeof meta === 'object' && meta.status === 'empty' && meta.page_confirmed === true
-    && meta.zero_verified === META_ZERO_VERIFIED;
+    && meta.zero_verified === META_ZERO_VERIFIED && meta.data?.active_ad_count === 0;
 }
 
 function provenMeta(meta: any): boolean {

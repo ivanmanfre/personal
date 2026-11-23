@@ -1504,6 +1504,12 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
     expect(html).toContain(escHtml(LINE));
   });
 
+  it('never prints an unverified Meta zero in the compact records (Sol r1 B)', () => {
+    const none = pool(0, 'Yours was running none.');
+    expect(withMeta({ status: 'present', data: { active_ad_count: 0 } }, none)).not.toContain('0 active ads');
+    expect(withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 3 } }, none)).not.toContain('No active ads on the identified Facebook page');
+  });
+
   it('renders for a page-confirmed zero', () => {
     const zero = pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none.");
     const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 } }, zero);
