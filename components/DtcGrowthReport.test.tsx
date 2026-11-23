@@ -1021,6 +1021,10 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(compact).not.toContain('No identity-matched result in the keyword sample.');
     expect(compact).toContain(fallback);
     expect(build({ meta_sweep: sweep }, 'compact')).toContain('No identity-matched result in the keyword sample.');
+    // Sol r3: an undated verified page zero beside a dated sample never prints "null" as a date
+    const undatedZero = spread(build({ meta: { ...page, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: null }, meta_sweep: sweep }, 'legacy'));
+    expect(undatedZero).not.toMatch(/\bnull\b/);
+    expect(undatedZero).toContain('traced none of the sampled ads');
   });
 
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {

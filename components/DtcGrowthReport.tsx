@@ -506,7 +506,8 @@ function AdEvidenceSpread({
   // A confirmed page supports current page activity only; a keyword search is a sample.
   // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
   const sweep = metaSweep?.status === 'empty' && metaSweep.data && typeof metaSweep.data.identity_matched_ads === 'number' ? metaSweep.data : null;
-  const pageZero = metaZeroVerified(metaPage);   // 2026-11-23: a zero only with its verified stamp
+  // 2026-11-23: a zero only with its verified stamp; Sol r3: and its own date, or the spread printed "at null"
+  const pageZero = metaZeroVerified(metaPage) && !!checkedAt(metaPage?.fetched_at);
   // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
   const pageRead = ['empty', 'present'].includes(metaPage?.status);
   const sweepRead = ['empty', 'present'].includes(metaSweep?.status);
