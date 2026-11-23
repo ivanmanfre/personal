@@ -142,3 +142,31 @@ describe('model copy is rendered as stored (11-23 design)', () => {
     expect(metaNoAdsFinding(undefined)).toBe(false);
   });
 });
+
+describe('Sol r1 (new design): model copy prints only after the Meta claim check', () => {
+  const CHECK = { version: 'meta-claims-editor-2026-11-23', at: AT };
+  const withStory = (check: any) => {
+    const fx = JSON.parse(fs.readFileSync(path.join(FIX, 'lunanails-standard.json'), 'utf-8'));
+    const d = structuredClone(fx.dtc);
+    d.commercial_evidence.presentation.intro = 'Invented intro sentence about the reviewed pages.';
+    if (check) d.meta_claim_check = check; else delete d.meta_claim_check;
+    return { d, domain: fx.domain };
+  };
+  const renderAt = (d: any, domain: string) => renderToStaticMarkup(<DtcGrowthReport report={{ dtc: d } as unknown as ReportJson}
+    scan={{ id: 't', company_slug: 'invented-co', domain, status: 'complete', created_at: AT, completed_at: AT, matched_offer: 'dtc_growth' } as unknown as Scan} companyName="Invented Co" />);
+  it('hides the story and its tests without the check and shows them with it', () => {
+    const a = withStory(null);
+    expect(renderAt(a.d, a.domain)).not.toContain('Invented intro sentence');
+    const b = withStory(CHECK);
+    expect(renderAt(b.d, b.domain)).toContain('Invented intro sentence');
+    const c = withStory({ version: 'something-else' });
+    expect(renderAt(c.d, c.domain)).not.toContain('Invented intro sentence');
+  });
+  it('the legacy spread says not checked for an error read with no sample', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { meta: { status: 'error', fetched_at: AT, reason: 'ads_archive http 503' } };
+    const html = render(d);
+    expect(html).toContain('data-meta-unconfirmed="1"');
+    expect(html).not.toMatch(/\bnull\b/);
+  });
+});

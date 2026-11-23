@@ -22,7 +22,7 @@ describe('DTC scan brand spelling', () => {
       matched_offer: 'dtc_growth',
       status: 'complete',
       created_at: '2026-10-23T00:00:00Z',
-      report_json: { matched_offer: 'dtc_growth', dtc: fixture.dtc },
+      report_json: { matched_offer: 'dtc_growth', dtc: { ...fixture.dtc, meta_claim_check: { version: 'meta-claims-editor-2026-11-23' } } },
     } as Scan;
     vi.mocked(useScan).mockReturnValue({ scan, loading: false, error: null } as ReturnType<typeof useScan>);
 

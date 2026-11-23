@@ -25,6 +25,15 @@ export function metaNoAdsFinding(title: unknown): boolean {
   return NO_ADS_TITLES.includes(key);
 }
 
+// 2026-11-23 (Sol r1 #1): model-written copy (story, tests) prints only after the Railway final editor checked it for
+// Meta count claims (dtc.meta_claim_check, written with a clean passed review or by the checked backfill). A page whose
+// copy was never checked, or whose last review flagged a claim, shows its builder-only sections until it passes.
+const META_CLAIM_CHECKS = ['meta-claims-editor-2026-11-23', 'meta-claims-backfill-2026-11-23'];
+export function modelCopyChecked(dtc: any): boolean {
+  const c = dtc?.meta_claim_check;
+  return !!c && typeof c === 'object' && META_CLAIM_CHECKS.includes(c.version);
+}
+
 function provenMeta(meta: any): boolean {
   if (!meta || typeof meta !== 'object') return false;
   if (meta.status === 'empty') return metaZeroVerified(meta);

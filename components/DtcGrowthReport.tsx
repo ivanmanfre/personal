@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine, metaNoAdsFinding, metaZeroVerified } from './scan/adPool';
+import { adPoolLine, metaNoAdsFinding, metaZeroVerified, modelCopyChecked } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -509,10 +509,13 @@ function AdEvidenceSpread({
   const pageZero = metaZeroVerified(metaPage);
   const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
   const showMeta = (pageZero || sweep) && metaReadDate;
+  // Sol r1 #5: a Meta read with no count and no dated sample still says it was not checked (never silent)
+  const metaUnchecked = !showMeta && !!metaPage && typeof metaPage === 'object'
+    && !(metaPage.status === 'present' && Number(metaPage.data?.active_ad_count) > 0);
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
-  if (!g && !showMeta && !compCreatives.length) return null;
+  if (!g && !showMeta && !metaUnchecked && !compCreatives.length) return null;
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
   const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
@@ -622,6 +625,8 @@ function AdEvidenceSpread({
                   Meta-only strip attributes the read to a source the reader cannot see. */}
               {g && showMeta
                 ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
+                : !((g ? gReadLong : metaReadDate) || gReadLong || metaReadDate)
+                ? 'Public ad records for this review.'
                 : `A public ad archive, read on ${(g ? gReadLong : metaReadDate) || gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
             </p>
           </div>
@@ -776,6 +781,15 @@ function AdEvidenceSpread({
                 </div>
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {metaUnchecked ? (
+          <div className="mt-16 pt-10" data-meta-unconfirmed="1" style={{ borderTop: '1px solid rgba(255,255,255,.16)' }}>
+            <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
+              Meta Ad Library
+            </span>
+            <p className="mt-3" style={{ color: surface, opacity: 0.85 }}>No confirmed count for this review.</p>
           </div>
         ) : null}
 
@@ -1221,6 +1235,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     original?.quality && original.quality.approved !== true ? null : original?.comparison_v1);
   if (!original) return null;
   const d = { ...original };
+  // Sol r1 #1: unchecked model copy never prints (story and proposed tests alike)
+  if (!modelCopyChecked(original)) delete (d as any).commercial_evidence;
   // Cause deduplication belongs to the builder, which retains complete evidence membership.
   // The renderer only suppresses the retired catalog-age recommendation on older rows.
   for (const key of ['drop_off', 'second_order'] as const) {

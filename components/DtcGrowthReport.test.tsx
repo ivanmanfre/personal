@@ -37,7 +37,8 @@ function loadFixture(file: string) {
 }
 
 function renderDtc(dtc: NonNullable<ReportJson['dtc']>, companyName: string) {
-  const report = { dtc } as unknown as ReportJson;
+  // 2026-11-23: model copy prints only after the Meta claim check; these layout tests model a checked report
+  const report = { dtc: { meta_claim_check: { version: 'meta-claims-editor-2026-11-23' }, ...dtc } } as unknown as ReportJson;
   const scan = {
     id: 'test-scan-id',
     company_slug: companyName.toLowerCase().replace(/\s+/g, '-'),
