@@ -199,3 +199,33 @@ describe('verified Meta link zero', () => {
     expect(html({ ...linkZero, status: 'error' })).not.toContain('showing your domain');
   });
 });
+
+// 2026-11-23: a store page that also runs ads to other sites has no confirmable total; the verified count of active ads
+// whose destination is the store's domain prints instead, never as the page total.
+describe('verified Meta domain count', () => {
+  const dc = { count: 12, at_least: false, verified: 'store-link-search-count-2026-11-23', basis: 'store_link_search', fetched_at: SEEN,
+               source_url: 'https://www.facebook.com/ads/library/?q=%22northfold.example%22&search_type=keyword_exact_phrase' };
+  const mixed = { status: 'present', fetched_at: SEEN, source_url: 'https://www.facebook.com/ads/library/?view_all_page_id=1', data: { active_ad_count: null }, domain_count: dc };
+  const html = (meta: any) => renderToStaticMarkup(<DtcInsightStory companyName="Northfold" domain="northfold.example" data={story()} ads={{ meta }} adPool={{ version: 'ad-pool-2026-11-20', pool_n: 120, threshold: 14, store_count: 0, line: 'x' }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+
+  it('prints N as ads showing the domain, with its own source, and no pool line', () => {
+    const out = html(mixed);
+    expect(out).toContain('<strong>12</strong><span>Active Meta ads showing your domain</span>');
+    expect(out).toContain('search_type=keyword_exact_phrase');
+    expect(out).not.toContain('No confirmed count for this review.</small></div><div');
+    expect(out).not.toContain('data-ad-pool');
+  });
+
+  it('prints a sampled search as at least N', () => {
+    expect(html({ ...mixed, domain_count: { ...dc, count: 60, at_least: true } })).toContain('<small>At least </small>60</strong><span>Active Meta ads showing your domain');
+  });
+
+  it('never replaces a page total, and needs the exact stamp and a positive count', () => {
+    const total = html({ ...mixed, data: { active_ad_count: 40 } });
+    expect(total).toContain('<strong>40</strong><span>Active Meta ads</span>');
+    expect(total).not.toContain('showing your domain');
+    expect(html({ ...mixed, domain_count: { ...dc, verified: 'x' } })).not.toContain('showing your domain');
+    expect(html({ ...mixed, domain_count: { ...dc, count: 0 } })).not.toContain('showing your domain');
+    expect(html({ ...mixed, status: 'error' })).not.toContain('showing your domain');
+  });
+});

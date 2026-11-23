@@ -44,6 +44,15 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
 // store's domain (exact-phrase search). A verified statement about ads that show the domain, never "the page runs no ads".
 const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
 const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
+// 2026-11-23: a store page that also runs ads to other sites, so its total cannot be confirmed. The same exact-domain
+// search counts the active ads whose destination is the store's domain ("At least" when the search was a sample).
+// Never the page's total: it only prints where the total is unknown, and the pool line stays closed to it.
+const META_DOMAIN_COUNT_VERIFIED = 'store-link-search-count-2026-11-23';
+const domainCount = (key: string, block: any): any => {
+  const d = block?.domain_count;
+  return key === 'meta' && block?.status === 'present' && (block?.data?.active_ad_count ?? null) === null && d
+    && d.verified === META_DOMAIN_COUNT_VERIFIED && Number.isInteger(d.count) && d.count > 0 && dated(d.fetched_at) && safe(d.source_url) ? d : null;
+};
 
 function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
   const shown = (key: string, count: string): number | null => {
@@ -53,7 +62,8 @@ function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
   };
   const poolLine = adPoolLine(adPool, ads?.meta, shown('meta', 'active_ad_count'));
   return <section id="public-ads" className="ris-shell ris-public-ads"><p className="ris-label">Public ad records</p><div className="ris-ad-stats">{[['meta', 'Active Meta ads', 'active_ad_count'], ['google', 'Google creatives in the public records', 'ads_found']].map(([key, label, count]) => {
-    const block = ads?.[key], value = shown(key, count);
+    const block = ads?.[key], value = shown(key, count), dc = value === null ? domainCount(key, block) : null;
+    if (dc) return <div key={key}><strong>{dc.at_least ? <small>At least </small> : null}{dc.count}</strong><span>Active Meta ads showing your domain</span><small>Checked {date(dc.fetched_at)} · <a href={dc.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></div>;
     return <div key={key}>{value !== null ? <><strong>{block.data.capped ? <small>At least </small> : null}{value}</strong><span>{linkZero(key, block) ? 'Active Meta ads showing your domain' : label}</span><small>Checked {date(block.fetched_at)} · <a href={block.source_url} target="_blank" rel="noopener noreferrer">Source ↗</a></small></> : <><span>{key === 'meta' ? 'Meta' : 'Google'}</span><small>No confirmed count for this review.</small></>}</div>;
   })}<p>Public ad records do not show spend or sales.</p></div>{poolLine ? <p className="ris-ad-pool" data-ad-pool="1">{poolLine}</p> : null}</section>;
 }
