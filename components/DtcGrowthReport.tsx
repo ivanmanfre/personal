@@ -1504,7 +1504,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
     typeof adsMeta.data.active_ad_count === 'number' && adsMeta.data.active_ad_count > 0 &&
     hasFinding('ads.meta')
   ) {
-    paidLines.push({ signal: 'ads.meta', label: 'Meta Ad Library', value: `${adsMeta.data.active_ad_count} active`, source: 'Meta Ad Library' });
+    paidLines.push({ signal: 'ads.meta', label: 'Meta Ad Library', value: `${adsMeta.data.capped ? 'at least ' : ''}${adsMeta.data.active_ad_count} active`, source: 'Meta Ad Library' });   // Sol r4: a paged read is a lower bound here too
   }
 
   const receiptGroups = [

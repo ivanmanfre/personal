@@ -206,3 +206,14 @@ describe('Sol r3: a paged Meta read prints as a lower bound in the fallback layo
     expect(t).toMatch(/at least 100/i);
   });
 });
+
+describe('Sol r4: the legacy receipt prints a paged Meta read as a lower bound too', () => {
+  it('never says "100 active" without "at least"', () => {
+    const d = base('marla-legacy.json');
+    d.ads = { ...d.ads, meta: { status: 'present', fetched_at: AT, source_url: PAGE, data: { active_ad_count: 100, capped: true } } };
+    d.findings = [...(d.findings || []), { signal: 'ads.meta', title: 'Invented Meta finding', evidence: 'Invented evidence.', severity: 'medium' }];
+    const t = render(d).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(t).toMatch(/at least 100 active/i);
+    expect(t.replace(/at least 100 active/gi, '')).not.toMatch(/100 active/i);
+  });
+});
