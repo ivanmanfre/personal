@@ -1210,7 +1210,7 @@ describe('evidence-first scan repair', () => {
   });
   it('scopes zero ads to a confirmed page, dates cached searches and keeps coverage limits visible', () => {
     const d = inventoryFixture();
-    d.ads = { meta: { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:48Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } }, meta_sweep: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, sampled_items: 0, identity_matched_ads: 0 } }, google: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, ads_found: 0 } } };
+    d.ads = { meta: { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-10-08T22:00:48Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } }, meta_sweep: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, sampled_items: 0, identity_matched_ads: 0 } }, google: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, ads_found: 0 } } };
     d.competitors = { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { creatives: [] } };
     const html = renderDtc(d, 'Example');
     expect(html).toContain('No active ads on the identified Facebook page');
@@ -1220,6 +1220,10 @@ describe('evidence-first scan repair', () => {
     expect(html).toContain('No verified competitor creatives');
     d.ads.meta.page_confirmed = false;
     expect(renderDtc(d, 'Example')).not.toContain('No active ads on the identified Facebook page');
+    // 2026-11-23: a page_confirmed zero without the stamp was not cross-checked: never printed as no ads.
+    d.ads.meta.page_confirmed = true; delete d.ads.meta.zero_verified;
+    expect(renderDtc(d, 'Example')).not.toContain('No active ads on the identified Facebook page');
+    expect(renderDtc(d, 'Example')).not.toContain('no active ads on the identified page');
   });
   it('versions captured image URLs by capture time while preserving existing query parameters', () => {
     const d = inventoryFixture();
@@ -1268,11 +1272,14 @@ describe('evidence-first scan repair', () => {
   });
   it('preserves verified page-scoped tracking facts while removing historical campaign assumptions', () => {
     const d = inventoryFixture();
-    d.ads.meta = { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:00Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } };
+    d.ads.meta = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-10-08T22:00:00Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } };
     d.findings = [{ signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'Your Meta pixel is installed, and your Facebook page runs no ads', evidence: 'Your store loads the Meta pixel and your Facebook page is not currently running ads.', week_one: 'We test a first Meta campaign once purchase events are checked.', source_url: 'https://facebook.com/example' }];
     const html = renderDtc(d, 'Example');
     expect(html).toContain('Your store loads the Meta pixel and your Facebook page is not currently running ads.');
     expect(html).not.toContain('first Meta campaign');
+    // 2026-11-23: the same finding on an unstamped zero is dropped, never shown as a fact.
+    delete d.ads.meta.zero_verified;
+    expect(renderDtc(d, 'Example')).not.toContain('your Facebook page is not currently running ads');
   });
   it('keeps legacy rows without new evidence fields readable without fabricated exhibits', () => {
     const d = inventoryFixture();

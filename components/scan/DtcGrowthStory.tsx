@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 import { Evidence, RiseCallClose, displayBrandName, useRiseStoryMotion } from './DtcStoryShared';
-import { adPoolLine } from './adPool';
+import { adPoolLine, metaZeroVerified } from './adPool';
 
 type Mark = { x: number; y: number; w: number; h: number };
 type Capture = { url: string; source_url: string; captured_at: string; kind?: 'ad' | 'page'; quote?: string; mark?: Mark };
@@ -57,7 +57,7 @@ const domainCount = (key: string, block: any): any => {
 function AdEvidence({ ads, adPool }: { ads: any; adPool?: any }) {
   const shown = (key: string, count: string): number | null => {
     const block = ads?.[key], value = block?.data?.[count];
-    const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || block.page_confirmed === true || linkZero(key, block))));
+    const confirmed = ((block?.status === 'present' && value > 0) || ((block?.status === 'empty' || block?.status === 'present') && value === 0 && (key === 'google' || metaZeroVerified(block) || linkZero(key, block))));
     return confirmed && Number.isInteger(value) && value >= 0 && dated(block.fetched_at) && safe(block.source_url) ? value : null;
   };
   const poolLine = adPoolLine(adPool, ads?.meta, shown('meta', 'active_ad_count'));

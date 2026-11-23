@@ -35,8 +35,13 @@ describe('source-backed story', () => {
     expect(html).not.toContain('Add Primer + Bonder');
     expect(html).not.toContain('Free shipping above this amount in Sweden');
     expect(html).toContain('mattan-method-excerpt.mp4');
-    const zero = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{ meta: { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://facebook.com/ads/library' }, google: { status: 'empty', data: { ads_found: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://adstransparency.google.com/' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    const zero = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={standard} ads={{ meta: { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://facebook.com/ads/library' }, google: { status: 'empty', data: { ads_found: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://adstransparency.google.com/' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
     expect(zero.match(/<strong>0<\/strong>/g)).toHaveLength(2);
+    // 2026-11-23: an unstamped page zero was not checked, so only the Google zero prints
+    const unstamped = structuredClone(standard);
+    const plain = renderToStaticMarkup(<DtcInsightStory companyName="Refill Co" domain="refill.com" data={unstamped} ads={{ meta: { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://facebook.com/ads/library' }, google: { status: 'empty', data: { ads_found: 0 }, fetched_at: '2026-10-14T00:00:00Z', source_url: 'https://adstransparency.google.com/' } }} bookingUrl="https://example.com/meeting" logo="https://example.com/logo.png" />);
+    expect(plain.match(/<strong>0<\/strong>/g)).toHaveLength(1);
+    expect(plain).toContain('No confirmed count for this review.');
     expect(zero).not.toContain('Ad activity could not be verified');
     const broken = structuredClone(standard); broken.presentation.sections[0].body = 'Unreviewed replacement claim';
     expect(canShowStory(broken)).toBe(false);
