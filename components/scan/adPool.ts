@@ -15,6 +15,13 @@ export function metaZeroVerified(meta: any): boolean {
     && meta.zero_verified === META_ZERO_VERIFIED;
 }
 
+// 2026-11-23 (r1-final #5): a finding or hook that states the store runs no Meta ads. It shows only beside a stamped
+// page zero, whatever the Meta read's status (an error read must not leave a stored "not running paid social" up).
+const META_ABSENCE = /not running paid social|(?:page|you|store)\W+(?:runs?|running) no (?:meta )?ads|no active (?:meta |facebook )?ads/i;
+export function metaAbsenceClaim(text: unknown): boolean {
+  return typeof text === 'string' && META_ABSENCE.test(text.replace(/[\u2018\u2019]/g, "'"));
+}
+
 function provenMeta(meta: any): boolean {
   if (!meta || typeof meta !== 'object') return false;
   if (meta.status === 'empty') return metaZeroVerified(meta);

@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine, metaZeroVerified } from './scan/adPool';
+import { adPoolLine, metaAbsenceClaim, metaZeroVerified } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -735,12 +735,14 @@ function AdEvidenceSpread({
                 <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                   Meta Ad Library
                 </span>
-                <div
+                {/* 2026-11-23 (r1-final #4): the big 0 is the page's zero; a keyword sample alone never prints it. */}
+                {pageZero ? <div
                   className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
+                  data-meta-zero="1"
                   style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
                 >
                   0
-                </div>
+                </div> : null}
               </div>
               <div className="lg:col-span-8">
                 {/* Claim strength follows evidence strength (SENSE incident, 08-07): the absolute
@@ -1004,11 +1006,12 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
   // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
   const metaZero = metaZeroVerified(metaPage);
-  const metaShown = m && typeof m.active_ad_count === 'number' ? m.active_ad_count : metaZero ? 0 : null;
+  const metaShown = m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? m.active_ad_count : metaZero ? 0 : null;
   const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
     {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
-    {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
+    {/* 2026-11-23 (r1-final #4): a present read only ever prints a positive count; a 0 there is not a verified zero */}
+    {m && typeof m.active_ad_count === 'number' && m.active_ad_count > 0 ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
     {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
@@ -1267,6 +1270,8 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
   )
     .map((f) => {
+      // 2026-11-23 (r1-final #5): "not running paid social" needs the stamped page zero under every Meta status.
+      if (f.signal === 'ads.meta' && (metaAbsenceClaim(f.title) || metaAbsenceClaim(f.evidence)) && !metaZeroVerified(d.ads?.meta)) return null;
       if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
         if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
@@ -1289,6 +1294,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   );
   const hookBacked = (clean(d.hero_hook).match(/\d[\d,.]*\d|\d/g) || []).every((n) => findingNums.has(n.replace(/,/g, '')));
   const legacyHook = clean(scrubProse(d.hero_hook, paidOk)) === clean(d.hero_hook) && hookBacked
+      && !(metaAbsenceClaim(d.hero_hook) && !metaZeroVerified(d.ads?.meta))
     ? clean(d.hero_hook)
     : 'A public read of your store, and where the growth is.';
 
@@ -1592,7 +1598,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
                 ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
                 : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
                 : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
-                : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
+                : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.'
+                // 2026-11-23 (r1-final #7): an unstamped zero on the page is not checked, never a silent "Checked"
+                : label === 'Facebook page' && !metaZeroVerified(signal) && !(signal.status === 'present' && signal.data?.active_ad_count > 0)
+                  && !(signal.status === 'present' && signal.data?.active_ad_count == null) ? 'No confirmed count; page activity unknown.'
+                : '';
               return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
             })}
           </div>
