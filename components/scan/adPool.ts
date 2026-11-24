@@ -20,14 +20,31 @@ export function metaZeroVerified(meta: any): boolean {
 // domain cross-check that did not finish with no ads). Shared by the page zero and the domain-link zero.
 const isDate = (v: any) => typeof v === 'string' && Number.isFinite(Date.parse(v));
 const isWebUrl = (v: any) => { try { const u = new URL(v); return /^https?:$/.test(u.protocol) && !u.username && !u.password; } catch { return false; } };
-export function metaZeroConsistent(meta: any): boolean {
+// Sol r5 (#79): the builder's page zero rests on Meta's own transparency line; any other stored page status contradicts it.
+const META_PAGE_ZERO_STATUS = "this page isn't currently running ads";
+const pageStatusOk = (v: any) => v == null || (typeof v === 'string'
+  && v.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' ').trim().replace(/\.$/, '') === META_PAGE_ZERO_STATUS);
+// `link`: the domain-link zero, which is itself the exact-domain search, so that search must have finished with no ads.
+// A page zero only needs that separate search not to have found ads ('pending' while it runs, Sol r5).
+export function metaZeroConsistent(meta: any, link = false): boolean {
   const d = meta?.data;
-  if (!d || typeof d !== 'object' || d.active_ad_count !== 0 || d.capped === true) return false;
-  if (d.records != null && !(Array.isArray(d.records) && d.records.length === 0)) return false;
-  if (d.sampled_ads != null && d.sampled_ads !== 0) return false;
+  if (!d || typeof d !== 'object' || Array.isArray(d) || d.active_ad_count !== 0) return false;
+  // Sol r5: the block holds the count and nothing else (a cap only when explicitly off); a retained ad field contradicts 0
+  if (!Object.keys(d).every((k) => k === 'active_ad_count' || (k === 'capped' && d.capped === false))) return false;
   if (meta.domain_count != null && meta.domain_count?.count !== 0) return false;
-  if (meta.link_domain_fallback != null && meta.link_domain_fallback !== 'no_ads') return false;
+  const fallback = meta.link_domain_fallback;
+  if (fallback != null && !(fallback === 'no_ads' || (!link && fallback === 'pending'))) return false;
+  if (!pageStatusOk(meta.page_status)) return false;
   return isDate(meta.fetched_at) && isWebUrl(meta.source_url);
+}
+
+// 2026-11-23: the verified count of active ads whose destination is the store's domain, on a page whose total is unknown.
+const META_DOMAIN_COUNT_VERIFIED = 'store-link-search-count-2026-11-23';
+export function metaDomainCountVerified(meta: any): boolean {
+  const d = meta?.domain_count;
+  return !!meta && typeof meta === 'object' && meta.status === 'present' && (meta.data?.active_ad_count ?? null) === null
+    && !!d && d.verified === META_DOMAIN_COUNT_VERIFIED && Number.isInteger(d.count) && d.count > 0
+    && isDate(d.fetched_at) && isWebUrl(d.source_url);
 }
 
 function provenMeta(meta: any): boolean {

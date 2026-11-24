@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine, metaZeroVerified } from './scan/adPool';
+import { adPoolLine, metaDomainCountVerified, metaZeroVerified } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -83,6 +83,26 @@ function scrubProse(s: string | null | undefined, paidOk: boolean): string {
     .filter((t) => !RETIRED_PROFIT.test(t) && !RETIRED_ENGINE.test(t) && (paidOk || !PAID_WORDING.test(t)))
     .join(' ')
     .trim();
+}
+
+// The builder's own Meta no-ads finding templates (dtc_verify._NO_ADS_TITLES, dtc_scan.PIXEL_NO_ADS_TITLE) and the
+// title this page gives a verified page zero. Exact template identity, not a word list.
+const NO_ADS_FINDING_TITLES = [
+  "you're not running paid social right now",
+  'your meta pixel is installed, and your facebook page runs no ads',
+  'no active ads on the identified facebook page',
+];
+const templateTitle = (t: any) => String(t || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' ').trim();
+
+// Sol r5 (#79): the one rule for a keyword sample's zero: an empty read of a positive number of ads, explicitly 0
+// matched, no stored match details against it, with its own date and source.
+function sampleZero(s: any): boolean {
+  const d = s?.data;
+  return s?.status === 'empty' && !!d && typeof d === 'object' && Number.isInteger(d.sampled_items) && d.sampled_items > 0
+    && d.identity_matched_ads === 0
+    && (d.matched_pages == null || (Array.isArray(d.matched_pages) && d.matched_pages.length === 0))
+    && (d.name_matched_unknown == null || d.name_matched_unknown === 0)
+    && !!checkedAt(d.checked_at || s.fetched_at) && !!proofHref(s.source_url);
 }
 
 function scrubLegacyFinding<F extends { title?: string; evidence?: string; week_one?: string | null }>(f: F, paidOk: boolean): F | null {
@@ -507,8 +527,8 @@ function AdEvidenceSpread({
   // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
   // Sol r4: an empty sweep states "none traced" only when its own match count is 0
   // R5 sweep: and only over a positive sampled count, or "none of the sampled ads" covered no ads ("undefined ads read")
-  const sweep = metaSweep?.status === 'empty' && metaSweep.data && metaSweep.data.identity_matched_ads === 0
-    && Number.isInteger(metaSweep.data.sampled_items) && metaSweep.data.sampled_items > 0 ? metaSweep.data : null;
+  // Sol r5: one sample-zero rule for the spread, the compact records and the coverage line (sampleZero)
+  const sweep = sampleZero(metaSweep) ? metaSweep.data : null;
   // 2026-11-23: a zero only with its verified stamp; Sol r3: and its own date, or the spread printed "at null"
   const pageZero = metaZeroVerified(metaPage) && !!checkedAt(metaPage?.fetched_at);
   // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
@@ -521,12 +541,13 @@ function AdEvidenceSpread({
     ? metaPage.data.active_ad_count as number : null;
   // A Meta read with no verified zero and no positive count says so instead of going silent.
   const metaUnconfirmed = !pageZero && metaN == null && !!(pageDate || sweepDate);
-  const metaReadDate = pageZero ? pageDate : sampleShown ? sweepDate : metaUnconfirmed ? pageDate || sweepDate : null;
+  const metaReadDate = pageZero ? pageDate : sampleShown ? sweepDate : metaN != null ? pageDate : metaUnconfirmed ? pageDate || sweepDate : null;
   const showMeta = !!(pageZero && pageDate) || sampleShown || metaUnconfirmed;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
-  if (!g && !showMeta && !compCreatives.length) return null;
+  // Sol r5: a positive Meta count keeps the spread when nothing else qualifies ("4 on Meta.")
+  if (!g && !showMeta && !compCreatives.length && metaN == null) return null;
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
   const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
@@ -1031,7 +1052,7 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
     {!metaZero && !m && ['empty', 'present'].includes(metaPage?.status) ? <p>Meta: No confirmed count for this review.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
-    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {/* R5 sweep: a sample counts only over ads it read; 0 read, or no read count, states no count */}{Number.isInteger(sweep.sampled_items) && sweep.sampled_items > 0 ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ${Number.isInteger(sweep.identity_matched_ads) && sweep.identity_matched_ads >= 0 ? `${sweep.identity_matched_ads} identity-matched results.` : ''}` : 'No confirmed count for this review.'}</p> : null}
+    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {/* R5: a sample states counts only over ads it read; its 0 only through sampleZero (Sol r5) */}{Number.isInteger(sweep.sampled_items) && sweep.sampled_items > 0 && (sampleZero(metaSweep) || (Number.isInteger(sweep.identity_matched_ads) && sweep.identity_matched_ads > 0)) ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ${sweep.identity_matched_ads} identity-matched results.` : 'No confirmed count for this review.'}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
       {g.newest_first_shown ? <p>Newest first shown: {isoDay(g.newest_first_shown)}{newestAge != null ? `, ${newestAge} ${dayWord(newestAge)} before the check` : ''}.</p> : null}
@@ -1292,8 +1313,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       // R5 sweep (#79): fail closed. A Meta finding keeps its own words only beside a positive integer count, or a
       // present read whose total is unknown (null, the domain-count case). Any other read (a malformed count, a
       // blocked, errored or missing read) carries no count, so the finding stays only through the verified zero.
+      // Sol r5: the builder's no-ads finding templates state a zero whatever the read says, so they need the verified
+      // zero too; an unknown total keeps a finding only beside its verified domain count.
       const mm = d.ads?.meta, mc = mm?.data?.active_ad_count;
-      const metaZeroRead = !(mm?.status === 'present' && (mc == null || (Number.isInteger(mc) && mc > 0)));
+      const metaZeroRead = NO_ADS_FINDING_TITLES.includes(templateTitle(f.title))
+        || !((mm?.status === 'present' && Number.isInteger(mc) && mc > 0) || metaDomainCountVerified(mm));
       if (f.signal === 'ads.meta' && metaZeroRead) {
         if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
@@ -1618,7 +1642,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               const coverage = label === 'Competitor search' && !compStrip(signal).length
                 ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
                 : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
-                : label === 'Meta keyword search' && signal.status === 'empty' ? (signal.data?.identity_matched_ads === 0 && Number.isInteger(signal.data?.sampled_items) && signal.data.sampled_items > 0 ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
+                : label === 'Meta keyword search' && signal.status === 'empty' ? (sampleZero(signal) ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
                 : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
               return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
             })}

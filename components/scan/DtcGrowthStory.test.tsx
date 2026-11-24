@@ -208,7 +208,7 @@ describe('verified Meta link zero', () => {
       { ...z, fetched_at: undefined }, { ...z, fetched_at: 'not a date' }, { ...z, source_url: undefined }, { ...z, source_url: 'javascript:alert(1)' },
       { ...z, data: undefined }, { ...z, data: { active_ad_count: '0' } }, { ...z, data: { active_ad_count: null } },
       { ...z, data: { active_ad_count: 0, records: [{ ad_archive_id: 'x' }] } }, { ...z, data: { active_ad_count: 0, sampled_ads: 3 } },
-      { ...z, data: { active_ad_count: 0, capped: true } }, { ...z, domain_count: { count: 4 } }, { ...z, link_domain_fallback: 'pending' },
+      { ...z, data: { active_ad_count: 0, capped: true } }, { ...z, domain_count: { count: 4 } }, { ...z, link_domain_fallback: 'inconclusive' },
     ];
     for (const z of broken(pageZero)) {
       const out = html(z);
@@ -216,7 +216,8 @@ describe('verified Meta link zero', () => {
       expect(out).not.toMatch(/<strong>(?:<small>At least <\/small>)?0<\/strong>/);
       expect(out).not.toContain('data-ad-pool');
     }
-    for (const z of broken(linkZero)) {
+    // the link zero is the exact-domain search itself, so a pending search is no zero (Sol r5)
+    for (const z of [...broken(linkZero), { ...linkZero, link_domain_fallback: 'pending' }]) {
       const out = html(z);
       expect(out).not.toContain('showing your domain');
       expect(out).not.toMatch(/<strong>(?:<small>At least <\/small>)?0<\/strong>/);

@@ -26,6 +26,7 @@ import { useMetadata } from '../hooks/useMetadata';
 vi.mock('../hooks/useMetadata', () => ({ useMetadata: vi.fn() }));
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DtcGrowthReport } from './DtcGrowthReport';
+import { metaZeroVerified } from './scan/adPool';
 import type { ReportJson, Scan } from '../lib/scanTypes';
 
 const FIXTURES_DIR = path.join(__dirname, 'dev', 'scanlab');
@@ -1056,6 +1057,96 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(spread(render({ meta_sweep: sweep }))).toContain('traced none of the sampled ads');
   });
 
+  // Sol r5 (#79) reviewer probes, invented fixtures
+  describe('Sol r5 probes', () => {
+    const at = '2026-11-23T10:00:00Z';
+const fb = 'https://www.facebook.com/ads/library/';
+const stamped = {
+  status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21',
+  data: { active_ad_count: 0 }, fetched_at: at, source_url: fb,
+};
+const finding = {
+  signal: 'ads.meta', kind: 'gap', lever: 'paid_media', source_url: fb,
+  title: 'Your Meta pixel is installed, and your Facebook page runs no ads',
+  evidence: 'Your store loads the Meta pixel and Meta confirms the Facebook page runs zero active ads.',
+};
+const sweep = {
+  status: 'empty', fetched_at: at, source_url: fb,
+  data: { sampled_items: 10, identity_matched_ads: 0 },
+};
+const reviewTest = {
+  title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+  evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }],
+};
+const compactLayout = {
+  builder_version: 'offline', drop_off: { items: [] }, second_order: { items: [] },
+  commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [reviewTest] },
+};
+const render = (ads: any, findings: any[] = [], compact = false) => renderToStaticMarkup(<DtcGrowthReport
+  companyName="Example Store" scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as any}
+  report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads, ...(compact ? compactLayout : {}) } } as any} />);
+    const pageZeroPrinted = (html: string) => html.includes('0 active ads on this page');
+
+    it('preserves an independently verified page zero while the auxiliary link search is pending', () => {
+      expect(pageZeroPrinted(render({ meta: stamped }))).toBe(true);
+      const meta = { ...stamped, link_domain_fallback: 'pending' };
+      expect({ gate: metaZeroVerified(meta), zero: pageZeroPrinted(render({ meta })) }).toEqual({ gate: true, zero: true });
+    });
+
+    it('suppresses a stale Meta zero finding with missing or null count', () => {
+      const copies = [undefined, {}, { active_ad_count: null }, { active_ad_count: 4 }].map(data =>
+        [false, true].map(compact => render({ meta: { status: 'present', data, fetched_at: at, source_url: fb } }, [finding], compact).includes(finding.evidence)));
+      expect(copies).toEqual([[false, false], [false, false], [false, false], [false, false]]);
+    });
+
+    it('suppresses all sample absence text when the same sample has a matched page or unclassified ads', () => {
+      for (const sample of [
+        { ...sweep, data: { ...sweep.data, matched_pages: ['10001'] } },
+        { ...sweep, data: { ...sweep.data, name_matched_unknown: 1 } },
+        { ...sweep, status: 'present' },
+      ]) {
+        const ads = { meta_sweep: sample };
+        const legacy = render(ads);
+        const compact = render(ads, [], true);
+        expect.soft({
+          legacy: legacy.includes('traced none of the sampled ads'),
+          coverage: compact.includes('No identity-matched result in the keyword sample.'),
+          compact: compact.includes('0 identity-matched results.'),
+        }).toEqual({ legacy: false, coverage: false, compact: false });
+      }
+    });
+
+    it('suppresses compact sample absence when its date and source are missing', () => {
+      const html = render({ meta_sweep: { status: 'empty', data: sweep.data } }, [], true);
+      expect({
+        coverage: html.includes('No identity-matched result in the keyword sample.'),
+        compact: html.includes('0 identity-matched results.'), fallback: html.includes('No confirmed count for this review.'),
+      }).toEqual({ coverage: false, compact: false, fallback: true });
+    });
+
+    it('preserves a Meta-only positive count beside a zero-item sample', () => {
+      const meta = { status: 'present', data: { active_ad_count: 4 }, fetched_at: at, source_url: fb };
+      const html = render({ meta, meta_sweep: { ...sweep, data: { ...sweep.data, sampled_items: 0 } } });
+      expect({ spread: html.includes('data-adspread'), count: html.includes('4 on Meta.') })
+        .toEqual({ spread: true, count: true });
+    });
+
+    it('rejects a stamped page zero contradicted by the raw page status or creative fields', () => {
+      const metas = [
+        { ...stamped, page_status: 'The page is currently running ads' },
+        { ...stamped, data: { ...stamped.data, oldest_ad: { ad_archive_id: '10001' }, has_video: true } },
+        { ...stamped, data: { ...stamped.data, capped: 'true' } },
+      ];
+      expect(metas.map(meta => ({ gate: metaZeroVerified(meta), zero: pageZeroPrinted(render({ meta })) })))
+        .toEqual(metas.map(() => ({ gate: false, zero: false })));
+    });
+
+    it('rejects a missing block, a bare boolean and an errored stamped read', () => {
+      expect([undefined, null, true, false, { ...stamped, status: 'error' }].map(metaZeroVerified))
+        .toEqual([false, false, false, false, false]);
+    });
+  });
+
   it('every Meta zero fails closed on a missing or contradicting field (R5 sweep #79)', () => {
     const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/';
     const render = (ads: any, findings: any[] = []) => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
@@ -1073,7 +1164,7 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     for (const meta of [
       { ...stamped, fetched_at: undefined }, { ...stamped, source_url: undefined }, { ...stamped, source_url: 'javascript:alert(1)' },
       { ...stamped, data: { active_ad_count: 0, records: [{ ad_archive_id: 'x' }] } }, { ...stamped, data: { active_ad_count: 0, sampled_ads: 2 } },
-      { ...stamped, data: { active_ad_count: 0, capped: true } }, { ...stamped, domain_count: { count: 3 } }, { ...stamped, link_domain_fallback: 'pending' },
+      { ...stamped, data: { active_ad_count: 0, capped: true } }, { ...stamped, domain_count: { count: 3 } }, { ...stamped, link_domain_fallback: 'inconclusive' },
     ]) {
       const html = render({ meta }, [finding]);
       expect(html).not.toContain(title);
