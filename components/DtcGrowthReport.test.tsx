@@ -26,6 +26,7 @@ import { useMetadata } from '../hooks/useMetadata';
 vi.mock('../hooks/useMetadata', () => ({ useMetadata: vi.fn() }));
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DtcGrowthReport } from './DtcGrowthReport';
+import { metaZeroVerified } from './scan/adPool';
 import type { ReportJson, Scan } from '../lib/scanTypes';
 
 const FIXTURES_DIR = path.join(__dirname, 'dev', 'scanlab');
@@ -887,7 +888,10 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     const { html } = renderFixture('marla-new-contract.json');
     const spread = html.slice(html.indexOf('data-ad-archive'));
     expect(spread).not.toContain('zero ads for your brand');
-    expect(spread).toContain('identity-matched results');
+    // R5 (#79): this sweep read 0 ads, so it states no count at all, never "0 identity-matched results"
+    expect(spread).not.toContain('identity-matched results');
+    expect(spread).toContain('Meta keyword sample');
+    expect(spread).toContain('No confirmed count for this review.');
     expect(spread).not.toContain('this brand');
   });
 });
@@ -950,6 +954,239 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect((fixture.dtc as any).hero_hook).toMatch(/where your margin is going/);
     expect(text).not.toMatch(/margin is going/i);
     expect(text).toContain('A public read of your store, and where the growth is.');
+  });
+
+  it('the ad spread prints its big Meta 0 only for a verified page zero (Sol B final)', () => {
+    const d = JSON.parse(JSON.stringify(loadFixture('kindred-tread-legacy.json').dtc)) as any;
+    const fetched_at = '2026-11-20T12:00:00Z', source_url = 'https://www.facebook.com/ads/library/';
+    d.ads.meta = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at, source_url };
+    d.ads.meta_sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at, source_url };
+    const bigZero = /Meta Ad Library<\/span>\s*<div[^>]*>\s*0\s*<\/div>/;
+    const unverified = renderDtc(d, 'Example Store');
+    expect(unverified).toContain('traced none of the sampled ads');
+    expect(unverified).not.toMatch(bigZero);
+    expect(unverified).toMatch(/Meta Ad Library<\/span>\s*<p[^>]*>No confirmed count for this review\.<\/p>/);
+    d.ads.meta.zero_verified = 'page-zero+search-nomatch-2026-11-21';
+    const verified = renderDtc(d, 'Example Store');
+    expect(verified).toMatch(bigZero);
+    expect(verified).not.toContain('No confirmed count for this review.');
+  });
+
+  it('older layouts say "No confirmed count" for an unusable Meta read and never contradict a count (Sol r1 #79 final)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/', fallback = 'No confirmed count for this review.';
+    const t = { title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+      evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }] };
+    const build = (ads: any, layout: 'legacy' | 'compact') => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at, matched_offer: 'dtc_growth' } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings: [], ads, ...(layout === 'compact' ? { builder_version: 'test',
+        drop_off: { items: [] }, second_order: { items: [] }, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [t] } } : {}) } } as unknown as ReportJson} />);
+    const unstamped = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // an unstamped page zero: both layouts print the fallback, never a zero
+    for (const layout of ['compact', 'legacy'] as const) {
+      const html = build({ meta: unstamped }, layout);
+      expect(html).toContain(fallback);
+      expect(html).not.toContain('No active ads on the identified Facebook page');
+    }
+    // a positive page count beside a no-match sample: the count stands, no fallback, the sample stays a sample
+    const both = build({ meta: { status: 'present', data: { active_ad_count: 4 }, fetched_at: at, source_url: fb }, meta_sweep: sweep }, 'legacy');
+    expect(both).toContain('4 on Meta.');
+    expect(both).toContain('traced none of the sampled ads');
+    expect(both).not.toContain(fallback);
+    // a sample with no match count states no absence and no invented 0
+    const thin = build({ meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'legacy');
+    expect(thin).toContain(fallback);
+    expect(thin).not.toContain('traced none of the sampled ads');
+    expect(thin).not.toContain('0 traced to your brand');
+  });
+
+  it('each Meta read keeps its own date, and a sample without its count claims no absence (Sol r2 #79 final)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/', fallback = 'No confirmed count for this review.';
+    const t = { title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+      evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }] };
+    const build = (ads: any, layout: 'legacy' | 'compact') => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at, matched_offer: 'dtc_growth' } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings: [], ads, ...(layout === 'compact' ? { builder_version: 'test',
+        drop_off: { items: [] }, second_order: { items: [] }, commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [t] } } : {}) } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const page = { status: 'empty', page_confirmed: true, data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 44, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // a dated page read beside an undated sweep: the fallback shows, the undated sample states nothing
+    const undated = spread(build({ meta: page, meta_sweep: { ...sweep, fetched_at: null } }, 'legacy'));
+    expect(undated).toContain(fallback);
+    expect(undated).not.toContain('traced none of the sampled ads');
+    // a failed page read never dates the review
+    const failed = spread(build({ meta: { ...page, status: 'error', fetched_at: '2026-11-23T12:00:00Z' }, meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'legacy'));
+    expect(failed).toContain(fallback);
+    expect(failed).toContain('10:00 UTC');
+    expect(failed).not.toContain('12:00 UTC');
+    // the compact source checks claim no absence for a sample with no match count
+    const compact = build({ meta_sweep: { ...sweep, data: { sampled_items: 44 } } }, 'compact');
+    expect(compact).not.toContain('No identity-matched result in the keyword sample.');
+    expect(compact).toContain(fallback);
+    expect(build({ meta_sweep: sweep }, 'compact')).toContain('No identity-matched result in the keyword sample.');
+    // Sol r3: an undated verified page zero beside a dated sample never prints "null" as a date
+    const undatedZero = spread(build({ meta: { ...page, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: null }, meta_sweep: sweep }, 'legacy'));
+    expect(undatedZero).not.toMatch(/\bnull\b/);
+    expect(undatedZero).toContain('traced none of the sampled ads');
+  });
+
+  it('a present 0 needs the verified stamp, a missing date drops its clause, a sweep with matches claims no absence (Sol r4 #79)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/';
+    const render = (ads: any, findings: any[] = []) => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const stamped = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const sweep = { status: 'empty', data: { sampled_items: 10, identity_matched_ads: 0 }, fetched_at: at, source_url: fb };
+    // 1. a source-bound Meta finding on an unverified 'present' 0 is not published
+    const title = 'No active ads on the identified Facebook page';
+    const finding = { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title, evidence: 'The Facebook page runs zero active Meta ads.', source_url: fb };
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb } }, [finding])).not.toContain(title);
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb } }, [finding])).not.toContain('runs zero active Meta ads');
+    // a verified page zero still publishes it
+    expect(render({ meta: stamped }, [finding])).toContain(title);
+    // 2. an undated Google read beside a dated Meta zero never prints "read on null"
+    const both = spread(render({ meta: stamped, google: { status: 'present', data: { ads_found: 4 } } }));
+    expect(both).toContain('Two public ad archives');
+    expect(both).not.toMatch(/\bnull\b/);
+    // 3. an 'empty' sweep that stores 2 matches never says none were traced
+    const contradictory = spread(render({ meta_sweep: { ...sweep, data: { ...sweep.data, identity_matched_ads: 2 } } }));
+    expect(contradictory).not.toContain('traced none');
+    expect(contradictory).toContain('No confirmed count for this review.');
+    expect(spread(render({ meta_sweep: sweep }))).toContain('traced none of the sampled ads');
+  });
+
+  // Sol r5 (#79) reviewer probes, invented fixtures
+  describe('Sol r5 probes', () => {
+    const at = '2026-11-23T10:00:00Z';
+const fb = 'https://www.facebook.com/ads/library/';
+const stamped = {
+  status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21',
+  data: { active_ad_count: 0 }, fetched_at: at, source_url: fb,
+};
+const finding = {
+  signal: 'ads.meta', kind: 'gap', lever: 'paid_media', source_url: fb,
+  title: 'Your Meta pixel is installed, and your Facebook page runs no ads',
+  evidence: 'Your store loads the Meta pixel and Meta confirms the Facebook page runs zero active ads.',
+};
+const sweep = {
+  status: 'empty', fetched_at: at, source_url: fb,
+  data: { sampled_items: 10, identity_matched_ads: 0 },
+};
+const reviewTest = {
+  title: 'Clarify sizing', observation: 'The table ends at size 8.', test: 'Add the next size.', measure: 'Size selection rate.',
+  evidence: [{ kind: 'store', source_url: 'https://shop.example/item', quote: 'Size 8' }],
+};
+const compactLayout = {
+  builder_version: 'offline', drop_off: { items: [] }, second_order: { items: [] },
+  commercial_evidence: { status: 'present', version: 'commercial-2026-10-11', tests: [reviewTest] },
+};
+const render = (ads: any, findings: any[] = [], compact = false) => renderToStaticMarkup(<DtcGrowthReport
+  companyName="Example Store" scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as any}
+  report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads, ...(compact ? compactLayout : {}) } } as any} />);
+    const pageZeroPrinted = (html: string) => html.includes('0 active ads on this page');
+
+    it('preserves an independently verified page zero while the auxiliary link search is pending', () => {
+      expect(pageZeroPrinted(render({ meta: stamped }))).toBe(true);
+      const meta = { ...stamped, link_domain_fallback: 'pending' };
+      expect({ gate: metaZeroVerified(meta), zero: pageZeroPrinted(render({ meta })) }).toEqual({ gate: true, zero: true });
+    });
+
+    it('suppresses a stale Meta zero finding with missing or null count', () => {
+      const copies = [undefined, {}, { active_ad_count: null }, { active_ad_count: 4 }].map(data =>
+        [false, true].map(compact => render({ meta: { status: 'present', data, fetched_at: at, source_url: fb } }, [finding], compact).includes(finding.evidence)));
+      expect(copies).toEqual([[false, false], [false, false], [false, false], [false, false]]);
+    });
+
+    it('suppresses all sample absence text when the same sample has a matched page or unclassified ads', () => {
+      for (const sample of [
+        { ...sweep, data: { ...sweep.data, matched_pages: ['10001'] } },
+        { ...sweep, data: { ...sweep.data, name_matched_unknown: 1 } },
+        { ...sweep, status: 'present' },
+      ]) {
+        const ads = { meta_sweep: sample };
+        const legacy = render(ads);
+        const compact = render(ads, [], true);
+        expect.soft({
+          legacy: legacy.includes('traced none of the sampled ads'),
+          coverage: compact.includes('No identity-matched result in the keyword sample.'),
+          compact: compact.includes('0 identity-matched results.'),
+        }).toEqual({ legacy: false, coverage: false, compact: false });
+      }
+    });
+
+    it('suppresses compact sample absence when its date and source are missing', () => {
+      const html = render({ meta_sweep: { status: 'empty', data: sweep.data } }, [], true);
+      expect({
+        coverage: html.includes('No identity-matched result in the keyword sample.'),
+        compact: html.includes('0 identity-matched results.'), fallback: html.includes('No confirmed count for this review.'),
+      }).toEqual({ coverage: false, compact: false, fallback: true });
+    });
+
+    it('preserves a Meta-only positive count beside a zero-item sample', () => {
+      const meta = { status: 'present', data: { active_ad_count: 4 }, fetched_at: at, source_url: fb };
+      const html = render({ meta, meta_sweep: { ...sweep, data: { ...sweep.data, sampled_items: 0 } } });
+      expect({ spread: html.includes('data-adspread'), count: html.includes('4 on Meta.') })
+        .toEqual({ spread: true, count: true });
+    });
+
+    it('rejects a stamped page zero contradicted by the raw page status or creative fields', () => {
+      const metas = [
+        { ...stamped, page_status: 'The page is currently running ads' },
+        { ...stamped, data: { ...stamped.data, oldest_ad: { ad_archive_id: '10001' }, has_video: true } },
+        { ...stamped, data: { ...stamped.data, capped: 'true' } },
+      ];
+      expect(metas.map(meta => ({ gate: metaZeroVerified(meta), zero: pageZeroPrinted(render({ meta })) })))
+        .toEqual(metas.map(() => ({ gate: false, zero: false })));
+    });
+
+    it('rejects a missing block, a bare boolean and an errored stamped read', () => {
+      expect([undefined, null, true, false, { ...stamped, status: 'error' }].map(metaZeroVerified))
+        .toEqual([false, false, false, false, false]);
+    });
+  });
+
+  it('every Meta zero fails closed on a missing or contradicting field (R5 sweep #79)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/';
+    const render = (ads: any, findings: any[] = []) => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const stamped = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const title = 'No active ads on the identified Facebook page';
+    const finding = { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title, evidence: 'The Facebook page runs zero active Meta ads.', source_url: fb };
+    const bigZero = /tracking-\[-0\.04em\][^>]*>\s*0\s*</;
+    // the stamped zero is the control: it still publishes
+    expect(render({ meta: stamped }, [finding])).toContain(title);
+    expect(spread(render({ meta: stamped }))).toMatch(bigZero);
+    // 1. a stamped zero missing its date or source, or carrying ad evidence that contradicts the 0
+    for (const meta of [
+      { ...stamped, fetched_at: undefined }, { ...stamped, source_url: undefined }, { ...stamped, source_url: 'javascript:alert(1)' },
+      { ...stamped, data: { active_ad_count: 0, records: [{ ad_archive_id: 'x' }] } }, { ...stamped, data: { active_ad_count: 0, sampled_ads: 2 } },
+      { ...stamped, data: { active_ad_count: 0, capped: true } }, { ...stamped, domain_count: { count: 3 } }, { ...stamped, link_domain_fallback: 'inconclusive' },
+    ]) {
+      const html = render({ meta }, [finding]);
+      expect(html).not.toContain(title);
+      expect(html).not.toContain('runs zero active Meta ads');
+      expect(spread(html)).not.toMatch(bigZero);
+      expect(spread(html)).not.toContain('had no active ads');
+    }
+    // 2. a Meta finding beside a malformed count or no read at all is not published
+    for (const meta of [
+      { status: 'present', data: { active_ad_count: '0' }, fetched_at: at, source_url: fb }, { status: 'present', data: { active_ad_count: -1 }, fetched_at: at, source_url: fb },
+      { status: 'present', data: { active_ad_count: 0.5 }, fetched_at: at, source_url: fb }, { status: 'blocked', fetched_at: at, source_url: fb },
+      { status: 'error' }, undefined,
+    ]) expect(render(meta ? { meta } : {}, [finding])).not.toContain('runs zero active Meta ads');
+    // a positive count keeps its finding's own words
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 5 }, fetched_at: at, source_url: fb } }, [{ ...finding, title: 'Five ads run', evidence: 'Five active ads.' }])).toContain('Five active ads.');
+    // 3. a sweep with no positive read count claims no absence and never prints "undefined"
+    for (const data of [{ identity_matched_ads: 0 }, { sampled_items: 0, identity_matched_ads: 0 }, { sampled_items: '10', identity_matched_ads: 0 }]) {
+      const out = spread(render({ meta_sweep: { status: 'empty', data, fetched_at: at, source_url: fb } }));
+      expect(out).not.toContain('traced none');
+      expect(out).not.toContain('undefined');
+      expect(out).not.toMatch(/>0 traced/);
+    }
   });
 
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
@@ -1210,7 +1447,7 @@ describe('evidence-first scan repair', () => {
   });
   it('scopes zero ads to a confirmed page, dates cached searches and keeps coverage limits visible', () => {
     const d = inventoryFixture();
-    d.ads = { meta: { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:48Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } }, meta_sweep: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, sampled_items: 0, identity_matched_ads: 0 } }, google: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, ads_found: 0 } } };
+    d.ads = { meta: { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-10-08T22:00:48Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } }, meta_sweep: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, sampled_items: 0, identity_matched_ads: 0 } }, google: { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { from_cache: true, ads_found: 0 } } };
     d.competitors = { status: 'empty', fetched_at: '2026-10-08T11:25:00Z', data: { creatives: [] } };
     const html = renderDtc(d, 'Example');
     expect(html).toContain('No active ads on the identified Facebook page');
@@ -1220,6 +1457,10 @@ describe('evidence-first scan repair', () => {
     expect(html).toContain('No verified competitor creatives');
     d.ads.meta.page_confirmed = false;
     expect(renderDtc(d, 'Example')).not.toContain('No active ads on the identified Facebook page');
+    // 2026-11-23: a page_confirmed zero without the stamp was not cross-checked: never printed as no ads.
+    d.ads.meta.page_confirmed = true; delete d.ads.meta.zero_verified;
+    expect(renderDtc(d, 'Example')).not.toContain('No active ads on the identified Facebook page');
+    expect(renderDtc(d, 'Example')).not.toContain('no active ads on the identified page');
   });
   it('versions captured image URLs by capture time while preserving existing query parameters', () => {
     const d = inventoryFixture();
@@ -1268,11 +1509,14 @@ describe('evidence-first scan repair', () => {
   });
   it('preserves verified page-scoped tracking facts while removing historical campaign assumptions', () => {
     const d = inventoryFixture();
-    d.ads.meta = { status: 'empty', page_confirmed: true, fetched_at: '2026-10-08T22:00:00Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } };
+    d.ads.meta = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-10-08T22:00:00Z', source_url: 'https://facebook.com/example', data: { active_ad_count: 0 } };
     d.findings = [{ signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title: 'Your Meta pixel is installed, and your Facebook page runs no ads', evidence: 'Your store loads the Meta pixel and your Facebook page is not currently running ads.', week_one: 'We test a first Meta campaign once purchase events are checked.', source_url: 'https://facebook.com/example' }];
     const html = renderDtc(d, 'Example');
     expect(html).toContain('Your store loads the Meta pixel and your Facebook page is not currently running ads.');
     expect(html).not.toContain('first Meta campaign');
+    // 2026-11-23: the same finding on an unstamped zero is dropped, never shown as a fact.
+    delete d.ads.meta.zero_verified;
+    expect(renderDtc(d, 'Example')).not.toContain('your Facebook page is not currently running ads');
   });
   it('keeps legacy rows without new evidence fields readable without fabricated exhibits', () => {
     const d = inventoryFixture();
@@ -1497,10 +1741,18 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
     expect(html).toContain(escHtml(LINE));
   });
 
+  it('never prints an unverified Meta zero in the compact records (Sol r1 B)', () => {
+    const none = pool(0, 'Yours was running none.');
+    expect(withMeta({ status: 'present', data: { active_ad_count: 0 } }, none)).not.toContain('0 active ads');
+    expect(withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 3 } }, none)).not.toContain('No active ads on the identified Facebook page');
+  });
+
   it('renders for a page-confirmed zero', () => {
     const zero = pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none.");
-    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 } }, zero);
+    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-11-21T09:00:00Z', source_url: 'https://www.facebook.com/example-page', data: { active_ad_count: 0 } }, zero);
     expect(html).toContain('data-ad-pool="1"');
+    expect(html).toContain('Your identified Facebook page was running none.');
+    expect(html).not.toContain('Yours was running none.');
     // an older zero without the verified stamp shows no line
     expect(withMeta({ status: 'empty', page_confirmed: true, data: { active_ad_count: 0 } }, zero)).not.toContain('data-ad-pool');
   });

@@ -33,7 +33,7 @@ import { useGoogleFonts } from '../hooks/useGoogleFonts';
 import { useDtcComparisonVisibility } from '../hooks/useDtcComparisonVisibility';
 import { DtcComparisonSection } from './scan/DtcComparisonSection';
 import { DtcInsightStory, canShowStory } from './scan/DtcInsightStory';
-import { adPoolLine } from './scan/adPool';
+import { adPoolLine, metaDomainCountVerified, metaZeroVerified } from './scan/adPool';
 import type { DtcPromiseBlock, DtcPromiseItem, ReportJson, Scan } from '../lib/scanTypes';
 
 const LEVER_LABEL: Record<string, string> = {
@@ -83,6 +83,26 @@ function scrubProse(s: string | null | undefined, paidOk: boolean): string {
     .filter((t) => !RETIRED_PROFIT.test(t) && !RETIRED_ENGINE.test(t) && (paidOk || !PAID_WORDING.test(t)))
     .join(' ')
     .trim();
+}
+
+// The builder's own Meta no-ads finding templates (dtc_verify._NO_ADS_TITLES, dtc_scan.PIXEL_NO_ADS_TITLE) and the
+// title this page gives a verified page zero. Exact template identity, not a word list.
+const NO_ADS_FINDING_TITLES = [
+  "you're not running paid social right now",
+  'your meta pixel is installed, and your facebook page runs no ads',
+  'no active ads on the identified facebook page',
+];
+const templateTitle = (t: any) => String(t || '').toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, ' ').trim();
+
+// Sol r5 (#79): the one rule for a keyword sample's zero: an empty read of a positive number of ads, explicitly 0
+// matched, no stored match details against it, with its own date and source.
+function sampleZero(s: any): boolean {
+  const d = s?.data;
+  return s?.status === 'empty' && !!d && typeof d === 'object' && Number.isInteger(d.sampled_items) && d.sampled_items > 0
+    && d.identity_matched_ads === 0
+    && (d.matched_pages == null || (Array.isArray(d.matched_pages) && d.matched_pages.length === 0))
+    && (d.name_matched_unknown == null || d.name_matched_unknown === 0)
+    && !!checkedAt(d.checked_at || s.fetched_at) && !!proofHref(s.source_url);
 }
 
 function scrubLegacyFinding<F extends { title?: string; evidence?: string; week_one?: string | null }>(f: F, paidOk: boolean): F | null {
@@ -504,17 +524,34 @@ function AdEvidenceSpread({
 }) {
   const g = google?.status === 'present' && google.data ? google.data : null;
   // A confirmed page supports current page activity only; a keyword search is a sample.
-  const sweep = metaSweep?.status === 'empty' && metaSweep.data ? metaSweep.data : null;
-  const pageZero = metaPage?.status === 'empty' && metaPage?.page_confirmed === true;
-  const metaReadDate = checkedAt(pageZero ? metaPage?.fetched_at : sweep?.checked_at || metaSweep?.fetched_at);
-  const showMeta = (pageZero || sweep) && metaReadDate;
+  // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
+  // Sol r4: an empty sweep states "none traced" only when its own match count is 0
+  // R5 sweep: and only over a positive sampled count, or "none of the sampled ads" covered no ads ("undefined ads read")
+  // Sol r5: one sample-zero rule for the spread, the compact records and the coverage line (sampleZero)
+  const sweep = sampleZero(metaSweep) ? metaSweep.data : null;
+  // 2026-11-23: a zero only with its verified stamp; Sol r3: and its own date, or the spread printed "at null"
+  const pageZero = metaZeroVerified(metaPage) && !!checkedAt(metaPage?.fetched_at);
+  // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
+  const pageRead = ['empty', 'present'].includes(metaPage?.status);
+  const sweepRead = ['empty', 'present'].includes(metaSweep?.status);
+  const pageDate = pageRead ? checkedAt(metaPage?.fetched_at) : null;
+  const sweepDate = sweepRead ? checkedAt(metaSweep?.data?.checked_at || metaSweep?.fetched_at) : null;
+  const sampleShown = !!(sweep && sweepDate);
+  const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
+    ? metaPage.data.active_ad_count as number : null;
+  // A Meta read with no verified zero and no positive count says so instead of going silent.
+  const metaUnconfirmed = !pageZero && metaN == null && !!(pageDate || sweepDate);
+  const metaReadDate = pageZero ? pageDate : sampleShown ? sweepDate : metaN != null ? pageDate : metaUnconfirmed ? pageDate || sweepDate : null;
+  const showMeta = !!(pageZero && pageDate) || sampleShown || metaUnconfirmed;
   const comp = competitors?.status === 'present' && competitors.data ? competitors.data : null;
   const compCreatives: any[] = compStrip(competitors);
 
-  if (!g && !showMeta && !compCreatives.length) return null;
+  // Sol r5: a positive Meta count keeps the spread when nothing else qualifies ("4 on Meta.")
+  if (!g && !showMeta && !compCreatives.length && metaN == null) return null;
 
   const gRead = isoDay(g?.checked_at) || isoDay(google?.fetched_at);
   const gReadLong = checkedAt(g?.checked_at || google?.fetched_at);
+  const headerDate = (g ? gReadLong : metaReadDate) || gReadLong || metaReadDate;
   const newestAge = g ? daysBetween(g.newest_first_shown, gRead) : null;
   const lastAge = g ? daysBetween(g.latest_last_shown, gRead) : null;
 
@@ -558,8 +595,6 @@ function AdEvidenceSpread({
   const gCount = g && typeof g.ads_found === 'number' ? countParts(g.ads_found, g.capped) : null;
   // Headline counts, biggest first (Meta first on a tie): Rebalance (09-26) led with "1 on Google."
   // while it runs 46 Meta ads.
-  const metaN = metaPage?.status === 'present' && typeof metaPage?.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0
-    ? metaPage.data.active_ad_count as number : null;
   const headCounts = [
     metaN != null ? { k: 'meta', v: metaN, t: `${metaN} on Meta.` } : null,
     // each head count is its own sentence: "At least 100 on Google.", never ". at least"
@@ -619,9 +654,10 @@ function AdEvidenceSpread({
                   above a section citing only the Meta Ad Library. Same reason the date now
                   follows the archive being shown: printing the Google fetch date over a
                   Meta-only strip attributes the read to a source the reader cannot see. */}
+              {/* Sol r4 (#79): a missing date drops its clause, never "read on null" */}
               {g && showMeta
-                ? `Two public ad archives, read on ${gReadLong}. Every date below is theirs, not ours.`
-                : `A public ad archive, read on ${(g ? gReadLong : metaReadDate) || gReadLong || metaReadDate}. Every date below is theirs, not ours.`}
+                ? `Two public ad archives${gReadLong ? `, read on ${gReadLong}` : ''}. Every date below is theirs, not ours.`
+                : `A public ad archive${headerDate ? `, read on ${headerDate}` : ''}. Every date below is theirs, not ours.`}
             </p>
           </div>
         </div>
@@ -734,12 +770,17 @@ function AdEvidenceSpread({
                 <span className="text-[0.75rem] font-bold uppercase tracking-[0.24em]" style={{ fontFamily: headingFont, color: accent }}>
                   Meta Ad Library
                 </span>
-                <div
-                  className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
-                  style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
-                >
-                  0
-                </div>
+                {/* 2026-11-23 (Sol B final): the big 0 needs the verified page zero; a keyword sweep stays a sample below */}
+                {pageZero ? (
+                  <div
+                    className="font-extrabold tabular-nums leading-[0.8] tracking-[-0.04em] mt-3"
+                    style={{ fontFamily: headingFont, fontSize: 'clamp(5rem, 15vw, 10rem)', color: accent }}
+                  >
+                    0
+                  </div>
+                ) : metaN == null ? (
+                  <p className="mt-3 text-[1rem] leading-[1.4]" style={{ color: surface, opacity: 0.85 }}>No confirmed count for this review.</p>
+                ) : null}
               </div>
               <div className="lg:col-span-8">
                 {/* Claim strength follows evidence strength (SENSE incident, 08-07): the absolute
@@ -747,11 +788,11 @@ function AdEvidenceSpread({
                     page, Meta's own "isn't running ads"). A sweep-only zero is a sample fact —
                     a generic brand name can hide in a keyword sample — so it states exactly what
                     was measured and nothing more. */}
-                <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
+                {(pageZero && pageDate) || sampleShown ? <p className="text-[1.35rem] sm:text-[1.6rem] leading-[1.35] font-medium" style={{ color: surface, paddingLeft: '1.25rem', borderLeft: `3px solid ${accent}` }}>
                   {pageZero
                     ? `The identified Facebook page had no active ads at ${metaReadDate}. This does not establish brand-wide or historical ad activity.`
-                    : `A Meta Ad Library sweep on ${metaReadDate} traced none of the sampled ads to your brand.`}
-                </p>
+                    : `A Meta Ad Library sweep on ${sweepDate} traced none of the sampled ads to your brand.`}
+                </p> : null}
                 {pageZero && proofHref(metaPage.source_url) ? <a href={proofHref(metaPage.source_url)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline underline-offset-4 mt-3">View the identified Facebook page</a> : null}
                 <div className="mt-8" style={{ borderTop: '1px solid rgba(255,255,255,.28)' }}>
                   {pageZero ? (
@@ -761,13 +802,13 @@ function AdEvidenceSpread({
                       <span className="dt">{metaReadDate}</span>
                     </div>
                   ) : null}
-                  {sweep ? (
+                  {sampleShown ? (
                     <div className="cedt-mrow">
                       <span className="nm">
                         {`Keyword sweep, ${countParts(sweep.sampled_items || 0, sweep.capped).pre ? `${countParts(sweep.sampled_items || 0, sweep.capped).pre} ` : ''}${sweep.sampled_items} ads read`}
                       </span>
-                      <span className="vl">{`${sweep.identity_matched_ads ?? 0} traced to your brand`}</span>
-                      <span className="dt">{checkedAt(sweep.checked_at || metaSweep?.fetched_at) || metaReadDate}</span>
+                      <span className="vl">{`${sweep.identity_matched_ads} traced to your brand`}</span>
+                      <span className="dt">{sweepDate}</span>
                     </div>
                   ) : null}
                 </div>
@@ -996,20 +1037,22 @@ function PromiseSection({ d, id, n, title, block, ink, headingFont }: {
 
 function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: { google: any; metaPage: any; metaSweep: any; competitors: any; adPool?: any }) {
   const g = google?.status === 'present' ? google.data : null;
-  const m = metaPage?.status === 'present' ? metaPage.data : null;
+  // Sol r1 (B): a present read prints only a positive count; the only zero is the verified page zero below
+  const m = metaPage?.status === 'present' && typeof metaPage.data?.active_ad_count === 'number' && metaPage.data.active_ad_count > 0 ? metaPage.data : null;
   const sweep = ['present', 'empty'].includes(metaSweep?.status) ? metaSweep.data : null;
   const comp = competitors?.status === 'present' ? competitors.data : null;
   const newestAge = g ? daysBetween(g.newest_first_shown, g.checked_at || google.fetched_at) : null;
   const amount = (n: number, capped?: boolean) => `${capped ? 'at least ' : ''}${n}`;
   // 2026-11-20: the pooled line (components/scan/adPool.ts) right after the Meta count it names.
-  const metaZero = metaPage?.status === 'empty' && metaPage.page_confirmed === true;
+  const metaZero = metaZeroVerified(metaPage);
   const metaShown = m && typeof m.active_ad_count === 'number' ? m.active_ad_count : metaZero ? 0 : null;
   const poolLine = adPoolLine(adPool, metaPage, metaShown);
   return <div className="rise-ad-records">
-    {metaPage?.status === 'empty' && metaPage.page_confirmed === true ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
+    {metaZero ? <p><strong>No active ads on the identified Facebook page.</strong> This check does not establish brand-wide or historical activity.</p> : null}
+    {!metaZero && !m && ['empty', 'present'].includes(metaPage?.status) ? <p>Meta: No confirmed count for this review.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
-    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
+    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {/* R5: a sample states counts only over ads it read; its 0 only through sampleZero (Sol r5) */}{Number.isInteger(sweep.sampled_items) && sweep.sampled_items > 0 && (sampleZero(metaSweep) || (Number.isInteger(sweep.identity_matched_ads) && sweep.identity_matched_ads > 0)) ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ${sweep.identity_matched_ads} identity-matched results.` : 'No confirmed count for this review.'}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
       {g.newest_first_shown ? <p>Newest first shown: {isoDay(g.newest_first_shown)}{newestAge != null ? `, ${newestAge} ${dayWord(newestAge)} before the check` : ''}.</p> : null}
@@ -1266,8 +1309,17 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
       (!promise || ((f.lever === 'paid_media' || f.lever === 'performance_creative') && f.signal !== 'shopify')),
   )
     .map((f) => {
-      if (f.signal === 'ads.meta' && d.ads?.meta?.status === 'empty') {
-        if (d.ads.meta.page_confirmed !== true) return null;
+      // Sol r4 (#79): a 'present' read whose count is 0 is a zero too, and needs the same verified stamp
+      // R5 sweep (#79): fail closed. A Meta finding keeps its own words only beside a positive integer count, or a
+      // present read whose total is unknown (null, the domain-count case). Any other read (a malformed count, a
+      // blocked, errored or missing read) carries no count, so the finding stays only through the verified zero.
+      // Sol r5: the builder's no-ads finding templates state a zero whatever the read says, so they need the verified
+      // zero too; an unknown total keeps a finding only beside its verified domain count.
+      const mm = d.ads?.meta, mc = mm?.data?.active_ad_count;
+      const metaZeroRead = NO_ADS_FINDING_TITLES.includes(templateTitle(f.title))
+        || !((mm?.status === 'present' && Number.isInteger(mc) && mc > 0) || metaDomainCountVerified(mm));
+      if (f.signal === 'ads.meta' && metaZeroRead) {
+        if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
         const pageScoped = /(?:facebook|identified|your|this) page/i.test(f.title) && /(?:facebook|identified|your|this) page/i.test(f.evidence);
         return { ...f,
@@ -1456,7 +1508,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   const paidLines: ReceiptLine[] = [];
   if (adsMeta?.status === 'empty' && hasFinding('ads.meta')) {
     paidLines.push(
-      { signal: 'ads.meta', label: 'Meta Ad Library', value: adsMeta?.page_confirmed === true ? 'no active ads on the identified page' : 'no identity-matched ads in the sample', source: 'Meta Ad Library', none: true },
+      { signal: 'ads.meta', label: 'Meta Ad Library', value: metaZeroVerified(adsMeta) ? 'no active ads on the identified page' : adsMeta?.page_confirmed === true ? 'no confirmed count for this review' : 'no identity-matched ads in the sample', source: 'Meta Ad Library', none: true },
     );
   } else if (
     adsMeta?.status === 'present' && adsMeta.data &&
@@ -1590,7 +1642,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               const coverage = label === 'Competitor search' && !compStrip(signal).length
                 ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
                 : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
-                : label === 'Meta keyword search' && signal.status === 'empty' ? 'No identity-matched result in the keyword sample.'
+                : label === 'Meta keyword search' && signal.status === 'empty' ? (sampleZero(signal) ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
                 : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
               return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
             })}
