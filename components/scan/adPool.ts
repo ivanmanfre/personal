@@ -12,7 +12,22 @@ const META_ZERO_VERIFIED = 'page-zero+search-nomatch-2026-11-21';
 // without it (an older row, a failed cross-check, a keyword sample) was not checked, so it is never shown as 0.
 export function metaZeroVerified(meta: any): boolean {
   return !!meta && typeof meta === 'object' && meta.status === 'empty' && meta.page_confirmed === true
-    && meta.zero_verified === META_ZERO_VERIFIED && meta.data?.active_ad_count === 0;
+    && meta.zero_verified === META_ZERO_VERIFIED && metaZeroConsistent(meta);
+}
+
+// 2026-11-24 (R5 sweep): a stamped zero still fails closed when its own block is missing its date or source, or
+// carries ad evidence that contradicts the 0 (records, a sampled count, a cap, a positive domain count, or a
+// domain cross-check that did not finish with no ads). Shared by the page zero and the domain-link zero.
+const isDate = (v: any) => typeof v === 'string' && Number.isFinite(Date.parse(v));
+const isWebUrl = (v: any) => { try { const u = new URL(v); return /^https?:$/.test(u.protocol) && !u.username && !u.password; } catch { return false; } };
+export function metaZeroConsistent(meta: any): boolean {
+  const d = meta?.data;
+  if (!d || typeof d !== 'object' || d.active_ad_count !== 0 || d.capped === true) return false;
+  if (d.records != null && !(Array.isArray(d.records) && d.records.length === 0)) return false;
+  if (d.sampled_ads != null && d.sampled_ads !== 0) return false;
+  if (meta.domain_count != null && meta.domain_count?.count !== 0) return false;
+  if (meta.link_domain_fallback != null && meta.link_domain_fallback !== 'no_ads') return false;
+  return isDate(meta.fetched_at) && isWebUrl(meta.source_url);
 }
 
 function provenMeta(meta: any): boolean {

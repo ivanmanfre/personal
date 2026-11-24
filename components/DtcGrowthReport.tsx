@@ -506,7 +506,9 @@ function AdEvidenceSpread({
   // A confirmed page supports current page activity only; a keyword search is a sample.
   // Sol r1 (#79 final): a sample without its match count states nothing, never "0 traced"
   // Sol r4: an empty sweep states "none traced" only when its own match count is 0
-  const sweep = metaSweep?.status === 'empty' && metaSweep.data && metaSweep.data.identity_matched_ads === 0 ? metaSweep.data : null;
+  // R5 sweep: and only over a positive sampled count, or "none of the sampled ads" covered no ads ("undefined ads read")
+  const sweep = metaSweep?.status === 'empty' && metaSweep.data && metaSweep.data.identity_matched_ads === 0
+    && Number.isInteger(metaSweep.data.sampled_items) && metaSweep.data.sampled_items > 0 ? metaSweep.data : null;
   // 2026-11-23: a zero only with its verified stamp; Sol r3: and its own date, or the spread printed "at null"
   const pageZero = metaZeroVerified(metaPage) && !!checkedAt(metaPage?.fetched_at);
   // Sol r2 (#79 final): each read carries its own date; the fallback dates itself from a read that qualifies.
@@ -1029,7 +1031,7 @@ function CompactAdRecords({ google, metaPage, metaSweep, competitors, adPool }: 
     {!metaZero && !m && ['empty', 'present'].includes(metaPage?.status) ? <p>Meta: No confirmed count for this review.</p> : null}
     {m && typeof m.active_ad_count === 'number' ? <p>Identified Facebook page: {m.active_ad_count} active {m.active_ad_count === 1 ? 'ad' : 'ads'}.{typeof m.oldest_active_run_days === 'number' ? ` Oldest active run: ${m.oldest_active_run_days} days.` : ''}</p> : null}
     {poolLine ? <p className="rise-ad-pool" data-ad-pool="1">{clean(poolLine)}</p> : null}
-    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {typeof sweep.sampled_items === 'number' ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ` : ''}{typeof sweep.identity_matched_ads === 'number' ? `${sweep.identity_matched_ads} identity-matched results.` : ''}</p> : null}
+    {sweep ? <p>Meta keyword sample{Array.isArray(sweep.keywords) && sweep.keywords.length ? ` for ${sweep.keywords.map(clean).join(', ')}` : ''}: {/* R5 sweep: a sample counts only over ads it read; 0 read, or no read count, states no count */}{Number.isInteger(sweep.sampled_items) && sweep.sampled_items > 0 ? `${amount(sweep.sampled_items, sweep.capped)} ads read. ${Number.isInteger(sweep.identity_matched_ads) && sweep.identity_matched_ads >= 0 ? `${sweep.identity_matched_ads} identity-matched results.` : ''}` : 'No confirmed count for this review.'}</p> : null}
     {g ? <div><h3>Google ad records</h3><p>{typeof g.ads_found === 'number' ? `${amount(g.ads_found, g.capped)} creatives in the returned records. ` : ''}{g.advertiser ? `Advertiser: ${clean(g.advertiser)}. ` : ''}{g.region ? `Region: ${clean(g.region)}.` : ''}</p>
       {g.formats ? <p>{Object.entries(g.formats).filter(([, value]) => typeof value === 'number').map(([key, value]) => `${clean(key)}: ${value}`).join(' · ')}</p> : null}
       {g.newest_first_shown ? <p>Newest first shown: {isoDay(g.newest_first_shown)}{newestAge != null ? `, ${newestAge} ${dayWord(newestAge)} before the check` : ''}.</p> : null}
@@ -1287,8 +1289,11 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
   )
     .map((f) => {
       // Sol r4 (#79): a 'present' read whose count is 0 is a zero too, and needs the same verified stamp
-      const metaZeroRead = d.ads?.meta?.status === 'empty'
-        || (d.ads?.meta?.status === 'present' && d.ads.meta.data?.active_ad_count === 0);
+      // R5 sweep (#79): fail closed. A Meta finding keeps its own words only beside a positive integer count, or a
+      // present read whose total is unknown (null, the domain-count case). Any other read (a malformed count, a
+      // blocked, errored or missing read) carries no count, so the finding stays only through the verified zero.
+      const mm = d.ads?.meta, mc = mm?.data?.active_ad_count;
+      const metaZeroRead = !(mm?.status === 'present' && (mc == null || (Number.isInteger(mc) && mc > 0)));
       if (f.signal === 'ads.meta' && metaZeroRead) {
         if (!metaZeroVerified(d.ads.meta)) return null;
         // Preserve verified page-scoped observations, including installed tracking facts.
@@ -1613,7 +1618,7 @@ export function DtcGrowthReport({ report, scan, companyName }: { report: ReportJ
               const coverage = label === 'Competitor search' && !compStrip(signal).length
                 ? signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; competitor activity unknown.' : signal.status === 'present' && signal.data?.creatives?.some((c: any) => c.advertiser) ? 'Too few verified creatives for a comparison.' : 'No verified competitor creatives in this sample.'
                 : label === 'Google advertiser search' && signal.status === 'empty' ? 'No identity-matched result in the queries checked.'
-                : label === 'Meta keyword search' && signal.status === 'empty' ? (signal.data?.identity_matched_ads === 0 ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
+                : label === 'Meta keyword search' && signal.status === 'empty' ? (signal.data?.identity_matched_ads === 0 && Number.isInteger(signal.data?.sampled_items) && signal.data.sampled_items > 0 ? 'No identity-matched result in the keyword sample.' : 'No confirmed count for this review.')
                 : signal.status === 'blocked' || signal.status === 'error' ? 'Check unavailable; activity unknown.' : '';
               return <p key={label} className="mt-3"><strong>{label}</strong>{checkedAt(at) ? ` · Checked ${checkedAt(at)}` : ''}{cached ? ` · Cached result${Number.isFinite(age) && age >= 0 ? `, ${age.toFixed(1)} hours before this scan` : ''}` : ''}{coverage ? `. ${coverage}` : ''}{proofHref(signal.source_url) ? <> <a href={proofHref(signal.source_url)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Source</a></> : null}</p>;
             })}

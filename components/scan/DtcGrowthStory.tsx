@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { DtcCommercialEvidence } from '../../lib/scanTypes';
 import { Evidence, RiseCallClose, displayBrandName, useRiseStoryMotion } from './DtcStoryShared';
-import { adPoolLine, metaZeroVerified } from './adPool';
+import { adPoolLine, metaZeroConsistent, metaZeroVerified } from './adPool';
 
 type Mark = { x: number; y: number; w: number; h: number };
 type Capture = { url: string; source_url: string; captured_at: string; kind?: 'ad' | 'page'; quote?: string; mark?: Mark };
@@ -43,7 +43,7 @@ export function canShowStandardStory(data: DtcCommercialEvidence) {
 // 2026-11-23: no Facebook page of the store could be read, and Meta's Ad Library has no active ad linking to the
 // store's domain (exact-phrase search). A verified statement about ads that show the domain, never "the page runs no ads".
 const META_LINK_ZERO_VERIFIED = 'store-link-search-nomatch-2026-11-23';
-const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true;
+const linkZero = (key: string, block: any) => key === 'meta' && block?.status === 'empty' && block.zero_verified === META_LINK_ZERO_VERIFIED && block.page_confirmed !== true && metaZeroConsistent(block);
 // 2026-11-23: a store page that also runs ads to other sites, so its total cannot be confirmed. The same exact-domain
 // search counts the active ads whose destination is the store's domain ("At least" when the search was a sample).
 // Never the page's total: it only prints where the total is unknown, and the pool line stays closed to it.

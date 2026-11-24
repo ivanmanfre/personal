@@ -198,6 +198,30 @@ describe('verified Meta link zero', () => {
     expect(html({ ...linkZero, zero_verified: 'something-else' })).not.toContain('showing your domain');
     expect(html({ ...linkZero, status: 'error' })).not.toContain('showing your domain');
   });
+
+  // R5 sweep (#79): a stamped zero fails closed when its own block is missing a field or contradicts the 0
+  it('a stamped zero with a missing or contradicting field prints no 0 (R5 #79)', () => {
+    const pageZero = { ...linkZero, page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', source_url: 'https://www.facebook.com/example-page' };
+    const label = 'Active Meta ads on the identified Facebook page';
+    expect(html(pageZero)).toContain(label);
+    const broken = (z: any) => [
+      { ...z, fetched_at: undefined }, { ...z, fetched_at: 'not a date' }, { ...z, source_url: undefined }, { ...z, source_url: 'javascript:alert(1)' },
+      { ...z, data: undefined }, { ...z, data: { active_ad_count: '0' } }, { ...z, data: { active_ad_count: null } },
+      { ...z, data: { active_ad_count: 0, records: [{ ad_archive_id: 'x' }] } }, { ...z, data: { active_ad_count: 0, sampled_ads: 3 } },
+      { ...z, data: { active_ad_count: 0, capped: true } }, { ...z, domain_count: { count: 4 } }, { ...z, link_domain_fallback: 'pending' },
+    ];
+    for (const z of broken(pageZero)) {
+      const out = html(z);
+      expect(out).not.toContain(label);
+      expect(out).not.toMatch(/<strong>(?:<small>At least <\/small>)?0<\/strong>/);
+      expect(out).not.toContain('data-ad-pool');
+    }
+    for (const z of broken(linkZero)) {
+      const out = html(z);
+      expect(out).not.toContain('showing your domain');
+      expect(out).not.toMatch(/<strong>(?:<small>At least <\/small>)?0<\/strong>/);
+    }
+  });
 });
 
 // 2026-11-23: a store page that also runs ads to other sites has no confirmable total; the verified count of active ads

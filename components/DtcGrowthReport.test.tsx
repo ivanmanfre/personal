@@ -887,7 +887,10 @@ describe('DtcGrowthReport — 09-26 validation fixes', () => {
     const { html } = renderFixture('marla-new-contract.json');
     const spread = html.slice(html.indexOf('data-ad-archive'));
     expect(spread).not.toContain('zero ads for your brand');
-    expect(spread).toContain('identity-matched results');
+    // R5 (#79): this sweep read 0 ads, so it states no count at all, never "0 identity-matched results"
+    expect(spread).not.toContain('identity-matched results');
+    expect(spread).toContain('Meta keyword sample');
+    expect(spread).toContain('No confirmed count for this review.');
     expect(spread).not.toContain('this brand');
   });
 });
@@ -1051,6 +1054,48 @@ describe('DtcGrowthReport — round 5 real rows', () => {
     expect(contradictory).not.toContain('traced none');
     expect(contradictory).toContain('No confirmed count for this review.');
     expect(spread(render({ meta_sweep: sweep }))).toContain('traced none of the sampled ads');
+  });
+
+  it('every Meta zero fails closed on a missing or contradicting field (R5 sweep #79)', () => {
+    const at = '2026-11-23T10:00:00Z', fb = 'https://www.facebook.com/ads/library/';
+    const render = (ads: any, findings: any[] = []) => renderToStaticMarkup(<DtcGrowthReport companyName="Example Store"
+      scan={{ id: 'offline', company_slug: 'example-store', domain: 'shop.example', status: 'complete', created_at: at } as unknown as Scan}
+      report={{ dtc: { brand: { booking_url: 'https://example.com/book' }, findings, ads } } as unknown as ReportJson} />);
+    const spread = (html: string) => html.match(/<section[^>]*data-adspread="1"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? '';
+    const stamped = { status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 }, fetched_at: at, source_url: fb };
+    const title = 'No active ads on the identified Facebook page';
+    const finding = { signal: 'ads.meta', kind: 'gap', lever: 'paid_media', title, evidence: 'The Facebook page runs zero active Meta ads.', source_url: fb };
+    const bigZero = /tracking-\[-0\.04em\][^>]*>\s*0\s*</;
+    // the stamped zero is the control: it still publishes
+    expect(render({ meta: stamped }, [finding])).toContain(title);
+    expect(spread(render({ meta: stamped }))).toMatch(bigZero);
+    // 1. a stamped zero missing its date or source, or carrying ad evidence that contradicts the 0
+    for (const meta of [
+      { ...stamped, fetched_at: undefined }, { ...stamped, source_url: undefined }, { ...stamped, source_url: 'javascript:alert(1)' },
+      { ...stamped, data: { active_ad_count: 0, records: [{ ad_archive_id: 'x' }] } }, { ...stamped, data: { active_ad_count: 0, sampled_ads: 2 } },
+      { ...stamped, data: { active_ad_count: 0, capped: true } }, { ...stamped, domain_count: { count: 3 } }, { ...stamped, link_domain_fallback: 'pending' },
+    ]) {
+      const html = render({ meta }, [finding]);
+      expect(html).not.toContain(title);
+      expect(html).not.toContain('runs zero active Meta ads');
+      expect(spread(html)).not.toMatch(bigZero);
+      expect(spread(html)).not.toContain('had no active ads');
+    }
+    // 2. a Meta finding beside a malformed count or no read at all is not published
+    for (const meta of [
+      { status: 'present', data: { active_ad_count: '0' }, fetched_at: at, source_url: fb }, { status: 'present', data: { active_ad_count: -1 }, fetched_at: at, source_url: fb },
+      { status: 'present', data: { active_ad_count: 0.5 }, fetched_at: at, source_url: fb }, { status: 'blocked', fetched_at: at, source_url: fb },
+      { status: 'error' }, undefined,
+    ]) expect(render(meta ? { meta } : {}, [finding])).not.toContain('runs zero active Meta ads');
+    // a positive count keeps its finding's own words
+    expect(render({ meta: { status: 'present', data: { active_ad_count: 5 }, fetched_at: at, source_url: fb } }, [{ ...finding, title: 'Five ads run', evidence: 'Five active ads.' }])).toContain('Five active ads.');
+    // 3. a sweep with no positive read count claims no absence and never prints "undefined"
+    for (const data of [{ identity_matched_ads: 0 }, { sampled_items: 0, identity_matched_ads: 0 }, { sampled_items: '10', identity_matched_ads: 0 }]) {
+      const out = spread(render({ meta_sweep: { status: 'empty', data, fetched_at: at, source_url: fb } }));
+      expect(out).not.toContain('traced none');
+      expect(out).not.toContain('undefined');
+      expect(out).not.toMatch(/>0 traced/);
+    }
   });
 
   it('em dashes in product titles become a comma break, a range between digits a hyphen', () => {
@@ -1613,7 +1658,7 @@ describe('DtcGrowthReport — pooled ad-count line', () => {
 
   it('renders for a page-confirmed zero', () => {
     const zero = pool(0, "Of the 120 DTC stores whose Meta ads we've counted, half were running 14 or more. Yours was running none.");
-    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', data: { active_ad_count: 0 } }, zero);
+    const html = withMeta({ status: 'empty', page_confirmed: true, zero_verified: 'page-zero+search-nomatch-2026-11-21', fetched_at: '2026-11-21T09:00:00Z', source_url: 'https://www.facebook.com/example-page', data: { active_ad_count: 0 } }, zero);
     expect(html).toContain('data-ad-pool="1"');
     expect(html).toContain('Your identified Facebook page was running none.');
     expect(html).not.toContain('Yours was running none.');
