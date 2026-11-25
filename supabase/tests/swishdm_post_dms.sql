@@ -3,7 +3,10 @@ begin;
 do $$
 declare p public.client_post_metrics%rowtype; t uuid; other uuid; result text; evidence jsonb; snapshot jsonb; observed int;
 begin
- select * into strict p from public.client_post_metrics where client_id='swishdm' order by published_at desc limit 1;
+ select * into strict p from public.client_post_metrics where client_id='swishdm' and social_id like 'urn:li:ugcPost:%'
+   and exists(select 1 from public.client_boards b,jsonb_array_elements(b.board#>'{performance,posts}') j
+              where b.slug='swishdm-live' and j->>'url'=client_post_metrics.post_url)
+   order by published_at desc limit 1;
  select board into snapshot from public.client_boards where slug='swishdm-live';
  evidence:=jsonb_build_object('status','qualified','reference_at',now(),'first_inbound_at',now(),'buyer_at',now(),
    'buyer_quote','Could you audit our store?','reference_quote','The two questions before fixing what AI says',

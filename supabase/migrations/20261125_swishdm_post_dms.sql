@@ -28,7 +28,7 @@ set search_path=public as $$
     from client_boards b cross join lateral jsonb_array_elements(b.board->'queue') p
     where b.slug='swishdm-live' and b.client_id='swishdm' and p->>'stage' in ('live','published')
   )
-  select m.id,substring(m.social_id from '([0-9]+)$'),m.title,coalesce(b.body,m.meta->>'text',''),m.published_at
+  select m.id,substring(m.post_url from 'activity[-:]([0-9]+)'),m.title,coalesce(b.body,m.meta->>'text',''),m.published_at
   from client_post_metrics m left join lateral (select max(bp.body) body from board_posts bp
     where bp.title=m.title and length(m.meta->>'text')>=80
       and left(bp.body,80)=left(m.meta->>'text',80) having count(*)=1) b on true
@@ -45,7 +45,7 @@ begin
        p || jsonb_build_object('inbound_dms',coalesce(m.inbound_dms,0)) end order by ord),'[]'::jsonb)
      from jsonb_array_elements(new.board#>'{performance,posts}') with ordinality j(p,ord)
      left join client_post_metrics m on m.client_id='swishdm'
-       and m.social_id='urn:li:activity:'||substring(p->>'url' from 'activity[-:]([0-9]+)')
+       and substring(m.post_url from 'activity[-:]([0-9]+)')=substring(p->>'url' from 'activity[-:]([0-9]+)')
    ));
  end if;
  return new;
@@ -90,7 +90,7 @@ begin
  where id=p_post returning inbound_dms into n;
  -- Patch only the matching measured post. The trigger hydrates the other counts from their own rows.
  update client_boards b set board=jsonb_set(b.board,'{performance,posts}',(
-   select jsonb_agg(case when substring(p->>'url' from 'activity[-:]([0-9]+)')=substring(m.social_id from '([0-9]+)$')
+   select jsonb_agg(case when substring(p->>'url' from 'activity[-:]([0-9]+)')=substring(m.post_url from 'activity[-:]([0-9]+)')
        then p||jsonb_build_object('inbound_dms',n) else p end order by ord)
    from jsonb_array_elements(b.board#>'{performance,posts}') with ordinality j(p,ord)))
  from client_post_metrics m where m.id=p_post and b.client_id='swishdm' and b.slug='swishdm-live'
@@ -107,7 +107,7 @@ update public.client_boards b set board=jsonb_set(b.board,'{performance,posts}',
  select jsonb_agg(p||jsonb_build_object('inbound_dms',coalesce(m.inbound_dms,0)) order by ord)
  from jsonb_array_elements(b.board#>'{performance,posts}') with ordinality j(p,ord)
  left join public.client_post_metrics m on m.client_id=b.client_id
- and m.social_id='urn:li:activity:'||substring(p->>'url' from 'activity[-:]([0-9]+)')))
+ and substring(m.post_url from 'activity[-:]([0-9]+)')=substring(p->>'url' from 'activity[-:]([0-9]+)')))
 where b.client_id='swishdm' and b.slug='swishdm-live' and jsonb_array_length(b.board#>'{performance,posts}')>0;
 
 commit;
