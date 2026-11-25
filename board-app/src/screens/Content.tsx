@@ -154,7 +154,7 @@ function Detail({ r, m }: { r: ContentPost; m: Model }) {
   if (r.outPct != null) facts.push(['Outside your network', `${r.outPct}%`]);
   facts.push(['Reposts', fmtInt(r.reposts)]);
   facts.push(['New followers', fmtInt(r.followers)]);
-  if (r.inboundDms != null) facts.push(['Messages after the post', fmtInt(r.inboundDms)]);
+  if (r.inboundDms != null) facts.push([m.slug === 'swishdm-live' ? 'Buyer conversations from this post' : 'Messages after the post', fmtInt(r.inboundDms)]);
   if (r.named48 != null) facts.push(['Named profile viewers, first 48h', fmtInt(r.named48)]);
   if (r.lookedUp48 != null) facts.push(['Store owners who looked you up, first 48h', fmtInt(r.lookedUp48)]);
   if (r.buyerDms48 != null) facts.push(['Buyer messages, first 48h', fmtInt(r.buyerDms48)]);
@@ -381,7 +381,7 @@ export function PublishedPosts() {
       {t.measured > 0 && (t.reposts > 0 || t.inboundDms != null || t.ledToCall > 0 || (!icpTile && !!c.icp)) && (
         <p className="mt-4 text-[12.5px] text-mute" data-testid="content-also">
           {[t.reposts ? plural(t.reposts, 'repost') : '',
-            t.inboundDms != null ? `${plural(t.inboundDms, 'message')} received after a post` : '',
+            t.inboundDms != null ? (m.slug === 'swishdm-live' ? `${plural(t.inboundDms, 'buyer conversation')} attributed to posts` : `${plural(t.inboundDms, 'message')} received after a post`) : '',
             t.ledToCall ? `${plural(t.ledToCall, 'call')} booked by someone who engaged with a post` : '',
             !icpTile && c.icp ? `${c.icp.short} not checked for these posts yet` : '',
           ].filter(Boolean).join(' · ')}
