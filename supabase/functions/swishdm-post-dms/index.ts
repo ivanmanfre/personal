@@ -120,6 +120,22 @@ Deno.serve(async (req) => {
     );
     const cfg = Object.fromEntries(config.map((r) => [r.key, r.value]));
     const posts: Post[] = await rpc("swishdm_dm_posts");
+    const urns: { id: string; social_id: string | null }[] = await json(
+      project +
+        "/rest/v1/client_post_metrics?select=id,social_id&client_id=eq.swishdm",
+      { headers },
+    );
+    for (const p of posts) {
+      const n = urns.find((u) => u.id === p.id)?.social_id?.match(/(\d{12,})$/)?.[1];
+      if (n && n !== p.activity) p.aliases = [n];
+    }
+    // Deterministic rejections stop after three attempts instead of retrying hourly forever.
+    const prior: { id: string; post_review: { attempts?: number } | null }[] =
+      await json(
+        project + "/rest/v1/inbound_triage_log?select=id,post_review&id=in.(" +
+          pending.map((p) => p.id).join(",") + ")",
+        { headers },
+      );
     const outcomes: string[] = [];
     await Promise.all(pending.map(async (row) => {
       const save = (post: string | null, evidence: unknown) =>
@@ -176,11 +192,20 @@ Deno.serve(async (req) => {
               .test(error.message)
           ? error.message
           : "review_unavailable";
-        await save(null, {
-          status: "retry",
-          code,
-          retry_at: new Date(Date.now() + 3600000).toISOString(),
-        });
+        const attempts =
+          (prior.find((p) => p.id === row.id)?.post_review?.attempts ?? 0) + 1;
+        const final = attempts >= 3 &&
+          /^(unbound_target|bad_status|unverified_evidence|conflicting_link|ambiguous_passage)$/
+            .test(code);
+        await save(
+          null,
+          final ? { status: "needs_review", code, attempts } : {
+            status: "retry",
+            code,
+            attempts,
+            retry_at: new Date(Date.now() + 3600000).toISOString(),
+          },
+        );
         outcomes.push(code);
       }
     }));

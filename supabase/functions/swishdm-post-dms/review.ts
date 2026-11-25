@@ -4,6 +4,8 @@ export type Post = {
   title: string;
   body: string;
   published_at: string;
+  // A carousel's ugcPost or share URN carries a different number from its activity URL.
+  aliases?: string[];
 };
 export type Turn = {
   id: string;
@@ -51,7 +53,8 @@ export function checkAnswer(
     )].map((m) => m[1]),
   );
   if (
-    references.size && (references.size !== 1 || !references.has(post.activity))
+    references.size && (references.size !== 1 ||
+      ![post.activity, ...(post.aliases ?? [])].some((id) => references.has(id)))
   ) throw Error("conflicting_link");
   if (!references.size) {
     const q = norm(postQuote);
