@@ -5,7 +5,7 @@ declare p public.client_post_metrics%rowtype; t uuid; other uuid; result text; e
 begin
  select * into strict p from public.client_post_metrics where client_id='swishdm' order by published_at desc limit 1;
  select board into snapshot from public.client_boards where slug='swishdm-live';
- evidence:=jsonb_build_object('status','qualified','reference_at',now(),'first_inbound_at',now(),
+ evidence:=jsonb_build_object('status','qualified','reference_at',now(),'first_inbound_at',now(),'buyer_at',now(),
    'buyer_quote','Could you audit our store?','reference_quote','The two questions before fixing what AI says',
    'post_quote',p.title);
  insert into public.inbound_triage_log(client_id,seat,chat_id,unipile_message_id,who,verdict,reason,message_text)

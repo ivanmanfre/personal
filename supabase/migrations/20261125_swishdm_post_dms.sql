@@ -70,7 +70,7 @@ begin
  end if;
  if p_review->>'status' is distinct from 'qualified'
    or nullif(trim(p_review->>'buyer_quote'),'') is null or nullif(trim(p_review->>'reference_quote'),'') is null
-   or nullif(trim(p_review->>'post_quote'),'') is null or (p_review->>'reference_at') is null
+   or nullif(trim(p_review->>'post_quote'),'') is null or (p_review->>'reference_at') is null or (p_review->>'buyer_at') is null
    or not exists (select 1 from client_post_metrics where id=p_post and client_id='swishdm'
                   and published_at <= (p_review->>'reference_at')::timestamptz)
  then raise exception 'Invalid SwishDM attribution evidence'; end if;
@@ -80,7 +80,7 @@ begin
  if exists(select 1 from outreach_messages om join outreach_prospects op on op.id=om.prospect_id
            join outreach_campaigns c on c.id=op.campaign_id where c.client_id='swishdm'
            and (om.unipile_chat_id=t.chat_id or op.id=t.surfaced_prospect_id)
-           and om.direction='outbound' and om.sent_at <= (p_review->>'first_inbound_at')::timestamptz)
+           and om.direction='outbound' and om.sent_at <= (p_review->>'buyer_at')::timestamptz)
  then
    update inbound_triage_log set post_review=jsonb_build_object('status','outreach') where id=p_id;
    return 'outreach';
