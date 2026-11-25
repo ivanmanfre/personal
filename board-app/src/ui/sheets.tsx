@@ -89,6 +89,8 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
   const canEdit = editable && canAct && (m.theme.mode === 'buffer' || canApprove);
   const canPhoto = canEdit && photoSwappable(post.style) && !!photos && photos.length > 0;
   const row = s === 'live' ? m.content.posts.find(r => r.postId === post.id) : undefined;
+  const liveUrl = post.url || row?.url;
+  const captured = row?.capturedAt ? fmtWhen(row.capturedAt, tz) : undefined;
   const late = s === 'scheduled' && post.scheduledAt && new Date(post.scheduledAt) < new Date();
   const pulled = local.pulled[post.id];
   const openMove = () => {
@@ -150,8 +152,8 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
               </div>
             )}
             {s === 'archived' && !pulled && canAct && <button className="btn btn-outline" onClick={() => restore(post.id)} data-testid="drawer-restore"><RotateCcw size={15} /> Restore</button>}
-            {s === 'live' && post.url && (
-              <a className="btn btn-outline" href={post.url} target="_blank" rel="noreferrer">Open on LinkedIn <ExternalLink size={14} /></a>
+            {s === 'live' && liveUrl && (
+              <a className="btn btn-outline" href={liveUrl} target="_blank" rel="noreferrer">Open on LinkedIn <ExternalLink size={14} /></a>
             )}
           </div>
 
@@ -199,7 +201,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
                 ))}
               </div>
               <p className="mt-3 text-[12.5px] text-mute">
-                {[row.reached ? `Reached ${fmtInt(row.reached)} people` : '', row.outPct != null ? `${row.outPct}% outside your network` : '',
+                {[captured ? `Updated ${captured.day}, ${captured.time} ${m.theme.tzLabel}` : '', row.reached ? `Reached ${fmtInt(row.reached)} people` : '', row.outPct != null ? `${row.outPct}% outside your network` : '',
                   row.icp && m.content.icp ? `${row.icp.n} of ${row.icp.of} who engaged ${m.content.icp.mode === 'owners' ? 'own a store' : 'fit your buyer'}` : '']
                   .filter(Boolean).join(' · ')}
                 {' '}<button className="link !text-[12.5px]" onClick={() => { onClose(); go('content'); }}>All post numbers <ArrowRight size={12} /></button>

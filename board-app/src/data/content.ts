@@ -20,6 +20,7 @@ export type ContentPost = {
   image?: string;
   hook: string;
   measured: boolean;
+  capturedAt?: string;
   impressions: number;
   reactions: number;
   comments: number;
@@ -181,7 +182,7 @@ export function buildContent(raw: Raw, posts: Post[], tz: string): Content {
     const sp = id ? sigPost.get(id) : undefined;
     rows.push({
       key: id || pm.url || pm.title, postId: q?.id, title: q?.title || pm.title || 'Post', at, url: pm.url || q?.url,
-      image: q?.image, hook: q?.hook || pm.title || '', measured,
+      image: q?.image, hook: q?.hook || pm.title || '', measured, capturedAt: pm.captured_at || undefined,
       impressions: n(pm.impressions), reactions: n(pm.reactions), comments: n(pm.comments), reposts: n(pm.reposts),
       profileViews: n(pm.profile_views), profileViewsKnown: pm.profile_views != null, followers: n(pm.followers_gained),
       reached: pm.network?.members_reached ?? undefined, inPct: pm.network?.in_pct ?? undefined, outPct: pm.network?.out_pct ?? undefined,
