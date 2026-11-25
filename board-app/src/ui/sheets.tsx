@@ -202,6 +202,7 @@ export function PostSheet({ m, postId, edit: editStart, onClose, onReview }: { m
               </div>
               <p className="mt-3 text-[12.5px] text-mute">
                 {[captured ? `Updated ${captured.day}, ${captured.time} ${m.theme.tzLabel}` : '', row.reached ? `Reached ${fmtInt(row.reached)} people` : '', row.outPct != null ? `${row.outPct}% outside your network` : '',
+                  m.slug === 'swishdm-live' && row.inboundDms != null ? `${row.inboundDms} buyer ${row.inboundDms === 1 ? 'conversation' : 'conversations'} from this post` : '',
                   row.icp && m.content.icp ? `${row.icp.n} of ${row.icp.of} who engaged ${m.content.icp.mode === 'owners' ? 'own a store' : 'fit your buyer'}` : '']
                   .filter(Boolean).join(' · ')}
                 {' '}<button className="link !text-[12.5px]" onClick={() => { onClose(); go('content'); }}>All post numbers <ArrowRight size={12} /></button>
