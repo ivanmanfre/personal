@@ -44,6 +44,13 @@ Deno.serve(async (req) => {
   if (req.headers.get("x-dashboard-auth") !== secrets.dashboard_hash) {
     return json({ error: "unauthorized" }, 401);
   }
+  // The dashboard hash ships in the public site bundle, so it cannot be the only gate.
+  // Require the signed-in dashboard session too (sign-ups are disabled, so any real user is the owner).
+  const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  const { data: userData, error: userErr } = jwt ? await sb.auth.getUser(jwt) : { data: null, error: true };
+  if (userErr || !userData?.user) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   let body: { workflowId?: string; action?: string };
   try {
